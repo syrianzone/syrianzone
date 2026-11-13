@@ -112,6 +112,7 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
       maxBounds={maxBounds}
       minZoom={8}
       maxZoom={18}
+      controls="bottom-right"
       className="absolute inset-0"
     >
       <Geolocator>{children}</Geolocator>

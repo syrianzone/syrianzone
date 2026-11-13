@@ -60,9 +60,9 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                     <div className="space-y-6 py-4 text-start">
                         {/* Widget visibility toggles */}
                         <div className="space-y-4">
-                            <h4 className="font-semibold text-foreground text-sm">
+                            <h3 className="font-semibold text-foreground text-sm">
                                 عرض وإخفاء الودجات
-                            </h4>
+                            </h3>
                             <div className="grid grid-cols-3 gap-2">
                                 {/* Toggle Weather */}
                                 <div className="flex flex-col items-center gap-2 rounded-lg border border-border/50 p-2 bg-card/20">
@@ -111,9 +111,9 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                         {/* Prayer times & weather location */}
                         <div className="space-y-4">
                             <div>
-                                <h4 className="font-semibold text-foreground text-sm">
+                                <h3 className="font-semibold text-foreground text-sm">
                                     موقع مواقيت الصلاة والطقس
-                                </h4>
+                                </h3>
                                 <p className="text-xs text-muted-foreground leading-normal mt-1">
                                     حدد موقعك عبر GPS أو الإنترنت، أو أدخل إحداثياتك يدوياً — تُستخدم للمواقيت والطقس معاً.
                                 </p>
@@ -151,9 +151,9 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                         {/* Events governorate */}
                         <div className="space-y-4">
                             <div>
-                                <h4 className="font-semibold text-foreground text-sm">
+                                <h3 className="font-semibold text-foreground text-sm">
                                     محافظة الفعاليات
-                                </h4>
+                                </h3>
                                 <p className="text-xs text-muted-foreground leading-normal mt-1">
                                     تُستخدم لعرض فعاليات محافظتك في الصفحة الرئيسية (وستغذي الروزنامة لاحقاً).
                                 </p>

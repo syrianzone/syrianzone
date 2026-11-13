@@ -24,6 +24,12 @@ import {
  * own. Every write lands in both families, so one edit anywhere moves every
  * surface and the sync engine keeps comparing one value. Key names and stored
  * shapes are unchanged.
+ *
+ * The account stores the same two families (`governorate`/`muslimCity`,
+ * `useCustomCoords/customLat/customLon` vs `muslimUseCustomCoords/muslimLat/
+ * muslimLon`). `accountLocation()` and `accountCustomCoords()` are the only
+ * reader of that pair, so adoption and the login sync see one account location
+ * rather than two spellings that disagree.
  */
 
 export interface LocationPreference {
@@ -47,11 +53,56 @@ export type LocationPatch = Partial<
 /** Which conflict-tracked channel a city write belongs to (see the doc block). */
 export type CityChannel = 'prayer' | 'display';
 
+/**
+ * The account's location: the display family (`governorate`, `useCustomCoords`,
+ * `customLat`, `customLon`) and the prayer family (`muslimCity`,
+ * `muslimUseCustomCoords`, `muslimLat`, `muslimLon`). Both hold the same fact on
+ * the account exactly as they do on the device, so this module reads them as one
+ * location and is the only place that knows the two spellings.
+ */
 export interface AccountLocation {
+  /** Display-family city (`settings.governorate`). */
   city?: string | null;
   useCustomCoords?: boolean | null;
   customLat?: string | number | null;
   customLon?: string | number | null;
+  /** Prayer-family city (`settings.muslimCity`). */
+  muslimCity?: string | null;
+  muslimUseCustomCoords?: boolean | null;
+  muslimLat?: string | number | null;
+  muslimLon?: string | number | null;
+}
+
+/** An account settings payload, as `users.settings` and the Inertia page prop carry it. */
+export interface AccountLocationSettings {
+  governorate?: unknown;
+  muslimCity?: unknown;
+  useCustomCoords?: unknown;
+  customLat?: unknown;
+  customLon?: unknown;
+  muslimUseCustomCoords?: unknown;
+  muslimLat?: unknown;
+  muslimLon?: unknown;
+}
+
+/** The account's location read from a settings payload, one field per stored key. */
+export function accountLocation(
+  settings: AccountLocationSettings | null | undefined,
+): AccountLocation {
+  const text = (value: unknown): string | null =>
+    value === null || value === undefined || value === '' ? null : String(value);
+  const flag = (value: unknown): boolean | null => (typeof value === 'boolean' ? value : null);
+
+  return {
+    city: text(settings?.governorate),
+    useCustomCoords: flag(settings?.useCustomCoords),
+    customLat: text(settings?.customLat),
+    customLon: text(settings?.customLon),
+    muslimCity: text(settings?.muslimCity),
+    muslimUseCustomCoords: flag(settings?.muslimUseCustomCoords),
+    muslimLat: text(settings?.muslimLat),
+    muslimLon: text(settings?.muslimLon),
+  };
 }
 
 export const DEFAULT_CITY = 'damascus';
@@ -101,6 +152,16 @@ function write(key: string, value: string): void {
 /** A slug we do not recognise counts as absent, the rule the login sync uses. */
 function knownCity(value: string | null): string | null {
   return value && GOVERNORATES_BY_ID[value] ? value : null;
+}
+
+/** The account's city for one key family: its own key, else the other family's. */
+function accountCity(
+  own: string | null | undefined,
+  other: string | null | undefined,
+): string | null {
+  const city = typeof own === 'string' ? knownCity(own) : null;
+  if (city !== null) return city;
+  return typeof other === 'string' ? knownCity(other) : null;
 }
 
 function numberOrNull(value: string): number | null {
@@ -163,6 +224,29 @@ export function writeDeviceCustomCoords(patch: Partial<DeviceCustomCoords>): voi
     write(CUSTOM_KEYS.legacyLon, patch.lon);
   }
   notifyLocationChanged();
+}
+
+/**
+ * The account's manual-coordinate unit, or null when the account holds no key of
+ * either family. The two families are one fact (Home wrote the display pair,
+ * `/muslim` the prayer pair), so a value in either is the account's value; the
+ * prayer family wins when both exist, the same precedence as a device read.
+ */
+export function accountCustomCoords(
+  account: AccountLocation | null | undefined,
+): DeviceCustomCoords | null {
+  const on = account?.muslimUseCustomCoords ?? account?.useCustomCoords ?? null;
+  const lat = account?.muslimLat ?? account?.customLat ?? '';
+  const lon = account?.muslimLon ?? account?.customLon ?? '';
+  const latText = String(lat);
+  const lonText = String(lon);
+  if (on === null && latText === '' && lonText === '') return null;
+
+  return {
+    on: typeof on === 'boolean' ? String(on) : null,
+    lat: latText,
+    lon: lonText,
+  };
 }
 
 // --- the composed preference ---
@@ -245,42 +329,38 @@ export function updateLocationPreference(patch: LocationPatch): void {
 }
 
 /**
- * Mount-time seed from the account: fill the device keys that do not exist yet,
- * never overwrite one that does. The login sync compares both sides on its own
- * and the conflict modal owns the overwrite decision
- * (docs/modules/settings-sync.md §4).
+ * Adopt the account's location onto an empty device: fill the device keys that
+ * do not exist yet, never overwrite one that does. The login sync calls this
+ * (docs/modules/settings-sync.md §4): one owner, called before the sync compares
+ * the two sides, so filling a gap cannot be mistaken for a device-vs-account
+ * disagreement.
+ *
+ * Each device family is filled from the account's own family, and falls back to
+ * the other one — both families hold the same fact, so a user who only ever set
+ * the city on one surface still gets it everywhere.
  */
 export function adoptAccountLocation(account: AccountLocation | null | undefined): void {
   if (!account || typeof window === 'undefined') return;
 
   let changed = false;
-  const city = typeof account.city === 'string' ? knownCity(account.city) : null;
-  const hasCity =
-    read(CITY_KEYS.prayer) !== null ||
-    read(CITY_KEYS.display) !== null ||
-    read(CITY_KEYS.roznama) !== null;
-  if (!hasCity && city !== null) {
-    writeEveryCity(city);
+
+  const displayCity = accountCity(account.city, account.muslimCity);
+  if (displayCity !== null && readDeviceCity('display') === null) {
+    write(CITY_KEYS.display, displayCity);
+    write(CITY_KEYS.roznama, displayCity);
     changed = true;
   }
 
-  const stored = readDeviceCustomCoords();
-  if (stored === null) {
-    const on = typeof account.useCustomCoords === 'boolean' ? String(account.useCustomCoords) : null;
-    const lat = account.customLat === null || account.customLat === undefined || account.customLat === ''
-      ? null
-      : String(account.customLat);
-    const lon = account.customLon === null || account.customLon === undefined || account.customLon === ''
-      ? null
-      : String(account.customLon);
-    if (on !== null || lat !== null || lon !== null) {
-      writeDeviceCustomCoords({
-        ...(on !== null ? { on } : {}),
-        ...(lat !== null ? { lat } : {}),
-        ...(lon !== null ? { lon } : {}),
-      });
-      changed = true;
-    }
+  const prayerCity = accountCity(account.muslimCity, account.city);
+  if (prayerCity !== null && read(CITY_KEYS.prayer) === null) {
+    write(CITY_KEYS.prayer, prayerCity);
+    changed = true;
+  }
+
+  const coords = accountCustomCoords(account);
+  if (coords !== null && readDeviceCustomCoords() === null) {
+    writeDeviceCustomCoords(coords);
+    changed = true;
   }
 
   if (changed) notifyLocationChanged();

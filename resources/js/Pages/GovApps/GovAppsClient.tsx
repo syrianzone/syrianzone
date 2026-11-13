@@ -139,6 +139,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                     <DirectoryEmptyState
                         icon={Smartphone}
                         title={initialData.length === 0 ? 'لم يتم العثور على تطبيقات' : 'لا توجد تطبيقات تطابق البحث والتصفية'}
+                        directory={directory}
                         className="rounded-xl border-border bg-muted/30 shadow-none"
                     />
                 ) : (

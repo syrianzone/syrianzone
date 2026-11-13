@@ -130,7 +130,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                         icon={Search}
                         title="لم يتم العثور على مواقع"
                         description="جرب تغيير مصطلحات البحث أو الفلاتر"
-                        onClear={directory.clear}
+                        directory={directory}
                     />
                 ) : (
                     <>

@@ -204,6 +204,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                             icon={Search}
                             title="لا توجد نتائج"
                             description="جرب تعديل كلمات البحث أو الفلاتر."
+                            directory={directory}
                         />
                     ) : viewMode === 'grid' ? (
                         

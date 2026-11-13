@@ -5,7 +5,6 @@ import { SYRIA_TIMEZONE } from '@/Domain/geography/syria';
 import { DEFAULT_PRAYER_METHOD } from '../prayer/methods';
 import { DEFAULT_RECITATION_CODE, normalizeRecitationCode } from '../quran/quran';
 import {
-  adoptAccountLocation,
   readLocationPreference,
   updateLocationPreference,
   useLocationPreference,
@@ -142,21 +141,6 @@ export function useMuslimPrefs() {
         : base.quranReciterId,
     };
   });
-
-  // Location: fill an empty device from the account once per mount. A device
-  // value is never overwritten here — the login sync compares both sides and
-  // the conflict modal owns that decision.
-  const serverLocation = useRef(serverSettings);
-  useEffect(() => {
-    const settings = serverLocation.current;
-    if (!settings) return;
-    adoptAccountLocation({
-      city: settings.muslimCity,
-      useCustomCoords: settings.muslimUseCustomCoords,
-      customLat: settings.muslimLat,
-      customLon: settings.muslimLon,
-    });
-  }, []);
 
   const pending = useRef<Record<string, unknown>>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);

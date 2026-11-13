@@ -115,6 +115,20 @@ export function currentConsent(): AnalyticsConsent | null {
     return resolveConsent(readConsent(), deniedByPrivacySignal());
 }
 
+/**
+ * Whether the consent card is (or is about to be) on screen: analytics is
+ * configured and the visitor has not answered yet. The card and the first-visit
+ * overlays that would otherwise fight it for the bottom of the screen read this
+ * one rule, so neither can drift from the other.
+ */
+export function isBannerPending(id: string | null, consent: AnalyticsConsent | null): boolean {
+    return id !== null && consent === null;
+}
+
+export function consentBannerPending(): boolean {
+    return isBannerPending(getMeasurementId(), currentConsent());
+}
+
 /** Fires after every recorded decision, in this tab. */
 export function subscribeConsent(listener: ConsentListener): () => void {
     listeners.add(listener);
@@ -318,4 +332,21 @@ export function usePrivacySignal(): boolean {
     }, []);
 
     return denied;
+}
+
+/**
+ * Reactive "the consent card is on screen"; false on the server and on the first
+ * client render. A first-visit overlay subscribes to this instead of reading the
+ * card's DOM or its storage key.
+ */
+export function useConsentBannerPending(): boolean {
+    const [pending, setPending] = useState(false);
+
+    useEffect(() => {
+        const read = () => setPending(consentBannerPending());
+        read();
+        return subscribeConsent(read);
+    }, []);
+
+    return pending;
 }

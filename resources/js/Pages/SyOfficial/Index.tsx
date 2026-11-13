@@ -330,6 +330,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                         icon={Globe}
                         title={t.noResults}
                         description={t.noResultsDesc}
+                        directory={directory}
                         className="border-border py-16"
                     />
                 ) : (
@@ -338,11 +339,9 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                             <div className="space-y-12">
                                 {Object.entries(groupedData).map(([catKey, items]) => (
                                     <div key={catKey}>
-                                        {currentCategory === 'all' && (
-                                            <h2 className="text-2xl font-bold text-foreground mb-6 border-b pb-2 border-border">
-                                                {getCategoryLabel(catKey)}
-                                            </h2>
-                                        )}
+                                        <h2 className="text-2xl font-bold text-foreground mb-6 border-b pb-2 border-border">
+                                            {getCategoryLabel(catKey)}
+                                        </h2>
                                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
                                             {items.map(item => (
                                                 <Card

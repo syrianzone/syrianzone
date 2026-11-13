@@ -5,7 +5,7 @@ import { useWidgetQuery } from '../../_lib/query';
 import { sources } from '../../_lib/sources';
 import { GOVERNORATES_BY_ID } from '@/Domain/geography/governorates';
 import type { WidgetProps } from '../../_lib/types';
-import { prayerWidget, type PrayerConfig } from './index';
+import { configCity, prayerWidget, type PrayerConfig } from './index';
 import { useLocationPreference, resolvePrayerParams } from '@/Domain/location/preference';
 import { nextPrayer } from '@/Domain/prayer/nextPrayer';
 import { readStoredMethod } from '@/Domain/settings/prefs';
@@ -18,11 +18,11 @@ function countdown(to: Date, now: Date): string {
 }
 
 export default function PrayerView({ config }: WidgetProps<PrayerConfig>) {
-  // The widget's own city/method win; otherwise it follows the site's location
-  // preference (set in /muslim, Home or Roznama), including a resolved GPS/IP
-  // point and manual coordinates.
+  // A city the tile pins wins; a new or seeded tile follows the site's one
+  // location preference (set in /muslim, Home or Roznama), including a resolved
+  // GPS/IP point and manual coordinates.
   const location = useLocationPreference();
-  const governorate = config.governorate ?? location.city;
+  const governorate = configCity(config) ?? location.city;
   const storedMethod = readStoredMethod();
   const method = Number(config.method ?? storedMethod) || storedMethod;
   const params = resolvePrayerParams({ ...location, city: governorate }, method);

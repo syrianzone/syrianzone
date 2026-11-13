@@ -201,7 +201,7 @@ export function PlaceReviewCard(props: {
         {photoError && <p className="text-sm text-destructive">{photoError}</p>}
 
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-base font-bold">{place.name}</h3>
+          <h2 className="text-base font-bold">{place.name}</h2>
           <Badge variant="outline">{CATEGORY_LABELS[place.category]}</Badge>
           <Badge variant={STATUS_VARIANTS[place.status]}>{STATUS_LABELS[place.status]}</Badge>
         </div>

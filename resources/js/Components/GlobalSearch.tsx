@@ -36,7 +36,7 @@ import {
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useSiteNavigation } from '@/Lib/siteLinks';
+import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { siteModule } from '@/Lib/siteModules';
 import { isActive } from '@/Lib/routes';
 import { normalizeArabic } from '@/Lib/arabic';
@@ -339,6 +339,50 @@ export function SearchResultsContent({
         totalVisibleResults,
     } = data;
 
+    const tileClassName =
+        'group flex h-full select-none flex-col items-center gap-2 rounded-lg px-1 py-2 text-center no-underline outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring transition-colors';
+
+    /** One site-section tile; the palette wraps it in a cmdk item, the inline mounts in a link. */
+    const siteLinkTile = (link: SiteLink, current: boolean) => {
+        const Icon = link.icon;
+        return (
+            <>
+                {link.isFlag ? (
+                    <img
+                        src="/flag-replacer/1f1f8-1f1fe.svg"
+                        alt=""
+                        className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
+                    />
+                ) : link.image ? (
+                    <img
+                        src={link.image}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
+                    />
+                ) : Icon ? (
+                    <Icon
+                        className={cn(
+                            'h-12 w-12 shrink-0 transition-all group-hover:scale-110',
+                            current ? 'text-primary' : 'text-foreground group-hover:text-primary',
+                        )}
+                    />
+                ) : (
+                    <Globe className="h-12 w-12 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />
+                )}
+                <span
+                    className={cn(
+                        'line-clamp-2 text-xs font-medium leading-tight transition-colors',
+                        current ? 'text-primary' : 'text-foreground group-hover:text-primary',
+                    )}
+                >
+                    {link.text}
+                </span>
+            </>
+        );
+    };
+
     const GroupWrapper = ({
         heading,
         children,
@@ -423,78 +467,54 @@ export function SearchResultsContent({
 
             {/* 1. Site Sections & Tools — Grid matching Home & Mobile Menu */}
             {matchedSiteLinks.length > 0 && (
-                <div className="px-1 py-2">
-                    <p className="mb-2 px-1 text-xs font-bold text-muted-foreground/80">
-                        أقسام وأدوات المنصة
-                    </p>
-                    <ul className={cn('grid gap-x-2 gap-y-4 py-1', gridColsClass)}>
-                        {matchedSiteLinks.map(({ id, href, text, icon: Icon, image, isFlag, external }) => {
-                            const current = isActive(href, pathname);
-                            const tileClassName =
-                                'group flex h-full select-none flex-col items-center gap-2 rounded-lg px-1 py-2 text-center no-underline outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring transition-colors';
-                            const body = (
-                                <>
-                                    {isFlag ? (
-                                        <img
-                                            src="/flag-replacer/1f1f8-1f1fe.svg"
-                                            alt=""
-                                            className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
-                                        />
-                                    ) : image ? (
-                                        <img
-                                            src={image}
-                                            alt=""
-                                            loading="lazy"
-                                            decoding="async"
-                                            className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
-                                        />
-                                    ) : Icon ? (
-                                        <Icon
-                                            className={cn(
-                                                'h-12 w-12 shrink-0 transition-all group-hover:scale-110',
-                                                current ? 'text-primary' : 'text-foreground group-hover:text-primary',
-                                            )}
-                                        />
-                                    ) : (
-                                        <Globe className="h-12 w-12 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />
-                                    )}
-                                    <span
-                                        className={cn(
-                                            'line-clamp-2 text-xs font-medium leading-tight transition-colors',
-                                            current ? 'text-primary' : 'text-foreground group-hover:text-primary',
-                                        )}
-                                    >
-                                        {text}
-                                    </span>
-                                </>
-                            );
-
-                            return (
-                                <li key={id || href}>
-                                    {external ? (
+                useCmdkPrimitives ? (
+                    <CommandGroup
+                        heading="أقسام وأدوات المنصة"
+                        className="px-1 py-2 [&_[cmdk-group-heading]]:mb-2 [&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-items]]:grid [&_[cmdk-group-items]]:grid-cols-3 [&_[cmdk-group-items]]:gap-x-2 [&_[cmdk-group-items]]:gap-y-4 sm:[&_[cmdk-group-items]]:grid-cols-4 md:[&_[cmdk-group-items]]:grid-cols-6"
+                    >
+                        {matchedSiteLinks.map((link) => (
+                            <CommandItem
+                                key={link.id || link.href}
+                                value={`site-${link.id || link.href}-${link.text}`}
+                                onSelect={() => navigateTo(link.href, link.external)}
+                                className={cn(tileClassName, 'data-[selected=true]:text-foreground')}
+                            >
+                                {siteLinkTile(link, isActive(link.href, pathname))}
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+                ) : (
+                    <div className="px-1 py-2">
+                        <p className="mb-2 px-1 text-xs font-bold text-muted-foreground/80">
+                            أقسام وأدوات المنصة
+                        </p>
+                        <ul className={cn('grid gap-x-2 gap-y-4 py-1', gridColsClass)}>
+                            {matchedSiteLinks.map((link) => (
+                                <li key={link.id || link.href}>
+                                    {link.external ? (
                                         <a
-                                            href={href}
+                                            href={link.href}
                                             target="_blank"
                                             rel="noreferrer"
                                             onClick={onClose}
                                             className={tileClassName}
                                         >
-                                            {body}
+                                            {siteLinkTile(link, isActive(link.href, pathname))}
                                         </a>
                                     ) : (
                                         <Link
-                                            href={href}
+                                            href={link.href}
                                             onClick={onClose}
                                             className={tileClassName}
                                         >
-                                            {body}
+                                            {siteLinkTile(link, isActive(link.href, pathname))}
                                         </Link>
                                     )}
                                 </li>
-                            );
-                        })}
-                    </ul>
-                </div>
+                            ))}
+                        </ul>
+                    </div>
+                )
             )}
 
             {/* 2. Live Transit Routes from Backend */}

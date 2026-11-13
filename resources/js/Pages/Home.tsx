@@ -17,7 +17,6 @@ import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_lib/links';
 import {
-    adoptAccountLocation,
     readLocationPreference,
     useLocationPreference,
     type LocationPatch,
@@ -136,14 +135,9 @@ export default function Home() {
         const savedShowPrayerTimes = accSettings.showPrayerTimes ?? (localStorage.getItem('sz-showPrayerTimes') !== 'false');
         const savedShowEvents = accSettings.showEvents ?? (localStorage.getItem('sz-showEvents') !== 'false');
 
-        // The location keys are conflict-tracked: fill the gaps from the account
-        // and never overwrite a device value the login sync still has to compare.
-        adoptAccountLocation({
-            city: accSettings.governorate ?? null,
-            useCustomCoords: accSettings.useCustomCoords ?? null,
-            customLat: accSettings.customLat ?? null,
-            customLon: accSettings.customLon ?? null,
-        });
+        // The location keys are conflict-tracked and owned by Domain/location:
+        // the login sync seeds an empty device from the account (once, before it
+        // compares the two sides), so this page only reads the preference.
         const savedLocation = readLocationPreference();
 
         let parsedLinks: CustomLink[] = [];

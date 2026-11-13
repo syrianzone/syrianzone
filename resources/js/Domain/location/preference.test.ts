@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  accountCustomCoords,
+  accountLocation,
   adoptAccountLocation,
   readDeviceCity,
   readDeviceCustomCoords,
@@ -151,15 +153,61 @@ describe('writes land in both families', () => {
   });
 });
 
-describe('the mount-time account seed', () => {
+describe('the account side of the preference', () => {
+  it('reads a settings payload as one location, both key families', () => {
+    expect(
+      accountLocation({
+        governorate: 'aleppo',
+        muslimCity: 'homs',
+        muslimLat: 33.5,
+        customLon: '36.2',
+        muslimUseCustomCoords: false,
+      }),
+    ).toEqual({
+      city: 'aleppo',
+      useCustomCoords: null,
+      customLat: null,
+      customLon: '36.2',
+      muslimCity: 'homs',
+      muslimUseCustomCoords: false,
+      muslimLat: '33.5',
+      muslimLon: null,
+    });
+    expect(accountLocation(null)).toEqual({
+      city: null,
+      useCustomCoords: null,
+      customLat: null,
+      customLon: null,
+      muslimCity: null,
+      muslimUseCustomCoords: null,
+      muslimLat: null,
+      muslimLon: null,
+    });
+  });
+
+  it('treats the custom pair as one unit, prayer family first', () => {
+    expect(accountCustomCoords(accountLocation({}))).toBeNull();
+    expect(
+      accountCustomCoords(accountLocation({ useCustomCoords: false, customLat: 33, customLon: 36 })),
+    ).toEqual({ on: 'false', lat: '33', lon: '36' });
+    expect(
+      accountCustomCoords(
+        accountLocation({ muslimUseCustomCoords: true, muslimLat: 35.1, customLat: 33 }),
+      ),
+    ).toEqual({ on: 'true', lat: '35.1', lon: '' });
+  });
+});
+
+describe('the account seed', () => {
   it('never overwrites a device value', () => {
     const storage = installWindow();
     storage.setItem('sz-muslim-city', 'aleppo');
     storage.setItem('sz-muslim-lat', '1');
     adoptAccountLocation({ city: 'damascus', customLat: '33', customLon: '36' });
     expect(storage.getItem('sz-muslim-city')).toBe('aleppo');
-    expect(storage.getItem('governorate')).toBeNull();
     expect(storage.getItem('sz-muslim-lat')).toBe('1');
+    // The display family was empty, so it takes the account's display city.
+    expect(storage.getItem('governorate')).toBe('damascus');
   });
 
   it('fills an empty device from the account', () => {
@@ -176,6 +224,25 @@ describe('the mount-time account seed', () => {
     expect(storage.getItem('sz-muslim-use-custom')).toBe('true');
     expect(storage.getItem('customLat')).toBe('35.1');
     expect(storage.getItem('customLon')).toBe('36.7');
+  });
+
+  it("fills each device family from the account's own family", () => {
+    const storage = installWindow();
+    adoptAccountLocation({ city: 'aleppo', muslimCity: 'homs' });
+    expect(storage.getItem('sz-muslim-city')).toBe('homs');
+    expect(storage.getItem('governorate')).toBe('aleppo');
+    expect(storage.getItem('sz-roznama-governorate')).toBe('aleppo');
+  });
+
+  it('seeds a custom pair the account only holds in the display family', () => {
+    installWindow();
+    adoptAccountLocation({ useCustomCoords: false, customLat: '33.51', customLon: 36.27 });
+    expect(readDeviceCustomCoords()).toEqual({ on: 'false', lat: '33.51', lon: '36.27' });
+    expect(readLocationPreference()).toMatchObject({
+      useCustomCoords: false,
+      customLat: '33.51',
+      customLon: '36.27',
+    });
   });
 });
 

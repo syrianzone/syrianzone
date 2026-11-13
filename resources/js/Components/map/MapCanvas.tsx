@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapContext } from './MapContext';
-import { createBaseMap } from './createMap';
+import { createBaseMap, type ControlsCorner } from './createMap';
 import { resolveBasemapStyle } from './resolveStyle';
 import { useMapStyle } from './useMapStyle';
 
@@ -14,6 +14,9 @@ export interface MapCanvasProps {
   maxBounds?: maplibregl.LngLatBoundsLike;
   minZoom?: number;
   maxZoom?: number;
+  /** Corner for the attribution + zoom controls; a feature's own floating
+   *  controls belong in the opposite one. Defaults to bottom-left. */
+  controls?: ControlsCorner;
   className?: string;
 }
 
@@ -25,6 +28,7 @@ export function MapCanvas({
   maxBounds,
   minZoom,
   maxZoom,
+  controls,
   className,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,7 +43,7 @@ export function MapCanvas({
   // Init-only values captured in a ref so they don't become effect deps:
   // center/zoom/bounds have no effect after mount (use map.flyTo /
   // map.fitBounds for programmatic moves instead).
-  const initRef = useRef({ center, zoom, bounds, maxBounds, minZoom, maxZoom });
+  const initRef = useRef({ center, zoom, bounds, maxBounds, minZoom, maxZoom, controls });
 
   // Empty deps: the map is created once on mount and torn down on unmount only.
   // Never put center/zoom/bounds here — they're new object references every
@@ -47,7 +51,7 @@ export function MapCanvas({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const { center: initCenter, zoom: initZoom, bounds: initBounds, maxBounds: initMaxBounds, minZoom: initMinZoom, maxZoom: initMaxZoom } = initRef.current;
+    const { center: initCenter, zoom: initZoom, bounds: initBounds, maxBounds: initMaxBounds, minZoom: initMinZoom, maxZoom: initMaxZoom, controls: initControls } = initRef.current;
 
     const mapInstance = createBaseMap({
       container: containerRef.current,
@@ -58,6 +62,7 @@ export function MapCanvas({
       maxBounds: initMaxBounds,
       minZoom: initMinZoom,
       maxZoom: initMaxZoom,
+      controls: initControls,
       fadeDuration: 0,
       maxTileCacheSize: 50,
     });

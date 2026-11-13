@@ -70,6 +70,21 @@ export default function GlobalCommandPalette() {
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key !== 'Enter') return;
+                                // cmdk highlights a result on pointer movement or
+                                // an arrow key, so a query that has just produced
+                                // results has nothing highlighted yet: open the
+                                // first option, as a click on it would.
+                                const listbox = e.currentTarget
+                                    .closest('[role="dialog"]')
+                                    ?.querySelector<HTMLElement>('[role="listbox"]');
+                                if (!listbox || listbox.querySelector('[role="option"][aria-selected="true"]')) return;
+                                const first = listbox.querySelector<HTMLElement>('[role="option"]:not([aria-disabled="true"])');
+                                if (!first) return;
+                                e.preventDefault();
+                                first.click();
+                            }}
                             placeholder="ابحث عن أداة، مدينة، خط سرفيس، سورة، معبر، أو رقم طوارئ..."
                             aria-label="ابحث في المنصة"
                             autoFocus
@@ -147,7 +162,7 @@ export default function GlobalCommandPalette() {
                                 <span>بحث فوري في الأدوات، المدن، السور، والمعابر</span>
                             </span>
                         </div>
-                        <span dir="ltr" className="font-mono text-[10px] opacity-75">
+                        <span dir="ltr" className="font-mono text-[10px]">
                             {IS_MAC ? '⌘ + K' : 'Ctrl + K'}
                         </span>
                     </div>

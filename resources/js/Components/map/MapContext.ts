@@ -4,8 +4,8 @@ import type maplibregl from 'maplibre-gl';
 export interface MapContextValue {
   map: maplibregl.Map | null;
   // Bumped every time the basemap style is (re)set. setStyle() removes all
-  // runtime sources/layers, so layer components must include this in their
-  // effect deps to re-add themselves after a theme switch.
+  // runtime sources/layers; a feature layer re-adds itself through
+  // `useMapLayer`, which is what consumes this value.
   styleVersion: number;
 }
 

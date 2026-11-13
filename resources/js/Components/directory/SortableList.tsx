@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { router } from '@inertiajs/react';
 import {
     DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core';
@@ -7,6 +6,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import { ArrowDown, ArrowUp, GripVertical } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import axios from '@/Lib/axios';
 import { notify } from '@/Lib/notify';
 
 export interface SortableListItem {
@@ -33,9 +33,16 @@ interface Props {
  * Reorder a directory resource's rows. Dragging works with a pointer and with
  * the keyboard (space to pick up, arrows to move, space to drop); the arrow
  * buttons are the same operation without a drag affordance.
+ *
+ * The reorder routes answer JSON (`{ message }`), not an Inertia page, so the
+ * save goes through the app's API client: any failure — a validation error, a
+ * 500, an offline request — is a rejected promise here, which is the only place
+ * that can put the rows back where the server still has them.
  */
 export default function SortableList({ items: initialItems, endpoint, canReorder = true, capability, onSaved }: Props) {
     const [items, setItems] = useState<SortableListItem[]>(initialItems);
+    // The order the server last accepted; a failed save returns to it.
+    const [savedItems, setSavedItems] = useState<SortableListItem[]>(initialItems);
     const [saving, setSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const sensors = useSensors(
@@ -56,20 +63,24 @@ export default function SortableList({ items: initialItems, endpoint, canReorder
         move(items.findIndex((item) => item.id === active.id), items.findIndex((item) => item.id === over.id));
     };
 
-    const save = () => {
+    const save = async () => {
         if (!canReorder) return;
         setSaving(true);
-        router.post(endpoint, {
-            orders: items.map((item, index) => ({ id: item.id, order_column: index + 1 })),
-        }, {
-            onSuccess: () => {
-                setHasChanges(false);
-                notify.success('تم حفظ الترتيب الجديد');
-                onSaved?.();
-            },
-            onError: () => notify.error('تعذّر حفظ الترتيب'),
-            onFinish: () => setSaving(false),
-        });
+        try {
+            await axios.post(endpoint, {
+                orders: items.map((item, index) => ({ id: item.id, order_column: index + 1 })),
+            });
+            setSavedItems(items);
+            setHasChanges(false);
+            notify.success('تم حفظ الترتيب الجديد');
+            onSaved?.();
+        } catch {
+            setItems(savedItems);
+            setHasChanges(false);
+            notify.error('تعذّر حفظ الترتيب');
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (

@@ -39,11 +39,9 @@ import {
     Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/Components/ui/sheet';
 import {
-    adoptAccountLocation,
     isDeviceLocation,
     resolvePlaceLabel,
     useLocationPreference,
-    type AccountLocation,
     type LocationPatch,
 } from '@/Domain/location/preference';
 import { PRAYER_KEYS, PRAYER_LABELS } from '@/Domain/prayer/methods';
@@ -123,14 +121,6 @@ function holidaysForYear(year: number): ActiveHoliday[] {
 export default function Index() {
     const { props } = usePage<{ auth?: { user?: { id: number; settings?: Record<string, unknown> | null } | null } }>();
     const isMobile = useIsMobile();
-    const serverSettings = (props.auth?.user?.settings ?? {}) as Record<string, unknown>;
-    const accountLocation: AccountLocation = {
-        city: typeof serverSettings.governorate === 'string' ? serverSettings.governorate : null,
-        useCustomCoords:
-            typeof serverSettings.useCustomCoords === 'boolean' ? serverSettings.useCustomCoords : null,
-        customLat: typeof serverSettings.customLat === 'string' ? serverSettings.customLat : null,
-        customLon: typeof serverSettings.customLon === 'string' ? serverSettings.customLon : null,
-    };
     const isLoggedIn = Boolean(props.auth?.user?.id);
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -181,13 +171,9 @@ export default function Index() {
         localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
     }, [hidePassed]);
 
-    // Fill an empty device from the account (set-if-absent only: the login sync
-    // compares both sides and the conflict modal owns the overwrite).
     useEffect(() => {
-        adoptAccountLocation(accountLocation);
         setMounted(true);
         setCurrentTime(new Date());
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Keep the clock ticking
@@ -376,7 +362,7 @@ export default function Index() {
                                         <div className="text-sm font-semibold text-foreground mt-2">
                                             {formatDateGregorian(currentTime)}
                                         </div>
-                                        <div className="text-xs text-primary/80 font-medium mt-1">
+                                        <div className="text-xs text-primary font-medium mt-1">
                                             {apiHijri || formatHijriDate(currentTime)}
                                         </div>
                                     </div>
@@ -415,7 +401,7 @@ export default function Index() {
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <h2 className="text-lg font-bold text-foreground">{nextHoliday.nameAr}</h2>
                                                     {nextHoliday.isNew && (
-                                                        <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] h-4 px-1">
+                                                        <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white text-[9px] h-4 px-1">
                                                             جديد
                                                         </Badge>
                                                     )}
@@ -637,19 +623,19 @@ export default function Index() {
                                                 return (
                                                     <div 
                                                         key={idx}
-                                                        className={`flex items-center justify-between p-3 rounded-xl border border-border/50 transition-colors gap-4 ${isPast ? "opacity-50 bg-muted/10" : "bg-muted/10 hover:bg-muted/30"}`}
+                                                        className={`flex items-center justify-between p-3 rounded-xl border border-border/50 transition-colors gap-4 bg-muted/10 ${isPast ? '' : 'hover:bg-muted/30'}`}
                                                     >
                                                         <div className="space-y-1 min-w-0">
                                                             <div className="flex items-center gap-1.5 flex-wrap">
-                                                                <span className="font-bold text-sm text-foreground truncate">{holiday.nameAr}</span>
+                                                                <span className={`font-bold text-sm truncate ${isPast ? 'text-muted-foreground' : 'text-foreground'}`}>{holiday.nameAr}</span>
                                                                 {holiday.isNew && (
-                                                                    <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold h-4 px-1">
+                                                                    <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white text-[9px] font-bold h-4 px-1">
                                                                         جديد
                                                                     </Badge>
                                                                 )}
                                                             </div>
                                                             <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                                                                <span className="font-semibold text-foreground/75">
+                                                                <span className={`font-semibold ${isPast ? 'text-muted-foreground' : 'text-foreground/75'}`}>
                                                                     {holiday.date.toLocaleDateString('ar-SY', { day: 'numeric', month: 'long' })}
                                                                     {holiday.date.getFullYear() !== currentTime.getFullYear() && ` (${holiday.date.getFullYear()})`}
                                                                 </span>

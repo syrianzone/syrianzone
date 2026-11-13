@@ -142,7 +142,7 @@ export default function Index() {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40" aria-label="حالة المكان">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

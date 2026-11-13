@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
+import { useConsentBannerPending } from '@/Lib/analyticsConsent';
 import popupFacts from '../../data/site-popup.json';
 
 export interface SitePopup {
@@ -26,12 +27,16 @@ const UnblockSyriaNotification = () => {
     const [isDismissing, setIsDismissing] = useState(false);
     const [hasMounted, setHasMounted] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
+    // One first-visit overlay at a time: the analytics consent card owns the
+    // bottom of the screen until the visitor answers it.
+    const consentBannerPending = useConsentBannerPending();
 
     const dismissKey = `site_popup_dismissed_v${popup.version}`;
 
     useEffect(() => {
         setHasMounted(true);
         if (!popup.enabled) return;
+        if (consentBannerPending) return;
         const isDismissed = localStorage.getItem(dismissKey);
 
         // Show after a short delay for better UX
@@ -41,7 +46,7 @@ const UnblockSyriaNotification = () => {
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [dismissKey, popup.enabled]);
+    }, [dismissKey, popup.enabled, consentBannerPending]);
 
     // The panel is fixed in a corner and can sit over page controls (e.g. the
     // promises filter button). Once the user interacts with anything else on

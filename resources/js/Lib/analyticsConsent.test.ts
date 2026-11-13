@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     ANALYTICS_CONSENT_KEY,
     currentConsent,
+    isBannerPending,
     isPrivacySignal,
     parseConsent,
     readConsent,
@@ -100,6 +101,16 @@ describe('consent state', () => {
         expect(typeof window).toBe('undefined');
         expect(currentConsent()).toBeNull();
         expect(trackPageView('/transit?q=1')).toBe(false);
+    });
+});
+
+describe('consent banner', () => {
+    it('is pending only while analytics is configured and unanswered', () => {
+        expect(isBannerPending('G-TEST123', null)).toBe(true);
+        expect(isBannerPending('G-TEST123', 'granted')).toBe(false);
+        expect(isBannerPending('G-TEST123', 'denied')).toBe(false);
+        // No id: analytics cannot run, so no card is shown and nothing waits.
+        expect(isBannerPending(null, null)).toBe(false);
     });
 });
 

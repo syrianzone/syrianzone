@@ -4,10 +4,14 @@ import { PRAYER_METHODS } from '../prayer/methods';
 import { MUSLIM_LS_KEYS, prunePrayerLog } from './prefs';
 import { pushGuestBookmarks } from '../quran/guestBookmarks';
 import {
+  accountCustomCoords,
+  accountLocation,
+  adoptAccountLocation,
   readDeviceCity,
   readDeviceCustomCoords,
   writeDeviceCity,
   writeDeviceCustomCoords,
+  type DeviceCustomCoords,
 } from '../location/preference';
 
 // Login settings sync for Muslim Corner + Roznama + Homepage.
@@ -40,6 +44,9 @@ interface ServerSettings {
   governorate?: string | null;
   muslimCity?: string | null;
   muslimMethod?: number | string | null;
+  useCustomCoords?: boolean | null;
+  customLat?: number | string | null;
+  customLon?: number | string | null;
   muslimUseCustomCoords?: boolean | null;
   muslimLat?: number | string | null;
   muslimLon?: number | string | null;
@@ -93,37 +100,21 @@ export function methodLabel(id: string | null): string {
   return PRAYER_METHODS.find((m) => String(m.id) === String(id))?.nameAr ?? String(id);
 }
 
-interface CustomLoc {
-  on: string | null; // 'true' | 'false' | null
-  lat: string;
-  lon: string;
-}
-
-function readLocalCustom(): CustomLoc | null {
+function readLocalCustom(): DeviceCustomCoords | null {
   return readDeviceCustomCoords();
 }
 
-function readServerCustom(s: ServerSettings): CustomLoc | null {
-  const { muslimUseCustomCoords: on, muslimLat: lat, muslimLon: lon } = s;
-  if (on === null || on === undefined) {
-    if (lat === null || lat === undefined || lat === '') return null;
-  }
-  return {
-    on: on === null || on === undefined ? null : on ? 'true' : 'false',
-    lat: lat === null || lat === undefined ? '' : String(lat),
-    lon: lon === null || lon === undefined ? '' : String(lon),
-  };
-}
-
-export function customLabel(c: CustomLoc | null): string {
+export function customLabel(c: DeviceCustomCoords | null): string {
   if (!c) return '—';
-  if (c.on === 'true' && (c.lat || c.lon)) return `مفعّلة (${c.lat}، ${c.lon})`;
-  if (c.on === 'true') return 'مفعّلة';
-  if (c.on === 'false') return 'معطّلة';
-  return c.lat || c.lon ? `(${c.lat}، ${c.lon})` : '—';
+  const point = c.lat || c.lon ? `(${c.lat}، ${c.lon})` : '';
+  if (c.on === 'true') return point ? `مفعّلة ${point}` : 'مفعّلة';
+  // "off" still owns the two numbers, and two off values can differ: an option
+  // that prints only «معطّلة» would offer the user one choice twice.
+  if (c.on === 'false') return point ? `معطّلة ${point}` : 'معطّلة';
+  return point || '—';
 }
 
-function sameCustom(a: CustomLoc | null, b: CustomLoc | null): boolean {
+function sameCustom(a: DeviceCustomCoords | null, b: DeviceCustomCoords | null): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
@@ -161,6 +152,11 @@ export interface SyncOutcome {
 
 export async function runLoginSync(userId: number, rawSettings: Record<string, unknown> | null | undefined): Promise<SyncOutcome> {
   const server = (rawSettings ?? {}) as ServerSettings;
+  const account = accountLocation(server);
+  // The sync is the one owner of the account-to-device seed: filling an empty
+  // device here, before anything is compared, keeps the fill out of the
+  // device-vs-account diff it would otherwise look like (docs/modules/settings-sync.md §4).
+  adoptAccountLocation(account);
   const serverPatch: Record<string, unknown> = {};
   let patchEmpty = true;
   const put = (k: string, v: unknown) => {
@@ -263,9 +259,10 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
     (v) => lsSet(MUSLIM_LS_KEYS.method, v),
   );
 
-  // Custom location is a unit: {on, lat, lon}.
+  // Custom location is a unit: {on, lat, lon}, and the account may hold it in
+  // either key family (Home wrote the display pair, `/muslim` the prayer pair).
   const localCustom = readLocalCustom();
-  const serverCustom = readServerCustom(server);
+  const serverCustom = accountCustomCoords(account);
   if (localCustom === null && serverCustom === null) {
     // nothing
   } else if (serverCustom === null && localCustom !== null) {
@@ -370,7 +367,7 @@ export function pullServerValues(rawSettings: Record<string, unknown> | null | u
     } else if (key === 'muslimMethod' && s.muslimMethod !== null && s.muslimMethod !== undefined) {
       lsSet(MUSLIM_LS_KEYS.method, String(s.muslimMethod));
     } else if (key === 'customLoc') {
-      const cur = readServerCustom(s);
+      const cur = accountCustomCoords(accountLocation(s));
       if (!cur) continue;
       // An empty lat/lon here means the account has none: clear the device copy
       // so the next login compares equal (same as before the move).

@@ -107,7 +107,7 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                         icon={Search}
                         title="لم يتم العثور على منظمات"
                         description="جرب تغيير مصطلحات البحث أو الفلاتر"
-                        onClear={directory.clear}
+                        directory={directory}
                     />
                 ) : (
                     <>

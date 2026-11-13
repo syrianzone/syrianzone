@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type maplibregl from 'maplibre-gl'
-import { useMap, useStyleVersion } from '@/Components/map/MapContext'
+import { useMap } from '@/Components/map/MapContext'
+import { useMapLayer } from '@/Components/map/useMapLayer'
 import { firstSymbolLayerId } from '@/Components/map/layers'
 import { getRouteColor, buildColorMatch } from '../../_lib/mapColors'
 import type { FeatureCollection, RouteProperties } from '../../_types'
@@ -18,7 +19,6 @@ interface ActiveRoute {
 
 export default function RouteLayer({ data }: RouteLayerProps) {
   const map = useMap()
-  const styleVersion = useStyleVersion()
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
   const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null)
   const selectedRouteIdRef = useRef(selectedRouteId)
@@ -39,16 +39,16 @@ export default function RouteLayer({ data }: RouteLayerProps) {
     }
   }, [])
 
-  // Build source + line layer; wire click/hover events
-  useEffect(() => {
-    if (!map) return
-
-    map.addSource('routes-source', {
+  // Build source + line layer; wire click/hover events. A new data identity or
+  // a style swap re-creates the layer, so the live selection is re-applied at
+  // creation time — the selection effect below only runs when the id changes.
+  const attach = useCallback((target: maplibregl.Map) => {
+    target.addSource('routes-source', {
       type: 'geojson',
       data,
     })
 
-    map.addLayer({
+    target.addLayer({
       id: 'routes-line',
       type: 'line',
       source: 'routes-source',
@@ -61,12 +61,9 @@ export default function RouteLayer({ data }: RouteLayerProps) {
         'line-cap': 'round',
         'line-join': 'round',
       },
-    }, firstSymbolLayerId(map))
+    }, firstSymbolLayerId(target))
 
-    // setStyle / a data identity change re-adds this layer with the default
-    // paint, so the live selection must be re-applied on every re-add — the
-    // selection effect below only runs when the selected id actually changes.
-    applySelection(map, selectedRouteIdRef.current)
+    applySelection(target, selectedRouteIdRef.current)
 
     const onMouseMove = (e: maplibregl.MapMouseEvent) => {
       if (selectedRouteIdRef.current) return
@@ -74,8 +71,8 @@ export default function RouteLayer({ data }: RouteLayerProps) {
         [e.point.x - 8, e.point.y - 8],
         [e.point.x + 8, e.point.y + 8],
       ]
-      const hits = map.queryRenderedFeatures(bbox, { layers: ['routes-line'] })
-      map.getCanvas().style.cursor = hits.length > 0 ? 'pointer' : ''
+      const hits = target.queryRenderedFeatures(bbox, { layers: ['routes-line'] })
+      target.getCanvas().style.cursor = hits.length > 0 ? 'pointer' : ''
     }
 
     const onMapClick = (e: maplibregl.MapMouseEvent) => {
@@ -84,10 +81,10 @@ export default function RouteLayer({ data }: RouteLayerProps) {
         [e.point.x - 8, e.point.y - 8],
         [e.point.x + 8, e.point.y + 8],
       ]
-      const hits = map.queryRenderedFeatures(bbox, { layers: ['routes-line'] })
+      const hits = target.queryRenderedFeatures(bbox, { layers: ['routes-line'] })
       if (hits.length > 0) {
         const props = hits[0].properties as RouteProperties
-        const container = map.getContainer()
+        const container = target.getContainer()
         const mx = Math.min(Math.max(e.point.x, 140), container.clientWidth - 140)
         const my = e.point.y
         setActiveRoute({ props, x: mx, y: my })
@@ -98,19 +95,20 @@ export default function RouteLayer({ data }: RouteLayerProps) {
       }
     }
 
-    map.on('mousemove', onMouseMove)
-    map.on('click', onMapClick)
+    target.on('mousemove', onMouseMove)
+    target.on('click', onMapClick)
 
     return () => {
-      map.off('mousemove', onMouseMove)
-      map.off('click', onMapClick)
+      target.off('mousemove', onMouseMove)
+      target.off('click', onMapClick)
       try {
-        if (map.getLayer('routes-line')) map.removeLayer('routes-line')
-        if (map.getSource('routes-source')) map.removeSource('routes-source')
+        if (target.getLayer('routes-line')) target.removeLayer('routes-line')
+        if (target.getSource('routes-source')) target.removeSource('routes-source')
       } catch { /* map already removed */ }
     }
-    // styleVersion: re-add layers after a basemap style swap (setStyle wipes them)
-  }, [map, data, setSelectedRouteId, styleVersion, applySelection])
+  }, [data, setSelectedRouteId, applySelection])
+
+  useMapLayer(attach)
 
   // Highlight / dim routes when selection changes
   useEffect(() => {

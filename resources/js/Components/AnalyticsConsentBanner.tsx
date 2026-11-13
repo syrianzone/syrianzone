@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import {
+    isBannerPending,
     setConsent,
     useAnalyticsConsent,
     useMeasurementId,
@@ -18,9 +19,10 @@ export default function AnalyticsConsentBanner() {
     const id = useMeasurementId();
     const consent = useAnalyticsConsent();
 
-    // No id: analytics cannot run. An answer (including one forced by the
-    // GPC privacy signal, which resolves to 'denied'): the visitor has spoken.
-    if (!id || consent !== null) return null;
+    // One rule for "the card is on screen", shared with the first-visit
+    // overlays that wait for it: an id is configured and the visitor has not
+    // answered (a GPC signal resolves to 'denied', i.e. an answer).
+    if (!isBannerPending(id, consent)) return null;
 
     return (
         <section

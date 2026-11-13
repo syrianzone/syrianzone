@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type maplibregl from 'maplibre-gl'
 import type { FeatureCollection } from 'geojson'
-import { useMap, useStyleVersion } from '@/Components/map/MapContext'
+import { useMap } from '@/Components/map/MapContext'
+import { useMapLayer } from '@/Components/map/useMapLayer'
 
 /**
  * A clustered point layer: a circle per cluster, its count, and a circle per
@@ -57,7 +58,6 @@ export function PinLayer(props: {
   onClusterClick: (zoom: number, center: [number, number]) => void
 }) {
   const map = useMap()
-  const styleVersion = useStyleVersion()
   const { style } = props
   const onPinClickRef = useRef(props.onPinClick)
   onPinClickRef.current = props.onPinClick
@@ -68,12 +68,9 @@ export function PinLayer(props: {
   const dataRef = useRef(props.data)
   dataRef.current = props.data
 
-  const addSourceAndLayers = () => {
-    if (map.getSource(style.sourceId)) return
-    if (!map.isStyleLoaded?.()) return
-
+  const attach = useCallback((target: maplibregl.Map) => {
     try {
-      map.addSource(style.sourceId, {
+      target.addSource(style.sourceId, {
         type: 'geojson',
         data: dataRef.current,
         cluster: true,
@@ -84,7 +81,7 @@ export function PinLayer(props: {
         promoteId: 'id',
       })
 
-      map.addLayer({
+      target.addLayer({
         id: style.clusterLayerId,
         type: 'circle',
         source: style.sourceId,
@@ -99,7 +96,7 @@ export function PinLayer(props: {
         },
       })
 
-      map.addLayer({
+      target.addLayer({
         id: style.clusterCountLayerId,
         type: 'symbol',
         source: style.sourceId,
@@ -108,7 +105,7 @@ export function PinLayer(props: {
         paint: { 'text-color': style.strokeColor },
       })
 
-      map.addLayer({
+      target.addLayer({
         id: style.pinLayerId,
         type: 'circle',
         source: style.sourceId,
@@ -122,40 +119,22 @@ export function PinLayer(props: {
         },
       })
 
-      // A layer added after a slow style load must already show the selection:
-      // the selection effect runs once per id, not once per layer creation.
+      // A layer added after a style swap must already show the selection: the
+      // selection effect below runs per selected id, not per layer creation.
       if (selectedIdRef.current !== null) {
-        map.setFeatureState({ source: style.sourceId, id: selectedIdRef.current }, { selected: true })
+        target.setFeatureState({ source: style.sourceId, id: selectedIdRef.current }, { selected: true })
       }
     } catch (error) {
       console.warn(`[${style.sourceId} layer] addSource/addLayer failed:`, error)
     }
-  }
-
-  // add source + layers on mount (re-adds after setStyle via style.load)
-  useEffect(() => {
-    const onStyleLoad = () => {
-      addSourceAndLayers()
-    }
-    let idleFired = false
-    const onIdle = () => {
-      if (idleFired) return
-      idleFired = true
-      addSourceAndLayers()
-      map.off('idle', onIdle)
-    }
-
-    addSourceAndLayers()
-    map.on('style.load', onStyleLoad)
-    map.on('idle', onIdle)
 
     const onClusterClick = async (e: maplibregl.MapLayerMouseEvent) => {
       const feature = e.features?.[0]
       if (!feature) return
-      const source = map.getSource(style.sourceId) as maplibregl.GeoJSONSource
+      const source = target.getSource(style.sourceId) as maplibregl.GeoJSONSource
       const zoom = await source.getClusterExpansionZoom(feature.properties?.cluster_id)
       const coords = (feature.geometry as GeoJSON.Point).coordinates as [number, number]
-      map.easeTo({ center: coords, zoom })
+      target.easeTo({ center: coords, zoom })
       onClusterClickRef.current(zoom, coords)
     }
 
@@ -166,37 +145,33 @@ export function PinLayer(props: {
       if (!isNaN(id)) onPinClickRef.current(id)
     }
 
-    map.on('click', style.clusterLayerId, onClusterClick)
-    map.on('click', style.pinLayerId, onPinClick)
+    target.on('click', style.clusterLayerId, onClusterClick)
+    target.on('click', style.pinLayerId, onPinClick)
 
     return () => {
-      map.off('style.load', onStyleLoad)
-      map.off('idle', onIdle)
-      map.off('click', style.clusterLayerId, onClusterClick)
-      map.off('click', style.pinLayerId, onPinClick)
+      target.off('click', style.clusterLayerId, onClusterClick)
+      target.off('click', style.pinLayerId, onPinClick)
       try {
         for (const layer of [style.clusterLayerId, style.clusterCountLayerId, style.pinLayerId]) {
-          if (map.getLayer(layer)) map.removeLayer(layer)
+          if (target.getLayer(layer)) target.removeLayer(layer)
         }
-        if (map.getSource(style.sourceId)) map.removeSource(style.sourceId)
+        if (target.getSource(style.sourceId)) target.removeSource(style.sourceId)
       } catch { /* map tearing down */ }
     }
-  }, [map, style])
+  }, [style])
+
+  useMapLayer(attach)
 
   // update data
   useEffect(() => {
     try {
-      let source = map.getSource(style.sourceId)
-      if (!source && map.isStyleLoaded?.()) {
-        addSourceAndLayers()
-        source = map.getSource(style.sourceId)
-      }
-      if (source) (source as maplibregl.GeoJSONSource).setData(props.data)
+      const source = map.getSource(style.sourceId) as maplibregl.GeoJSONSource | undefined
+      source?.setData(props.data)
     } catch { /* map style may not be ready */ }
   }, [props.data, map, style])
 
-  // Selection via GPU feature-state. A style swap drops the state, so it is
-  // re-applied here too (styleVersion changes when MapCanvas re-adds styles).
+  // Selection via GPU feature-state. A style swap drops the state, so `attach`
+  // re-applies the current selection; this effect handles the id changing.
   const prevSelectedIdRef = useRef<number | null>(null)
   useEffect(() => {
     try {
@@ -209,7 +184,7 @@ export function PinLayer(props: {
       }
       prevSelectedIdRef.current = props.selectedId
     } catch { /* layer not ready */ }
-  }, [props.selectedId, map, style, styleVersion])
+  }, [props.selectedId, map, style])
 
   return null
 }

@@ -158,8 +158,10 @@ export default function NearbyTransitDrawer() {
 
   return (
     <>
-      {/* Floating action buttons */}
-      <div className="absolute bottom-[270px] sm:bottom-6 left-4 z-20 flex flex-col gap-2">
+      {/* Floating action buttons — the bottom-left corner, the one the map's
+          own zoom/attribution controls leave free (the city map puts them at
+          bottom-right; see Components/map/createMap). */}
+      <div className="absolute bottom-[270px] end-4 z-20 flex flex-col gap-2 sm:bottom-6">
         <button
           type="button"
           // One control for both steps: it asks for the location first (only on
@@ -190,7 +192,7 @@ export default function NearbyTransitDrawer() {
 
       {/* Bottom sheet drawer */}
       <div
-        className={`absolute bottom-0 left-0 right-0 z-30 transform rounded-t-2xl bg-[var(--surface)] p-4 shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`absolute inset-x-0 bottom-0 z-30 transform rounded-t-2xl bg-[var(--surface)] p-4 shadow-2xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
         dir="rtl"

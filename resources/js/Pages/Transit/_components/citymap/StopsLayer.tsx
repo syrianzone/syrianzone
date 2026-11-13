@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
-import { useMap, useStyleVersion } from '@/Components/map/MapContext'
+import { useMap } from '@/Components/map/MapContext'
+import { useMapLayer } from '@/Components/map/useMapLayer'
 import { useMapColors } from '@/Components/map/mapColors'
 import { firstSymbolLayerId } from '@/Components/map/layers'
 import { useMapStore } from '../../_store/useMapStore'
@@ -23,7 +24,6 @@ function escapeHtml(value: unknown): string {
 
 export default function StopsLayer({ data }: StopsLayerProps) {
   const map = useMap()
-  const styleVersion = useStyleVersion()
   const colors = useMapColors(TRANSIT_MAP_COLORS)
   const showStops = useMapStore(s => s.showStops)
   const selectedRouteId = useMapStore(s => s.selectedRouteId)
@@ -41,15 +41,13 @@ export default function StopsLayer({ data }: StopsLayerProps) {
     target.setFilter('stops-circle', routeId ? ['in', routeId, ['get', 'routeIds']] : null)
   }, [])
 
-  useEffect(() => {
-    if (!map) return
-
-    map.addSource('stops-source', {
+  const attach = useCallback((target: maplibregl.Map) => {
+    target.addSource('stops-source', {
       type: 'geojson',
       data,
     })
 
-    map.addLayer({
+    target.addLayer({
       id: 'stops-circle',
       type: 'circle',
       source: 'stops-source',
@@ -59,21 +57,21 @@ export default function StopsLayer({ data }: StopsLayerProps) {
         'circle-stroke-width': 1.5,
         'circle-stroke-color': colors.markerStroke,
       },
-    }, firstSymbolLayerId(map))
+    }, firstSymbolLayerId(target))
 
-    applyStopsState(map, showStopsRef.current, selectedRouteIdRef.current)
+    applyStopsState(target, showStopsRef.current, selectedRouteIdRef.current)
 
     // Hover effect
-    map.on('mouseenter', 'stops-circle', () => {
-      map.getCanvas().style.cursor = 'pointer'
-    })
-    
-    map.on('mouseleave', 'stops-circle', () => {
-      map.getCanvas().style.cursor = ''
-    })
+    const onEnter = () => {
+      target.getCanvas().style.cursor = 'pointer'
+    }
+
+    const onLeave = () => {
+      target.getCanvas().style.cursor = ''
+    }
 
     // Click popup
-    map.on('click', 'stops-circle', (e) => {
+    const onClick = (e: maplibregl.MapLayerMouseEvent) => {
       if (!e.features || e.features.length === 0) return
 
       const feature = e.features[0]
@@ -105,17 +103,25 @@ export default function StopsLayer({ data }: StopsLayerProps) {
       new maplibregl.Popup({ closeButton: false })
         .setLngLat(e.lngLat)
         .setHTML(html)
-        .addTo(map)
-    })
+        .addTo(target)
+    }
+
+    target.on('mouseenter', 'stops-circle', onEnter)
+    target.on('mouseleave', 'stops-circle', onLeave)
+    target.on('click', 'stops-circle', onClick)
 
     return () => {
+      target.off('mouseenter', 'stops-circle', onEnter)
+      target.off('mouseleave', 'stops-circle', onLeave)
+      target.off('click', 'stops-circle', onClick)
       try {
-        if (map.getLayer('stops-circle')) map.removeLayer('stops-circle')
-        if (map.getSource('stops-source')) map.removeSource('stops-source')
+        if (target.getLayer('stops-circle')) target.removeLayer('stops-circle')
+        if (target.getSource('stops-source')) target.removeSource('stops-source')
       } catch { /* map may have been removed already */ }
-    };
-    // styleVersion: re-add layers after a basemap style swap (setStyle wipes them)
-  }, [map, data, styleVersion, applyStopsState, colors])
+    }
+  }, [data, applyStopsState, colors])
+
+  useMapLayer(attach)
 
   // Keep visibility + selected-route filtering in sync with the store
   useEffect(() => {

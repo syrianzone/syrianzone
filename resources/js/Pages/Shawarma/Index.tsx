@@ -67,14 +67,12 @@ export default function ShawarmaPage() {
                     <CardContent className="p-0 divide-y divide-border">
                         {tiers.map((tier) => (
                             <div key={tier.rank} className="flex items-stretch">
-                                {/* Tier badge */}
                                 <div className="shrink-0 w-20 sm:w-28 flex items-center justify-center bg-muted">
                                     <span className={`${tier.color} text-4xl sm:text-5xl font-extrabold leading-none`}>
                                         {tier.rank}
                                     </span>
                                 </div>
 
-                                {/* Spots */}
                                 <div className="flex-1 flex flex-wrap items-center gap-4 p-4 bg-card">
                                     {tier.spots.map((spot) => {
                                         const SocialIcon =

@@ -5,8 +5,8 @@ import { MuslimIcon, QuranIcon, QuranRadioIcon } from '@/Components/Icons/Projec
 // here and a matching route in routes/web.php — the tile grid and the docs read
 // this list rather than restating the tools.
 //
-// Every tool lives at its own real URL under `/muslim/<slug>` (unlike the old
-// `?tab=` scheme), so a tool URL is shareable and renders on the server.
+// Every tool lives at its own real URL under `/muslim/<slug>`, so a tool URL is
+// shareable and renders on the server.
 export interface ToolEntry {
   /** URL segment under /muslim (also the React key). */
   slug: string;

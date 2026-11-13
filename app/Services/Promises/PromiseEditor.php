@@ -289,7 +289,6 @@ class PromiseEditor
         return $update;
     }
 
-    /** Remove a progress reading, official response or note. */
     public function removeUpdate(Promise $promise, int $updateId): void
     {
         $update = $promise->updates()->whereKey($updateId)->first()

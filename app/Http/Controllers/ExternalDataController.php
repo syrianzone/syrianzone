@@ -11,17 +11,11 @@ use Inertia\Inertia;
 
 class ExternalDataController extends Controller
 {
-    /**
-     * Render Syrian ID page.
-     */
     public function syid()
     {
         return Inertia::render('SyId/Index');
     }
 
-    /**
-     * Render Political Compass custom generator page.
-     */
     public function alignment()
     {
         return Inertia::render('Alignment/Index');
@@ -52,16 +46,11 @@ class ExternalDataController extends Controller
         return is_array($decoded) && array_is_list($decoded) ? $decoded : [];
     }
 
-    /**
-     * Render Legislative Council/House page.
-     */
     public function house()
     {
         // The roster only changes with a deploy (seeder or migration), so it is
-        // cached. It used to be read in full on every visit, behind a
-        // Schema::hasTable() probe that is itself an information_schema query.
-        // A failed or empty read is not cached, so a table that appears later
-        // (a deploy mid-flight) shows up on the next request.
+        // cached. A failed or empty read is not cached, so a table that appears
+        // later (a deploy mid-flight) shows up on the next request.
         $members = Cache::get(\App\Models\HouseMember2026::CACHE_KEY);
         if (! is_array($members)) {
             $members = [];
@@ -82,9 +71,6 @@ class ExternalDataController extends Controller
         ]);
     }
 
-    /**
-     * Fetch, parse, and render Syrian Political Organizations.
-     */
     public function party()
     {
         $url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTxa48kbdV2X5Umd3WGDeU7xX5qFVRpyA3uDFhI9w2FAOuxSiGebSpKrVpjU-13XswnNgxHvfWw-sbJ/pub?output=csv';
@@ -185,9 +171,6 @@ class ExternalDataController extends Controller
         return $data;
     }
 
-    /**
-     * Fetch, parse, and render Syrian Sites directory.
-     */
     public function sites()
     {
         $url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCrz7GpfTDmtgKipQd3IqyMPle1ehoG77VO2SQRDqKC9zRRKO3FDI60VoYhA_XqlzoKQ6gZDrIuIjL/pub?output=csv';

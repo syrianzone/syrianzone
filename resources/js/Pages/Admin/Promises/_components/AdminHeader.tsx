@@ -3,7 +3,6 @@ import { ExternalLink } from 'lucide-react';
 import { PromisesIcon } from '@/Components/Icons/ProjectIcons';
 import AdminNav from './AdminNav';
 
-/** Title row + section links shared by every promises admin page. */
 export default function AdminHeader({ title, current, queueCount, actions }: {
     title: string;
     current: 'promises' | 'review' | 'speakers' | 'sectors';

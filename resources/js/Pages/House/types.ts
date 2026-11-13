@@ -3,13 +3,11 @@ import { governorateByAnyName } from '@/Domain/geography/governorates';
 export interface HouseRow {
     Name: string;
     BirthYear: string;
-    // Normalized fields
     __nameNorm: string;
     __placeNorm: string;
     __sexNorm: string;
     __ageGroup: string;
     __appealStatus: string;
-    // Original fields (using index signature for flexibility)
     [key: string]: string;
 }
 

@@ -183,8 +183,6 @@ it('does not move updated_at when nothing changed', function () {
     expect($target->fresh()->updated_at->timestamp)->toBe($before->timestamp);
 });
 
-// ─── The shared service, which the dashboard also uses ─────────────────────
-
 it('refuses a superadmin at the service layer, not just in the tool', function () {
     $service = app(UserModerationService::class);
     $target = User::factory()->create(['role' => 'superadmin']);

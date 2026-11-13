@@ -32,7 +32,6 @@ use App\Support\Permissions\PermissionCatalogue;
 |
 */
 
-// ─── The linked-route guard ────────────────────────────────────────────────
 //
 // approve() and reject() each check the draft's own city and then, if the draft
 // is a linked edit, the city of the route it points at. The second check is the
@@ -96,7 +95,6 @@ it('approves a linked edit when the draft and its route are both in scope', func
     expect($draft->fresh()->status)->toBe('approved');
 });
 
-// ─── Each action demands its own capability ────────────────────────────────
 //
 // The four moderation actions are guarded by four different capabilities, so
 // holding one must not imply another. TransitGovernorateScopeTest proves the
@@ -143,7 +141,6 @@ it('refuses a route move to a reviewer who cannot edit routes', function () {
     expect($route->fresh()->city_id)->toBe('homs');
 });
 
-// ─── The status no-op answers 200, not 400 ─────────────────────────────────
 //
 // TransitActionException::httpStatus() maps STATUS_UNCHANGED to 400 like every
 // other refusal, and updateRouteStatus() deliberately overrides that to 200.
@@ -195,7 +192,6 @@ it('rejects a status outside the allowed vocabulary', function () {
     expect($route->fresh()->status)->toBe('published');
 });
 
-// ─── Guard runs before validation on the route edit ────────────────────────
 //
 // updateRoute() checks the caller's scope before validating the payload, and
 // says why: an out-of-scope caller learns nothing about the shape of a resource
@@ -237,7 +233,6 @@ it('validates an in-scope route edit normally', function () {
         ->assertJsonValidationErrors('name_ar');
 });
 
-// ─── Partial update semantics at the HTTP boundary ─────────────────────────
 //
 // The service already covers "updates only the fields it is given" and "clears a
 // field when it is explicitly set to null". What only the HTTP layer can break is
@@ -282,8 +277,6 @@ it('answers 400 when a route update carries nothing updatable', function () {
         ->assertStatus(400)
         ->assertJsonPath('message', 'No fields to update');
 });
-
-// ─── Move validation ───────────────────────────────────────────────────────
 
 it('refuses a move to a governorate that does not exist', function () {
     seedCity('homs');
@@ -331,8 +324,6 @@ it('moves a route between two governorates the editor both holds', function () {
 
     expect($route->fresh()->city_id)->toBe('rif-dimashq');
 });
-
-// ─── Listings respect the scope ────────────────────────────────────────────
 
 it('filters the route log by the governorates the caller holds', function () {
     seedCity('homs');

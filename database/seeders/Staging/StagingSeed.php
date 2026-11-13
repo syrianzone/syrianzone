@@ -54,7 +54,6 @@ abstract class StagingSeed extends Seeder
     return $min + ($this->next() % max(1, $max - $min + 1));
   }
 
-  /** Deterministic pick from a list. */
   protected function pick(array $items): mixed
   {
     return $items[$this->next() % count($items)];
@@ -80,7 +79,6 @@ abstract class StagingSeed extends Seeder
     return round($min + ($this->next() % $steps) / $scale, $decimals);
   }
 
-  /** A timestamp $daysAgo-ish in the past, deterministic per call. */
   protected function pastDate(int $maxDaysAgo, int $minDaysAgo = 0): \Illuminate\Support\Carbon
   {
     return now()
@@ -89,7 +87,6 @@ abstract class StagingSeed extends Seeder
       ->startOfMinute();
   }
 
-  /** Join $count deterministic picks into a sentence-ish blob. */
   protected function sentence(array $fragments, int $count = 2): string
   {
     $parts = [];

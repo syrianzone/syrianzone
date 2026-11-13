@@ -58,7 +58,7 @@ test('a phonebook-scoped account holds exactly the phonebook module', function (
 });
 
 test('hasPermission and effectivePermissions agree for every role and capability', function () {
-    // The table-driven refactor is only safe if these two cannot diverge.
+    // The table-driven test is only safe if these two cannot diverge.
     $roles = ['user', 'transit_admin', 'syofficial_admin', 'govapps_admin', 'phonebook_admin', 'places_admin', 'admin', 'superadmin'];
 
     $grantSets = [
@@ -86,10 +86,8 @@ test('hasPermission and effectivePermissions agree for every role and capability
 });
 
 test('capabilities from two modules combine without implying a third', function () {
-    // Was 'a module role plus an explicit grant elsewhere unions both'. The union
-    // it asserted was real and still is — it was just two sources of access rather
-    // than one. Phase D deleted the role-derived source, so both are now explicit
-    // and the "unions" part is a property of the stored array.
+    // Both grants are explicit in the stored array and must union, without
+    // either implying a third module.
     $user = User::factory()->create([
         'role' => 'user',
         'permissions' => array_merge(
@@ -105,8 +103,7 @@ test('capabilities from two modules combine without implying a third', function 
         ->and($user->hasPermission('polls.delete'))->toBeFalse();
 });
 
-// The role select is asserted once, in CapabilitiesTest. It was restated here twice
-// while the migration was in flight, which is three places to change for one rule.
+// The role select is asserted once, in CapabilitiesTest.
 
 test('dev impersonation covers every assignable role', function () {
     $offered = array_keys(AutoLoginDevUser::DEV_USERS);
@@ -116,9 +113,8 @@ test('dev impersonation covers every assignable role', function () {
 });
 
 test('superadmin still holds every capability', function () {
-    // The only remaining role that confers anything by name. The `admin` alias
-    // that used to sit beside it was retired in phase G, so this is now the
-    // whole of role-derived access.
+    // The only remaining role that confers anything by name, and so the whole of
+    // role-derived access.
     $user = User::factory()->create(['role' => 'superadmin', 'permissions' => []]);
 
     foreach (PermissionCatalogue::all() as $permission) {
@@ -185,10 +181,8 @@ test('the shared auth payload carries resolved capabilities', function () {
 
     $payload = HandleInertiaRequests::userPayload($user);
 
-    // effective_permissions used to be derived from a `places_admin` role while
-    // `permissions` was empty. Both are now the stored array, so the payload no
-    // longer tells the client anything the client could not already read — which
-    // is the point of the migration.
+    // Both payload keys are the stored array, so the payload carries nothing the
+    // client could not already read.
     expect($payload['role'])->toBe('user')
         ->and($payload['effective_permissions'])->toBe(PermissionCatalogue::forModule('places'))
         // the raw stored array is still sent for the admin UI's checkboxes

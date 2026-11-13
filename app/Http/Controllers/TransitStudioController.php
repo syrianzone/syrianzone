@@ -146,7 +146,6 @@ class TransitStudioController extends Controller
 
         $this->ensureStudioTransitCityAccess($request, $route->city_id);
 
-        // Get geometry
         $geomJson = DB::table('route_geometries')
             ->selectRaw('ST_AsGeoJSON(geometry) as geojson')
             ->where('route_id', $route->id)
@@ -162,7 +161,6 @@ class TransitStudioController extends Controller
             ];
         }
 
-        // Get stops
         foreach ($route->stopPoints() as $s) {
             $stopGeom = $s->geojson;
             if ($stopGeom) {
@@ -298,20 +296,16 @@ class TransitStudioController extends Controller
             return false;
         }
 
-        // Governorate scope only kicks in for scoped transit staff; everyone
-        // else keeps the existing behavior. The rule itself lives in
-        // ChecksTransitScope, next to the studio submit guard.
+        // Governorate scope only kicks in for scoped transit staff. The rule
+        // itself lives in ChecksTransitScope, next to the studio submit guard.
         $scopeAllowsCity = $this->canActInTransitCity($user, $draft->city_id);
 
         // Transit editors can edit anyone's draft, within their governorate
-        // scope when they have one. This was a role list, so a user granted
-        // transit.edit_routes without also holding the transit_admin role could
-        // not edit a draft they were responsible for.
+        // scope when they have one.
         if ($user->hasPermission(PermissionCatalogue::TRANSIT_EDIT_ROUTES)) {
             return $user->isSuperAdmin() || $scopeAllowsCity;
         }
 
-        // Owner can edit their own draft
         if ($draft->user_id !== null && $draft->user_id === $user->id) {
             return $scopeAllowsCity;
         }

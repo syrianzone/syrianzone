@@ -36,7 +36,6 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
     const error = params.get('error');
     if (error === 'room_full') {
       setErrorMessage('عذراً، هذه الغرفة ممتلئة بالكامل ولا يمكنك الانضمام إليها.');
-      // Clean query parameter from URL bar without forcing reload
       const url = new URL(window.location.href);
       url.searchParams.delete('error');
       window.history.replaceState({}, document.title, url.pathname);
@@ -67,11 +66,9 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
       <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-16" dir="rtl">
         
         
-        {/* Ambient background glows */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[350px] bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none blur-3xl rounded-full" />
 
         <div className="max-w-4xl mx-auto px-4 py-12 relative z-10">
-          {/* Header */}
           <div className="text-center mb-12">
             <div className="inline-flex p-3.5 bg-primary/10 rounded-3xl border border-primary/20 mb-4 animate-bounce">
               <Gamepad2 className="text-primary h-10 w-10" />
@@ -100,9 +97,7 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
             </div>
           )}
 
-          {/* Game Menu Card */}
           <Card className="bg-card/75 backdrop-blur-md border-border text-card-foreground rounded-3xl shadow-2xl overflow-hidden mb-12">
-            {/* Console Tab Switcher */}
             <div {...tabs.tabListProps} className="flex border-b border-border bg-muted/40 p-2 gap-2">
               <button
                 type="button"
@@ -136,7 +131,6 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
                     <p className="text-xs text-muted-foreground mb-4">سيتم سحب ٢٤ شخصية من الفئة المحددة بشكل متطابق لك ولخصمك.</p>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[340px] overflow-y-auto ps-1">
-                      {/* Random Mix */}
                       {total_characters >= 12 && (
                         <button
                           type="button"
@@ -161,7 +155,6 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
                         </button>
                       )}
 
-                      {/* Categories List */}
                       {categories.length === 0 ? (
                         <div className="col-span-full text-center py-12 text-muted-foreground text-sm">
                           لا توجد فئات متاحة حالياً.
@@ -236,7 +229,6 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
             </CardContent>
           </Card>
 
-          {/* Guide Section */}
           <div className="space-y-6 relative z-10">
             <div className="flex items-center gap-2 justify-center text-foreground font-black text-2xl">
               <HelpCircle className="text-primary h-6 w-6" />
@@ -244,7 +236,6 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              {/* Step 1 */}
               <Card className="bg-card/50 border-border/80 rounded-2xl p-5 shadow-sm text-center flex flex-col items-center gap-3">
                 <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-black text-primary text-lg">١</div>
                 <span className="font-extrabold text-base text-foreground">اختر بطلاً سرياً</span>
@@ -253,7 +244,6 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
                 </p>
               </Card>
 
-              {/* Step 2 */}
               <Card className="bg-card/50 border-border/80 rounded-2xl p-5 shadow-sm text-center flex flex-col items-center gap-3">
                 <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-black text-primary text-lg">٢</div>
                 <span className="font-extrabold text-base text-foreground">اطرح أسئلة ذكية</span>
@@ -262,7 +252,6 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
                 </p>
               </Card>
 
-              {/* Step 3 */}
               <Card className="bg-card/50 border-border/80 rounded-2xl p-5 shadow-sm text-center flex flex-col items-center gap-3">
                 <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-black text-primary text-lg">٣</div>
                 <span className="font-extrabold text-base text-foreground">خَمِّن البطل لتفوز</span>
@@ -272,7 +261,6 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
               </Card>
             </div>
 
-            {/* Note */}
             <div className="p-4 bg-muted/20 border border-border/50 rounded-2xl flex gap-3 text-xs text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               <ShieldAlert className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <p>

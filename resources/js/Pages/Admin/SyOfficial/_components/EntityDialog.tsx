@@ -118,7 +118,6 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-2">
-                    {/* ID & Category */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {!isEditing ? (
                             <div className="space-y-2">
@@ -158,7 +157,6 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                         </div>
                     </div>
 
-                    {/* Names AR / EN */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="name_ar">الاسم بالعربية</Label>
@@ -185,7 +183,6 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                         </div>
                     </div>
 
-                    {/* Descriptions AR / EN */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="desc_ar">الوصف بالعربية (اختياري)</Label>
@@ -208,7 +205,6 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                         </div>
                     </div>
 
-                    {/* Image Upload (R2 / WebP) */}
                     <div className="space-y-2">
                         <Label>الشعار / الصورة (يتم تحويلها لـ WebP ورفعها لـ R2)</Label>
                         <div className="flex items-center gap-4 border border-dashed border-border rounded-xl p-4 bg-card">
@@ -237,7 +233,6 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                         <FieldError id="entity-image-error" message={errors.image_file} />
                     </div>
 
-                    {/* Social Media Links */}
                     <div className="space-y-3 pt-2 border-t">
                         <h4 className="font-bold text-sm text-foreground">روابط وسائل التواصل الاجتماعي</h4>
                         

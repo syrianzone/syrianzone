@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 /**
  * Mobile breakpoint mirror (matches Tailwind's `max-sm`) for picking the
- * sheet-bottom vs dialog-center container. Re-renders on resize.
+ * sheet-bottom vs dialog-center container.
  */
 export function useIsMobile(): boolean {
   const [mobile, setMobile] = useState(false);

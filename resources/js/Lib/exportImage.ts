@@ -100,7 +100,6 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
                 const sy = Math.floor((srcH - minSide) / 2);
                 octx.drawImage(img, sx, sy, minSide, minSide, 0, 0, off.width, off.height);
             } else {
-                // contain: center fit
                 const ratio = Math.min(off.width / srcW, off.height / srcH);
                 const dw = Math.round(srcW * ratio);
                 const dh = Math.round(srcH * ratio);
@@ -119,7 +118,6 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
     }
 
     async function loadBestImageDataUrl(src: string, targetW: number, targetH: number, mode: "cover" | "contain" = "cover"): Promise<string | undefined> {
-        // Try original
         let data = await transcodeToDataUrl(src, targetW, targetH, mode);
         if (data) return data;
         // Try common fallbacks for formats Safari may not decode
@@ -159,7 +157,6 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
         }
     }
 
-    // Fonts
     const fontFamily = 'IBM Plex Sans Arabic, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
 
     // Measure footer (text + logo) to expand canvas width if needed to avoid cropping
@@ -182,7 +179,6 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
     const tierTopPad = 10;
     const tierBottomPad = 10;
 
-    // Pre-compute dynamic height based on content
     const areaW = finalWidth - padding.left - padding.right - labelWidth;
     const maxPerRow = Math.max(1, Math.floor((areaW + itemGap) / (itemWidth + itemGap)));
     const tierHeights: Record<TierKey, number> = { S: 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
@@ -202,7 +198,6 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
 
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, finalWidth, height);
-    // Enforce RTL rendering
     try { (ctx as any).direction = "rtl"; } catch { }
     const rtl = (s: string) => s;
     ctx.font = "14px " + fontFamily;
@@ -256,12 +251,10 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 24px " + fontFamily;
         ctx.fillText(rtl(tierLabel[k]), padding.left + labelWidth / 2, y + 24);
-        // Arabic label under the letter
         ctx.font = "600 16px " + fontFamily;
         ctx.fillText(rtl(tierArabic[k]), padding.left + labelWidth / 2, y + 52);
         ctx.font = "600 14px " + fontFamily;
         const areaX = padding.left + labelWidth;
-        // Dotted (dashed) border around the tier area
         const areaY = y;
         const areaWFull = finalWidth - padding.left - padding.right - labelWidth;
         ctx.save();
@@ -270,7 +263,6 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
         ctx.lineWidth = 2;
         ctx.strokeRect(areaX, areaY, areaWFull, blockHeight);
         ctx.restore();
-        // Draw items centered per row; compute rows and place each item by (rowIndex, colIndex)
         const total = items.length;
         const rows = Math.max(1, Math.ceil(total / maxPerRow));
         for (let idx = 0; idx < total; idx++) {
@@ -282,14 +274,12 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
             const cx = rowStartX + colIndex * (itemWidth + itemGap);
             const cy = y + tierTopPad + rowIndex * (itemHeight + internalRowGap);
             const it = items[idx];
-            // Card
             ctx.fillStyle = "#ffffff";
             ctx.strokeStyle = "#e5e7eb";
             ctx.lineWidth = 1;
             ctx.fillRect(cx, cy, itemWidth, itemHeight);
             ctx.strokeRect(cx, cy, itemWidth, itemHeight);
 
-            // Image
             const imgSrc = it.imageUrl || "";
             const imgKey = resolveUrl(imgSrc);
             const img = imgKey ? loaded.get(imgKey) : undefined;
@@ -308,7 +298,6 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
                 ctx.arcTo(ix, iy, ix + iw, iy, r);
                 ctx.closePath();
                 ctx.clip();
-                // Crop like object-fit: cover (center square crop)
                 const srcW = (img as any).naturalWidth || img.width;
                 const srcH = (img as any).naturalHeight || img.height;
                 const minSide = Math.max(1, Math.min(srcW, srcH));
@@ -321,7 +310,6 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
                 ctx.fillRect(cx + 12, cy + 12, 96, 96);
             }
 
-            // Texts
             ctx.fillStyle = "#111111";
             ctx.font = "600 12px " + fontFamily;
             const lines = wrapText(it.name ? rtl(it.name) : "", itemWidth - 12, 14);
@@ -341,7 +329,6 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
         y += blockHeight + rowGap;
     }
 
-    // Watermark with logo to the right of URL
     ctx.fillStyle = "#111111";
     ctx.font = "bold 16px " + fontFamily;
     const gap = 12;
@@ -372,13 +359,11 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
     if (logoImg && logoDrawW > 0) {
         const lx = startX + textWidth + gap;
         const ly = by - Math.floor(logoH / 2);
-        // Draw full logo preserving aspect ratio (no crop)
         ctx.drawImage(logoImg, lx, ly, logoDrawW, logoH);
     }
     ctx.textAlign = prevAlign;
     try { (ctx as any).direction = prevDir; } catch { }
 
-    // Revoke any object URLs created during loading
     try { objectUrls.forEach((u) => URL.revokeObjectURL(u)); } catch { }
 
     // Prefer image/jpeg for better Safari compatibility; fallback to png if needed

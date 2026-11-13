@@ -68,7 +68,6 @@ export function ReportsTab() {
   }, [status, page, fetchReports]);
 
   const resolve = async (report: AdminPlaceReport, action: 'dismiss' | 'unpublish') => {
-    // A place that is no longer published only needs its reports closed.
     const published = report.place.status === 'approved';
     if (action === 'unpublish' && published) {
       const ok = await confirmDialog({

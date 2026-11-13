@@ -70,7 +70,6 @@ const CompassShareCard = forwardRef<HTMLDivElement, Props>(function CompassShare
         style={{ position: 'absolute', bottom: 40, left: -70, width: 220, height: 220, borderRadius: '50%', filter: 'blur(80px)', background: `rgba(${primaryRgb},0.14)` }}
       />
 
-      {/* Spectrum */}
       <div style={{ position: 'relative', textAlign: 'center', marginTop: 6 }}>
         <div style={{ display: 'inline-flex', width: 44, height: 44, borderRadius: '50%', alignItems: 'center', justifyContent: 'center', color: primary, background: `rgba(${primaryRgb},0.14)`, border: `1px solid rgba(${primaryRgb},0.4)`, marginBottom: 5 }}>
           <SpectrumIcon name={spectrum?.icon} className="w-6 h-6" />
@@ -92,7 +91,6 @@ const CompassShareCard = forwardRef<HTMLDivElement, Props>(function CompassShare
         )}
       </div>
 
-      {/* All axes */}
       <div style={{ position: 'relative', background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 14, padding: '10px 12px', flex: '1 1 auto' }}>
         <div style={{ fontSize: 9, fontWeight: 800, color: sub, marginBottom: 8 }}>موقعك على المحاور</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>

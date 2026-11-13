@@ -22,7 +22,6 @@ class RadioUsageController extends Controller
     private const BYTES_KEY = 'quranRadioBytes';
     private const SECONDS_KEY = 'quranRadioSeconds';
 
-    /** Add a listening delta to the user's running totals. */
     public function add(Request $request): JsonResponse
     {
         $user = $request->user() ?? Auth::guard('sanctum')->user();

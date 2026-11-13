@@ -43,7 +43,6 @@ function HomeSettingsBody(props: HomeSettingsFields) {
     onLocationChange,
     saveAccountSettings,
   } = props;
-    // Saved location display (GPS/IP point, manual coordinates or governorate).
     const location = useLocationPreference();
     const geoActive = isDeviceLocation(location);
     const customActive = usesCustomCoordinates(location);
@@ -58,13 +57,11 @@ function HomeSettingsBody(props: HomeSettingsFields) {
         <>
                 <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pb-6 sz-scroll touch-pan-y [-webkit-overflow-scrolling:touch]" dir="rtl" data-lenis-prevent>
                     <div className="space-y-6 py-4 text-start">
-                        {/* Widget visibility toggles */}
                         <div className="space-y-4">
                             <h3 className="font-semibold text-foreground text-sm">
                                 عرض وإخفاء الودجات
                             </h3>
                             <div className="grid grid-cols-3 gap-2">
-                                {/* Toggle Weather */}
                                 <div className="flex flex-col items-center gap-2 rounded-lg border border-border/50 p-2 bg-card/20">
                                     <span id={weatherLabelId} className="text-[11px] font-medium text-foreground">الطقس</span>
                                     <Switch
@@ -77,7 +74,6 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                                         }}
                                     />
                                 </div>
-                                {/* Toggle Prayer Times */}
                                 <div className="flex flex-col items-center gap-2 rounded-lg border border-border/50 p-2 bg-card/20">
                                     <span id={prayerLabelId} className="text-[11px] font-medium text-foreground">الصلاة</span>
                                     <Switch
@@ -90,7 +86,6 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                                         }}
                                     />
                                 </div>
-                                {/* Toggle Events */}
                                 <div className="flex flex-col items-center gap-2 rounded-lg border border-border/50 p-2 bg-card/20">
                                     <span id={eventsLabelId} className="text-[11px] font-medium text-foreground">الفعاليات</span>
                                     <Switch
@@ -108,7 +103,6 @@ function HomeSettingsBody(props: HomeSettingsFields) {
 
                         <div className="h-[1px] bg-border w-full" />
 
-                        {/* Prayer times & weather location */}
                         <div className="space-y-4">
                             <div>
                                 <h3 className="font-semibold text-foreground text-sm">
@@ -148,7 +142,6 @@ function HomeSettingsBody(props: HomeSettingsFields) {
 
                         <div className="h-[1px] bg-border w-full" />
 
-                        {/* Events governorate */}
                         <div className="space-y-4">
                             <div>
                                 <h3 className="font-semibold text-foreground text-sm">

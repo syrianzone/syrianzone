@@ -39,7 +39,6 @@ const UnblockSyriaNotification = () => {
         if (consentBannerPending) return;
         const isDismissed = localStorage.getItem(dismissKey);
 
-        // Show after a short delay for better UX
         if (!isDismissed) {
             const timer = setTimeout(() => {
                 setIsVisible(true);

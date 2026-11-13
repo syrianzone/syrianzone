@@ -85,7 +85,6 @@ export function setupFeatureInteractions(
 ) {
     const { getTip, getWrap, onFeatureClick } = controls;
 
-    // Mouse events
     const l = layer as L.Path; // Cast to access setStyle/bringToFront
 
     l.on({

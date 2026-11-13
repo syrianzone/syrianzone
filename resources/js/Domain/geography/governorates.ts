@@ -87,7 +87,7 @@ export function normalizeGovernorateName(name: string): string {
     .replace(/\s+/g, ' ');
 }
 
-/** Kept under its old name: the population atlas normalises arbitrary province names with it. */
+/** The population atlas normalises arbitrary province names with it. */
 export const normalizeForMatching = normalizeGovernorateName;
 
 const GOVERNORATE_BY_ALIAS: Record<string, Governorate> = (() => {

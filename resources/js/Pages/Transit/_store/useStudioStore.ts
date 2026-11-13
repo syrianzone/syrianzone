@@ -22,7 +22,6 @@ export interface StudioState {
   colorIndex: number
   submittedDraftId: number | null
 
-  // Edit mode
   editingDraftId: number | null
   editingRouteId: string | null
   isEditMode: boolean

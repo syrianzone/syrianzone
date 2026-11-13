@@ -188,12 +188,6 @@ test('accounts without any capability cannot mint', function () {
     expect($owner->tokens()->count())->toBe(0);
 });
 
-/*
-|--------------------------------------------------------------------------
-| Self-service: a capability holder managing their own tokens
-|--------------------------------------------------------------------------
-*/
-
 test('a capability holder sees only their own tokens and their own capabilities', function () {
     $staff = moduleStaff('places');
     app(TokenIssuer::class)->issue($staff, 'mine', ['places.review']);

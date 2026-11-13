@@ -96,10 +96,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
     });
     const canModule = useCanModule();
     const canAny = useCanAny();
-    // Gated per action, matching the route each link opens. This used to test
-    // three role strings including govapps_admin — a role that stopped granting
-    // anything when the role prefixes were removed, so a govapps_admin account
-    // was offered an edit control that 403s.
+    // Gated per action, matching the route each link opens:
     //   panel link  -> govapps_admin:any
     //   edit pencil -> govapps.edit (the save it leads to)
     const canOpenPanel = canModule('govapps');

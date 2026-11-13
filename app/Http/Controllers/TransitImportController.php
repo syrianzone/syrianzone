@@ -261,7 +261,6 @@ class TransitImportController extends Controller
             foreach ($geojson['features'] ?? [] as $feature) {
                 $type = $feature['geometry']['type'] ?? null;
                 if ($type === 'LineString' || $type === 'MultiLineString') {
-                    // Prefer the longest line when several are present.
                     $len = $type === 'LineString'
                         ? count($feature['geometry']['coordinates'] ?? [])
                         : array_sum(array_map(fn ($r) => is_array($r) ? count($r) : 0, $feature['geometry']['coordinates'] ?? []));

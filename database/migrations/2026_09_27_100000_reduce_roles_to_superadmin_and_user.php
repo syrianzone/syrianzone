@@ -160,9 +160,6 @@ return new class extends Migration
         Schema::drop(self::BACKUP_TABLE);
     }
 
-    /**
-     * @return array<int, string>
-     */
     private function decode(?string $permissions): array
     {
         if ($permissions === null || $permissions === '') {

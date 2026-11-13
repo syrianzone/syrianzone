@@ -1,15 +1,5 @@
 import { SITE_MODULES, type SiteModule } from './siteModules';
 
-/**
- * Route shape, in one place.
- *
- * The shell (navbar, layout chrome, search) used to decide "what kind of
- * route is this?" with its own prefixes and regexes, so a new section meant
- * editing several files that could not see each other. The section prefixes
- * and layout flags now come from `resources/data/site-modules.json`; these
- * helpers read them.
- */
-
 /** A pathname with the query string, hash, duplicate and trailing slashes gone. */
 export function pathnameOf(url: string | null | undefined): string {
     if (!url) return '/';

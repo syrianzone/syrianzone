@@ -18,7 +18,6 @@ class GuessWhoController extends Controller
     /** Upper bound on a relayed game action payload (ids, counts, flags). */
     private const MAX_ACTION_BYTES = 16384;
 
-    // Render the lobby index with active categories and total characters
     public function index()
     {
         $categories = GuessWhoCategory::where('is_active', true)
@@ -39,7 +38,6 @@ class GuessWhoController extends Controller
         ]);
     }
 
-    // Create a new game room code
     public function createRoom(Request $request)
     {
         $request->validate([
@@ -53,7 +51,6 @@ class GuessWhoController extends Controller
 
         if ($request->filled('category_id') && $request->category_id !== 'random') {
             $categoryId = (int) $request->category_id;
-            // Fetch exactly 24 characters randomly from the chosen category
             $characterIds = GuessWhoCharacter::where('category_id', $categoryId)
                 ->where('is_active', true)
                 ->inRandomOrder()
@@ -84,12 +81,10 @@ class GuessWhoController extends Controller
         return response()->json(['room_code' => $roomCode]);
     }
 
-    // Show a specific game room
     public function showRoom($roomCode)
     {
         $game = GuessWhoGame::where('room_code', $roomCode)->firstOrFail();
 
-        // Load exactly the 24 characters selected for this game
         $characters = GuessWhoCharacter::whereIn('id', $game->character_ids ?? [])
             ->where('is_active', true)
             ->get();
@@ -138,13 +133,11 @@ class GuessWhoController extends Controller
             return $this->jsonError('غير مصرح لك بالانضمام لهذه الغرفة.', 403);
         }
 
-        // Build the presence channel user details block
         $channelData = json_encode([
             'user_id' => $sessionId,
             'user_info' => RoomChannel::member($sessionId, $request->user()),
         ]);
 
-        // Generate HMAC signature using Pusher/Reverb App Secret
         $stringToSign = $socketId . ':' . $channelName . ':' . $channelData;
         $appSecret = env('REVERB_APP_SECRET') ?: env('PUSHER_APP_SECRET');
         $appKey = env('REVERB_APP_KEY') ?: env('PUSHER_APP_KEY');
@@ -161,7 +154,6 @@ class GuessWhoController extends Controller
         ]);
     }
 
-    // Join a game room and claim player slots
     public function joinRoom(Request $request, $roomCode)
     {
         $request->validate([

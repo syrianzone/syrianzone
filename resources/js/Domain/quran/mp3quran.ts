@@ -73,8 +73,6 @@ async function v4Get<T>(path: string, query?: Query, signal?: AbortSignal): Prom
   return request;
 }
 
-// --- Catalogue ---------------------------------------------------------------
-
 // A recitation code is a two-segment path (`reciter/rN`), so encode each
 // segment but keep its slash literal to match the documented route shape.
 function recitationPath(code: string): string {
@@ -92,8 +90,6 @@ export interface V4SurahSummary {
 export function fetchSurahs(signal?: AbortSignal): Promise<V4SurahSummary[]> {
   return v4Get<{ data: V4SurahSummary[] }>('/v4/surahs', { all: true }, signal).then((r) => r.data);
 }
-
-// --- Audio files -------------------------------------------------------------
 
 type AudioTier = 'original' | 'mp3_64' | 'opus_48';
 

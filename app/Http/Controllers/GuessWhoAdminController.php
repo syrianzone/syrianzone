@@ -12,9 +12,6 @@ use Illuminate\Support\Str;
 
 class GuessWhoAdminController extends Controller
 {
-    /**
-     * Render the admin management page for Guess Who categories & characters.
-     */
     public function renderIndex()
     {
         $categories = GuessWhoCategory::withCount('characters')->orderBy('id')->get();
@@ -25,8 +22,6 @@ class GuessWhoAdminController extends Controller
             'characters' => $characters,
         ]);
     }
-
-    // ---------- Categories ----------
 
     public function storeCategory(Request $request)
     {
@@ -95,8 +90,6 @@ class GuessWhoAdminController extends Controller
 
         return redirect()->back()->with('success', 'تم حذف الفئة وشخصياتها بنجاح');
     }
-
-    // ---------- Characters ----------
 
     public function storeCharacter(Request $request)
     {

@@ -26,7 +26,6 @@ export function estimateTricks(hand: Card[], trump: Suit): number {
   return Math.min(TARNEEB_HAND, tricks);
 }
 
-/** The trump the hand most wants, and the tricks it expects to take with it. */
 export function bestTrump(hand: Card[]): { trump: Suit; tricks: number } {
   let best: { trump: Suit; tricks: number } | null = null;
   for (const trump of SUITS) {
@@ -56,12 +55,10 @@ export function chooseBid(round: TarneebRound, seat: Seat): number | null {
   return value >= allowed[0] ? value : null;
 }
 
-/** The trump the declarer should name. */
 export function chooseTrump(round: TarneebRound, seat: Seat): Suit {
   return bestTrump(round.hands[seat]).trump;
 }
 
-/** The card the seat on turn should play. */
 export function choosePlay(round: TarneebRound, seat: Seat): Card {
   const legal = legalPlays(round, seat);
   if (legal.length === 0) throw new Error(`seat ${seat} has no legal play`);
@@ -77,13 +74,10 @@ export function choosePlay(round: TarneebRound, seat: Seat): Card {
   const partnerSafe = current.seat === partner && (current.card.suit === trump || power(current.card) >= 12);
   if (partnerSafe) return lowest(legal);
 
-  // Win the trick with the cheapest card that beats what is on the table; if
-  // nothing beats it, throw the lowest card away.
   const winning = legal.filter((card) => beats(card, current.card, led, trump));
   return winning.length > 0 ? lowest(winning) : lowest(legal);
 }
 
-/** Lead an ace in a side suit if there is one to cash, otherwise the lowest card. */
 function lead(legal: Card[], trump: Suit | null): Card {
   const aces = legal.filter((card) => card.rank === 1 && card.suit !== trump);
   if (aces.length > 0) return aces[0];

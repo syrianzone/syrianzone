@@ -17,15 +17,12 @@ type ContractId = TrixDeal['contract'];
 
 const partnerOf = (seat: Seat): Seat => (seat + 2) % TRIX_PLAYERS;
 
-/** Whether a card carries the penalty the contract is about. */
 function isPenalty(card: Card, contract: ContractId): boolean {
   if (contract === 'queens') return card.rank === 12;
   if (contract === 'diamonds') return card.suit === 'D';
   if (contract === 'kingOfHearts') return card.id === 'H13';
   return false;
 }
-
-// ---- playing ----------------------------------------------------------------
 
 /** The card to play, or null when there is nothing to do but pass (التركس only). */
 export function choosePlay(deal: TrixDeal, seat: Seat, options: TrixOptions): Card | null {
@@ -37,13 +34,11 @@ export function choosePlay(deal: TrixDeal, seat: Seat, options: TrixOptions): Ca
   return followAvoid(deal, seat, legal, options.teams);
 }
 
-/** Leading: keep clear of the contract's penalty suit when possible, then go low. */
 function leadAvoid(legal: Card[], contract: ContractId): Card {
   const safe = legal.filter((card) => !isPenalty(card, contract));
   return lowest(safe.length > 0 ? safe : legal);
 }
 
-/** Following: duck under the winner; when void, give away a penalty — not to a partner. */
 function followAvoid(deal: AvoidDeal, seat: Seat, legal: Card[], teams: boolean): Card {
   const { round, contract } = deal;
   const led = round.trick[0].card.suit;
@@ -55,20 +50,16 @@ function followAvoid(deal: AvoidDeal, seat: Seat, legal: Card[], teams: boolean)
     return penalties.length > 0 ? highest(penalties) : highest(legal);
   }
 
-  // Must follow: stay under the current winner if any card allows it.
   const ducks = legal.filter((card) => !(card.suit === led && power(card) > power(current.card)));
   return lowest(ducks.length > 0 ? ducks : legal);
 }
 
-/** التركس: build the suit the hand is longest in, and shed the highest there. */
 function shedPlay(deal: ShedDeal, legal: Card[]): Card {
   const groups = groupBySuit(deal.hands[deal.turn]);
   return legal
     .slice()
     .sort((a, b) => groups[b.suit].length - groups[a.suit].length || power(b) - power(a))[0];
 }
-
-// ---- choosing a contract ----------------------------------------------------
 
 /** The contract the kingdom holder should name for this hand. */
 export function chooseContractFor(hands: Card[][], seat: Seat, remaining: Contract[]): Contract {

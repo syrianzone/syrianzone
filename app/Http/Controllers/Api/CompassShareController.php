@@ -41,7 +41,6 @@ class CompassShareController extends Controller
         return response()->json(['share_id' => $shareId]);
     }
 
-    /** Public read of a shared result by key. */
     public function show($shareId)
     {
         $row = CompassResult::where('share_id', $shareId)->first();

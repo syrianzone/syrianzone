@@ -48,7 +48,6 @@ export function BottomSheet({
     onHeightChange?.(h)
   }, [onHeightChange])
 
-  // measure content natural height
   useEffect(() => {
     if (!contentRef.current) return
     const ro = new ResizeObserver(([entry]) => {
@@ -93,7 +92,6 @@ export function BottomSheet({
   const maxH = typeof window !== 'undefined' ? window.innerHeight * MAX_RATIO : 800
   const progress = Math.min(1, Math.max(0, (sheetHeight - MINIMAL_HEIGHT) / (maxH - MINIMAL_HEIGHT)))
 
-  // use the smaller of dragged height vs content natural height + handle
   const contentHeight = contentNaturalHeight
   const naturalTotal = contentHeight + HANDLE_HEIGHT
   const renderedHeight = isDragging ? sheetHeight : Math.min(sheetHeight, Math.max(MINIMAL_HEIGHT, naturalTotal))

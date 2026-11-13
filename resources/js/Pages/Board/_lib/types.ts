@@ -1,7 +1,6 @@
 import type { ComponentType, LazyExoticComponent } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
-// ***** the persisted layout format *****
 // These five key names (`v`, `i`, `d`, `w`, `h`, `c`) and every widget definition
 // id are permanent once a user has saved a board. Nothing derived is stored:
 // no titles, no icons, no cached data, no per-breakpoint copies.
@@ -30,8 +29,6 @@ export interface BoardDoc {
 // The grid caps, as a stored width and height may not exceed them.
 export const GRID_COLS = 12;
 export const GRID_ROWS = 8;
-
-// ***** the widget contract *****
 
 export type Breakpoint = 'sm' | 'md' | 'lg';
 export type Capability = 'auth' | 'geo';

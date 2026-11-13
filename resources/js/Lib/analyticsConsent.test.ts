@@ -1,7 +1,3 @@
-// Consent is the gate in front of every Google Analytics request, so its pure
-// side is tested directly: state parsing, the privacy signal, and the page-view
-// sender's two conditions. The test environment is `node` (no DOM), which is
-// why the module takes its storage and sender as arguments.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     ANALYTICS_CONSENT_KEY,

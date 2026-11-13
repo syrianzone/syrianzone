@@ -72,7 +72,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    // Mint form state
     // Self-service tokens always belong to the viewer, the only owner offered.
     const [ownerId, setOwnerId] = useState<string>(
         selfService && owners[0] ? String(owners[0].id) : '',
@@ -81,7 +80,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
     const [ttl, setTtl] = useState<string>(ttlOptions[1]?.value ?? '30d');
     const [selected, setSelected] = useState<string[]>([]);
 
-    // One-time plaintext reveal
     const [issued, setIssued] = useState<{ token: string; message: string } | null>(null);
     const [copied, setCopied] = useState(false);
 
@@ -198,7 +196,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                     </Button>
                 </div>
 
-                {/* Endpoint help — an agent cannot be connected without this. */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">كيف يتصل الوكيل</CardTitle>
@@ -220,7 +217,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                     </CardContent>
                 </Card>
 
-                {/* One-time plaintext reveal */}
                 {issued && (
                     <Card className="border-green-500/50 bg-green-500/5">
                         <CardHeader>
@@ -254,7 +250,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                     </Card>
                 )}
 
-                {/* Mint form */}
                 {showForm && (
                     <Card>
                         <CardHeader>
@@ -370,7 +365,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                     </Card>
                 )}
 
-                {/* Token list */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">

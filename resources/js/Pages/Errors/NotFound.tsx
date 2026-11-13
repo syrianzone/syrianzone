@@ -131,9 +131,6 @@ export default function NotFound({ path = '/404', section }: NotFoundProps) {
     );
 }
 
-/* ============================================================================
-   1. MUSLIM CORNER (`/muslim/*`) — Option A (Ultra-Minimal)
-   ============================================================================ */
 function MuslimNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     return (
         <div className="container mx-auto max-w-3xl px-4 py-10">
@@ -183,9 +180,6 @@ function MuslimNotFound({ path, onBack }: { path: string; onBack: () => void }) 
     );
 }
 
-/* ============================================================================
-   2. GAMES (`/games/*`, `/guesswho/*`) — PlayingCard 4-0-4 + Randomizer
-   ============================================================================ */
 function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     const playableGames = useMemo(
         () => GAMES.filter((g) => !g.comingSoon && !g.external),
@@ -207,7 +201,6 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     return (
         <div className="container mx-auto max-w-4xl px-4 py-10">
             <div className="mb-6 flex flex-col items-center text-center">
-                {/* 3-Card Hand: 4♠ — Middle Randomizer Card (0) — 4♥ */}
                 <div
                     dir="ltr"
                     className="mb-6 flex items-center justify-center gap-3 sm:gap-5 select-none"
@@ -221,7 +214,6 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                         />
                     </div>
 
-                    {/* Middle Card: Interactive 0 / Random Game Card using standard .sz-card */}
                     <button
                         type="button"
                         onClick={dealRandomGame}
@@ -289,7 +281,6 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                 </div>
             </div>
 
-            {/* Exact borderless game tile grid from Games/Index.tsx */}
             <div className="mt-8 border-t border-border/60 pt-6">
                 <p className="mb-4 text-center text-xs font-medium text-muted-foreground">
                     الألعاب المتاحة
@@ -322,10 +313,6 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     );
 }
 
-/* ============================================================================
-   3. TRANSIT (`/transit/*`, `/mishwar/*`, `/crossings/*`, `/places/*`)
-      Route line motif + full CityGrid list of all cities
-   ============================================================================ */
 function TransitNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     return (
         <div className="mx-auto max-w-7xl px-4 pt-10">
@@ -356,7 +343,6 @@ function TransitNotFound({ path, onBack }: { path: string; onBack: () => void })
                     </Button>
                 </div>
 
-                {/* Route Line Motif */}
                 <div className="mt-7 w-full overflow-hidden rounded-xl border border-border bg-card p-4">
                     <svg viewBox="0 0 680 130" className="w-full h-auto" role="img" aria-label="مخطط مسار الخط 404">
                         <line
@@ -443,15 +429,11 @@ function TransitNotFound({ path, onBack }: { path: string; onBack: () => void })
                 </div>
             </div>
 
-            {/* Full list of all cities using the standard CityGrid component */}
             <CityGrid />
         </div>
     );
 }
 
-/* ============================================================================
-   4. GENERAL (`/*`) — Option B (Standard Input Filter + Full Borderless App Grid)
-   ============================================================================ */
 function GeneralNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     const [query, setQuery] = useState('');
 

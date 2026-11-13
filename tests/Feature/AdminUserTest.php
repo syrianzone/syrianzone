@@ -23,16 +23,14 @@ test('superadmin can create a staff account', function () {
         ->postJson('/api/admins', ['name' => 'New Admin', 'email' => 'admin@test.com'])
         ->assertCreated()
         ->assertJsonPath('email', 'admin@test.com')
-        // Phase B: created as a plain `user` carrying explicit capabilities,
-        // not as role=admin. The role used to short-circuit every permission
-        // check via User::isAdmin(), which made the account unscopable.
+        // Created as a plain `user` carrying explicit capabilities: a role
+        // cannot be scoped to one account.
         ->assertJsonPath('role', 'user');
 });
 
 test('a new staff account gets the whole catalogue explicitly', function () {
-    // Parity, not a policy choice: the old `role => 'admin'` grant resolved every
-    // capability, so the replacement must too. The operator is expected to trim
-    // it afterwards in the Filament user form.
+    // The default is the whole catalogue; the operator trims it afterwards in the
+    // Filament user form.
     $response = $this->actingAs(User::factory()->create(['role' => 'superadmin']))
         ->postJson('/api/admins', ['name' => 'New Admin', 'email' => 'scoped@test.com'])
         ->assertCreated();
@@ -41,8 +39,7 @@ test('a new staff account gets the whole catalogue explicitly', function () {
 
     expect($created->permissions)->toEqual(PermissionCatalogue::all())
         ->and($created->effectivePermissions())->toEqual(PermissionCatalogue::all())
-        // And it is genuinely capability-driven now: clearing the array with the
-        // role untouched must leave it with nothing.
+        // Clearing the array with the role untouched leaves it with nothing.
         ->and((function () use ($created) {
             $created->update(['permissions' => []]);
 

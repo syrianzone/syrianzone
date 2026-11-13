@@ -165,7 +165,6 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
     patchEmpty = false;
   };
 
-  // --- prayerLog: OR-union, silent ---
   const localLog = readLocalPrayerLog();
   if (localLog || server.prayerLog) {
     const merged = mergePrayerLog(localLog, server.prayerLog ?? null);
@@ -175,7 +174,6 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
     }
   }
 
-  // --- quran position: newer timestamp wins, silent ---
   const localPage = Number(ls(MUSLIM_LS_KEYS.page) ?? '');
   const localAt = Number(ls(MUSLIM_LS_KEYS.at) ?? 0);
   const serverPage = server.quranLastPage ?? null;
@@ -196,14 +194,12 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
     if (serverAt > 0) lsSet(MUSLIM_LS_KEYS.at, String(serverAt * 1000));
   }
 
-  // --- quran bookmarks: union push, silent (leftovers stay on device) ---
   try {
     await pushGuestBookmarks((b) => addBookmark(b));
   } catch {
     // best-effort; leftovers retry next login
   }
 
-  // --- scalar keys: fill empties silently, collect conflicts ---
   const conflicts: SettingConflict[] = [];
 
   const scalar = (
@@ -374,7 +370,7 @@ export function pullServerValues(rawSettings: Record<string, unknown> | null | u
       const cur = accountCustomCoords(accountLocation(s));
       if (!cur) continue;
       // An empty lat/lon here means the account has none: clear the device copy
-      // so the next login compares equal (same as before the move).
+      // so the next login compares equal.
       writeDeviceCustomCoords({ ...(cur.on !== null ? { on: cur.on } : {}), lat: cur.lat, lon: cur.lon });
     }
   }

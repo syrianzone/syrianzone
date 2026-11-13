@@ -82,7 +82,6 @@ export default function MapClient({
         );
     };
 
-    // Determine background class based on data type
     const getBackgroundClass = () => {
         if (currentDataType === DATA_TYPES.RAINFALL) return 'bg-rainfall';
         if (currentDataType === DATA_TYPES.ENVIRONMENTAL) return 'bg-env';
@@ -102,7 +101,6 @@ export default function MapClient({
             <div ref={tipRef} className="atlas-cursor-tooltip" style={{ display: 'none' }} />
 
             <style>{`
-                /* --- ANIMATIONS --- */
                 @keyframes pulse-glow {
                     0%, 100% { filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.3)); }
                     50% { filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.6)); }
@@ -120,7 +118,6 @@ export default function MapClient({
                     100% { background-position: 0% 0%; }
                 }
 
-                /* --- DYNAMIC BACKGROUNDS --- */
                 .bg-rainfall {
                     background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
                     background-image: 
@@ -156,13 +153,11 @@ export default function MapClient({
                     background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.6) 100%);
                 }
 
-                /* --- LEAFLET OVERRIDES --- */
                 .leaflet-container {
                     background: transparent !important;
                     font-family: var(--site-font, inherit);
                 }
 
-                /* SVG Region Styling */
                 @keyframes hover-glow {
     0%, 100% {
         filter: 
@@ -203,13 +198,11 @@ path.leaflet-interactive:hover {
     z-index: 1000;
 }
 
-                /* Active/Focus State */
                 path.leaflet-interactive:focus-visible {
                     outline: 2px solid hsl(var(--ring));
                     outline-offset: 1px;
                 }
 
-                /* --- TOOLTIPS (custom cursor-following overlay) --- */
                 .atlas-cursor-tooltip {
                     position: absolute;
                     left: 0;
@@ -273,7 +266,6 @@ path.leaflet-interactive:hover {
                     border: 1px solid rgba(148, 163, 184, 0.2);
                 }
                 
-                /* Triangle Arrow */
                 .glass-tooltip::after {
                     content: '';
                     position: absolute;
@@ -288,12 +280,10 @@ path.leaflet-interactive:hover {
                     z-index: -1;
                 }
 
-                /* Env Pulse Effect on Map Features */
                 .pulsing-region {
                     animation: pulse-glow 3s infinite ease-in-out;
                 }
 
-                /* --- ZOOM CONTROL --- */
                 .leaflet-control-zoom {
                     border: none !important;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;

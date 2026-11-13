@@ -17,8 +17,7 @@ class EventsController extends Controller
   // The governorate key is validated against the shared governorate table
   // rather than passed through, so this cannot become an open GraphQL proxy and
   // the cache stays bounded. The F3alia province id per governorate comes from
-  // that table too (rural Damascus folds into Damascus upstream, which is the
-  // behaviour the client had before this moved).
+  // that table too (rural Damascus folds into Damascus upstream).
 
   // the all-syria option: no province filter upstream
   private const ALL = 'all';

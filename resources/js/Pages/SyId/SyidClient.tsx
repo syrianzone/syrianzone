@@ -282,7 +282,6 @@ export default function SyidClient() {
     return (
         <div className="min-h-screen bg-background text-foreground transition-colors" dir="rtl">
 
-            {/* Minimal Hero Header */}
             <header className="py-12 border-b border-border text-center bg-muted/20">
                 <div className="container mx-auto px-4 max-w-4xl">
                     <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
@@ -306,10 +305,8 @@ export default function SyidClient() {
                 </div>
             </header>
 
-            {/* Main Content Area */}
             <div className="container mx-auto py-10 max-w-6xl px-4 space-y-14">
 
-                {/* 1. COLOR PALETTES */}
                 <section>
                     <h2 className="text-2xl font-bold mb-6">لوحة الألوان</h2>
 
@@ -336,7 +333,6 @@ export default function SyidClient() {
                                                         color: color.textColor
                                                     }}
                                                 >
-                                                    {/* HEX format click */}
                                                     <button
                                                         onClick={() => copyToClipboard(color.hex, hexKey)}
                                                         className="flex items-center justify-between w-full font-mono text-xs font-bold p-1 rounded bg-black/20 hover:bg-black/30 transition-colors"
@@ -345,7 +341,6 @@ export default function SyidClient() {
                                                         {copiedKey === hexKey ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3 opacity-70" />}
                                                     </button>
 
-                                                    {/* HSL, CMYK & OKLCH format clicks */}
                                                     <div dir="ltr" className="space-y-1 text-[10px] font-mono mt-2">
                                                         <button
                                                             onClick={() => copyToClipboard(color.hsl, hslKey)}
@@ -379,12 +374,10 @@ export default function SyidClient() {
                     </div>
                 </section>
 
-                {/* 2. TYPOGRAPHY */}
                 <section>
                     <h2 className="text-2xl font-bold mb-6">الخطوط</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Card 1: Qomra Font */}
                         <Card className="border border-border/80 rounded-xl overflow-hidden flex flex-col justify-between p-6">
                             <div className="space-y-4">
                                 <div className="flex justify-center bg-muted/20 p-4 rounded-lg border border-border">
@@ -432,7 +425,6 @@ export default function SyidClient() {
                             </a>
                         </Card>
 
-                        {/* Card 2: Hayyakum Allah Font */}
                         <Card className="border border-border/80 rounded-xl overflow-hidden flex flex-col justify-between p-6">
                             <div className="space-y-4">
                                 <div>
@@ -446,7 +438,6 @@ export default function SyidClient() {
                                     تأتي بأربعة أوزان مختلفة (Light, Regular, Medium, Bold) لتناسب مختلف أغراض التصميم.
                                 </p>
 
-                                {/* Download Modal */}
                                 <Dialog>
                                     <DialogTrigger asChild>
                                         <Button className="w-full bg-[#428177] hover:bg-[#054239] text-white font-medium text-sm h-10 rounded-lg flex items-center justify-center gap-2">
@@ -468,7 +459,6 @@ export default function SyidClient() {
                                                 <TabsTrigger value="woff">WOFF</TabsTrigger>
                                                 <TabsTrigger value="woff2">WOFF2</TabsTrigger>
                                             </TabsList>
-                                            {/* TTF Tab */}
                                             <TabsContent value="ttf" className="space-y-2 mt-4">
                                                 {HAYYAKUM_WEIGHTS.map((weight) => (
                                                     <div key={`ttf-${weight.file}`} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
@@ -487,7 +477,6 @@ export default function SyidClient() {
                                                     </div>
                                                 ))}
                                             </TabsContent>
-                                            {/* WOFF Tab */}
                                             <TabsContent value="woff" className="space-y-2 mt-4">
                                                 {HAYYAKUM_WEIGHTS.map((weight) => (
                                                     <div key={`woff-${weight.file}`} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
@@ -506,7 +495,6 @@ export default function SyidClient() {
                                                     </div>
                                                 ))}
                                             </TabsContent>
-                                            {/* WOFF2 Tab */}
                                             <TabsContent value="woff2" className="space-y-2 mt-4">
                                                 {HAYYAKUM_WEIGHTS.map((weight) => (
                                                     <div key={`woff2-${weight.file}`} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
@@ -529,7 +517,6 @@ export default function SyidClient() {
                                     </DialogContent>
                                 </Dialog>
 
-                                {/* Preview Section (Loaded only on user click) */}
                                 <div className="pt-3 border-t border-border/60">
                                     {!loadFontPreview ? (
                                         <Button
@@ -542,7 +529,6 @@ export default function SyidClient() {
                                         </Button>
                                     ) : (
                                         <div className="space-y-4 pt-1 animate-in fade-in-50 duration-300">
-                                            {/* Item 1: Hayyakum Allah */}
                                             <div>
                                                 <span className="text-[11px] font-semibold text-muted-foreground block mb-1">بخط حيّاكم الله:</span>
                                                 <div className="w-full flex items-center justify-center py-1">
@@ -562,7 +548,6 @@ export default function SyidClient() {
                                                 </div>
                                             </div>
 
-                                            {/* Item 2: Qomra */}
                                             <div>
                                                 <span className="text-[11px] font-semibold text-muted-foreground block mb-1">بخط قمرة:</span>
                                                 <div className="flex justify-center items-center py-1">
@@ -587,13 +572,11 @@ export default function SyidClient() {
                     </div>
                 </section>
 
-                {/* 3. FLAG & PROPORTIONS */}
                 <section>
                     <h2 className="text-2xl font-bold mb-6">العلم السوري ونسبه</h2>
 
                     <Card className="border border-border/80 rounded-xl overflow-hidden">
                         <CardContent className="p-6 overflow-x-auto">
-                            {/* Diagram CSS retained */}
                             <div className="flag-diagram-wrapper my-2">
                                 <div className="flag-diagram-container">
                                     <div className="flag-visual">
@@ -606,7 +589,6 @@ export default function SyidClient() {
                                         <div className="stripe black"></div>
                                     </div>
 
-                                    {/* Top Measurements */}
                                     <div className="dim-line h-line top-line-h"></div>
                                     <div className="measurement top-total-num">36</div>
                                     <div className="dim-line v-line top-line-v-1"></div>
@@ -619,7 +601,6 @@ export default function SyidClient() {
                                     <div className="measurement top-num-3">9</div>
                                     <div className="measurement top-num-4">9</div>
 
-                                    {/* Right Measurements */}
                                     <div className="dim-line v-line right-line-v"></div>
                                     <div className="measurement right-total-num">24</div>
                                     <div className="dim-line h-line right-line-h-1"></div>
@@ -630,7 +611,6 @@ export default function SyidClient() {
                                     <div className="measurement right-num-2">8</div>
                                     <div className="measurement right-num-3">8</div>
 
-                                    {/* Bottom Measurements */}
                                     <div className="dim-line h-line bottom-line-h"></div>
                                     <div className="dim-line v-line bottom-line-v-1"></div>
                                     <div className="dim-line v-line bottom-line-v-2"></div>
@@ -646,7 +626,6 @@ export default function SyidClient() {
                                     <div className="measurement bottom-num-6">6</div>
                                     <div className="measurement bottom-num-7">6</div>
 
-                                    {/* Left Measurements */}
                                     <div className="dim-line v-line left-line-v"></div>
                                     <div className="measurement left-num-1">6</div>
                                     <div className="dim-line h-line left-line-h-1"></div>
@@ -684,12 +663,10 @@ export default function SyidClient() {
                     </Card>
                 </section>
 
-                {/* 4. GUIDELINES & MATERIALS */}
                 <section>
                     <h2 className="text-2xl font-bold mb-6">المواد والدليل الإرشادي</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        {/* Guideline Manual */}
                         <Card className="border border-border/80 rounded-xl p-6 flex flex-col justify-between space-y-4">
                             <div>
                                 <h3 className="font-bold text-lg mb-1">الدليل الإرشادي للعلم السوري</h3>
@@ -726,7 +703,6 @@ export default function SyidClient() {
                             </a>
                         </Card>
 
-                        {/* Logo Materials Package */}
                         <Card className="border border-border/80 rounded-xl p-6 flex flex-col justify-between space-y-4">
                             <div>
                                 <h3 className="font-bold text-lg mb-1">شعار الهوية والمواد الرسمية</h3>
@@ -768,7 +744,6 @@ export default function SyidClient() {
 
                 </section>
 
-                {/* 5. GOVERNORATE ICONS */}
                 <section>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                         <div>
@@ -808,7 +783,6 @@ export default function SyidClient() {
                         </a>
                     </div>
 
-                    {/* Theme Switcher Toggle for SVG Posters */}
                     <div className="mb-6 bg-muted/30 p-2 rounded-xl border border-border flex flex-wrap items-center justify-center gap-2">
                         {POSTER_THEMES.map((theme) => {
                             const isActive = activePosterTheme === theme.id;
@@ -834,7 +808,6 @@ export default function SyidClient() {
                     </div>
 
 
-                    {/* Pure SVG Posters Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">
                         {GOVERNORATE_ICONS.map((icon) => {
                             const rawSvg = svgContents[icon.file];
@@ -884,7 +857,6 @@ export default function SyidClient() {
                 </section>
 
 
-                {/* 6. SYRIA MAP (LAZY LOADED ON CLICK) */}
                 <section>
 
                     <h2 className="text-2xl font-bold mb-6">خريطة سوريا الرقمية</h2>
@@ -1018,7 +990,6 @@ export default function SyidClient() {
 
             </div>
 
-            {/* Simple Footer */}
             <footer className="border-t border-border py-8 mt-16 text-center text-xs text-muted-foreground bg-muted/10">
                 <p>&copy; 2025 syrian.zone • التطوير بواسطة هادي الأحمد</p>
                 <div className="mt-2 flex justify-center gap-4">

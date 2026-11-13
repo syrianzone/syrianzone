@@ -41,7 +41,6 @@ export function lay(layout: ShedLayout, card: Card, pivot: number): ShedLayout {
   };
 }
 
-/** The cards in a hand that the layout will accept right now. */
 export function legalCards(layout: ShedLayout, hand: Card[], pivot: number): Card[] {
   return hand.filter((card) => canPlay(layout, card, pivot));
 }

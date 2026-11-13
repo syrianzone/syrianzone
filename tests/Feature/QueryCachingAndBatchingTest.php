@@ -30,8 +30,6 @@ function inertiaProp($response, string $key)
     return data_get($response->viewData('page'), 'props.'.$key);
 }
 
-// ─── /promises ─────────────────────────────────────────────────────────────
-
 it('shows a newly published promise on the cached list at once', function () {
     Promise::factory()->published()->create(['title' => 'الأول']);
     expect(inertiaProp($this->get('/promises')->assertOk(), 'promises'))->toHaveCount(1);
@@ -66,8 +64,6 @@ it('follows a sector reorder on the cached list at once', function () {
     expect(array_column(inertiaProp($this->get('/promises'), 'filters.sectors'), 'id'))->toBe(['beta', 'alpha']);
 });
 
-// ─── /house ────────────────────────────────────────────────────────────────
-
 it('follows a new house member on the cached roster at once', function () {
     HouseMember2026::create(['name_ar' => 'Adel', 'governorate_ar' => 'Damascus']);
     expect(inertiaProp($this->get('/house')->assertOk(), 'members2026'))->toHaveCount(1);
@@ -76,8 +72,6 @@ it('follows a new house member on the cached roster at once', function () {
 
     expect(inertiaProp($this->get('/house')->assertOk(), 'members2026'))->toHaveCount(2);
 });
-
-// ─── Ballots ───────────────────────────────────────────────────────────────
 
 it('writes one item per ranked candidate and adds each ballot to the day totals', function () {
     $poll = Poll::factory()->create(['slug' => 'batch']);
@@ -135,8 +129,6 @@ it('leaves nothing behind when a ballot is rejected', function () {
         ->and(DB::table('daily_scores')->count())->toBe(0);
 });
 
-// ─── Promise votes ─────────────────────────────────────────────────────────
-
 it('keeps one vote row per voter when they change their mind', function () {
     $promise = Promise::factory()->published()->create();
     $url = "/api/v1/promises/{$promise->number}/vote";
@@ -152,8 +144,6 @@ it('keeps one vote row per voter when they change their mind', function () {
         ->and((bool) $rows[0]->believes)->toBeFalse()
         ->and($rows[0]->created_at)->not->toBeNull();
 });
-
-// ─── Compass statistics ────────────────────────────────────────────────────
 
 it('adds later runs to the running compass tally', function () {
     compassRun(['scores' => ['auth_lib' => 1.0]]);

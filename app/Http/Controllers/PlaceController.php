@@ -214,10 +214,8 @@ class PlaceController extends Controller
     $user = $request->user() ?? Auth::guard('sanctum')->user();
 
     if ($place->status !== 'approved') {
-      // Owner, or staff with a places capability. The role checks this replaced
-      // were redundant with User::hasPermission(), which already resolves
-      // superadmin and the `admin` alias, and they hid the capability path from
-      // anyone holding one without also holding those roles.
+      // Owner, or staff with a places capability. User::hasAnyPermission()
+      // already resolves superadmin, so no separate role check is needed.
       $canSee = $user && ($user->id === $place->user_id
           || $user->hasAnyPermission(PermissionCatalogue::forModule('places')));
       if (!$canSee) {

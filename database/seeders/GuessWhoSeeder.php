@@ -21,7 +21,6 @@ class GuessWhoSeeder extends Seeder
             return;
         }
 
-        // Find the main best-ministers poll
         $poll = Poll::where('slug', 'best-ministers')->first();
         if (!$poll) {
             $this->command?->info("Best Ministers poll not found. Seeding with dummy categories.");
@@ -32,7 +31,6 @@ class GuessWhoSeeder extends Seeder
         $groups = CandidateGroup::where('poll_id', $poll->id)->get();
 
         foreach ($groups as $group) {
-            // Create GuessWhoCategory
             $category = GuessWhoCategory::updateOrCreate(
                 ['slug' => Str::slug($group->key ?? $group->name)],
                 [
@@ -42,7 +40,6 @@ class GuessWhoSeeder extends Seeder
                 ]
             );
 
-            // Fetch active candidates for this group
             $candidates = Candidate::where('candidate_group_id', $group->id)
                 ->where('status', 'active')
                 ->get();
@@ -83,7 +80,6 @@ class GuessWhoSeeder extends Seeder
         }
 
         $extension = pathinfo($imageUrl, PATHINFO_EXTENSION) ?: 'jpg';
-        // Clean extensions (remove query params if any)
         $extension = explode('?', $extension)[0];
         if (!in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) {
             $extension = 'jpg';
@@ -92,12 +88,10 @@ class GuessWhoSeeder extends Seeder
         $filename = 'char_' . md5($imageUrl) . '.' . $extension;
         $targetPath = 'guesswho/characters/' . $filename;
 
-        // Check if file already exists in public storage
         if (Storage::disk('public')->exists($targetPath)) {
             return $targetPath;
         }
 
-        // If it is an external URL, download it
         if (Str::startsWith($imageUrl, ['http://', 'https://'])) {
             try {
                 $response = Http::get($imageUrl);
@@ -106,19 +100,16 @@ class GuessWhoSeeder extends Seeder
                     return $targetPath;
                 }
             } catch (\Exception $e) {
-                // Ignore download error
             }
             return null;
         }
 
-        // If it is stored locally under public disk, copy it
         $localSourcePath = Str::replaceFirst('/storage/', '', $imageUrl);
         if (Storage::disk('public')->exists($localSourcePath)) {
             Storage::disk('public')->copy($localSourcePath, $targetPath);
             return $targetPath;
         }
 
-        // Fallback: If it's a relative path in public/ folder (e.g. /images/...)
         $publicPath = public_path($imageUrl);
         if (file_exists($publicPath) && is_file($publicPath)) {
             $content = file_get_contents($publicPath);
@@ -131,7 +122,6 @@ class GuessWhoSeeder extends Seeder
 
     private function seedDummyData(): void
     {
-        // In case best-ministers does not exist on local dev (dummy fallback)
         $category = GuessWhoCategory::updateOrCreate(
             ['slug' => 'test-category'],
             [

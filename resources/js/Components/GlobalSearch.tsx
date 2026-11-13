@@ -831,11 +831,10 @@ export function SearchResultsContent({
 }
 
 /**
- * Always-on Search & Navigation Panel for the Mobile Menu Sheet.
- * - Replaces the classic static menu so search, category filter pills, the 3-column sections grid,
- *   and searchable items (cities, surahs, games, crossings, phonebook) are always available immediately.
- * - Uses native DOM buttons/links (`useCmdkPrimitives={false}`) instead of cmdk's `<Command>` wrapper
- *   so clicking the search input never triggers cmdk's `scrollIntoView()` viewport jump.
+ * Search and navigation panel for the mobile menu sheet. Uses native DOM
+ * buttons/links (`useCmdkPrimitives={false}`) instead of cmdk's `<Command>`
+ * wrapper so clicking the search input never triggers cmdk's `scrollIntoView()`
+ * viewport jump.
  */
 export function MobileMenuSearchSection({
     pathname,
@@ -930,11 +929,9 @@ export function MobileMenuSearchSection({
 }
 
 /**
- * Homepage inline search & links section (PC & Mobile).
- * - Displays a prominent search bar and category filter pills above the homepage grid.
- * - When idle (`query === '' && scope === 'all'`), renders `children` (the classic Internal & External link grids).
- * - When the user types a query or selects a category filter pill, replaces the grids in-place with the
- *   unified search results (`SearchResultsContent` using the homepage's 3..9 column grid).
+ * Homepage inline search & links section. Renders `children` while the query is
+ * empty and the scope is 'all'; otherwise it replaces them with the unified
+ * search results.
  */
 export function HomeInlineSearchSection({
     children,

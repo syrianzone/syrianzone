@@ -30,7 +30,6 @@ type ReviewFilter = 'all' | ReviewStatus;
 export default function PromisesAdminIndex({ promises, queueCount }: Props) {
     const can = useCan();
     const canCreate = can('promises.create');
-    // The editor opens for anyone who edits, rules on or reviews promises.
     const canOpen = can('promises.edit') || can('promises.rule') || can('promises.review');
     const canReview = can('promises.review');
     const canDelete = can('promises.delete');

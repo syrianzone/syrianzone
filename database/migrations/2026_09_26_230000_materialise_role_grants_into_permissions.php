@@ -207,24 +207,6 @@ return new class extends Migration
         ];
     }
 
-    /**
-     * Union two capability lists, in catalogue order.
-     *
-     * Ordering by the catalogue rather than by arrival keeps the stored array
-     * canonical, so two accounts holding the same capabilities serialise
-     * identically and a diff of this column stays readable. Access is a set, so
-     * this is cosmetic — but it is the kind of cosmetic that stops being
-     * cosmetic the first time someone compares two rows by eye.
-     *
-     * Anything in the stored list that is NOT in the catalogue is kept, and
-     * appended. Silently dropping it would revoke a grant this migration does
-     * not understand, which is the one thing a backfill must never do.
-     *
-     * @param  array<int, string>  $existing
-     * @param  array<int, string>  $grants
-     * @param  array<int, string>  $catalogue
-     * @return array<int, string>
-     */
     private function ordered(array $existing, array $grants, array $catalogue): array
     {
         $held = array_flip(array_merge($existing, $grants));

@@ -109,7 +109,6 @@ test('a write tool outside the token abilities is not offered by the catalogue',
         'syofficial.create', 'syofficial.delete',
     ]]);
 
-    // Create only, on the token.
     $plain = app(TokenIssuer::class)->issue($staff, 'create-only', ['syofficial.create'])['token']->plainTextToken;
 
     expect(mcpSearchToolNames($plain, 'create a new syofficial category'))
@@ -125,7 +124,6 @@ test('a directory write round-trips over the real jsonrpc surface', function () 
         'syofficial.create', 'syofficial.reorder',
     ])['token']->plainTextToken;
 
-    // The catalogue's write tool, invoked through execute_tools.
     $created = mcpExecuteTool($plain, 'create-syofficial-category', [
         'id' => 'ministries',
         'label_ar' => 'الوزارات',

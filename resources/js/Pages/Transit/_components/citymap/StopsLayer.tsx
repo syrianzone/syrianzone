@@ -61,7 +61,6 @@ export default function StopsLayer({ data }: StopsLayerProps) {
 
     applyStopsState(target, showStopsRef.current, selectedRouteIdRef.current)
 
-    // Hover effect
     const onEnter = () => {
       target.getCanvas().style.cursor = 'pointer'
     }
@@ -70,7 +69,6 @@ export default function StopsLayer({ data }: StopsLayerProps) {
       target.getCanvas().style.cursor = ''
     }
 
-    // Click popup
     const onClick = (e: maplibregl.MapLayerMouseEvent) => {
       if (!e.features || e.features.length === 0) return
 
@@ -123,7 +121,6 @@ export default function StopsLayer({ data }: StopsLayerProps) {
 
   useMapLayer(attach)
 
-  // Keep visibility + selected-route filtering in sync with the store
   useEffect(() => {
     if (!map) return
     applyStopsState(map, showStops, selectedRouteId)

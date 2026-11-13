@@ -278,9 +278,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Revoke all mobile Sanctum PersonalAccessTokens belonging to the user.
-     */
     public function apiLogoutAllDevices(Request $request)
     {
         $user = $request->user() ?? Auth::guard('sanctum')->user();

@@ -24,7 +24,6 @@ export default function Privacy() {
             
 
             <div className="container mx-auto px-4 py-12 max-w-4xl min-h-screen text-foreground">
-                {/* Page Header */}
                 <div className="text-center mb-10 space-y-4">
                     <div className="inline-flex p-3 bg-primary/10 rounded-full text-primary mb-2">
                         <Shield className="w-10 h-10" />
@@ -54,7 +53,6 @@ export default function Privacy() {
                             </CardContent>
                         </Card>
 
-                        {/* Account Data & Google OAuth */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -74,7 +72,6 @@ export default function Privacy() {
                             </CardContent>
                         </Card>
 
-                        {/* Stored Data */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -115,7 +112,6 @@ export default function Privacy() {
                             </CardContent>
                         </Card>
 
-                        {/* Special Features & APIs */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -151,7 +147,6 @@ export default function Privacy() {
                             </CardContent>
                         </Card>
 
-                        {/* Third-Party Tools */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">

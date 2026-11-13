@@ -187,8 +187,8 @@ class TransitAdminController extends Controller
     {
         $route = Route::findOrFail($id);
 
-        // Guard before validation here, as the original did: an out-of-scope
-        // caller learns nothing about the payload.
+        // Guard before validation: an out-of-scope caller learns nothing about
+        // the payload.
         $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_EDIT_ROUTES]);
 
         $validated = $request->validate([
@@ -228,9 +228,6 @@ class TransitAdminController extends Controller
         return response()->json(['message' => 'Route updated', 'route' => $updated->fresh()]);
     }
 
-    /**
-     * Combine two routes into a new one.
-     */
     public function combineRoutes(Request $request): SymfonyResponse
     {
         $validated = $request->validate([
@@ -262,9 +259,6 @@ class TransitAdminController extends Controller
         return response()->json(['message' => 'Routes combined successfully', 'route' => $result->route]);
     }
 
-    /**
-     * Split a route at one of its stops.
-     */
     public function splitRoute(Request $request): SymfonyResponse
     {
         $validated = $request->validate([

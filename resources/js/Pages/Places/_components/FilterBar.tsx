@@ -296,7 +296,6 @@ export function FilterBar(props: {
             id="place-filter-popover"
             className="absolute right-0 top-full z-20 mt-1 w-[min(16rem,calc(100vw-1.5rem))] rounded-lg border border-border bg-popover p-2 shadow-md"
           >
-            {/* View type filter */}
             <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">النوع</p>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {([
@@ -314,7 +313,6 @@ export function FilterBar(props: {
                 </button>
               ))}
             </div>
-            {/* Category filter (only for places) */}
             {props.viewFilter !== 'hotels' && (
               <>
                 <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">الفئة</p>

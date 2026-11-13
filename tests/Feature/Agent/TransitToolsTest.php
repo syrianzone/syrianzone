@@ -39,8 +39,6 @@ beforeEach(function () {
     ], ['homs']);
 });
 
-// ─── Listings are narrowed, never widened ──────────────────────────────────
-
 it('only lists drafts inside the agent governorate scope', function () {
     transitDraft('homs', ['name_ar' => 'داخل النطاق']);
     transitDraft('aleppo', ['name_ar' => 'خارج النطاق']);
@@ -105,8 +103,6 @@ it('lists everything for an unscoped operator', function () {
     expect($payload['count'])->toBe(2)
         ->and($payload['scope'])->toBe([]);
 });
-
-// ─── Writes guard against the resolved target, not the arguments ───────────
 
 it('refuses to approve a draft in a governorate outside the agent scope', function () {
     $draft = transitDraft('aleppo');
@@ -207,8 +203,6 @@ it('refuses to move a route out of scope into a governorate it cannot write', fu
         ->and($route->fresh()->city_id)->toBe('homs');
 });
 
-// ─── Capability isolation ──────────────────────────────────────────────────
-
 it('refuses approving with only the review capability', function () {
     $draft = transitDraft('homs');
 
@@ -228,8 +222,6 @@ it('refuses deleting with only the edit capability', function () {
     expect(toolText($response))->toContain('Permission denied')
         ->and(Route::find('route-homs-1'))->not->toBeNull();
 });
-
-// ─── Domain refusals reach the agent as guidance ───────────────────────────
 
 it('tells the agent a draft is already reviewed instead of failing opaquely', function () {
     $draft = transitDraft('homs', ['status' => 'approved']);
@@ -265,8 +257,6 @@ it('refuses an update carrying no fields, naming the ones it accepts', function 
         ->and(toolText($response))->toContain('name_ar');
 });
 
-// ─── The geometry a reviewer needs ─────────────────────────────────────────
-
 it('returns a draft line and its stops as GeoJSON', function () {
     $draft = transitDraft('homs', [
         'geojson' => [
@@ -299,8 +289,6 @@ it('returns an empty geometry for a draft that carries no features', function ()
     expect($payload['line'])->toBeNull()
         ->and($payload['stops'])->toBe([]);
 });
-
-// ─── Filters run before the limit, not after it ────────────────────────────
 
 it('lists a pending draft even when newer drafts of other statuses fill the limit', function () {
     transitDraft('homs', ['name_ar' => 'قديمة بانتظار المراجعة', 'created_at' => now()->subDays(3)]);

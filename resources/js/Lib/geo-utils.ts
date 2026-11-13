@@ -16,7 +16,6 @@ export function featureToSVG(geojson: any): string {
 
     let allPoints: [number, number][] = [];
 
-    // Extract all points to calculate bounds
     features.forEach(feature => {
         if (!feature.geometry) return;
         const { type, coordinates } = feature.geometry;
@@ -35,7 +34,6 @@ export function featureToSVG(geojson: any): string {
 
     if (allPoints.length === 0) return "";
 
-    // Calculate bounding box (Lon, Lat)
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     allPoints.forEach(([x, y]) => {
         if (x < minX) minX = x;
@@ -44,7 +42,6 @@ export function featureToSVG(geojson: any): string {
         if (y > maxY) maxY = y;
     });
 
-    // Add padding
     const width = maxX - minX;
     const height = maxY - minY;
     const paddingX = width * 0.05;

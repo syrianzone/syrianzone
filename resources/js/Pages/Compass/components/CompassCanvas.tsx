@@ -29,15 +29,12 @@ export default function CompassCanvas({
           background: 'radial-gradient(circle at 50% 50%, hsl(var(--muted) / 0.5), transparent 70%)',
         }}
       >
-        {/* grid lines */}
         <div className="absolute left-0 right-0 top-1/2 h-px bg-border" />
         <div className="absolute top-0 bottom-0 left-1/2 w-px bg-border" />
-        {/* poles */}
         <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground">تحرّرية/مدنية</span>
         <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground">سلطوية</span>
         <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">مركزي/وحدوي</span>
         <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">لامركزي/فدرالي</span>
-        {/* user dot */}
         {hasX && hasY && (
           <>
             <div

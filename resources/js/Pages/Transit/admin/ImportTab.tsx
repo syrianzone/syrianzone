@@ -15,8 +15,6 @@ import {
   Link2, Upload, Loader2, CheckCircle2, Trash2, PencilLine, FileUp, X,
 } from 'lucide-react'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface ImportCandidate {
   name_ar: string
   name_en: string | null
@@ -69,8 +67,6 @@ function lineFromGeojson(geojson: any): any | null {
   return null
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function ImportTab({ cities, canReview = true, canEdit = true, showToast, onPreview, onDraftCreated, onRoutePublished }: ImportTabProps) {
   const [url, setUrl] = useState('')
   const [file, setFile] = useState<File | null>(null)
@@ -81,7 +77,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
   const [candidates, setCandidates] = useState<ImportCandidate[]>([])
   const [selectedIdx, setSelectedIdx] = useState(0)
 
-  // Editable copy of the selected candidate
   const [nameAr, setNameAr] = useState('')
   const [nameEn, setNameEn] = useState('')
   const [price, setPrice] = useState('')
@@ -94,7 +89,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
 
   const selected = candidates[selectedIdx] ?? null
 
-  // Init / reset the edit form whenever the selection changes
   useEffect(() => {
     if (!selected) return
     setNameAr(selected.name_ar ?? '')
@@ -110,14 +104,12 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIdx, candidates])
 
-  // City override applies to the current edit form too
   useEffect(() => {
     if (cityOverride !== 'auto') setCityId(cityOverride)
     else if (selected) setCityId(selected.suggested_city_id ?? cities[0]?.id ?? '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cityOverride])
 
-  // Live map preview (line + edited stops, current color)
   const previewGeojson = useMemo(() => {
     if (!selected) return null
     const line = lineFromGeojson(selected.geojson)
@@ -223,7 +215,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
-      {/* ── Fetch card ─────────────────────────────────────────── */}
       <div className="p-3 bg-muted/40 rounded-xl border border-border/60 space-y-2.5">
         <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
           <Link2 className="h-3.5 w-3.5 text-primary" />
@@ -280,7 +271,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
         )}
       </div>
 
-      {/* ── Multi-route selector ───────────────────────────────── */}
       {candidates.length > 1 && (
         <div className="space-y-1.5">
           <span className="text-xs font-semibold text-muted-foreground">
@@ -301,7 +291,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
         </div>
       )}
 
-      {/* ── Edit + publish ─────────────────────────────────────── */}
       {selected && (
         <div className="space-y-3">
           <div className="p-3 bg-card rounded-xl border border-border space-y-2.5">
@@ -371,7 +360,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-xs resize-none" />
             </div>
 
-            {/* Stops */}
             <div className="space-y-1.5">
               <span className="text-xs font-semibold">المحطات ({stops.length})</span>
               {stops.length === 0 ? (
@@ -408,7 +396,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
             </div>
           </div>
 
-          {/* ── Publish ─────────────────────────────────────── */}
           <div className="p-3 bg-card rounded-xl border border-border space-y-2">
             <span className="text-xs font-semibold text-muted-foreground">3. النشر</span>
             {createdDraftId ? (
@@ -463,7 +450,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
         </div>
       )}
 
-      {/* ── Source attribution ─────────────────────────────────── */}
       {selected && (
         <Card className="py-2">
           <CardContent className="p-0 px-3">

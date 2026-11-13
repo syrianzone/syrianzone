@@ -51,7 +51,6 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
     const [viewMode, setViewMode] = useState<"cumulative" | "periodic">("cumulative")
     const [selectedCandidates, setSelectedCandidates] = useState<string[]>(["all"])
 
-    // Toggle candidate selection
     const toggleCandidate = (id: string) => {
         if (id === "all") {
             setSelectedCandidates(["all"])
@@ -76,11 +75,9 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
         setSelectedCandidates(newSelection)
     }
 
-    // Transform data for Recharts
     const chartData = useMemo(() => {
         const dataMap: { [date: string]: any } = {}
 
-        // Get all unique dates
         const allDates = new Set<string>()
         Object.values(history).forEach(points => {
             points.forEach(p => allDates.add(p.date))
@@ -88,12 +85,10 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
 
         const sortedDates = Array.from(allDates).sort()
 
-        // 1. Calculate Daily Values (Cumulative or Periodic)
         const dailyData: any[] = []
         const runningTotals: { [key: string]: number } = {}
         candidates.forEach(c => runningTotals[c.candidateId] = 0)
 
-        // Helper to get raw daily value
         const getRaw = (date: string, cId: string) => {
             const pts = history[cId]
             const p = pts?.find(x => x.date === date)
@@ -121,7 +116,6 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
             }))
         }
 
-        // 2. Aggregate for Week/Month/Year
         const aggregatedMap: { [key: string]: any } = {}
 
         dailyData.forEach(dayEntry => {
@@ -142,25 +136,18 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
 
             if (!aggregatedMap[key]) {
                 aggregatedMap[key] = { displayDate: key, originalDate: dayEntry.date }
-                // Initialize counts for this period
                 candidates.forEach(c => aggregatedMap[key][c.candidateId] = 0)
             }
 
             if (viewMode === "cumulative") {
-                // For cumulative, we want the LAST value in the period
-                // So we just overwrite with the current dayEntry values
-                // But we must respect the initialization if this is the first entry
-                // Actually dayEntry has date/originalDate, aggregatedMap has displayDate.
                 const merged = { ...aggregatedMap[key], ...dayEntry }
                 aggregatedMap[key] = merged
             } else {
-                // For periodic, we SUM the values within the period
                 candidates.forEach(c => {
                     aggregatedMap[key][c.candidateId] += (dayEntry[c.candidateId] || 0)
                 })
             }
 
-            // Refine display label
             if (timeframe === "month") {
                 aggregatedMap[key].displayDate = dateObj.toLocaleDateString('ar-SY-u-nu-latn', { year: 'numeric', month: 'short' })
             } else if (timeframe === "year") {
@@ -187,7 +174,6 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
         "#0891b2", "#be185d", "#4f46e5", "#ca8a04", "#059669"
     ]
 
-    // Assign a color to each candidate consistently based on their index in the full list
     const getCandidateColor = (cId: string) => {
         const idx = candidates.findIndex(c => c.candidateId === cId)
         return colors[idx % colors.length]

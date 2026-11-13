@@ -46,7 +46,6 @@ class CompassStatsController extends Controller
         return response()->json(['ok' => true, 'token' => $this->tokenFor($row)]);
     }
 
-    /** Remove a previously-submitted anonymous row via its token. */
     public function destroy(Request $request)
     {
         $data = $request->validate(['token' => 'required|string|max:128']);

@@ -12,8 +12,7 @@ import { SITE_MODULES } from '@/Lib/siteModules';
  * app and the Blade component render, and `PROJECT_ICON_PAINT_TOKENS` is what
  * makes Tailwind generate the paint for the React copy. These tests are the
  * contract around that file, so a new or renamed icon cannot reach one side
- * only — which is how three capability groups ended up with a blank icon in
- * the Filament panel.
+ * only.
  */
 type IconComponent = ComponentType<{ className?: string }>;
 

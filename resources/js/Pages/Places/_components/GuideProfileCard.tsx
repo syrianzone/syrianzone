@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { Guide } from '@/Domain/places/discovery';
 import { LevelBadge, RANK_NAMES, rankName } from './LevelBadge';
 
-// next threshold above the guide's points, or null at the top rank
 function nextRank(points: number): { level: number; points: number } | null {
   const thresholds: [number, number][] = [
     [2, 15], [3, 75], [4, 250], [5, 500], [6, 1500],

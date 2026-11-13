@@ -25,8 +25,6 @@ interface AdminSyOfficialProps {
 export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOfficialProps) {
 
     // Each control is gated on the capability its route requires (routes/web.php).
-    // The whole panel used to render for any syofficial.* holder, so a
-    // syofficial.reorder-only account was offered create and delete buttons.
     const can = useCan();
     const canCreate = can('syofficial.create');
     const canEdit = can('syofficial.edit');
@@ -35,14 +33,12 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
 
-    // Dialog States
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<OfficialCategory | null>(null);
 
     const [entityDialogOpen, setEntityDialogOpen] = useState(false);
     const [selectedEntity, setSelectedEntity] = useState<AdminOfficialEntity | null>(null);
 
-    // Auto open edit dialog if URL contains ?edit={entityId}
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const editId = params.get('edit');
@@ -55,7 +51,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
         }
     }, [entities]);
 
-    // Filter Entities
     const filteredEntities = entities.filter((item) => {
         const matchesCategory = selectedCategoryFilter === 'all' || item.category_id === selectedCategoryFilter;
         const term = searchTerm.toLowerCase();
@@ -94,7 +89,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
             <div className="min-h-screen py-8 bg-background" dir="rtl">
                 <div className="container mx-auto px-4 max-w-7xl">
                     
-                    {/* Page Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 pb-6 border-b border-border">
                         <div>
                             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
@@ -141,7 +135,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                         )}
                     </div>
 
-                    {/* Main Tabs */}
                     <Tabs defaultValue="entities" className="space-y-6">
                         <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-wrap h-auto max-w-full">
                             <TabsTrigger value="entities" className="gap-2 text-sm">
@@ -158,7 +151,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                             </TabsTrigger>
                         </TabsList>
 
-                        {/* Tab 1: Entities Catalog Table */}
                         <TabsContent value="entities" className="space-y-4">
                             <Card className="border-border">
                                 <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -167,7 +159,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                         <CardDescription>عرض وتصفية وتعديل الحسابات الرسمية السورية</CardDescription>
                                     </div>
 
-                                    {/* Search & Filter */}
                                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <div className="relative w-full sm:w-64">
                                             <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -301,7 +292,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                             </Card>
                         </TabsContent>
 
-                        {/* Tab 2: Categories Management Table */}
                         <TabsContent value="categories" className="space-y-4">
                             <Card className="border-border">
                                 <CardHeader>
@@ -376,7 +366,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                             </Card>
                         </TabsContent>
 
-                        {/* Tab 3: Drag & Drop Sorting */}
                         <TabsContent value="sorting" className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <Card className="border-border">
@@ -432,7 +421,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                 </div>
             </div>
 
-            {/* Dialogs */}
             <CategoryDialog
                 open={categoryDialogOpen}
                 onOpenChange={setCategoryDialogOpen}

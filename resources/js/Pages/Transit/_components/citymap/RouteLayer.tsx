@@ -110,13 +110,11 @@ export default function RouteLayer({ data }: RouteLayerProps) {
 
   useMapLayer(attach)
 
-  // Highlight / dim routes when selection changes
   useEffect(() => {
     if (!map) return
 
     applySelection(map, selectedRouteId)
 
-    // Close the map popup when selection changes from sidebar
     setActiveRoute(null)
   }, [map, selectedRouteId, applySelection])
 
@@ -125,7 +123,6 @@ export default function RouteLayer({ data }: RouteLayerProps) {
   const { props, x, y } = activeRoute
   const color = getRouteColor(props.colorIndex)
   const container = map?.getContainer()
-  // Show modal above click if there's room, otherwise below
   const showBelow = container ? y < 160 : false
   const translateY = showBelow ? '8px' : 'calc(-100% - 8px)'
 
@@ -134,7 +131,6 @@ export default function RouteLayer({ data }: RouteLayerProps) {
       className="pointer-events-none absolute inset-0 z-20"
       onClick={() => { setActiveRoute(null); setSelectedRouteId(null) }}
     >
-      {/* Route card */}
       <div
         className="pointer-events-auto absolute rounded-2xl shadow-xl"
         style={{
@@ -161,7 +157,6 @@ export default function RouteLayer({ data }: RouteLayerProps) {
             </svg>
           </button>
         </div>
-        {/* Small pointer triangle */}
         <div
           className="absolute left-1/2 -translate-x-1/2"
           style={{

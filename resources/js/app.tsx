@@ -76,7 +76,6 @@ createInertiaApp({
 // queued by the module when it loads gtag.js).
 loadAnalytics();
 
-// Track page views for every Inertia SPA navigation.
 router.on('navigate', (event) => {
     trackPageView(event.detail.page.url);
 });

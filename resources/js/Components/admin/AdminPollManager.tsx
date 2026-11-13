@@ -31,8 +31,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-// Types
-
 interface PollData {
     id: string;
     candidates: Candidate[];
@@ -53,8 +51,6 @@ const tabClass = (selected: boolean) =>
 
 export default function AdminPollManager({ pollId, initialData, onRefresh }: Props) {
     // Each control is gated on the capability its route requires (routes/web.php).
-    // The whole editor used to render for anyone holding any polls.* grant, so a
-    // polls.create-only user saw delete buttons they could not use and vice versa.
     const { can } = useAuth();
     const canCreate = can("polls.create");
     const canEdit = can("polls.edit");
@@ -68,13 +64,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const [activeTab, setActiveTab] = useState<string>("all");
     const [error, setError] = useState<string | null>(null);
 
-    // Sync state when props change
     useEffect(() => {
         setGroups(initialData.groups || []);
         setCandidates(initialData.candidates || []);
     }, [initialData]);
 
-    // Group Management
     const [newGroupName, setNewGroupName] = useState("");
     const [isAddingGroup, setIsAddingGroup] = useState(false);
 
@@ -152,13 +146,10 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
 
         if (targetIndex < 0 || targetIndex >= newGroups.length) return;
 
-        // Swap
         [newGroups[index], newGroups[targetIndex]] = [newGroups[targetIndex], newGroups[index]];
 
-        // Optimistic update
         setGroups(newGroups);
 
-        // Send new order
         const orderPayload = newGroups.map((g, idx) => ({
             id: g.id,
             sort_order: idx
@@ -166,23 +157,19 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
 
         try {
             await pollsApi.reorderGroups(orderPayload);
-            // onRefresh();
         } catch (err) {
             setError(apiErrorMessage(err, "تعذّر إعادة الترتيب"));
             onRefresh(); // Revert
         }
     };
 
-    // Candidate Management
     const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
     const [isCandidateModalOpen, setIsCandidateModalOpen] = useState(false);
 
-    // Form State
     const [cName, setCName] = useState("");
     const [cTitle, setCTitle] = useState("");
     const [cHandle, setCHandle] = useState("");
     const [cImage, setCImage] = useState("");
-    // const [cCategory, setCCategory] = useState("minister"); // Removed static category
     const [cGroupId, setCGroupId] = useState<string | null>(null);
 
     const openAddCandidate = (groupId: string | null) => {
@@ -191,7 +178,6 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         setCTitle("");
         setCHandle("");
         setCImage("");
-        // setCCategory("minister");
         if (groupId) {
             setCGroupId(groupId);
         } else {
@@ -206,7 +192,6 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         setCTitle(c.title || "");
         setCHandle(c.x_handle || "");
         setCImage(c.image_url || c.imageUrl || "");
-        // setCCategory(c.category || "minister");
         setCGroupId(c.candidate_group_id || null);
         setIsCandidateModalOpen(true);
     };
@@ -248,14 +233,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
             title: cTitle || null,
             x_handle: cHandle.trim() || null,
             image_url: cImage || null,
-            // category: cCategory || null,
             candidate_group_id: cGroupId || null,
         };
 
-        // If adding new
         if (!editingCandidate) {
             payload.poll_id = pollId;
-            // If active tab is a specific group, assign it
             if (activeTab !== "all") {
                 payload.candidate_group_id = activeTab;
             }
@@ -284,7 +266,6 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         }
     };
 
-    // Archive / Restore
     const [archiveTarget, setArchiveTarget] = useState<Candidate | null>(null);
     const [aTermEnd, setATermEnd] = useState<string>("");
     const [aReason, setAReason] = useState<string>("");
@@ -323,7 +304,6 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         }
     };
 
-    // Filter candidates for display
     const baseCandidates = activeTab === "all"
         ? candidates
         : candidates.filter(c => c.candidate_group_id === activeTab);
@@ -353,7 +333,6 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         }
     }, [groups, activeTab]);
 
-    // Successor candidates: same group, active, not the archive target itself
     const successorOptions = archiveTarget
         ? candidates.filter(c =>
             c.id !== archiveTarget.id &&

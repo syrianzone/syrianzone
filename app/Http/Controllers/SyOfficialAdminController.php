@@ -48,8 +48,6 @@ class SyOfficialAdminController extends Controller
 
     public function updateCategory(Request $request, string $id): RedirectResponse
     {
-        // Validate before the lookup, matching the previous behaviour where the
-        // form's required fields were checked first.
         $validated = $request->validate([
             'label_ar' => 'required|string|max:255',
             'label_en' => 'required|string|max:255',

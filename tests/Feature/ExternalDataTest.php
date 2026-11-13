@@ -81,8 +81,6 @@ function fakeSheet(string $body, int $status = 200): void
     Http::fake(['*' => Http::response($body, $status)]);
 }
 
-// ─── party ─────────────────────────────────────────────────────────────────
-
 it('normalises a party sheet into the shape the page expects', function () {
     fakeSheet(partyCsv());
 
@@ -226,7 +224,6 @@ it('renders the party page with no data when upstream is unreachable', function 
         );
 });
 
-// ─── sites ─────────────────────────────────────────────────────────────────
 //
 // A second sheet with a different header convention: Arabic column names, and
 // both name and url are required for a row to be usable.
@@ -290,8 +287,6 @@ it('does not cache a sites outage', function () {
     expect(prop($this->get('/sites')->assertOk(), 'initialWebsites'))->toHaveCount(2);
 });
 
-// ─── house ─────────────────────────────────────────────────────────────────
-
 it('lists house members ordered by governorate then name', function () {
     // Latin fixture values on purpose. The real rows are Arabic, but SQLite and
     // MySQL collate Arabic differently, so an assertion about the order *within*
@@ -316,7 +311,6 @@ it('renders the house page with an empty list when there are no members', functi
         );
 });
 
-// ─── The static pages ──────────────────────────────────────────────────────
 //
 // No logic, but they are routes a visitor can reach and a rename of the Inertia
 // component would 500 in production. Cheap to cover, and it is the only thing

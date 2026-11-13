@@ -51,7 +51,6 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
         )}
         {hotel && (
           <>
-            {/* Image carousel */}
             {images.length > 0 && (
               <div className="relative overflow-hidden rounded-md">
                 <img
@@ -85,13 +84,11 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
               </div>
             )}
 
-            {/* Name + stars */}
             <div>
               <h2 className="text-lg font-semibold text-foreground">{hotel.name_ar ?? hotel.name}</h2>
               {hotel.name_ar && <p className="text-sm text-muted-foreground">{hotel.name}</p>}
             </div>
 
-            {/* Star rating */}
             {hotel.star_rating && (
               <div className="flex items-center gap-1" aria-label={`تصنيف ${hotel.star_rating} نجوم`}>
                 {Array.from({ length: hotel.star_rating }).map((_, i) => (
@@ -101,7 +98,6 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
               </div>
             )}
 
-            {/* Description (truncated) */}
             {rawDescription && (
               <div className="space-y-1">
                 <p className="whitespace-pre-wrap break-words text-sm text-foreground">
@@ -121,7 +117,6 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
         )}
       </div>
 
-      {/* Footer */}
       {hotel && (
         <div className="border-t border-border p-3">
           <a

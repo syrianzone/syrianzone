@@ -29,8 +29,8 @@ interface Props {
 
 /**
  * Followed recitation: continuous MP3Quran v4 playback (the whole mushaf) with
- * the text under it, replacing the old live streams. The player is global, so
- * listening continues if the user opens the Quran tab.
+ * the text under it. The player is global, so listening continues if the user
+ * opens the Quran tab.
  */
 export default function RadioView({ onContinue }: Props) {
   const sleepUntil = useMuslimNav((s) => s.radioSleepUntil);
@@ -75,7 +75,6 @@ export default function RadioView({ onContinue }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Now playing + text */}
       <Card>
         <CardContent className="flex flex-col items-center gap-4 p-6">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
@@ -91,7 +90,6 @@ export default function RadioView({ onContinue }: Props) {
             </div>
           )}
 
-          {/* Transport */}
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -133,7 +131,6 @@ export default function RadioView({ onContinue }: Props) {
             </button>
           </div>
 
-          {/* Reciter + continue in reader */}
           <div className="flex w-full flex-wrap items-center justify-between gap-3">
             <RecitationPicker value={recitationCode} onChange={setRecitation} />
             <Button
@@ -149,7 +146,6 @@ export default function RadioView({ onContinue }: Props) {
         </CardContent>
       </Card>
 
-      {/* Sleep timer */}
       <Card>
         <CardContent className="space-y-3 p-4">
           <div className="flex items-center justify-between gap-2">
@@ -186,7 +182,6 @@ export default function RadioView({ onContinue }: Props) {
         </CardContent>
       </Card>
 
-      {/* Data usage */}
       <QuranUsageCard />
     </div>
   );

@@ -124,7 +124,6 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
   // a dead avatar_url (lost file, stale Google url) falls back to the initial circle
   const [avatarBroken, setAvatarBroken] = useState(false);
 
-  // Upload a new avatar as soon as a file is picked
   const handleAvatarPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -267,7 +266,6 @@ export default function Dashboard({
   const canEditPolls = can('polls.edit');
   const canDeletePolls = can('polls.delete');
 
-  // Profile Form States
   const [profileName, setProfileName] = useState(auth.user.name);
   const [profileEmail, setProfileEmail] = useState(auth.user.email);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -285,30 +283,25 @@ export default function Dashboard({
     profileFormRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
   }, [profileFailedSubmit]);
 
-  // Account Deletion States
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Rejection Dialog States
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectDraftId, setRejectDraftId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectLoading, setRejectLoading] = useState(false);
 
-  // Ban Status states for dynamic list updates
   const [localPolls, setLocalPolls] = useState<Poll[]>(polls);
   const [localMyDrafts, setLocalMyDrafts] = useState<Draft[]>(myDrafts);
 
   const [apiLoading, setApiLoading] = useState<number | null>(null); // maps draft ID to loading state
 
-  // Inline poll create states (replaces /admin/polls/create page)
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState('');
   const [createSlug, setCreateSlug] = useState('');
   const [createActive, setCreateActive] = useState(true);
   const [creating, setCreating] = useState(false);
 
-  // Inline poll edit states (replaces /admin/polls/{id}/edit page)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [editingCandidates, setEditingCandidates] = useState<PollCandidate[]>([]);
@@ -391,7 +384,6 @@ export default function Dashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update Account details
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileLoading(true);
@@ -417,7 +409,6 @@ export default function Dashboard({
     }
   };
 
-  // Soft Delete Account
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
     try {
@@ -429,7 +420,6 @@ export default function Dashboard({
     }
   };
 
-  // Approve Transit Draft
   const handleApproveDraft = async (id: number) => {
     setApiLoading(id);
     try {
@@ -447,14 +437,12 @@ export default function Dashboard({
     }
   };
 
-  // Reject Transit Draft (Open Modal)
   const openRejectDialog = (id: number) => {
     setRejectDraftId(id);
     setRejectReason('');
     setRejectOpen(true);
   };
 
-  // Confirm Reject
   const handleConfirmReject = async () => {
     if (!rejectDraftId) return;
     const reason = rejectReason.trim() || null;
@@ -474,7 +462,6 @@ export default function Dashboard({
     }
   };
 
-  // Delete Poll
   const handleDeletePoll = async (id: string, slug: string) => {
     if (isCorePollSlug(slug)) {
         notify.info('لا يمكن حذف استبيان تقييم الوزراء الرئيسي.');
@@ -539,7 +526,6 @@ export default function Dashboard({
     }
   };
 
-  // Cancel/Delete own submission (Normal user)
   const handleCancelMySubmission = async (id: number) => {
     if (!(await confirmDialog({ title: 'سحب هذا الاقتراح؟', description: 'سيتم إلغاء الاقتراح ولا يمكن التراجع.', destructive: true, confirmText: 'سحب' }))) return;
     try {
@@ -587,10 +573,8 @@ export default function Dashboard({
           )}
 
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar / Tabs list */}
             <aside className="w-full lg:w-64 shrink-0">
               <nav aria-label="أقسام لوحة التحكم" className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0">
-                {/* Conditional Submissions Tab (Normal Users) */}
                 {role === 'user' && (
                   <button type="button" aria-pressed={activeTab === 'submissions'} onClick={() => setActiveTab('submissions')} className={navItemClass(activeTab === 'submissions')}>
                     <TransitIcon className="h-5 w-5" />
@@ -598,7 +582,6 @@ export default function Dashboard({
                   </button>
                 )}
 
-                {/* Polls Tab */}
                 {canManagePolls && (
                   <button type="button" aria-pressed={activeTab === 'polls'} onClick={() => setActiveTab('polls')} className={navItemClass(activeTab === 'polls')}>
                     <TierlistIcon className="h-5 w-5" />
@@ -620,7 +603,6 @@ export default function Dashboard({
                   );
                 })}
 
-                {/* Profile/Settings Tab (All users) */}
                 <button type="button" aria-pressed={activeTab === 'profile'} onClick={() => setActiveTab('profile')} className={navItemClass(activeTab === 'profile')}>
                   <Settings className="h-5 w-5" />
                   الحساب
@@ -628,9 +610,7 @@ export default function Dashboard({
               </nav>
             </aside>
 
-            {/* Tab Content Box */}
             <div className="flex-1 bg-card border border-border rounded-xl p-6 shadow-sm min-h-[480px]">
-              {/* SUBMISSIONS TAB */}
               {activeTab === 'submissions' && role === 'user' && (
                 <div>
                   <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
@@ -699,7 +679,6 @@ export default function Dashboard({
                 </div>
               )}
 
-              {/* POLLS TAB — single place for tierlist/poll management (replaces /admin/polls*) */}
               {activeTab === 'polls' && canManagePolls && (
                 <div>
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
@@ -815,7 +794,6 @@ export default function Dashboard({
                     </div>
                   )}
 
-                  {/* Inline editor (replaces /admin/polls/{id}/edit page) */}
                   {editingId && (
                     <Card className="mt-6 border-primary/30">
                       <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
@@ -905,7 +883,6 @@ export default function Dashboard({
                     </Card>
                   )}
 
-                  {/* Inline create dialog (replaces /admin/polls/create page) */}
                   <Dialog open={createOpen} onOpenChange={(open) => {
                     setCreateOpen(open);
                     if (!open) {
@@ -966,7 +943,6 @@ export default function Dashboard({
                 </div>
               )}
 
-              {/* PROFILE TAB */}
               {activeTab === 'profile' && (
                 <div>
                   <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
@@ -1022,7 +998,6 @@ export default function Dashboard({
                     </Button>
                   </form>
 
-                  {/* Scary Red Delete Section */}
                   <div className="bg-destructive/10 border border-destructive/40 rounded-xl p-6">
                     <h3 className="text-lg font-bold text-destructive mb-2">منطقة الخطر - حذف الحساب نهائياً</h3>
                     <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
@@ -1039,7 +1014,6 @@ export default function Dashboard({
           </div>
         </div>
 
-        {/* Rejection Reason Modal */}
         <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
           <DialogContent dir="rtl" className="sm:max-w-md">
             <DialogHeader>
@@ -1063,7 +1037,6 @@ export default function Dashboard({
           </DialogContent>
         </Dialog>
 
-        {/* Delete Account Confirmation Modal */}
         <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <DialogContent dir="rtl" className="sm:max-w-md">
             <DialogHeader>

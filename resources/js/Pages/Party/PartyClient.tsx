@@ -28,7 +28,6 @@ const organizationSearchText = (org: Organization) => `${org.name} ${org.descrip
 export default function PartyClient({ initialOrganizations }: PartyClientProps) {
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
-    // --- Derive Filter Options ---
     const categories = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.type).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
     const countries = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.country).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
     const cities = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.city).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
@@ -49,7 +48,6 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
 
     return (
         <div className="min-h-screen transition-colors font-sans" dir="rtl">
-            {/* Header & Hero Section */}
             <section className="bg-card py-10 shadow-xs border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl space-y-6">
                     <div className="relative">
@@ -77,7 +75,6 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                 </div>
             </section>
 
-            {/* Content Area */}
             <div className="container mx-auto px-4 py-8">
                 {initialOrganizations.length > 0 && (
                     <DirectorySmartSearch
@@ -86,7 +83,6 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                         placeholder="ابحث بالاسم أو النوع أو المكان أو اختر تصفية..." ariaLabel="ابحث في المنظمات السياسية"
                     />
                 )}
-                {/* Visual Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <DirectoryResultCount>
                         {directory.results.length === 0
@@ -183,7 +179,6 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                                         )}
                                                     </div>
 
-                                                    {/* Social Links */}
                                                     {socials.length > 0 && (
                                                         <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border/50">
                                                             {socials.map(s => {
@@ -276,7 +271,6 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                 )}
             </div>
 
-            {/* About Section */}
             <section className="bg-card border-t border-border py-16 px-4 mt-12">
                 <div className="max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl font-bold mb-6 text-foreground">حول دليل المنظمات السياسية السورية</h2>

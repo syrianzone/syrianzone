@@ -11,7 +11,6 @@ use Inertia\Inertia;
 
 class CompassController extends Controller
 {
-    /** The compass test page. */
     public function index()
     {
         return Inertia::render('Compass/Index', [

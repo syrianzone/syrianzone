@@ -2,17 +2,6 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Server Side Rendering
-    |--------------------------------------------------------------------------
-    |
-    | These options configure the Inertia Server Side Rendering (SSR) system.
-    | You may specify if SSR is enabled, the URL of the SSR server, and the
-    | path to the bundle that should be executed by Node.
-    |
-    */
-
     'ssr' => [
 
         // On by default: the SSR server is part of the stack (docker/s6/inertia-ssr-run
@@ -24,19 +13,7 @@ return [
 
         'url' => 'http://127.0.0.1:13714',
 
-        // 'bundle' => base_path('bootstrap/ssr/ssr.js'),
-
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Pages
-    |--------------------------------------------------------------------------
-    |
-    | These values define where Inertia page components live and which file
-    | extensions the view finder accepts.
-    |
-    */
 
     'pages' => [
 
@@ -60,15 +37,6 @@ return [
         ],
 
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Testing
-    |--------------------------------------------------------------------------
-    |
-    | Inertia assertions verify that rendered page components exist on disk.
-    |
-    */
 
     'testing' => [
 

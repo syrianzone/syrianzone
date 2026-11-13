@@ -109,13 +109,10 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, isDesktop, fontSize]);
 
-  // Keep the global player's recitation in step with the reader preference.
   useEffect(() => {
     useQuranPlayer.getState().setRecitation(reciterCode);
   }, [reciterCode]);
 
-  // While the reader owns the queue, follow the reciter and flip the page when
-  // the recited ayah moves off the visible spread.
   useEffect(() => {
     if (playerSource !== 'reader' || !playerCurrent) return;
     const key = `${playerCurrent.surah}:${playerCurrent.ayah}`;
@@ -170,7 +167,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
       ? Math.min(1, activeWord.letterIndex / activeWord.letterCount)
       : null;
 
-  // Landing from a bookmark/modal jump: select the target Ayah once loaded.
   useEffect(() => {
     if (targetAyah && ayahs.some((a) => a.key === targetAyah)) {
       setCurrentAyahKey(targetAyah);
@@ -180,7 +176,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
 
   const toggleBookmark = async () => {
     if (bookmarkBusy || !currentAyah) return;
-    // Guests keep bookmarks on this device; logged-in users on the account.
     if (!isLoggedIn) {
       const saved = toggleGuestBookmark({
         surah: currentAyah.surah,
@@ -258,7 +253,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   // Single click highlights the Ayah; double click plays its recitation.
   const requestPlay = (key: string) => setCurrentAyahKey(key);
 
-  // Play from the selected ayah, continuously; the reader follows the player.
   const startReader = (startKey: string | null) => {
     const start = ayahs.find((a) => a.key === startKey) ?? ayahs[0];
     if (!start) return;
@@ -289,7 +283,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     return { page, ayahKey: `${surah}:${ayah}` };
   };
 
-  // Single header for the visible spread: Surah name(s) right, Juz left.
   const surahs = [...new Set(pages.map((d) => d.surahName))].join(' · ');
   const juzs = [...new Set(pages.map((d) => d.juz))].join('، ');
   const lastVisible = visiblePages[visiblePages.length - 1] ?? page;
@@ -439,7 +432,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
         </div>
       )}
 
-      {/* Pager under the page(s), with the page numbers. */}
       <div className={`mt-3 flex shrink-0 items-center justify-between gap-2 ${isFocused ? 'hidden' : ''}`}>
         <Button variant="outline" size="sm" onClick={() => go(page - step)} disabled={page <= 1}>
           <ChevronRight className="h-4 w-4" /> السابق

@@ -176,7 +176,6 @@ export default function NearbyTransitDrawer() {
         </button>
       </div>
 
-      {/* Bottom sheet drawer */}
       <div
         className={`absolute inset-x-0 bottom-0 z-30 transform rounded-t-2xl bg-[var(--surface)] p-4 shadow-2xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-y-0' : 'translate-y-full'

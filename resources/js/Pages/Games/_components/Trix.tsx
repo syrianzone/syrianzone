@@ -135,7 +135,6 @@ export default function Trix() {
     return [...cards].sort((a, b) => SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || power(a) - power(b));
   }, [game]);
 
-  // A new deal or a played card drops any picked card.
   useEffect(() => {
     setSelected(null);
   }, [game?.deal]);
@@ -413,8 +412,6 @@ export function TrixRules() {
     </>
   );
 }
-
-// ---- helpers ----------------------------------------------------------------
 
 function handCount(game: TrixGame, seat: number): number {
   const deal = game.deal;

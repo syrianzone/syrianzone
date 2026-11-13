@@ -33,10 +33,7 @@ export function PlaceReviewCard(props: {
 }) {
   const { place, onApprove, onReject, onDelete, onChanged } = props;
 
-  // Every action below is gated on its own capability, matching the route tags
-  // in routes/web.php. Previously the whole moderation UI rendered for anyone
-  // holding any places.* grant, so a places.review-only reviewer saw eight
-  // buttons and 403'd on all of them.
+  // Each action is gated on its own capability, matching the route tags in routes/web.php.
   const { can } = useAuth();
   const canApprove = can('places.approve');
   const canEdit = can('places.edit');

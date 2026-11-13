@@ -11,7 +11,6 @@ import { activeDashboard, addWidget, migrate, resizeWidget } from './layout';
 import { sources } from './sources';
 import { CATEGORIES, GRID_COLS, GRID_ROWS, type BoardDoc, type WidgetInstance } from './types';
 
-/** The widget a test resizes, picked by id so a renamed folder fails loudly. */
 function widgetDef(id: string) {
   const def = findWidget(id);
   if (!def) throw new Error(`The board registry lost the ${id} widget.`);
@@ -181,7 +180,6 @@ describe('stored document', () => {
     const migrated = migrate(JSON.parse(JSON.stringify(stored)), defaultDoc());
 
     expect(migrated).toEqual(stored);
-    // And a second trip through storage and the server changes nothing.
     expect(migrate(JSON.parse(JSON.stringify(migrated)), defaultDoc())).toEqual(stored);
   });
 

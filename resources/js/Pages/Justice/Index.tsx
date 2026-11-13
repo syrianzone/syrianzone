@@ -82,7 +82,6 @@ export default function JusticePage() {
         <MainLayout>
             
             <div className="container mx-auto max-w-screen-xl px-4 pt-6 pb-16" dir="rtl">
-                {/* Header */}
                 <header className="text-center mb-10">
                     <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 text-primary mb-4">
                         <Scale className="h-7 w-7" />
@@ -94,7 +93,6 @@ export default function JusticePage() {
                     <p className="mt-4 text-xs text-muted-foreground">محدّث حتى {updatedArabic}</p>
                 </header>
 
-                {/* Command hierarchy */}
                 <section aria-labelledby="tree-heading" className="mb-12">
                     <h2 id="tree-heading" className="text-2xl md:text-3xl font-bold text-foreground text-center mb-6">القائمة السوداء</h2>
                     {anyDetained && (
@@ -103,7 +101,6 @@ export default function JusticePage() {
                         </p>
                     )}
 
-                    {/* root */}
                     <div className="flex flex-col items-center">
                         <div className="w-full max-w-xs">
                             <MemberCard member={hierarchy.root} root />
@@ -111,7 +108,6 @@ export default function JusticePage() {
                         <div className="h-6 w-px bg-border" />
                     </div>
 
-                    {/* branches */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
                         {hierarchy.groups.map((group) => (
                             <div key={group.title} className="rounded-2xl border border-border bg-muted/30 p-4">
@@ -126,7 +122,6 @@ export default function JusticePage() {
                     </div>
                 </section>
 
-                {/* Stats dashboard */}
                 <section aria-labelledby="stats-heading" className="mb-12">
                     <Card className="overflow-hidden">
                         <CardContent className="p-6 md:p-8">
@@ -151,7 +146,6 @@ export default function JusticePage() {
                     </Card>
                 </section>
 
-                {/* Individuals */}
                 <section aria-labelledby="people-heading">
                     <h2 id="people-heading" className="text-lg font-bold text-foreground mb-1">أبرز الموقوفين</h2>
                     <p className="text-sm text-muted-foreground mb-5">{fmt(individuals.length)} من رموز النظام</p>

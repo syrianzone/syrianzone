@@ -68,7 +68,6 @@ export default function CompassResult({
     const top = matches[0] ?? null;
     const total = versionTotals(version).total;
     const answered = Object.keys(answers).length;
-    // strongest / weakest axes (by |value|)
     const rankedAxes = AXES.map((a) => ({ axis: a, value: axes[a.id] }))
       .filter((x) => x.value != null)
       .sort((a, b) => Math.abs(b.value as number) - Math.abs(a.value as number));
@@ -187,7 +186,6 @@ export default function CompassResult({
     }
   };
 
-  // Track the active theme so the share card matches it.
   React.useEffect(() => {
     const read = () => setThemeKey(document.documentElement.getAttribute('data-theme') || 'dark');
     read();
@@ -211,7 +209,6 @@ export default function CompassResult({
 
   return (
     <div className="space-y-4" id="compass-card" dir="rtl">
-      {/* ---- Header: spectrum + match ---- */}
       <Card className="overflow-hidden">
         <div className="bg-primary/10 border-b border-border px-4 py-5 text-center">
           <p className="text-xs text-muted-foreground mb-1">طيفك السياسي</p>
@@ -226,7 +223,6 @@ export default function CompassResult({
           )}
         </div>
         <CardContent className="pt-4 space-y-4">
-          {/* Closest figure — only when character names are enabled. */}
           {COMPASS_FLAGS.showCharacterNames && top && (
             <div>
               <div className="flex items-center gap-4">
@@ -279,7 +275,6 @@ export default function CompassResult({
         </CardContent>
       </Card>
 
-      {/* ---- Axis bars ---- */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">موقعك على المحاور</CardTitle>
@@ -289,7 +284,6 @@ export default function CompassResult({
         </CardContent>
       </Card>
 
-      {/* ---- Alignment ---- */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">توجّهك الخارجي</CardTitle>
@@ -299,7 +293,6 @@ export default function CompassResult({
         </CardContent>
       </Card>
 
-      {/* ---- 2D compass ---- */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">موقعك على الساحة</CardTitle>
@@ -310,7 +303,6 @@ export default function CompassResult({
         </CardContent>
       </Card>
 
-      {/* ---- Stats ---- */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">إحصاءات</CardTitle>
@@ -344,7 +336,6 @@ export default function CompassResult({
         </CardContent>
       </Card>
 
-      {/* ---- Anonymous stats (default-on): title above, red remove button ---- */}
       {!readOnly && statsShared && (
         <div className="space-y-2">
           <p className="text-center text-base font-bold text-foreground leading-snug">
@@ -361,7 +352,6 @@ export default function CompassResult({
         </div>
       )}
 
-      {/* ---- Save to account: title above, primary save button ---- */}
       {!readOnly && isLoggedIn && (
         <div className="space-y-2">
           <p className="text-center text-base font-bold text-foreground leading-snug">
@@ -387,7 +377,6 @@ export default function CompassResult({
         </Button>
       )}
 
-      {/* ---- Actions ---- */}
       <div className="flex flex-col gap-3">
         {readOnly ? (
           <Button variant="secondary" onClick={onRestart} className="w-full gap-2">

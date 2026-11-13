@@ -76,7 +76,6 @@ describe('accordion', () => {
         expect(summary).not.toBe('');
         // <summary> exposes expanded state itself; aria-expanded would double it.
         expect(html).not.toContain('aria-expanded');
-        // The old <button> trigger is gone.
         expect(html).not.toContain('type="button"');
         expect(html).toContain('الأول');
         // Hidden native marker, logical alignment and a visible keyboard focus.

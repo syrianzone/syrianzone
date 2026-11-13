@@ -43,7 +43,6 @@ export default function HousePage({ members2026 }: Props) {
         };
     }, [members]);
 
-    // Clicking a chart legend item filters the table below (toggle off on re-click)
     const handleLegendClick = (d: Dim, key: string) => {
         if (d === 'governorate') setGov((v) => (v === key ? 'all' : key));
         else if (d === 'gender') setGender((v) => (v === key ? 'all' : key));

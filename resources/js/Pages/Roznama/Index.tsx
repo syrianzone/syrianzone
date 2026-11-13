@@ -174,7 +174,6 @@ export default function Index() {
             : prayerError.message || 'حدث خطأ أثناء الاتصال بالخادم'
         : null;
 
-    // F3alia Events States
     const [events, setEvents] = useState<F3aliaEvent[]>([]);
     const [showOtherGovEvents, setShowOtherGovEvents] = useState(false);
     const [loadingEvents, setLoadingEvents] = useState(true);
@@ -184,14 +183,12 @@ export default function Index() {
         return events.length > 0 ? events[0] : null;
     }, [events]);
     
-    // Switch state for hiding passed holidays
     const [hidePassed, setHidePassed] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
             return localStorage.getItem('sz-hide-passed-holidays') === 'true';
         }
         return false;
     });
-    // Save Switch preference
     useEffect(() => {
         localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
     }, [hidePassed]);
@@ -201,7 +198,6 @@ export default function Index() {
         setCurrentTime(new Date());
     }, []);
 
-    // Keep the clock ticking
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentTime(new Date());
@@ -209,7 +205,6 @@ export default function Index() {
         return () => clearInterval(timer);
     }, []);
 
-    // Fetch upcoming events via server proxy (/api/events/today).
     useEffect(() => {
         if (!mounted) return;
 
@@ -283,7 +278,6 @@ export default function Index() {
         if (saveTimer.current) clearTimeout(saveTimer.current);
     }, []);
 
-    // Formatter helpers
     const formatTime = (date: Date) => {
         return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     };
@@ -305,20 +299,16 @@ export default function Index() {
     );
     const apiHijri = hijriDateLabel(hijri);
 
-    // Resolve Syrian Holidays for the current year
     const holidays = useMemo(() => holidaysForYear(currentTime.getFullYear()), [currentTime]);
 
-    // Next upcoming holiday
     const nextHoliday = useMemo(() => {
         const startOfToday = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
-        // after the last holiday of the year, the next one is next year's first
         const next = holidays.find(h => h.date >= startOfToday) ?? holidaysForYear(currentTime.getFullYear() + 1)[0];
 
         const daysLeft = Math.ceil((next.date.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
         return { ...next, daysLeft };
     }, [holidays, currentTime]);
 
-    // Filter holidays to hide passed ones if requested
     const filteredHolidays = useMemo(() => {
         if (!hidePassed) return holidays;
         const startOfToday = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
@@ -342,7 +332,6 @@ export default function Index() {
                 style={{ fontFamily: "var(--site-font, inherit)" }}
             >
                 
-                {/* Hero Header */}
                 <section className="bg-card py-10 shadow-sm border-b border-border">
                     <div className="container mx-auto px-4 text-center max-w-4xl">
                         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">الروزنامة</h1>
@@ -358,13 +347,10 @@ export default function Index() {
                 {mounted && (
                 <div className="container mx-auto px-4 py-8 max-w-7xl">
                     
-                    {/* Top Section: 2 Columns Layout */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                         
-                        {/* First Column: Date, Time with City selector, Weather & Upcoming Holiday */}
                         <div className="space-y-6 flex flex-col">
                             
-                            {/* Date, Time, City Selector & Weather */}
                             <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm overflow-hidden">
                                 <CardContent className="p-6">
                                     <div className="flex justify-between items-center mb-6">
@@ -377,7 +363,6 @@ export default function Index() {
                                         </div>
                                     </div>
 
-                                    {/* Clock Display */}
                                     <div className="text-center py-4 bg-muted/30 rounded-2xl border border-border/50">
                                         <div className="text-5xl font-bold text-foreground font-mono tracking-wider mb-2">
                                             {formatTime(currentTime)}
@@ -390,7 +375,6 @@ export default function Index() {
                                         </div>
                                     </div>
 
-                                    {/* Weather Widget */}
                                     <div className="mt-4 p-4 bg-muted/20 rounded-2xl border border-border/40 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             {weather ? (
@@ -412,7 +396,6 @@ export default function Index() {
                                 </CardContent>
                             </Card>
 
-                            {/* Upcoming Holiday Card */}
                             {nextHoliday && (
                                 <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm overflow-hidden relative flex-1 flex flex-col justify-center">
                                     <div className="absolute top-0 left-0 bg-primary/10 text-primary px-3 py-1 text-xs font-semibold rounded-br-lg border-b border-r border-primary/20">
@@ -449,7 +432,6 @@ export default function Index() {
                                             </div>
                                         </div>
 
-                                        {/* Next Event section inside Holiday Card */}
                                         {nextEvent && (
                                             <div className="mt-4 pt-4 border-t border-border/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs" dir="rtl">
                                                 <div className="space-y-1">
@@ -488,7 +470,6 @@ export default function Index() {
 
                         </div>
 
-                        {/* Second Column: Prayer Times */}
                         <div className="space-y-6">
                             
                             <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm h-full flex flex-col justify-between">
@@ -515,7 +496,6 @@ export default function Index() {
                                             </div>
                                         </div>
 
-                                        {/* Next Prayer Countdown (Simple block with dynamic icon, next prayer label, and countdown) */}
                                         {schedule?.next && (
                                             <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-4 flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
@@ -537,7 +517,6 @@ export default function Index() {
                                             </div>
                                         )}
 
-                                        {/* Prayer Times List */}
                                         {loading ? (
                                             <div className="space-y-3 py-6">
                                                 {[1, 2, 3, 4, 5, 6].map(i => (
@@ -600,14 +579,11 @@ export default function Index() {
 
                     </div>
 
-                    {/* Bottom Section: Two columns layout (Holidays vs Events) */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                         
-                        {/* Holidays Card */}
                         <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm h-full flex flex-col justify-between">
                             <CardContent className="p-6 flex flex-col justify-between h-full">
                                 <div>
-                                    {/* Holidays Header */}
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-3">
                                         <div>
                                             <h2 className="font-bold text-lg text-foreground flex items-center gap-2">
@@ -616,7 +592,6 @@ export default function Index() {
                                             </h2>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            {/* Toggle Passed Holidays Switch */}
                                             <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
                                                 <Switch
                                                     id="hide-passed"
@@ -631,7 +606,6 @@ export default function Index() {
                                         </div>
                                     </div>
 
-                                    {/* Holidays List */}
                                     {filteredHolidays.length === 0 ? (
                                         <div className="text-center py-12 text-sm text-muted-foreground">
                                             <Calendar className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
@@ -691,7 +665,6 @@ export default function Index() {
                                     )}
                                 </div>
 
-                                {/* Source */}
                                 <div className="mt-6 pt-4 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
                                     <div className="text-[10px] text-muted-foreground">
                                         المصدر: المرسوم رقم 188 لعام 2025
@@ -709,11 +682,9 @@ export default function Index() {
                             </CardContent>
                         </Card>
 
-                        {/* Upcoming Events Column */}
                         <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm h-full flex flex-col justify-between">
                             <CardContent className="p-6 flex flex-col justify-between h-full">
                                 <div>
-                                    {/* Events Header */}
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-3">
                                         <div>
                                             <h2 className="font-bold text-lg text-foreground flex items-center gap-2">
@@ -722,7 +693,6 @@ export default function Index() {
                                             </h2>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            {/* Toggle switch for showing other governorates */}
                                             <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
                                                 <Switch
                                                     id="show-other-govs"
@@ -737,7 +707,6 @@ export default function Index() {
                                         </div>
                                     </div>
 
-                                    {/* Events List */}
                                     {loadingEvents ? (
                                         <div className="space-y-3 py-1">
                                             {[1, 2, 3, 4, 5].map(i => (
@@ -830,7 +799,6 @@ export default function Index() {
                                     )}
                                 </div>
 
-                                {/* Source and Show More button */}
                                 <div className="mt-6 pt-4 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
                                     <div className="text-[10px] text-muted-foreground">
                                         المصدر: منصة فعالية (F3alia) للأحداث والفعاليات
@@ -848,7 +816,7 @@ export default function Index() {
                             </CardContent>
                         </Card>
 
-                    </div>                        {/* Combined and Simplified Notes & Canceled Holidays Box */}
+                    </div>
                         <Card className="border-border bg-muted/20 shadow-sm p-5">
                             <div className="flex gap-3.5 items-start text-xs text-muted-foreground leading-relaxed">
                                 <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -867,7 +835,6 @@ export default function Index() {
 
                 </div>
 
-                {/* Roznama settings: bottom Sheet on mobile, Dialog on desktop */}
                 {isMobile ? (
                     <Sheet open={roznamaSettingsOpen} onOpenChange={setRoznamaSettingsOpen}>
                         <SheetContent side="bottom" dir="rtl" className="rounded-t-3xl border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]">

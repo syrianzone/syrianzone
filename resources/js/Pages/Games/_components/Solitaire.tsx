@@ -114,14 +114,12 @@ export default function Solitaire() {
     setLarge(readLargeCards());
   }, []);
 
-  // The clock stops when the game is finished.
   useEffect(() => {
     if (!ready || won) return;
     const t = window.setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => window.clearInterval(t);
   }, [ready, won]);
 
-  // Record the time once, at the moment the game is won.
   useEffect(() => {
     if (!won) return;
     const result = recordResult('solitare', elapsed, 'lower');
@@ -172,7 +170,6 @@ export default function Solitaire() {
     commit(drawStock(board.current));
   }, [commit]);
 
-  /** Double-click, or tapping a selected card again: send it to a foundation. */
   const sendToFoundation = useCallback(
     (from: Source) => {
       for (let index = 0; index < 4; index++) {
@@ -183,7 +180,6 @@ export default function Solitaire() {
     [tryMove],
   );
 
-  /** Tap a card to select it (with the run it would lift); tap again to drop the selection. */
   const toggle = useCallback((from: Source) => {
     const run = liftable(board.current, from);
     if (!run) return;
@@ -194,7 +190,6 @@ export default function Solitaire() {
     setSelected({ from, ids: run.map((c) => c.id) });
   }, [selected]);
 
-  /** With something selected, a pile becomes a destination; otherwise it is itself a source. */
   const onFoundation = useCallback(
     (index: number) => {
       if (selected) tryMove(selected.from, { kind: 'foundation', index });

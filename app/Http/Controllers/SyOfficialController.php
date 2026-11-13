@@ -11,9 +11,6 @@ use Inertia\Inertia;
 
 class SyOfficialController extends Controller
 {
-    /**
-     * Display the official accounts page.
-     */
     public function index(SyOfficialPresenter $presenter)
     {
         $categories = Cache::remember(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY, 600, function () {
@@ -23,7 +20,6 @@ class SyOfficialController extends Controller
                 try {
                     (new \Database\Seeders\SyOfficialSeeder())->run();
                 } catch (\Exception $e) {
-                    // Fail gracefully
                 }
             }
 

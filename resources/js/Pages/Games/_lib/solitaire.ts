@@ -125,7 +125,6 @@ export function applyMove(deal: Deal, from: Source, to: Destination): Deal {
   return next;
 }
 
-/** Turn a card over to the stock, or recycle the waste back into it. */
 export function drawStock(deal: Deal): Deal {
   if (deal.stock.length > 0) {
     const rest = deal.stock.slice(0, -1);
@@ -225,7 +224,6 @@ function isFoundationSafe(deal: Deal, card: Card): boolean {
   return false;
 }
 
-/** Send every card that can safely reach a foundation, until none can. */
 export function autoMove(deal: Deal): Deal {
   let current = deal;
   for (let guard = 0; guard < 64; guard++) {

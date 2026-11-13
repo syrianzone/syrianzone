@@ -126,7 +126,6 @@ class VotingService
 
     private function calculateScores(Ballot $ballot, array $tiers): array
     {
-        // Guard: ensure no candidate appears in more than one tier
         $allCandidateIds = collect($tiers)->flatten(1)->pluck('candidateId')->filter();
         if ($allCandidateIds->count() !== $allCandidateIds->unique()->count()) {
             throw ValidationException::withMessages([
@@ -175,11 +174,9 @@ class VotingService
     }
 
     /**
-     * Add this ballot's points to the day's totals in a single upsert.
-     *
-     * It used to be an UPDATE per candidate (plus an INSERT and a second UPDATE
-     * for the first vote of the day). Rows are written in candidate order so two
-     * concurrent ballots take their row locks in the same sequence.
+     * Add this ballot's points to the day's totals in a single upsert. Rows are
+     * written in candidate order so two concurrent ballots take their row locks
+     * in the same sequence.
      */
     private function updateDailyScores(Poll $poll, Carbon $voteDay, array $scoreDelta): void
     {

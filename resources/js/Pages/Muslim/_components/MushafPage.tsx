@@ -117,8 +117,6 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
       // so measure the slot column (grandparent) for real available width.
       const slot = root.parentElement?.parentElement ?? root.parentElement;
       const availW = slot ? slot.clientWidth : frameWidth;
-      // Always fill the viewport: scale up or down until either the
-      // width or the height limit is hit (font is fixed at 25px).
       const wFit = availW / frameWidth;
       const naturalH = root.offsetHeight;
       const hFit = (maxHeight && naturalH > 0) ? maxHeight / naturalH : wFit;

@@ -64,7 +64,6 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
 
     return (
         <div className="min-h-screen transition-colors" dir="rtl">
-            {/* Header & Filters */}
             <section className="bg-card py-10 shadow-xs border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl space-y-6">
                     <div className="relative">
@@ -107,9 +106,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                 </div>
             </section>
 
-            {/* Content Area */}
             <div className="container mx-auto px-4 py-8">
-                {/* Visual Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <DirectoryResultCount>
                         {directory.results.length === 0
@@ -239,7 +236,6 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                 )}
             </div>
 
-            {/* About Section */}
             <section className="bg-card py-16 px-4 border-t border-border mt-12">
                 <div className="max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl font-bold mb-6 text-foreground">حول المواقع السورية</h2>

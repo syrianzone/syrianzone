@@ -110,7 +110,6 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// Activate Event - Clean up stale caches
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) => {
@@ -184,19 +183,16 @@ self.addEventListener('fetch', (event) => {
     if (url.origin !== self.location.origin) return;
     if (isSensitiveOrAdminPath(url.pathname)) return;
 
-    // 1. Immutable static assets & Vite hashed bundles: Cache-First
     if (IMMUTABLE_PATH_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) {
         event.respondWith(runtimeCacheFirst(event.request));
         return;
     }
 
-    // 2. Offline-readable GET APIs (Prayer times, Transit city routes/map, Places, Weather): Stale-While-Revalidate
     if (isOfflineReadableApi(url.pathname)) {
         event.respondWith(runtimeStaleWhileRevalidate(event.request));
         return;
     }
 
-    // 3. Inertia XHR SPA navigations on public pages: Network-First with runtime cache fallback
     if (event.request.headers.get('X-Inertia')) {
         if (!url.pathname.startsWith('/api/')) {
             event.respondWith(runtimeNetworkFirst(event.request));
@@ -204,7 +200,6 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Skip other XHR/API fetches
     if (
         event.request.mode !== 'navigate' ||
         url.pathname.startsWith('/api/') ||
@@ -213,7 +208,6 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 4. Document navigations: Network-First with section-aware shell fallback
     event.respondWith(
         fetch(event.request)
             .then((response) => {

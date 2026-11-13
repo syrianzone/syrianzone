@@ -146,7 +146,6 @@ export async function renderElementAsPngFile(
   return new File([blob], filename, { type: 'image/png' });
 }
 
-/** Download a PNG from a DOM node or a prepared file. */
 export async function exportElementAsPng(
   source: HTMLElement | File,
   filename: string,

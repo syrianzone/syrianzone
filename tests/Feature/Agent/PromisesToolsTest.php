@@ -11,12 +11,6 @@ use App\Models\Promise;
 use App\Services\Promises\PromiseEditor;
 use Illuminate\Support\Str;
 
-/*
-|--------------------------------------------------------------------------
-| Promises tracker agent tools
-|--------------------------------------------------------------------------
-*/
-
 test('a token with only promises.review can call list-promises and get-promise (any-of read gate)', function () {
     $user = agentUser(['permissions' => ['promises.review']]);
     agentToken($user, ['promises.review']);
@@ -30,7 +24,6 @@ test('a token with only promises.review can call list-promises and get-promise (
     $get = toolPayload(callTool(GetPromiseTool::class, ['id' => $promise->id]));
     expect($get['promise']['title'])->toBe('وعد للاختبار');
 
-    // An unprivileged token cannot call read tools
     $other = agentUser(['permissions' => ['places.review']]);
     agentToken($other, ['places.review']);
 
@@ -127,7 +120,6 @@ test('add-promise-update adds a progress entry with a source; a progress entry w
 
     $promise = Promise::factory()->create(['statement_date' => '2025-06-01']);
 
-    // Progress update with source_url succeeds
     $addRes = callTool(AddPromiseUpdateTool::class, [
         'id' => $promise->id,
         'type' => 'progress',
@@ -141,7 +133,6 @@ test('add-promise-update adds a progress entry with a source; a progress entry w
     expect($update)->not->toBeNull()
         ->and((float) $update->value)->toBe(50.0);
 
-    // Progress update without source_url is refused
     $failRes = callTool(AddPromiseUpdateTool::class, [
         'id' => $promise->id,
         'type' => 'progress',
@@ -150,7 +141,6 @@ test('add-promise-update adds a progress entry with a source; a progress entry w
     ]);
     expect($failRes->isError())->toBeTrue();
 
-    // Remove update succeeds
     $remRes = callTool(RemovePromiseUpdateTool::class, [
         'id' => $promise->id,
         'update_id' => $update->id,

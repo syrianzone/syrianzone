@@ -98,7 +98,6 @@ export function readStats(slug: MatchSlug): MatchStats {
   }
 }
 
-/** Record one finished match and return the updated tally. */
 export function recordMatch(slug: MatchSlug, result: 'win' | 'loss' | 'draw'): MatchStats {
   const next = readStats(slug);
   next.played += 1;

@@ -16,7 +16,6 @@ export function defaultConfig(def: WidgetDeclaration): Record<string, unknown> {
   return Object.fromEntries(def.fields.map((f) => [f.key, f.default]));
 }
 
-// ***** sizing *****
 // Resize is discrete and bounded by the widget's own min/max. The reducer, the
 // seed and the size menu all go through here, so a stored size and an offered
 // size cannot disagree.
@@ -44,7 +43,6 @@ export function clampSize(size: WidgetSize, def?: SizeBounds): WidgetSize {
   };
 }
 
-/** The sizes the menu may offer this widget: the vocabulary, filtered by its bounds. */
 export function allowedSizes(def: SizeBounds): { widths: number[]; heights: number[] } {
   return {
     widths: WIDTH_STEPS.filter((w) => w >= def.minSize.w && w <= def.maxSize.w),

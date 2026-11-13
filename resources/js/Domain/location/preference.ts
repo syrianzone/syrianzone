@@ -170,8 +170,6 @@ function numberOrNull(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-// --- device state, one key family at a time (the login sync reads these) ---
-
 /** `prayer` is `sz-muslim-city`; `display` is the Home/Roznama pair. */
 export function readDeviceCity(channel: CityChannel): string | null {
   if (channel === 'prayer') return read(CITY_KEYS.prayer);
@@ -249,8 +247,6 @@ export function accountCustomCoords(
   };
 }
 
-// --- the composed preference ---
-
 export function readLocationPreference(): LocationPreference {
   if (typeof window === 'undefined') return DEFAULT_LOCATION;
 
@@ -309,8 +305,7 @@ export function useLocationPreference(): LocationPreference {
 
 /**
  * Write the preference. `mode` also drives `useCustomCoords` (the mode radio is
- * the custom-coordinates switch on every surface), exactly as the three settings
- * dialogs each did before.
+ * the custom-coordinates switch on every surface).
  */
 export function updateLocationPreference(patch: LocationPatch): void {
   if (patch.city !== undefined) writeEveryCity(patch.city);
@@ -394,8 +389,6 @@ export function accountPatchForLocation(patch: LocationPatch): Record<string, un
   }
   return out;
 }
-
-// --- resolvers: preference -> coordinates, labels and request params ---
 
 /** GPS/IP point resolved earlier in this session. */
 export function isDeviceLocation(pref: LocationPreference): boolean {

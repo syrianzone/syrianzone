@@ -11,7 +11,6 @@ export default function Terms() {
             
 
             <div className="container mx-auto px-4 py-12 max-w-4xl min-h-screen text-foreground">
-                {/* Page Header */}
                 <div className="text-center mb-10 space-y-4">
                     <div className="inline-flex p-3 bg-primary/10 rounded-full text-primary mb-2">
                         <FileText className="w-10 h-10" />
@@ -41,7 +40,6 @@ export default function Terms() {
                             </CardContent>
                         </Card>
 
-                        {/* Accounts and Bans */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -61,7 +59,6 @@ export default function Terms() {
                             </CardContent>
                         </Card>
 
-                        {/* Transit Studio Rights */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -79,7 +76,6 @@ export default function Terms() {
                             </CardContent>
                         </Card>
 
-                        {/* Mishwar Directory Rights */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -97,7 +93,6 @@ export default function Terms() {
                             </CardContent>
                         </Card>
 
-                        {/* Interactive Games (Guess Who) */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -115,7 +110,6 @@ export default function Terms() {
                             </CardContent>
                         </Card>
 
-                        {/* Compass Results */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -133,7 +127,6 @@ export default function Terms() {
                             </CardContent>
                         </Card>
 
-                        {/* Limitation of Liability */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">

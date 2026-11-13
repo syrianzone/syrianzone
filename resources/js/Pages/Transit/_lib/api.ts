@@ -76,7 +76,6 @@ export interface RouteUpdatePayload {
 
 /** One typed client for the transit resources the map, admin, studio and dashboard read. */
 export const transitApi = {
-  // ─── Read ──────────────────────────────────────────────────────────────────
   cities(signal?: AbortSignal): Promise<City[]> {
     return client.get(`${API_V1}/cities`, { signal })
   },
@@ -101,12 +100,10 @@ export const transitApi = {
     return client.get(`${API_V1}/geo/poi`, { params: { q, city_id: cityId }, signal })
   },
 
-  // ─── Moderation ────────────────────────────────────────────────────────────
   routeDrafts(): Promise<Draft[]> {
     return client.get(`${API_V1}/admin/route-drafts`)
   },
 
-  // ─── Admin: published routes ───────────────────────────────────────────────
   adminRoutes(): Promise<PublishedRoute[]> {
     return client.get(`${API_V1}/admin/routes`)
   },
@@ -147,7 +144,6 @@ export const transitApi = {
     return client.delete(`${API_V1}/admin/routes/${routeId}`)
   },
 
-  // ─── Admin: import ─────────────────────────────────────────────────────────
   importPreview(body: FormData | { url: string; city_id?: string }): Promise<ImportPreview> {
     return client.post(`${API_V1}/admin/routes/import-preview`, body)
   },
@@ -156,7 +152,6 @@ export const transitApi = {
     return client.post(`${API_V1}/admin/routes/import-publish`, payload)
   },
 
-  // ─── Studio ────────────────────────────────────────────────────────────────
   studioRoute(id: string): Promise<StudioDraftPayload> {
     return client.get(`${API_V1}/studio/routes/${id}`)
   },

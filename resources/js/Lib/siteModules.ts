@@ -117,7 +117,6 @@ function moduleOf(raw: Record<string, unknown>): SiteModule {
     };
 }
 
-/** A capability id from the catalogue, checked against the shared vocabulary. */
 function capabilityOf(value: string): Capability {
     const known = CAPABILITIES.find((capability) => capability === value);
     if (known === undefined) {

@@ -12,26 +12,24 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * WHY THIS EXISTS
  *
- * Every module's admin middleware used to do the same thing: `hasAnyPermission`
- * against the module's whole capability list. That granted the entire module to
- * anyone holding any one capability in it, so a `phonebook.reorder`-only user
- * could DELETE phonebook entries and a `polls.create`-only user could DELETE
- * polls — while the Filament form showed five and three independent checkboxes
- * respectively, implying the access was separated. It was not.
+ * A group-level `hasAnyPermission` against a module's whole capability list
+ * grants the entire module to anyone holding any one capability in it, so a
+ * `phonebook.reorder`-only user could DELETE phonebook entries and a
+ * `polls.create`-only user could DELETE polls — while the Filament form showed
+ * five and three independent checkboxes respectively, implying the access was
+ * separated. It was not.
  *
- * The only module that got this right was transit, which passes its capability
- * as a route argument (`transit_admin:transit.approve`) and adds governorate
- * scoping in the controller. This class generalises that, with one deliberate
- * difference.
+ * Transit gets this right by passing its capability as a route argument
+ * (`transit_admin:transit.approve`) and adding governorate scoping in the
+ * controller. This class generalises that, with one deliberate difference.
  *
  * ONE CLASS, MANY ALIASES
  *
- * The module groups used to be nine subclasses whose entire body was the
- * alias name and a copy of the module's capability ids. Both facts belong to
- * the catalogue and the alias table below, so they are data now: every alias in
- * ALIASES points at this class, and the module is read from the alias or from
- * the capability id in the route tag. Adding a module is a catalogue entry plus
- * one alias line, not a new middleware.
+ * The alias name and the module's capability ids both belong to the catalogue
+ * and the alias table below, so they are data: every alias in ALIASES points at
+ * this class, and the module is read from the alias or from the capability id
+ * in the route tag. Adding a module is a catalogue entry plus one alias line,
+ * not a new middleware.
  *
  * FAILS CLOSED, WHICH TRANSIT DOES NOT
  *

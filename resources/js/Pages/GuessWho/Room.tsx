@@ -29,7 +29,6 @@ interface GameProps {
   };
 }
 
-/** A presence-channel member, as the room's channel broadcasts it. */
 interface PresenceMember {
   session_id: string;
   name?: string | null;
@@ -52,7 +51,6 @@ interface EchoSubscription {
 /** Stated once: the winner sees it on the broadcast and again after a reload. */
 const VICTORY_MESSAGE = 'مبروك! لقد فزت باللعبة بتخمين شخصية الخصم بنجاح!';
 
-// 3D Flipped Card Component
 function CharacterCard({
   char,
   myTurn,
@@ -96,7 +94,6 @@ function CharacterCard({
         className="w-full relative transition-transform duration-500 ease-in-out"
         style={{ transformStyle: 'preserve-3d', transform: confirming ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
       >
-        {/* CARD FRONT */}
         <Card
           aria-hidden={confirming}
           inert={confirming || undefined}
@@ -150,7 +147,6 @@ function CharacterCard({
           </div>
         </Card>
 
-        {/* CARD BACK (INLINE CONFIRMATION) */}
         <Card
           aria-hidden={!confirming}
           inert={!confirming || undefined}
@@ -190,7 +186,6 @@ function CharacterCard({
 export default function GameRoom({ game }: GameProps) {
   const [sessionUuid] = useState(() => getGuessWhoSessionId());
   
-  // Game States
   const [isJoined, setIsJoined] = useState(false);
   const [loadingJoin, setLoadingJoin] = useState(true);
   const [peerConnected, setPeerConnected] = useState(false);
@@ -221,7 +216,6 @@ export default function GameRoom({ game }: GameProps) {
 
   const [myTurn, setMyTurn] = useState(false);
   const [winMessage, setWinMessage] = useState<string | null>(null);
-  // Non-blocking peer disconnect banner (replaces the old alert())
   const [peerDisconnected, setPeerDisconnected] = useState(false);
   const peerReconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -235,8 +229,6 @@ export default function GameRoom({ game }: GameProps) {
     }
   }
 
-  // Apply the server's authoritative state: whose turn it is, the phase, and
-  // the outcome. The client no longer decides any of it locally.
   function applyState(state: GameStateBroadcast) {
     if (!state) return;
 
@@ -295,16 +287,11 @@ export default function GameRoom({ game }: GameProps) {
     };
   }, [game.room_code, sessionUuid]);
 
-  // Initialize board characters
   useEffect(() => {
     const items = game.category.characters.map(c => ({ ...c, eliminated: false }));
-    // Shuffle board locally
     setBoard([...items].sort(() => Math.random() - 0.5));
   }, [game]);
 
-  // Resume an in-progress game: fetch this player's authoritative snapshot and
-  // restore the secret, the board's eliminations, the turn and the counts, so a
-  // refresh or a rejoin picks up where it left off.
   useEffect(() => {
     if (!isJoined) return;
     let active = true;
@@ -343,9 +330,6 @@ export default function GameRoom({ game }: GameProps) {
     };
   }, [isJoined, game.room_code, sessionUuid]);
 
-  // Auto-transition from 'selecting' → 'playing' once the opponent is in the
-  // room and the secret is chosen. The presence channel replaces the old
-  // "wait for the data channel to open" gate.
   useEffect(() => {
     if (peerConnected && mySecret !== null && (gameState === 'selecting' || gameState === 'lobby')) {
       sendAction('select_ready', { id: mySecret });
@@ -353,7 +337,6 @@ export default function GameRoom({ game }: GameProps) {
     }
   }, [peerConnected, mySecret, gameState]);
 
-  // Join the room's presence channel and listen for the opponent's actions.
   useEffect(() => {
     if (!isJoined) return;
 
@@ -361,8 +344,6 @@ export default function GameRoom({ game }: GameProps) {
     let isMounted = true;
     const channelName = `guesswho.${game.room_code}`;
 
-    // The opponent is present: adopt them and, by the tie-break the data
-    // channel used to apply, the lower session id takes the first turn.
     const adoptPeer = (other: PresenceMember) => {
       setPeerUuid(other.session_id);
       setOpponentName(other.name || 'لاعب آخر');
@@ -398,7 +379,6 @@ export default function GameRoom({ game }: GameProps) {
           notify.error(apiErrorMessage(error, 'تعذّر الاتصال بقناة الغرفة'));
         })
         .listen('.state', (e: GameStateBroadcast) => {
-          // Authoritative: turn, phase, winner, counts. Both players get this.
           applyState(e);
         });
     });
@@ -412,7 +392,7 @@ export default function GameRoom({ game }: GameProps) {
     };
   }, [game.room_code, sessionUuid, isJoined]);
 
-  // Eliminations are private to the player and now stored server-side; the
+  // Eliminations are private to the player and stored server-side; the
   // opponent only ever learns the remaining count, which arrives in `.state`.
   const toggleEliminate = (id: number) => {
     const newBoard = board.map(c => c.id === id ? { ...c, eliminated: !c.eliminated } : c);
@@ -423,8 +403,6 @@ export default function GameRoom({ game }: GameProps) {
   const handleChooseSecret = (id: number) => {
     setMySecret(id);
     sendAction('select_ready', { id });
-    // The server starts the game when both have chosen and broadcasts the turn;
-    // until then this is just the waiting screen.
     setGameState(peerConnected ? 'playing' : 'selecting');
   };
 
@@ -445,7 +423,6 @@ export default function GameRoom({ game }: GameProps) {
     return (
       <MainLayout>
         <div className="min-h-screen bg-background text-foreground p-6 font-sans flex items-center justify-center relative overflow-hidden" dir="rtl">
-          {/* Ambient background glows */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[350px] bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none blur-3xl rounded-full" />
           
           
@@ -470,7 +447,6 @@ export default function GameRoom({ game }: GameProps) {
       <div className="min-h-screen bg-background text-foreground p-6 font-sans" dir="rtl">
         
         <div className="max-w-6xl mx-auto">
-          {/* Style block for 3D flip card animations */}
           <style>{`
             .perspective-1000 {
               perspective: 1000px;
@@ -500,7 +476,6 @@ export default function GameRoom({ game }: GameProps) {
             }
           `}</style>
 
-          {/* Peer Disconnect Banner — non-blocking, dismissible, auto-clears on reconnect */}
           {peerDisconnected && (
             <div className="flex items-center justify-between gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 mb-4 text-sm font-bold">
               <span>انقطع اتصال الخصم. في انتظار إعادة الاتصال...</span>
@@ -514,7 +489,6 @@ export default function GameRoom({ game }: GameProps) {
             </div>
           )}
 
-          {/* Top Info Panel */}
           <div className="flex flex-col md:flex-row justify-between items-center bg-card border border-border p-4 rounded-xl mb-6 gap-4">
             <div className="flex items-center gap-3">
               <Link href="/guesswho" className="p-2 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition">
@@ -548,7 +522,6 @@ export default function GameRoom({ game }: GameProps) {
             </div>
           </div>
 
-          {/* Selecting screen: secret chosen but waiting for opponent to connect */}
           {gameState === 'selecting' && (
             <Card className="bg-card border-border text-card-foreground rounded-2xl p-8 text-center shadow-xl">
               <div className="flex flex-col items-center gap-4">
@@ -566,7 +539,6 @@ export default function GameRoom({ game }: GameProps) {
             </Card>
           )}
 
-          {/* Lobby screen: Choose secret character */}
           {gameState === 'lobby' && (
             <Card className="bg-card border-border text-card-foreground rounded-2xl p-6 md:p-8 text-center shadow-xl">
               <div className="max-w-2xl mx-auto mb-8 text-center">
@@ -575,7 +547,6 @@ export default function GameRoom({ game }: GameProps) {
                   اختر شخصيتك السرية للبدء
                 </h2>
                 
-                {/* Visual game rule intro cards */}
                 <div className="grid sm:grid-cols-2 gap-4 bg-muted/20 border border-border p-4 rounded-2xl text-right text-xs leading-relaxed mt-4">
                   <div className="flex gap-2.5">
                     <div className="h-6 w-6 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-bold text-primary shrink-0">١</div>
@@ -610,12 +581,9 @@ export default function GameRoom({ game }: GameProps) {
             </Card>
           )}
 
-          {/* Main Board view during game */}
           {gameState === 'playing' && (
             <div className="space-y-6">
-              {/* Sticky Gameplay Dashboard */}
               <Card className="sticky top-2 z-20 bg-card/90 backdrop-blur-md border-border p-3 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-center gap-3">
-                {/* Right side (RTL): Secret Character & My Remaining */}
                 <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
                   {mySecret && (
                     <div className="flex items-center gap-2 bg-muted/30 p-1.5 ps-2.5 pe-1.5 rounded-xl border border-border">
@@ -644,7 +612,6 @@ export default function GameRoom({ game }: GameProps) {
                   </div>
                 </div>
 
-                {/* Center: Turn Status */}
                 <div className="flex items-center gap-2 justify-center py-1.5 px-3 rounded-xl bg-muted/20 border border-border/40 w-full md:w-auto">
                   <span className="text-xs text-muted-foreground">حالة اللعب:</span>
                   <Badge 
@@ -659,7 +626,6 @@ export default function GameRoom({ game }: GameProps) {
                   </Badge>
                 </div>
 
-                {/* Left side: End Turn Action */}
                 <div className="w-full md:w-auto flex justify-end">
                   <Button
                     onClick={handleEndTurn}
@@ -671,13 +637,11 @@ export default function GameRoom({ game }: GameProps) {
                 </div>
               </Card>
 
-              {/* Spacing Help Panel */}
               <div className="bg-muted/30 p-3 rounded-lg border border-border text-xs text-muted-foreground flex items-center gap-2">
                 <HelpCircle className="h-4 w-4 text-primary" />
                 <span>انقر على **استبعاد** لإخفاء شخصية. للتخمين على شخصية الخصم السرية، اضغط على **تخمين الشخصية** وقم بالتأكيد في دورك.</span>
               </div>
 
-              {/* Main Grid */}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 select-none">
                 {board.map(char => (
                   <CharacterCard
@@ -694,7 +658,6 @@ export default function GameRoom({ game }: GameProps) {
             </div>
           )}
 
-          {/* Ended Screen */}
           {gameState === 'ended' && (
             <Card className="bg-card border-border text-card-foreground rounded-2xl p-12 text-center max-w-xl mx-auto shadow-2xl">
               <h2 className="text-3xl font-black text-foreground mb-4">انتهت اللعبة!</h2>

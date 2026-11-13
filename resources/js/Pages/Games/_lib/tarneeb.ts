@@ -97,7 +97,6 @@ export interface TarneebRound {
   history: CompletedTrick[];
 }
 
-/** The team a seat plays for. */
 export const teamOf = (seat: Seat): 0 | 1 => (seat % 2 === 0 ? 0 : 1);
 
 export function createRound(
@@ -201,11 +200,6 @@ export function isRedeal(round: TarneebRound): boolean {
   return round.phase === 'complete' && round.declarer === null;
 }
 
-/**
- * Points per team for a finished contract: the contract team scores the tricks
- * it took when it reached the bid, and the defenders score the bid when it did
- * not. `declarerTeam` is a team index (0 or 1).
- */
 /**
  * Points per team for a finished contract.
  *

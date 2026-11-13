@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Livewire\Livewire;
 
-// ─── Model scope semantics ─────────────────────────────────────────────────
-
 test('allowedTransitCities is null when unscoped and for superadmin', function () {
     $plain = User::factory()->create(['role' => 'user', 'permissions' => ['transit.approve']]);
     $empty = User::factory()->create(['role' => 'user', 'permission_scopes' => ['transit' => []]]);
@@ -54,8 +52,6 @@ test('transit capabilities are still restricted by governorate scope', function 
     expect($user->hasPermissionInCity('transit.approve', 'homs'))->toBeTrue()
         ->and($user->hasPermissionInCity('transit.approve', 'aleppo'))->toBeFalse();
 });
-
-// ─── Admin drafts ──────────────────────────────────────────────────────────
 
 test('scoped transit admin only sees drafts in their governorates', function () {
     seedCity('homs');
@@ -111,8 +107,6 @@ test('scoped transit admin can approve and reject inside scope', function () {
         ->assertOk();
     $this->assertDatabaseHas('route_drafts', ['id' => $reject->id, 'status' => 'rejected']);
 });
-
-// ─── Admin routes + logs ───────────────────────────────────────────────────
 
 test('scoped transit admin route list and logs are filtered by governorate', function () {
     seedCity('homs');
@@ -196,8 +190,6 @@ test('moving a route requires access to both source and target governorates', fu
     $this->assertDatabaseHas('routes', ['id' => 'route-aleppo-1', 'city_id' => 'homs']);
 });
 
-// ─── Delete endpoint ───────────────────────────────────────────────────────
-
 test('deleting a route is scoped by governorate', function () {
     seedCity('homs');
     seedCity('aleppo');
@@ -227,8 +219,6 @@ test('deleting a route requires the delete capability', function () {
 
     $this->assertDatabaseHas('routes', ['id' => 'route-homs-1']);
 });
-
-// ─── Import ────────────────────────────────────────────────────────────────
 
 test('scoped staff import preview only shows candidates in their governorates', function () {
     seedCity('homs');
@@ -282,8 +272,6 @@ test('import publish is rejected outside the governorate scope', function () {
         ])
         ->assertForbidden();
 });
-
-// ─── Studio ────────────────────────────────────────────────────────────────
 
 function scopeLineGeojson(): array
 {
@@ -351,8 +339,6 @@ test('scoped staff cannot open out-of-scope drafts or routes in studio', functio
     $this->actingAs($user)->getJson("/api/v1/studio/routes/{$outsideRoute->id}/from-route")->assertForbidden();
 });
 
-// ─── Filament form data mapping ────────────────────────────────────────────
-
 test('mergePermissionFormData folds grouped checkboxes and preserves unknown capabilities', function () {
     $merged = UserResource::mergePermissionFormData([
         'permissions' => ['*'],
@@ -404,8 +390,6 @@ test('every permission group has a project icon and matching capability prefix',
     }
 });
 
-// ─── Inertia sharing ───────────────────────────────────────────────────────
-
 test('permission scopes are shared with the frontend', function () {
     $user = capabilityUser(['transit.approve'], ['homs']);
 
@@ -416,8 +400,6 @@ test('permission scopes are shared with the frontend', function () {
             ->where('auth.user.permissions', ['transit.approve'])
         );
 });
-
-// ─── Filament form smoke test ──────────────────────────────────────────────
 
 test('filament user form renders grouped permissions with project icons', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);

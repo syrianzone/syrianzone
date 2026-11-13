@@ -162,7 +162,6 @@ class AdminServer extends Server
         ListPromiseSectorsTool::class,
 
         ToolSearch::class => [
-            // Places
             ApprovePlaceTool::class,
             RejectPlaceTool::class,
             UpdatePlaceTool::class,
@@ -170,7 +169,6 @@ class AdminServer extends Server
             DeletePlacePhotoTool::class,
             DeletePlaceTool::class,
 
-            // SyOfficial
             CreateSyOfficialCategoryTool::class,
             UpdateSyOfficialCategoryTool::class,
             ToggleSyOfficialCategoryTool::class,
@@ -182,7 +180,6 @@ class AdminServer extends Server
             DeleteSyOfficialEntityTool::class,
             ReorderSyOfficialEntitiesTool::class,
 
-            // Government apps
             CreateGovAppTool::class,
             UpdateGovAppTool::class,
             ToggleGovAppTool::class,
@@ -190,7 +187,6 @@ class AdminServer extends Server
             RestoreGovAppTool::class,
             ReorderGovAppsTool::class,
 
-            // Transit
             ApproveTransitDraftTool::class,
             RejectTransitDraftTool::class,
             SetTransitRouteStatusTool::class,
@@ -198,7 +194,6 @@ class AdminServer extends Server
             MoveTransitRouteTool::class,
             DeleteTransitRouteTool::class,
 
-            // Promises
             CreatePromiseTool::class,
             UpdatePromiseTool::class,
             AddPromiseUpdateTool::class,
@@ -223,7 +218,6 @@ class AdminServer extends Server
             DeletePromiseSectorTool::class,
             ReorderPromiseSectorsTool::class,
 
-            // User moderation
             SetUserBanTool::class,
         ],
     ];

@@ -42,9 +42,6 @@ class PlacePresenter
         return $query->paginate($perPage);
     }
 
-    /**
-     * Re-hydrate a single place for presentation.
-     */
     public function present(Place $place, ?int $viewerId = null): Place
     {
         return $this->query($viewerId)->findOrFail($place->id);

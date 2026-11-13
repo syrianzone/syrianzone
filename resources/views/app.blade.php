@@ -7,7 +7,6 @@
          theme script below rewrites it to the resolved theme's scheme. --}}
     <meta name="color-scheme" content="light dark">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    {{-- links the browser pageload trace to the backend request that rendered it --}}
     {!! \Sentry\Laravel\Integration::sentryMeta() !!}
 
     {{-- Per-page SEO and share-preview tags, printed here on every response.
@@ -90,7 +89,6 @@
     <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/ibm-plex-sans-arabic/ibm-plex-sans-arabic-regular.woff2">
     @endunless
 
-    <!-- Meta/Icons -->
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" href="/assets/favicon.png" />
     <link rel="apple-touch-icon" href="/assets/favicon.png" />
@@ -136,7 +134,6 @@
         })();
     </script>
     
-    <!-- Runtime Reverb Config -->
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         window.REVERB_CONFIG = window.REVERB_CONFIG || {
             host: "{{ config('broadcasting.connections.reverb.client.host') }}",
@@ -146,7 +143,6 @@
         };
     </script>
     
-    <!-- Scripts & Styles -->
     @viteReactRefresh
     @vite(['resources/js/app.tsx'])
     @inertiaHead
@@ -169,7 +165,6 @@
         });
     </script>
 
-    <!-- Service Worker Registration -->
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {

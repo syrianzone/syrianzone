@@ -9,7 +9,6 @@ export default function PrioritiesPage() {
         <MainLayout>
             
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors">
-                {/* Hero Section */}
                 <section className="bg-card py-12 shadow-sm border-b border-border relative z-0">
                     <div className="container mx-auto px-4 text-center">
                         <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">أولويات سوريا المستقبل</h1>

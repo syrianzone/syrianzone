@@ -88,7 +88,6 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
 
             {/* Content Area */}
             {loading ? (
-                /* Skeleton loader */
                 <div className="w-full animate-pulse" dir="rtl" aria-hidden="true">
                     <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1.5">
                         <div className="h-5 bg-muted rounded w-16" />
@@ -104,7 +103,6 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                     </div>
                 </div>
             ) : error ? (
-                /* Error block */
                 <Card className="border-destructive/20 bg-destructive/5 text-center p-8">
                     <CardContent className="flex flex-col items-center gap-3">
                         <AlertCircle className="h-10 w-10 text-destructive" />
@@ -116,7 +114,6 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                     </CardContent>
                 </Card>
             ) : displayedEvents.length === 0 ? (
-                /* Empty state */
                 <Card className="border-dashed border-2 border-border bg-transparent p-12 text-center">
                     <CardContent className="flex flex-col items-center gap-2">
                         <Calendar className="h-10 w-10 text-muted-foreground/60 mb-2" />
@@ -126,7 +123,6 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                     </CardContent>
                 </Card>
             ) : (
-                /* Single Event Layout (Homepage Spotlight) - plain row, no card */
                 (() => {
                     const event = displayedEvents[0];
                     return (

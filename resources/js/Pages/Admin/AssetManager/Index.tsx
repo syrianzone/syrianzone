@@ -42,14 +42,12 @@ interface UploadResult {
 }
 
 export default function AssetManagerIndex() {
-    // Upload state
     const [file, setFile] = useState<File | null>(null);
     const [folder, setFolder] = useState<string>('downloads');
     const [uploading, setUploading] = useState<boolean>(false);
     const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
 
-    // Browser state
     const [files, setFiles] = useState<R2File[]>([]);
     const [totalSize, setTotalSize] = useState<number>(0);
     const [loadingFiles, setLoadingFiles] = useState<boolean>(true);
@@ -167,7 +165,6 @@ export default function AssetManagerIndex() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    // Filter files
     const foldersList = Array.from(new Set(files.map(f => f.folder)));
 
     const filteredFiles = files.filter(f => {
@@ -177,7 +174,6 @@ export default function AssetManagerIndex() {
         return matchesFolder && matchesSearch;
     });
 
-    // Bulk download all files as ZIP
     const handleDownloadAll = async () => {
         if (files.length === 0) return;
         setDownloadingZip(true);
@@ -232,7 +228,6 @@ export default function AssetManagerIndex() {
             
             <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
                 
-                {/* Header Stats */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -277,7 +272,6 @@ export default function AssetManagerIndex() {
                         </TabsTrigger>
                     </TabsList>
 
-                    {/* TAB 1: FILE BROWSER */}
                     <TabsContent value="browser" className="space-y-4">
                         <Card className="shadow-md border-border">
                             <CardHeader className="pb-4">
@@ -289,7 +283,6 @@ export default function AssetManagerIndex() {
                                         </CardDescription>
                                     </div>
 
-                                    {/* Search & Folder Filters */}
                                     <div className="flex flex-wrap gap-2 w-full md:w-auto">
                                         <div className="relative flex-1 min-w-[200px]">
                                             <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -303,7 +296,6 @@ export default function AssetManagerIndex() {
                                     </div>
                                 </div>
 
-                                {/* Folder Pills */}
                                 {foldersList.length > 0 && (
                                     <div className="flex flex-wrap gap-2 pt-3">
                                         <FilterChip
@@ -413,7 +405,6 @@ export default function AssetManagerIndex() {
                                     </div>
                                 )}
 
-                                {/* Load More */}
                                 {hasMore && !loadingFiles && (
                                     <div className="mt-6 text-center">
                                         <Button
@@ -440,7 +431,6 @@ export default function AssetManagerIndex() {
                         </Card>
                     </TabsContent>
 
-                    {/* TAB 2: FILE UPLOAD */}
                     <TabsContent value="upload">
                         <Card className="shadow-md border-border">
                             <CardHeader>

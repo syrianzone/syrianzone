@@ -27,8 +27,6 @@ beforeEach(function () {
     $this->actor = User::factory()->create();
 });
 
-// ─── Approve ────────────────────────────────────────────────────────────────
-
 it('approves an original draft into a new published route', function () {
     seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     $draft = transitDraft('homs', ['name_ar' => 'خط جديد', 'name_en' => 'New', 'price' => 500]);
@@ -92,8 +90,6 @@ it('republishes a linked route when its edit is approved', function () {
         ->toBeTrue();
 });
 
-// ─── Reject ─────────────────────────────────────────────────────────────────
-
 it('rejects a draft and records the reason', function () {
     seedCity('homs');
     $draft = transitDraft('homs');
@@ -134,8 +130,6 @@ it('refuses to reject a draft that is not pending', function () {
     $this->service->rejectDraft($draft, null, $this->actor->id);
 })->throws(TransitActionException::class, 'is already rejected');
 
-// ─── Status ─────────────────────────────────────────────────────────────────
-
 it('changes a route status and logs the change', function () {
     seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs', ['status' => 'published']);
@@ -153,8 +147,6 @@ it('refuses a status change that would change nothing', function () {
 
     $this->service->setRouteStatus($route, 'published', $this->actor->id);
 })->throws(TransitActionException::class, 'is already published');
-
-// ─── Field updates ──────────────────────────────────────────────────────────
 
 it('updates only the fields it is given', function () {
     seedCity('homs');
@@ -189,8 +181,6 @@ it('refuses an update carrying no recognised fields', function () {
     $this->service->updateRoute($route, ['status' => 'hidden'], $this->actor->id);
 })->throws(TransitActionException::class, 'No fields to update');
 
-// ─── Move ───────────────────────────────────────────────────────────────────
-
 it('moves a stop-less route to another governorate and clears both caches', function () {
     seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     seedCity('aleppo', ['name_ar' => 'حلب', 'name_en' => 'Aleppo']);
@@ -216,8 +206,6 @@ it('refuses a move to the governorate the route is already in', function () {
 
     $this->service->moveRoute($route, 'homs', $this->actor->id);
 })->throws(TransitActionException::class, 'already belongs to governorate homs');
-
-// ─── Delete ─────────────────────────────────────────────────────────────────
 
 it('deletes a route and prunes the stops nothing references any more', function () {
     seedCity('homs');
@@ -259,8 +247,6 @@ it('keeps a stop that another route still references', function () {
     expect(DB::table('stops')->where('id', 'shared')->exists())->toBeTrue();
 });
 
-// ─── Scope filtering on the listings ────────────────────────────────────────
-
 it('filters every listing by the governorates it is given', function () {
     seedCity('homs');
     seedCity('aleppo');
@@ -286,8 +272,6 @@ it('returns everything when the governorate filter is null', function () {
 
     expect($this->service->routes(null))->toHaveCount(2);
 });
-
-// ─── Combined Damascus / Rif Dimashq cache invalidation ─────────────────────
 
 it('invalidates the combined map when either of the paired governorates changes', function () {
     seedCity('damascus');

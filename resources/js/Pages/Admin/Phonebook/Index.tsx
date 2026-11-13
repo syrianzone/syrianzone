@@ -26,9 +26,7 @@ interface AdminPhonebookProps {
 export default function PhonebookAdminIndex({ categories, entries }: AdminPhonebookProps) {
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Gated per capability, matching the route tags. The panel used to render
-    // every control for any phonebook.* holder, so a phonebook.reorder-only
-    // account was offered delete and toggle buttons it cannot use.
+    // Each control is gated on the capability its route requires (routes/web.php).
     const can = useCan();
     const canCreate = can('phonebook.create');
     const canEdit = can('phonebook.edit');
@@ -36,7 +34,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
     const canDelete = can('phonebook.delete');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-    // Dialog States
     const [categoryModalOpen, setCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<PhonebookCategory | null>(null);
 
@@ -66,7 +63,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
         });
     }, [entries, selectedCategory, searchTerm]);
 
-    // Category Handlers
     const openCreateCategory = () => {
         setEditingCategory(null);
         setCategoryModalOpen(true);
@@ -90,7 +86,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
         });
     };
 
-    // Entry Handlers
     const openCreateEntry = () => {
         setEditingEntry(null);
         setEntryForm({
@@ -158,7 +153,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
             <div className="min-h-screen bg-background py-8" dir="rtl">
                 <div className="container mx-auto px-4 max-w-7xl space-y-6">
 
-                    {/* Top Breadcrumb & Controls */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-6 rounded-2xl border border-border shadow-xs">
                         <div className="flex items-center gap-3">
                             <Button variant="outline" size="icon" asChild className="rounded-xl">
@@ -188,7 +182,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         </div>
                     </div>
 
-                    {/* Category Selector Cards */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-2">
                         <Button
                             variant={selectedCategory === 'all' ? 'default' : 'outline'}
@@ -227,7 +220,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         })}
                     </div>
 
-                    {/* Filter & Search Bar */}
                     <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-card p-4 rounded-xl border border-border">
                         <div className="relative w-full sm:w-80">
                             <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -243,7 +235,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         </div>
                     </div>
 
-                    {/* Entries Table */}
                     <div className="bg-card rounded-2xl border border-border shadow-xs overflow-hidden">
                         <Table>
                             <TableHeader className="bg-muted/50">
@@ -355,7 +346,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         </Table>
                     </div>
 
-                    {/* Entry Create/Edit Modal */}
                     <Dialog open={entryModalOpen} onOpenChange={setEntryModalOpen}>
                         <DialogContent className="max-w-lg" dir="rtl">
                             <DialogHeader>

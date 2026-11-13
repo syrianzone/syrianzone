@@ -14,12 +14,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
 
-/*
-|--------------------------------------------------------------------------
-| Promises tracker (عداد الوعود): public pages and visitor input
-|--------------------------------------------------------------------------
-*/
-
 test('the list shows only published promises, with the derived overdue state and stats', function () {
     $open = Promise::factory()->published()->create(['title' => 'وعد مفتوح']);
     $late = Promise::factory()->published()->overdue()->create(['title' => 'وعد متأخر']);

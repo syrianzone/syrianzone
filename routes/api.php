@@ -84,14 +84,7 @@ $publicWidgetRoutes = function (?string $namePrefix): void {
         ->name($name('metrics.index'));
 };
 
-/*
-|--------------------------------------------------------------------------
-| Canonical Versioned API Routes (/api/v1/*)
-|--------------------------------------------------------------------------
-*/
-
 Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardRoutes, $publicWidgetRoutes) {
-    // 0. Cross-Platform Authentication, Account, User Preferences & Dynamic Navigation Catalog
     Route::prefix('auth')->group(function () {
         // The token endpoint answers on the canonical path and on the older
         // /google alias; one definition, only the canonical one is named.
@@ -263,7 +256,6 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
     $transitPublicRoutes(false);
     $transitStudioRoutes(null, false);
 
-    // 3. Syrian Compass: account results (auth:sanctum) + account-independent share & stats
     Route::prefix('compass')->group(function () {
         Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
             Route::get('/results', [CompassResultController::class, 'index'])
@@ -299,7 +291,6 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
         });
     });
 
-    // 4. Hidden Places (Mishwar) & HalaSyria Hotels public reads + authenticated writes
     // Static /places/* paths must register before /places/{id}.
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/places/map', [PlaceController::class, 'mapData'])
@@ -398,7 +389,6 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
         ->where('number', '[0-9]{1,9}')->middleware('throttle:voting')
         ->name('api.v1.promises.vote');
 
-    // 5. Public Polls & Voting API
     // Never exposes voter identifiers (voter_key, ip_hash, user_agent) or polls.user_id.
     Route::middleware('throttle:public-api')->group(function () use ($pollLeaderboardRoutes) {
         Route::get('/polls', [VotingDataController::class, 'index'])
@@ -419,7 +409,6 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
         $pollBallotRoutes('/polls/ballots', null);
     });
 
-    // 6. Contributors, Population Atlas, Widgets & Utilities (versioned under /api/v1/*)
     $publicWidgetRoutes('api.v1.');
 
     Route::middleware('throttle:60,1')->group(function () {

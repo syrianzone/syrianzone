@@ -167,7 +167,6 @@ export default function ParliamentChart2026({ members, dim, onDimChange, selecte
         return [...map.entries()].sort((a, b) => b[1] - a[1]);
     }, [active, dim]);
     const groupOrder = useMemo(() => groups.map(([g]) => g), [groups]);
-    // Wedge columns: contiguous angular sectors, filled right → left
     const dots = useMemo(() => hemicycleWedges(active, groupOrder, dim), [active, groupOrder, dim]);
 
     const govColor = useMemo(() => {

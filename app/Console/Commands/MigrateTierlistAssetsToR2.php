@@ -10,18 +10,8 @@ use Illuminate\Support\Facades\Storage;
 
 class MigrateTierlistAssetsToR2 extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'tierlist:migrate-to-r2 {--dry-run : Only log actions without uploading or modifying DB}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Upload local TierList candidate images to R2 storage and update database URLs';
 
     /**
@@ -32,9 +22,6 @@ class MigrateTierlistAssetsToR2 extends Command
         'public/assets/tierlist',
     ];
 
-    /**
-     * Execute the console command.
-     */
     public function handle(): int
     {
         $isDryRun = $this->option('dry-run');
@@ -81,11 +68,9 @@ class MigrateTierlistAssetsToR2 extends Command
                 $relativePathname = str_replace('\\', '/', $file->getRelativePathname());
                 $filename = $file->getFilename();
 
-                // Store both with subfolder (tierlist/candidates/jolani/jolani75.png) and flat (tierlist/candidates/jolani75.png)
                 $r2Path = 'tierlist/candidates/' . $filename;
                 $cdnUrl = ($r2Url ? $r2Url : 'https://cdn.example.com') . '/' . $r2Path;
 
-                // Map local path with relative subfolder (e.g. /tierlist-assets/images/jolani/jolani75.png)
                 $relBaseDir = ltrim($relDir, 'public/');
                 $urlMap['/' . $relBaseDir . '/' . $relativePathname] = $cdnUrl;
                 $urlMap['/' . trim($relDir, '/') . '/' . $relativePathname] = $cdnUrl;
@@ -117,7 +102,6 @@ class MigrateTierlistAssetsToR2 extends Command
 
         $this->info("Upload step completed. Uploaded: {$uploadedCount}, Skipped: {$skippedCount}.");
 
-        // Update database records in candidates table
         $updatedCandidates = 0;
         foreach (Candidate::whereNotNull('image_url')->cursor() as $candidate) {
             $currentUrl = $candidate->image_url;
@@ -134,7 +118,6 @@ class MigrateTierlistAssetsToR2 extends Command
             }
         }
 
-        // Update database records in questions table if present and table exists
         $updatedQuestions = 0;
         if (class_exists(Question::class) && \Illuminate\Support\Facades\Schema::hasTable('questions')) {
             foreach (Question::whereNotNull('image_url')->cursor() as $question) {

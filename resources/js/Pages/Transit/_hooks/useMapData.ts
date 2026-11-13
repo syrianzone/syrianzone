@@ -4,8 +4,6 @@ import type { Draft } from '../_types/admin'
 import { apiErrorMessage } from '@/Lib/api'
 import { transitApi, type MapDataResponse } from '../_lib/api'
 
-// ─── Map data (routes + stops GeoJSON) ───────────────────────────────────────
-
 export function useMapData(cityId: string | undefined) {
   const { data, isLoading, error } = useQuery<MapDataResponse>({
     queryKey: ['mapData', cityId],
@@ -20,8 +18,6 @@ export function useMapData(cityId: string | undefined) {
     error: error ? apiErrorMessage(error, 'تعذّر تحميل بيانات المدينة') : null,
   }
 }
-
-// ─── City routes list ─────────────────────────────────────────────────────────
 
 /**
  * `initialData` is the list the server sent with the page, when it sent one:
@@ -38,8 +34,6 @@ export function useRoutes(cityId: string, initialData?: RouteProperties[]) {
   })
 }
 
-// ─── Admin drafts ─────────────────────────────────────────────────────────────
-
 /**
  * Pending route drafts for the moderation queue.
  *
@@ -55,8 +49,6 @@ export function useAdminDrafts(enabled = true) {
     staleTime: 30_000,
   })
 }
-
-// ─── Prefetch helpers (called on hover) ──────────────────────────────────────
 
 export function usePreloadCity() {
   const queryClient = useQueryClient()

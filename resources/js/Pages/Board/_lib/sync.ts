@@ -77,7 +77,6 @@ export function useBoardSync(opts: {
     }
   }, []);
 
-  // hydrate once per login
   useEffect(() => {
     if (!opts.enabled || hydrated.current) return;
     let cancelled = false;
@@ -122,7 +121,6 @@ export function useBoardSync(opts: {
     return () => { cancelled = true; };
   }, [opts.enabled, opts.hadLocal, save]);
 
-  // debounced save on every change
   useEffect(() => {
     if (!opts.enabled || !hydrated.current) return;
     if (opts.doc === lastSynced.current) return;

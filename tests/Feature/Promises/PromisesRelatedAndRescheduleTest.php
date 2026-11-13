@@ -9,12 +9,6 @@ use App\Services\Promises\PromiseEditor;
 use App\Services\Promises\PromisePresenter;
 use Illuminate\Support\Facades\DB;
 
-/*
-|--------------------------------------------------------------------------
-| Related Promises & Deadline Rescheduling Tests
-|--------------------------------------------------------------------------
-*/
-
 test('saving related_promise_ids establishes bidirectional relationships with canonical pairs', function () {
     $speaker = PromiseSpeaker::factory()->create();
     $editor = app(PromiseEditor::class);

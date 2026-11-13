@@ -232,8 +232,7 @@ it('still refuses the page shell to a user with no capability in the module', fu
 
 it('lets a module-scoped account work across its whole module', function () {
     // An account holding every phonebook.* capability must reach every phonebook
-    // route. This was written when `phonebook_admin` implied that bundle through
-    // a prefix table; the bundle is now stored, so the account says so.
+    // route.
     $staff = moduleStaff('phonebook');
 
     $category = pbCategory();

@@ -13,11 +13,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * The places moderation domain, transport-free.
  *
- * Every method here used to live inline in PlaceAdminController, which made it
- * unreachable from anywhere except an HTTP request carrying a session cookie.
- * Extracting it means the web dashboard and the agent MCP surface run the exact
- * same validation, state guards, locking and cache invalidation, instead of two
- * copies drifting apart.
+ * The web dashboard and the agent MCP surface run the exact same validation,
+ * state guards, locking and cache invalidation, instead of two copies drifting
+ * apart.
  *
  * Rules that must not be relaxed:
  *  - Only `pending` places may be approved or rejected.

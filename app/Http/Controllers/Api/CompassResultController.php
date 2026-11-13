@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 
 class CompassResultController extends Controller
 {
-    /** List the current user's saved runs (newest first). */
     public function index(Request $request)
     {
         $results = CompassResult::where('user_id', $request->user()->id)
@@ -20,7 +19,6 @@ class CompassResultController extends Controller
         return response()->json(['data' => $results]);
     }
 
-    /** Save a completed run to the account. */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -53,14 +51,12 @@ class CompassResultController extends Controller
         return response()->json(['data' => $result->toPayload()], 201);
     }
 
-    /** Delete one of the user's runs. */
     public function destroy(Request $request, $id)
     {
         $deleted = CompassResult::where('user_id', $request->user()->id)->where('id', $id)->delete();
         return response()->json(['deleted' => (bool) $deleted]);
     }
 
-    /** Delete all of the user's runs. */
     public function destroyAll(Request $request)
     {
         $count = CompassResult::where('user_id', $request->user()->id)->delete();

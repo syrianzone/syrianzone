@@ -108,7 +108,6 @@ export default function Tarneeb() {
     return () => window.clearTimeout(timer);
   }, [round, paused]);
 
-  // A new trick or turn drops any picked card.
   useEffect(() => {
     setSelected(null);
   }, [round]);

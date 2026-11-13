@@ -336,7 +336,6 @@ html {
 @theme {
     --font-sans: var(--site-font, 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif);
 
-    /* Theme mappings */
     --color-background: hsl(var(--background));
     --color-foreground: hsl(var(--foreground));
     --color-card: hsl(var(--card));
@@ -361,7 +360,6 @@ html {
     --radius-sm: calc(var(--radius) - 4px);
 }
 
-/* Main theme variables */
 :root {
     /* Native UI (select popups, date pickers, scrollbars, file inputs, the
        pre-CSS canvas) follows the theme. Light/dark per theme must match the

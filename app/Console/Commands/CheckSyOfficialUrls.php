@@ -144,7 +144,6 @@ class CheckSyOfficialUrls extends Command
                     continue;
                 }
 
-                // Check HTML signatures for deleted/unavailable account pages
                 $isDeleted = false;
                 $matchedSignature = '';
                 if (isset($this->deletedSignatures[$basePlatform])) {

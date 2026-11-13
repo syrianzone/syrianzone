@@ -6,12 +6,6 @@ use App\Models\User;
 use App\Support\Agents\TokenIssuer;
 use App\Support\Permissions\PermissionCatalogue;
 
-/*
-|--------------------------------------------------------------------------
-| Discovery and JSON-RPC surface for promises tracker tools
-|--------------------------------------------------------------------------
-*/
-
 test('a token with all six promises.* abilities is offered the read tools and not other modules', function () {
     $permissions = [
         'promises.create',

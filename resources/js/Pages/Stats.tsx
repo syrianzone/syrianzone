@@ -14,7 +14,6 @@ export default function Stats() {
             
 
             <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl min-h-screen text-foreground">
-                {/* Page Header */}
                 <div className="text-center mb-8 space-y-4">
                     <div className="inline-flex p-3 bg-primary/10 rounded-full text-primary mb-2">
                         <BarChart3 className="w-10 h-10" />

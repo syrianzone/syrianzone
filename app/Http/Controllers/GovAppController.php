@@ -10,18 +10,13 @@ use Inertia\Inertia;
 
 class GovAppController extends Controller
 {
-    /**
-     * Render the public government applications directory page.
-     */
     public function index(GovAppPresenter $presenter)
     {
         $apps = Cache::remember(GovAppService::APPS_CACHE_KEY, 600, function () use ($presenter) {
-            // Auto seed initial dataset if empty
             if (GovApp::count() === 0) {
                 try {
                     (new \Database\Seeders\GovAppsSeeder())->run();
                 } catch (\Exception $e) {
-                    // Fail gracefully
                 }
             }
 

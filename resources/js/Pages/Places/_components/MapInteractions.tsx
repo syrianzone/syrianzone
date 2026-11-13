@@ -39,7 +39,6 @@ export function MapInteractions(props: {
     };
   }, [map]);
 
-  // cursor for add-mode on empty areas
   useEffect(() => {
     map.getCanvas().style.cursor = props.addMode ? 'crosshair' : '';
   }, [props.addMode, map]);

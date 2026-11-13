@@ -66,9 +66,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // General user moderation (banning). Not a content module: this is
             // application-wide, so it is authorised by its own capability.
             'users_admin'     => \App\Http\Middleware\ModuleCapabilityGuard::class,
-            // Superadmin-only modules that used to have no capability of their
-            // own: the game content, the hosted-file manager and the site-wide
-            // settings surfaces.
+            // Superadmin-only modules: the game content, the hosted-file manager
+            // and the site-wide settings surfaces.
             'guesswho_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
             'assets_admin'    => \App\Http\Middleware\ModuleCapabilityGuard::class,
             'site_admin'      => \App\Http\Middleware\ModuleCapabilityGuard::class,

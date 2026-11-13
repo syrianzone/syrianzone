@@ -151,11 +151,8 @@ class PollController extends Controller
 
     public function index(Request $request)
     {
-        // Same gate as renderIndex(). This was `$request->user() ? Poll::all() :`,
-        // i.e. any signed-in account saw polls that had not launched, while the
-        // page at /polls showed them only to a polls editor. Two representations
-        // of one list, disagreeing. Nothing in the app called it, but the
-        // capability should decide the same way wherever the list is served.
+        // Same gate as renderIndex(): the capability decides the same way
+        // wherever the list is served.
         return $this->canViewInactive($request) ? Poll::all() : Poll::where('is_active', true)->get();
     }
 

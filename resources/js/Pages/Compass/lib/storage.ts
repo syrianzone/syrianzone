@@ -5,7 +5,7 @@ import type { AnswerMap, CompassResult, QuizVersion } from '@/Domain/compass/typ
 
 const KEY_PROGRESS = 'sz-compass-v2-progress';
 const KEY_RESULTS = 'sz-compass-v2-results';
-const KEY_PENDING_SAVE = 'sz-compass-v2-pending-save'; // queued account save
+const KEY_PENDING_SAVE = 'sz-compass-v2-pending-save';
 
 export interface Progress {
   version: QuizVersion;
@@ -23,7 +23,6 @@ function safeParse<T>(raw: string | null, fallback: T): T {
   }
 }
 
-// ---- progress ----
 export function loadProgress(): Progress | null {
   if (typeof window === 'undefined') return null;
   return safeParse<Progress | null>(localStorage.getItem(KEY_PROGRESS), null);
@@ -41,7 +40,6 @@ export function clearProgress() {
   } catch {}
 }
 
-// ---- results ----
 export function loadResults(): CompassResult[] {
   if (typeof window === 'undefined') return [];
   return safeParse<CompassResult[]>(localStorage.getItem(KEY_RESULTS), []);
@@ -81,7 +79,6 @@ export function updateLocalResult(
   } catch {}
 }
 
-// ---- pending account save (survives the OAuth round-trip) ----
 /** Queue a completed result to be saved to the account once the user is
  *  logged in. Called right before redirecting to the login provider. */
 export function setPendingAccountSave(result: CompassResult) {
@@ -102,7 +99,6 @@ export function takePendingAccountSave(): CompassResult | null {
   return safeParse<CompassResult | null>(raw, null);
 }
 
-// ---- account sync ----
 export async function fetchAccountResults(): Promise<CompassResult[]> {
   const json = await client.get<{ data?: CompassResult[] } | CompassResult[]>(`${API_V1}/compass/results`);
   return Array.isArray(json) ? json : (json.data ?? []);
@@ -129,7 +125,6 @@ export async function submitStats(result: CompassResult): Promise<string | null>
   return json.token ?? null;
 }
 
-/** Remove an anonymous stats row via its token. */
 export function removeStats(token: string): Promise<void> {
   return client.delete(`${API_V1}/compass/stats`, { token });
 }

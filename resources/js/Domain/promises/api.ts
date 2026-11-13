@@ -15,7 +15,6 @@ export interface PromiseVoteCounts {
 }
 
 export const promisesApi = {
-  // ─── Public ────────────────────────────────────────────────────────────────
   vote(number: number, believes: boolean, deviceId: string | null): Promise<{ votes: PromiseVoteCounts }> {
     return client.post(`${PUBLIC}/${number}/vote`, { believes, device_id: deviceId });
   },
@@ -28,7 +27,6 @@ export const promisesApi = {
     return client.post(PUBLIC, input);
   },
 
-  // ─── Admin: the promise itself ─────────────────────────────────────────────
   create<T = unknown>(input: unknown): Promise<T> {
     return client.post(ADMIN, input);
   },
@@ -78,7 +76,6 @@ export const promisesApi = {
     return client.post(kind === 'speaker' ? `${ADMIN}/speakers/upload-image` : `${ADMIN}/upload-image`, form);
   },
 
-  // ─── Admin: sectors ────────────────────────────────────────────────────────
   saveSector(id: string | null, input: { label: string; icon: string | null }): Promise<unknown> {
     return id ? client.put(`${ADMIN}/sectors/${id}`, input) : client.post(`${ADMIN}/sectors`, input);
   },
@@ -95,7 +92,6 @@ export const promisesApi = {
     return client.delete(`${ADMIN}/sectors/${id}`);
   },
 
-  // ─── Admin: speakers ───────────────────────────────────────────────────────
   addSpeakerByRef(ref: string): Promise<unknown> {
     return client.post(`${ADMIN}/speakers`, { ref });
   },
@@ -112,7 +108,6 @@ export const promisesApi = {
     return client.post(`${ADMIN}/speakers/${id}/${action}`);
   },
 
-  // ─── Admin: the review queue's reports ─────────────────────────────────────
   reviewReport(id: number, action: 'accept' | 'dismiss'): Promise<unknown> {
     return client.post(`${ADMIN}/reports/${id}/${action}`);
   },

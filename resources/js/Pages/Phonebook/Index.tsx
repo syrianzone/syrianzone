@@ -35,7 +35,6 @@ interface PhonebookProps {
 /** `011-222 3334`, `+963 …` and `0912…` are the same number to a reader. */
 const stripNumber = (value: string) => value.replace(/[\s\-()+]/g, '');
 
-/** The chip key derived from a row's English category name. */
 const categoryKey = (entry: PhonebookEntry) => (entry.category_en ?? '').toLowerCase().replace(/\s+/g, '_');
 
 const isShortCode = (number: string) => {
@@ -59,8 +58,7 @@ const shortCodesFirst = (a: PhonebookEntry, b: PhonebookEntry) => {
 export default function Index({ initialData, categories: serverCategories = [] }: PhonebookProps) {
     const page = usePage();
     // Server-resolved capabilities (role implications already applied), not the
-    // raw permissions array. The old role check hid the admin UI from a plain
-    // account that had been granted phonebook.* explicitly.
+    // raw permissions array.
     const canManage = useCanAny()('phonebook.edit', 'phonebook.create');
 
     // A shared search link carries `?q=`. It is read from the page URL, which
@@ -83,7 +81,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
             }];
         }
 
-        const derived = new Map<string, string>(); // category key -> label
+        const derived = new Map<string, string>();
         initialData.forEach(item => {
             if (item.category_en) {
                 derived.set(categoryKey(item), item.category_ar ?? item.category_en);
@@ -112,12 +110,10 @@ export default function Index({ initialData, categories: serverCategories = [] }
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    // Clean number for tel: protocol
     const getTelUrl = (number: string) => {
         return `tel:${number.replace(/[\s\-\(\)]/g, '')}`;
     };
 
-    // Clean number for WhatsApp wa.me link
     const getWhatsAppUrl = (number: string) => {
         let cleaned = number.replace(/[\s\-\(\)]/g, '');
         if (cleaned.startsWith('00')) {
@@ -141,7 +137,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                 style={{ fontFamily: "var(--site-font, inherit)" }}
             >
                 
-                {/* Hero Header (Styled like SyOfficial) */}
                 <section className="bg-card py-10 shadow-sm border-b border-border">
                     <div className="container mx-auto px-4 text-center max-w-4xl">
                         {canManage && (
@@ -180,10 +175,8 @@ export default function Index({ initialData, categories: serverCategories = [] }
                     </div>
                 </section>
 
-                {/* Content Section */}
                 <div className="container mx-auto px-4 py-8 max-w-7xl">
                     
-                    {/* Visual Controls */}
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <DirectoryResultCount>
                             {directory.results.length > 0 ? (
@@ -208,7 +201,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                         />
                     ) : viewMode === 'grid' ? (
                         
-                        // Card Grid View (5 items per row on PC)
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                             {directory.results.map(item => (
                                 <Card key={item.id} className="overflow-hidden hover:shadow-md transition-all border border-border bg-card flex flex-col justify-between">
@@ -225,7 +217,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                         </div>
 
                                         <div className="space-y-2">
-                                            {/* Clickable Number display (copies on click) */}
                                             <button aria-label="انقر لنسخ الرقم"
                                                 onClick={() => handleCopy(item.number, item.id)}
                                                 className="w-full text-center py-2 bg-muted/50 hover:bg-muted/80 rounded-xl border border-border/60 font-mono text-base font-extrabold text-foreground tracking-wide transition-colors cursor-pointer group flex items-center justify-center gap-2"
@@ -239,9 +230,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                 )}
                                             </button>
 
-                                            {/* Action Buttons Row */}
                                             <div className="flex items-center gap-2 pt-1">
-                                                {/* Call */}
                                                 <Button aria-label="اتصال هاتفي"
                                                     variant="outline"
                                                     size="sm"
@@ -255,7 +244,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                     </a>
                                                 </Button>
 
-                                                {/* WhatsApp (shown only if available) */}
                                                 {item.is_whatsapp && (
                                                     <Button aria-label="مراسلة عبر واتساب"
                                                         variant="outline"
@@ -272,7 +260,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                 )}
                                             </div>
 
-                                            {/* Bottom Row: Category tag on one side, Source link on the opposite side */}
                                             <div className="pt-1 flex items-center justify-between text-[11px]">
                                                 <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-semibold py-0.5 px-2 shrink-0">
                                                     {item.category_ar}
@@ -299,7 +286,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                         </div>
                     ) : (
                         
-                        // Table View (Styled like SyOfficial)
                         <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
                             <Table>
                                 <TableHeader className="bg-muted">
@@ -350,7 +336,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                             <TableCell>
                                                 <div className="flex items-center gap-1.5">
                                                     
-                                                    {/* Copy */}
                                                     <Button aria-label="نسخ الرقم"
                                                         variant="ghost"
                                                         size="icon"
@@ -365,7 +350,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         )}
                                                     </Button>
 
-                                                    {/* Call */}
                                                     <Button aria-label="اتصال هاتفي"
                                                         variant="ghost"
                                                         size="icon"
@@ -378,7 +362,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         </a>
                                                     </Button>
 
-                                                    {/* WhatsApp */}
                                                     {item.is_whatsapp && (
                                                         <Button aria-label="مراسلة عبر واتساب"
                                                             variant="ghost"
@@ -401,7 +384,6 @@ export default function Index({ initialData, categories: serverCategories = [] }
                         </div>
                     )}
 
-                    {/* Combined and Simplified Notes */}
                     <Card className="border-border bg-muted/20 shadow-sm p-5 mt-8">
                         <div className="flex gap-3.5 items-start text-xs text-muted-foreground leading-relaxed">
                             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />

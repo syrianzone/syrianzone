@@ -10,9 +10,6 @@ use Illuminate\Support\Str;
 
 class PhonebookAdminController extends Controller
 {
-    /**
-     * Render the admin management dashboard for Phonebook.
-     */
     public function renderIndex()
     {
         $categories = PhonebookCategory::orderBy('order_column')->get();
@@ -26,9 +23,6 @@ class PhonebookAdminController extends Controller
         ]);
     }
 
-    /**
-     * Category CRUD: Store
-     */
     public function storeCategory(Request $request)
     {
         $validated = $request->validate([
@@ -49,9 +43,6 @@ class PhonebookAdminController extends Controller
         return redirect()->back()->with('success', 'تم إضافة الفئة بنجاح');
     }
 
-    /**
-     * Category CRUD: Update
-     */
     public function updateCategory(Request $request, string $id)
     {
         $category = PhonebookCategory::findOrFail($id);
@@ -69,9 +60,6 @@ class PhonebookAdminController extends Controller
         return redirect()->back()->with('success', 'تم تحديث الفئة بنجاح');
     }
 
-    /**
-     * Category CRUD: Delete
-     */
     public function destroyCategory(string $id)
     {
         $category = PhonebookCategory::findOrFail($id);
@@ -81,9 +69,6 @@ class PhonebookAdminController extends Controller
         return redirect()->back()->with('success', 'تم حذف الفئة بنجاح');
     }
 
-    /**
-     * Entry CRUD: Store
-     */
     public function storeEntry(Request $request)
     {
         $validated = $request->validate([
@@ -117,9 +102,6 @@ class PhonebookAdminController extends Controller
         return redirect()->back()->with('success', 'تم إضافة الرقم بنجاح');
     }
 
-    /**
-     * Entry CRUD: Update
-     */
     public function updateEntry(Request $request, string $id)
     {
         $entry = PhonebookEntry::findOrFail($id);
@@ -143,9 +125,6 @@ class PhonebookAdminController extends Controller
         return redirect()->back()->with('success', 'تم تحديث البيانات بنجاح');
     }
 
-    /**
-     * Entry CRUD: Toggle Active/Hidden State
-     */
     public function toggleEntryActive(string $id)
     {
         $entry = PhonebookEntry::findOrFail($id);
@@ -156,9 +135,6 @@ class PhonebookAdminController extends Controller
         return redirect()->back()->with('success', $entry->is_active ? 'تم إظهار الرقم بنجاح' : 'تم إخفاء الرقم بنجاح');
     }
 
-    /**
-     * Entry CRUD: Delete
-     */
     public function destroyEntry(string $id)
     {
         $entry = PhonebookEntry::findOrFail($id);
@@ -168,9 +144,6 @@ class PhonebookAdminController extends Controller
         return redirect()->back()->with('success', 'تم حذف الرقم بنجاح');
     }
 
-    /**
-     * Drag-and-drop reorder categories
-     */
     public function reorderCategories(Request $request)
     {
         $request->validate([
@@ -187,9 +160,6 @@ class PhonebookAdminController extends Controller
         return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
     }
 
-    /**
-     * Drag-and-drop reorder entries
-     */
     public function reorderEntries(Request $request)
     {
         $request->validate([

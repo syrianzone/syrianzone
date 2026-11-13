@@ -18,14 +18,11 @@ class AdminUserController extends Controller
     /**
      * Mint a staff account.
      *
-     * This used to set `role => 'admin'` and nothing else, relying on
-     * User::isAdmin() short-circuiting every permission check. That made the
-     * account all-powerful by role and impossible to scope, which is the thing
-     * the move to capabilities is undoing. Access is now written explicitly.
+     * Access is written explicitly as a capability list rather than by role: a
+     * role cannot be scoped to one account.
      *
-     * The default is still the whole catalogue, so a newly minted account has
-     * exactly the access it had before. Trim it per user afterwards — that is
-     * the intended workflow now, and the Filament user form is where it happens.
+     * The default is the whole catalogue; trim it per user afterwards, in the
+     * Filament user form.
      */
     public function store(Request $request)
     {

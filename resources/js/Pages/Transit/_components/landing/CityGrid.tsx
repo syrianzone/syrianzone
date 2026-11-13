@@ -10,7 +10,6 @@ interface CityGridProps {
 export default function CityGrid({ cities: propCities }: CityGridProps) {
   const cities = (propCities && propCities.length > 0 ? propCities : (citiesData as City[])).filter((c) => c.status === 'active')
   
-  // Sort cities: ready first (by routeCount desc), then pending (routeCount = 0)
   const sortedCities = [...cities].sort((a, b) => {
     const aReady = a.routeCount > 0
     const bReady = b.routeCount > 0
@@ -37,7 +36,6 @@ export default function CityGrid({ cities: propCities }: CityGridProps) {
           ))}
         </div>
 
-        {/* Contribute CTA */}
         <Link
           href="/transit/studio"
           className="group mt-6 flex items-center justify-between gap-3 rounded-xl border border-dashed border-border p-4 no-underline transition-colors duration-200 hover:border-primary hover:bg-card sm:p-5"

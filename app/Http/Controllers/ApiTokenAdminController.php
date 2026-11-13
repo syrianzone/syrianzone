@@ -17,9 +17,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  * HTTP adapter for agent API tokens, for the Inertia dashboard.
  *
  * Lives beside the other /admin/* sections rather than in Filament, so token
- * management sits with the rest of the admin UI. The Filament resource that used
- * to own this was removed: two UIs for one job drift, and this is the one people
- * actually visit.
+ * management sits with the rest of the admin UI: two UIs for one job drift.
  *
  * Two modes, chosen by who is asking (the `agent_tokens` middleware decides
  * who may ask at all):

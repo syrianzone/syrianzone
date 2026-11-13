@@ -169,7 +169,6 @@ export default function CompassAdminIndex({
                 </Card>
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    {/* Spectrum distribution */}
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">توزّع الأطياف</CardTitle>
@@ -200,7 +199,6 @@ export default function CompassAdminIndex({
                         </CardContent>
                     </Card>
 
-                    {/* Version + averages */}
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">توزّع النسخ والمتوسطات</CardTitle>
@@ -232,7 +230,6 @@ export default function CompassAdminIndex({
                     </Card>
                 </div>
 
-                {/* Axis averages */}
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base">المتوسط على المحاور</CardTitle>
@@ -250,10 +247,8 @@ export default function CompassAdminIndex({
                     </CardContent>
                 </Card>
 
-                {/* Question average */}
                 <QuestionAverage questions={stats.questions} scope={scope} scopeLabel={scopeLabel} />
 
-                {/* Alignment */}
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base">التوجّه الخارجي</CardTitle>
@@ -268,7 +263,6 @@ export default function CompassAdminIndex({
                     </CardContent>
                 </Card>
 
-                {/* Daily chart */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
@@ -293,7 +287,6 @@ export default function CompassAdminIndex({
                     </CardContent>
                 </Card>
 
-                {/* Recent */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">أحدث المشاركات المجهولة</CardTitle>

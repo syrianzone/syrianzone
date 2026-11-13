@@ -5,11 +5,9 @@
 | Admin UI authorization guards
 |--------------------------------------------------------------------------
 |
-| The admin pages used to render every control for anyone holding any capability
-| in the module, so a `places.review`-only reviewer saw eight moderation buttons
-| and 403'd on all of them, and a `polls.delete`-only account was offered the
-| create-poll button. The endpoints have been tagged per capability since
-| ModuleCapabilityGuard landed; this asserts the UI caught up.
+| A control may only render when the caller holds the capability its endpoint is
+| tagged with: a `places.review`-only reviewer must not be offered the eight
+| moderation buttons that would 403.
 |
 | These are source-level assertions rather than rendered-output tests. The
 | failure mode being guarded against is precisely the one a render test would
@@ -88,8 +86,8 @@ it('derives no module admin gate from a role string', function () {
     // The dashboard is deliberately excluded. It still gates the Filament
     // panel link and the route-submissions tab by role — those are the
     // account kind, not a module capability. Its admin tabs are gated on
-    // capabilities, including the modules that used to be superadmin-only
-    // (guesswho.manage, assets.manage, site.popup, site.navigation).
+    // capabilities, including the superadmin-only modules (guesswho.manage,
+    // assets.manage, site.popup, site.navigation).
     foreach (array_keys(adminUiGateCases()) as $file) {
         $source = file_get_contents(base_path($file));
 
@@ -109,8 +107,8 @@ it('gates the dashboard poll controls on their own capabilities', function () {
 });
 
 it('does not fire a capability-gated fetch from an ungated mount', function () {
-    // useAdminDrafts() used to run unconditionally, so a transit.edit_routes-only
-    // operator hit a 403 on page load for data they cannot see.
+    // A transit.edit_routes-only operator must not fire the drafts fetch, or the
+    // page load 403s for data they cannot see.
     $hook = file_get_contents(base_path('resources/js/Pages/Transit/_hooks/useMapData.ts'));
     $page = file_get_contents(base_path('resources/js/Pages/Transit/admin/Index.tsx'));
 
@@ -128,8 +126,8 @@ it('hides the transit logs tab from operators who cannot read the audit trail', 
 it('gates the import publish buttons on the capability the route requires', function () {
     $source = file_get_contents(base_path('resources/js/Pages/Transit/admin/ImportTab.tsx'));
 
-    // Both modes go through /import-publish, tagged transit_admin:transit.edit_routes.
-    // "Save as draft" used to be offered to anyone with transit.review_drafts.
+    // Both modes go through /import-publish, tagged
+    // transit_admin:transit.edit_routes, so both need that capability.
     $at = strpos($source, "handlePublish('draft')");
     expect($at)->not->toBeFalse();
 

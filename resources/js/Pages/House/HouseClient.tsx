@@ -80,15 +80,10 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         directory.setFilters(next);
     };
 
-    // Sorting
     const [sortColumn, setSortColumn] = useState('Name'); // or 'الاسم'
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-    // Fetch data when mode or province changes
     useEffect(() => {
-        // Skip first render if data is already passed (handled by initialData logic? No, simpler to just fetch)
-        // Actually, initialData is for the initial render.
-        // We need to fetch if constraints change.
 
         let active = true;
         const fetchData = async () => {
@@ -111,16 +106,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
             }
         };
 
-        // If it's the very first mount and matches initial props, we might skip, but logic is simpler if we just treat initial as seed
-        // BUT we want to avoid double fetch on mount.
-        // We'll trust initialData for the specified initial params, but if state changes, we fetch.
-        // For simplicity: We ONLY fetch here if parameters differ from initial OR if we navigated.
-
-        // Actually, easiest way: 
-        // 1. Initial render uses initialData.
-        // 2. Changing tabs/province triggers fetch.
         if (mode === initialMode && province === 'damascus' && data === initialData && data.length > 0) {
-            // Do nothing, data is fresh
         } else {
             fetchData();
         }
@@ -128,7 +114,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         return () => { active = false; };
     }, [mode, province]);
 
-    // Derived Data: Districts (for Winners mode)
     const districts = useMemo(() => {
         if (mode !== 'winners') return [];
         const key = 'Electoral District (الدائرة الانتخابية)';
@@ -138,20 +123,17 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
     const filteredData = directory.results;
 
-    // Sorting Logic
     const sortedData = useMemo(() => {
         if (!sortColumn) return filteredData;
         return [...filteredData].sort((a, b) => {
             const aVal = a[sortColumn];
             const bVal = b[sortColumn];
 
-            // Null handling
             if (!aVal && !bVal) return 0;
             if (!aVal) return 1;
             if (!bVal) return -1;
 
             let res = 0;
-            // Numeric check for BirthYear/Age
             if (sortColumn.includes('Year') || sortColumn.includes('Age') || sortColumn === 'سنة الميلاد') {
                 const aNum = Number(aVal.replace(/\D/g, '')) || 0;
                 const bNum = Number(bVal.replace(/\D/g, '')) || 0;
@@ -163,7 +145,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         });
     }, [filteredData, sortColumn, sortDirection]);
 
-    // Statistics
     const stats = useMemo(() => {
         const total = filteredData.length;
         const male = filteredData.filter(r => r.__sexNorm === 'ذكر').length;
@@ -181,7 +162,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         return { total, male, female, appealed, ageGroups };
     }, [filteredData]);
 
-    // Chart Data
     const sexChartData = [
         { name: 'ذكر', value: stats.male },
         { name: 'أنثى', value: stats.female }
@@ -209,7 +189,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         if (mode === 'voters') setProvince('damascus');
     };
 
-    // Columns to Display
     const displayColumns = useMemo(() => {
         const blacklist = ['__nameNorm', '__placeNorm', '__sexNorm', '__ageGroup', '__appealStatus', 'أسماء جديدة', 'الفائزين'];
         if (mode !== 'candidates') {
@@ -221,7 +200,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         ));
     }, [headers, filteredData, mode]);
 
-    // Specific logic for "New Names"
     const newNames = useMemo(() => {
         if (mode !== 'voters') return [];
         const newNamesKey = headers.find(k => k.includes('أسماء جديدة'));
@@ -235,7 +213,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
     return (
         <div className="space-y-6">
-            {/* Header / Tabs */}
             <div className="flex flex-col items-center mb-8">
                 <h2 className="text-3xl font-bold mb-2 text-foreground">المجلس التشريعي</h2>
                 <p className="text-muted-foreground mb-6 text-center max-w-2xl">
@@ -263,7 +240,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
             </div>
 
             <div {...tabs.panelProps(mode)} className="space-y-6">
-            {/* Disclaimer */}
             <div className="bg-amber-500/10 border-e-4 border-amber-500 p-4 rounded-s shadow-sm">
                 <p className="text-sm text-amber-600 dark:text-amber-400">
                     هذه مبادرة فردية غير حكومية. البيانات مجمعة من موقع اللجنة العليا للانتخابات:
@@ -271,7 +247,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                 </p>
             </div>
 
-            {/* Controls */}
             <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Province Selector (Voters/Winners). Presidential is a single national list. */}
@@ -303,7 +278,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         </div>
                     )}
 
-                    {/* Search */}
                     <div className={mode === 'candidates' ? "md:col-span-2" : "md:col-span-1"}>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">بحث</label>
                         <DirectorySearch
@@ -314,7 +288,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         />
                     </div>
 
-                    {/* Filters Group */}
                     <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-muted-foreground mb-1">الجنس</label>
@@ -387,7 +360,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                 </div>
             </div>
 
-            {/* Stats Cards */}
             {(mode === 'voters' || mode === 'winners' || mode === 'presidential') && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-card p-4 rounded-lg shadow-sm border border-border text-center">
@@ -414,7 +386,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                 </div>
             )}
 
-            {/* Charts Row */}
             {(mode === 'voters' || mode === 'winners' || mode === 'presidential') && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-card p-6 rounded-lg shadow-sm border border-border flex flex-col items-center">
@@ -465,7 +436,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                 </div>
             )}
 
-            {/* New Names Section */}
             {newNames.length > 0 && (
                 <div className="bg-primary/5 border border-primary/20 rounded-lg p-6">
                     <h3 className="text-lg font-bold text-primary mb-2 flex items-center gap-2">
@@ -486,7 +456,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                 </div>
             )}
 
-            {/* Main Table */}
             <div className={`bg-card rounded-lg shadow-sm border border-border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="px-6 py-4 border-b border-border bg-muted/50 flex justify-between items-center">
                     <div>

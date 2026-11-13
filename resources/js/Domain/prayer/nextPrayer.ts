@@ -3,17 +3,10 @@ import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from './methods';
 /**
  * "Next prayer" / "active prayer" for one day of timings.
  *
- * The five surfaces that used to compute this each had their own answer for the
- * two edges of the day:
- *  - after Isha: Roznama and PrayerView rolled over to tomorrow's Fajr, the
- *    /muslim hub and the Board widget returned nothing, and Home named Fajr
- *    while printing today's clock time;
- *  - Sunrise: Home, Roznama, PrayerView and the Board widget count it as the
- *    next event, while the /muslim hub skipped it and went straight to Dhuhr.
- * Both edges are options of this module, not second implementations:
- * `includeSunrise: false` for a widget that only lists the five prayers, and
- * `rollover: false` for a tile whose empty state means "today's prayers are
- * over". Everything else is the union of the old behaviour.
+ * The two edges of the day are options of this module, not second
+ * implementations: `includeSunrise: false` for a widget that only lists the five
+ * prayers (the /muslim hub's choice), and `rollover: false` for a tile whose
+ * empty state means "today's prayers are over".
  */
 
 export interface PrayerMoment {

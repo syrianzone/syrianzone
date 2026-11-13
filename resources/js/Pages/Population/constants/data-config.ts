@@ -75,7 +75,6 @@ export const DATA_TYPE_CONFIG: Record<DataType, DataTypeConfig> = {
         kind: 'value',
         label: 'عدد السكان',
         labelAr: 'السكان',
-        // Vibrant Blues
         colors: { none: NO_DATA_COLOR, low: '#3b82f6', medium: '#6366f1', high: '#8b5cf6' },
         thresholds: [100000, 500000, 1000000],
     },
@@ -83,7 +82,6 @@ export const DATA_TYPE_CONFIG: Record<DataType, DataTypeConfig> = {
         kind: 'value',
         label: 'النازحين داخلياً',
         labelAr: 'النازحين',
-        // Bright Oranges/Reds
         colors: { none: NO_DATA_COLOR, low: '#f97316', medium: '#ea580c', high: '#ef4444' },
         thresholds: [100000, 500000, 1000000],
     },
@@ -91,7 +89,6 @@ export const DATA_TYPE_CONFIG: Record<DataType, DataTypeConfig> = {
         kind: 'value',
         label: 'العائدون من النزوح',
         labelAr: 'العائدون',
-        // Neon Greens
         colors: { none: NO_DATA_COLOR, low: '#22c55e', medium: '#16a34a', high: '#4ade80' },
         thresholds: [50000, 100000, 200000],
     },
@@ -99,7 +96,6 @@ export const DATA_TYPE_CONFIG: Record<DataType, DataTypeConfig> = {
         kind: 'value',
         label: 'معدل الهطول المطري',
         labelAr: 'الأمطار',
-        // Electric Cyans
         colors: { none: NO_DATA_COLOR, low: '#22d3ee', medium: '#0ea5e9', high: '#0284c7' },
         thresholds: [100, 300, 500],
     },

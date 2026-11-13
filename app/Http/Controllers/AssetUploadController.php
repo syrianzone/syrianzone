@@ -10,17 +10,11 @@ use Illuminate\Support\Str;
 
 class AssetUploadController extends Controller
 {
-    /**
-     * Render the Asset Manager page for SuperAdmins.
-     */
     public function index()
     {
         return inertia('Admin/AssetManager/Index');
     }
 
-    /**
-     * Build an S3Client pointed at the R2 bucket.
-     */
     private function r2Client(): S3Client
     {
         $cfg = config('filesystems.disks.r2');
@@ -117,7 +111,6 @@ class AssetUploadController extends Controller
             ];
         };
 
-        // Cache only the first page for 5 minutes.
         try {
             $result = $isFirstPage
                 ? Cache::remember($cacheKey, 300, $fetch)
@@ -138,9 +131,6 @@ class AssetUploadController extends Controller
         ]);
     }
 
-    /**
-     * Upload an asset file to Cloudflare R2 storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -151,10 +141,8 @@ class AssetUploadController extends Controller
         $file   = $request->file('file');
         $folder = trim($request->input('folder', 'uploads'), '/');
 
-        // Sanitize folder path
         $folder = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $folder) ?: 'uploads';
 
-        // Keep original filename if clean, otherwise generate safe name
         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         $cleanName    = Str::slug($originalName);
         $extension    = $file->getClientOriginalExtension();
@@ -162,7 +150,6 @@ class AssetUploadController extends Controller
 
         $path = $folder . '/' . $filename;
 
-        // Upload to R2 disk
         $disk = Storage::disk('r2');
         $disk->putFileAs($folder, $file, $filename, 'public');
 
@@ -180,9 +167,6 @@ class AssetUploadController extends Controller
         ]);
     }
 
-    /**
-     * Delete an asset from Cloudflare R2 storage.
-     */
     public function destroy(Request $request)
     {
         $request->validate([

@@ -38,7 +38,6 @@ export default function GlobalCommandPalette() {
 
     const data = useGlobalSearchData(query, scope, open);
 
-    // Reset state when closed
     useEffect(() => {
         if (!open) {
             setQuery('');

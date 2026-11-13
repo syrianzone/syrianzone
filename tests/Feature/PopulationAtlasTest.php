@@ -43,8 +43,6 @@ function envLog(string $city, float $lat, float $lon, array $overrides = []): Po
     ], $overrides));
 }
 
-// ─── Master data: grouping ─────────────────────────────────────────────────
-
 it('groups demographics by type then source, with cities keyed by name', function () {
     PopulationDemographic::create([
         'data_type' => 'population', 'source_id' => 1, 'city_name' => 'Damascus',
@@ -111,8 +109,6 @@ it('groups rainfall by district code in year order', function () {
         ->and($rainfall['SY-DI'][0]['rainfall'])->toBe(250);
 });
 
-// ─── Master data: the synthesised environmental group ──────────────────────
-
 it('synthesises an environmental group from the log when demographics lack one', function () {
     envLog('Damascus', 33.51, 36.29);
     envLog('Aleppo', 36.20, 37.13);
@@ -158,8 +154,6 @@ it('omits the environmental group entirely when there are no logs', function () 
 
     expect($groups)->not->toHaveKey('environmental');
 });
-
-// ─── Environmental report ─────────────────────────────────────────────────
 
 it('maps a log row into the report shape, renaming the coordinates', function () {
     envLog('Damascus', 33.51, 36.29, ['population_ref' => 2_500_000]);
@@ -235,8 +229,6 @@ it('keeps the country-level reference data and the fixed recommendations', funct
         ->and($report->json('summary.key_findings'))->toHaveCount(3);
 });
 
-// ─── Caching ───────────────────────────────────────────────────────────────
-
 it('caches the master payload and serves the second read from it', function () {
     PopulationDemographic::create([
         'data_type' => 'population', 'source_id' => 1, 'city_name' => 'Damascus', 'value' => 1,
@@ -277,8 +269,6 @@ it('caches the environmental report under its own key', function () {
 
     expect(Cache::has(PopulationAtlasController::ENV_CACHE_KEY))->toBeFalse();
 });
-
-// ─── The page shell ────────────────────────────────────────────────────────
 
 it('renders the atlas page without inlining the payload', function () {
     envLog('Damascus', 33.51, 36.29);

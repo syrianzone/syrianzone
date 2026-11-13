@@ -3,10 +3,8 @@ import { DATA_TYPES, DATA_TYPE_CONFIG, TEMPERATURE_BANDS } from './data-config';
 import { buildLegend, getColor, getTemperatureColor } from '../utils/color-calculator';
 
 /**
- * The atlas legend used to be a second hand-written copy of the numbers in
- * `data-config.ts`, and it drifted: the IDP top band said "أكثر من ٥٠٠ ألف"
- * while the map only starts its top colour above one million. These tests pin
- * the legend to the same bands the fill colours use.
+ * These tests pin the legend to the same bands the fill colours use, so the two
+ * cannot drift.
  */
 describe('population atlas legend and classification', () => {
     it('draws every value-type legend from its own thresholds', () => {

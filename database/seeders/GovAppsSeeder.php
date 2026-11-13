@@ -51,7 +51,6 @@ class GovAppsSeeder extends Seeder
                 $id = "app-{$i}";
             }
 
-            // Icons & Screenshots
             $iconPath = "/assets/apps/{$id}/{$id}icon.png";
             $hasLocalIcon = file_exists(public_path($iconPath));
             $finalIcon = $hasLocalIcon ? $iconPath : null;
@@ -64,7 +63,6 @@ class GovAppsSeeder extends Seeder
                 }
             }
 
-            // Stream icon to R2 if R2 is active
             if ($mediaDisk === 'r2' && $hasLocalIcon) {
                 $fullLocalPath = public_path($iconPath);
                 $r2Path = "govapps/{$id}/icon.webp";
@@ -89,7 +87,6 @@ class GovAppsSeeder extends Seeder
                 $finalIcon = Storage::disk('r2')->url($r2Path);
             }
 
-            // Stream screenshots to R2 if R2 is active
             if ($mediaDisk === 'r2' && !empty($images)) {
                 $r2Images = [];
                 foreach ($images as $idx => $localImgPath) {

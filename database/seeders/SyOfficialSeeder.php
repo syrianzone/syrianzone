@@ -81,7 +81,6 @@ class SyOfficialSeeder extends Seeder
 
             $categorySlug = preg_replace('/\s+/', '_', $rawCategory);
 
-            // Ensure category exists
             if (!OfficialCategory::where('id', $categorySlug)->exists()) {
                 OfficialCategory::create([
                     'id' => $categorySlug,
@@ -122,7 +121,6 @@ class SyOfficialSeeder extends Seeder
             $id = $row['ID'] ?? "entity-{$i}";
             $image = $row['Image Path'] ?? null;
 
-            // Auto-upload local asset to R2 if R2 disk is configured, optimized to 200x200 WebP
             $mediaDisk = config('filesystems.media_disk');
             if ($mediaDisk === 'r2' && !empty($image) && !str_starts_with($image, 'http')) {
                 $localPath = public_path("syofficial-assets/{$image}");

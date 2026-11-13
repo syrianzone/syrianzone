@@ -53,15 +53,9 @@ function capabilityUser(string|array $capabilities, ?array $transitCities = null
 }
 
 /**
- * A staff account scoped to exactly one module, expressed the way the
- * application now expresses it.
- *
- * These used to be written `['role' => 'places_admin', 'permissions' => []]` and
- * relied on User::ROLE_MODULE_PREFIXES to grant the module. Phase D deleted that
- * table, so the same account is now a `user` holding the module's capabilities
- * outright. The behaviour under test is unchanged — a places-scoped operator can
- * still approve places and is still refused everywhere else — only the mechanism
- * matches how access is granted after the migration.
+ * A staff account scoped to exactly one module: a `user` holding the module's
+ * capabilities outright. A places-scoped operator can approve places and is
+ * refused everywhere else.
  */
 function moduleStaff(string $module, array $attributes = []): User
 {

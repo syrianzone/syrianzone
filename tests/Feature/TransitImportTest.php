@@ -16,8 +16,6 @@ function singleKml(): string
     return file_get_contents(base_path('tests/Fixtures/transit-single.kml'));
 }
 
-// ─── Service unit behavior ──────────────────────────────────────────────
-
 test('extractMid accepts share urls and bare mids', function () {
     $s = new TransitKmlImportService;
 
@@ -71,8 +69,6 @@ test('parsePrice handles arabic-indic digits', function () {
         ->and($s->parsePrice('مجاناً'))->toBeNull()
         ->and($s->parsePrice(null))->toBeNull();
 });
-
-// ─── Preview endpoint ───────────────────────────────────────────────────
 
 test('import-preview rejects guests and non-admins', function () {
     $user = User::factory()->create();
@@ -138,8 +134,6 @@ test('import-preview accepts a kml file upload', function () {
         ->assertOk()
         ->assertJsonPath('routes.0.stop_count', 3);
 });
-
-// ─── Publish endpoint ───────────────────────────────────────────────────
 
 test('import-publish rejects guests and non-admins', function () {
     $user = User::factory()->create();

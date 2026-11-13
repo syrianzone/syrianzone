@@ -13,7 +13,6 @@ import type {
  * mutate goes through this one client.
  */
 export const pollsApi = {
-  // ─── Polls (dashboard editor) ──────────────────────────────────────────────
   details(id: string): Promise<PollDetails> {
     return client.get(`${API_ROOT}/polls/${id}`, { params: { include_archived: 1 } });
   },
@@ -35,7 +34,6 @@ export const pollsApi = {
     return client.get<T>(`${API_ROOT}/polls/${slug}/leaderboard`, { params: { status } });
   },
 
-  // ─── Candidate groups ──────────────────────────────────────────────────────
   createGroup(input: { poll_id: string; name: string }): Promise<PollGroup> {
     return client.post(`${API_ROOT}/candidate-groups`, input);
   },
@@ -56,7 +54,6 @@ export const pollsApi = {
     return client.post(`${API_ROOT}/candidate-groups/reorder`, { groups });
   },
 
-  // ─── Candidates ────────────────────────────────────────────────────────────
   createCandidate(input: CandidateInput): Promise<void> {
     return client.post(`${API_ROOT}/candidates`, input);
   },

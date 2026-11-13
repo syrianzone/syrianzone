@@ -1,4 +1,3 @@
-/* Syid-specific styling */
 :root {
     --sz-color-primary: #556A4E;
     --sz-color-accent: #A73F46;
@@ -6,25 +5,18 @@
     --sz-color-ink: #0D1315;
 }
 
-/* Remove forced squarish overrides to follow shadcn style */
-/* The global --radius variable from globals.css will now be respected */
-
-/* Main container with theme-consistent border */
 .sy-custom-page .container.mx-auto.my-8.bg-white {
     border: 1px solid var(--border);
 }
 
-/* Custom styles for the syid elements while respecting global rounding */
 .sy-custom-page #backToTop {
     border: 1px solid var(--border);
 }
 
-/* Color palette sections */
 .sy-custom-page .flex.rounded-lg {
     border: 1px solid var(--border);
 }
 
-/* Ensure footer follows theme */
 .sy-custom-page .footer {
     background-color: var(--background);
     border-top: 1px solid var(--border);
@@ -39,7 +31,6 @@
     color: var(--sz-color-primary);
 }
 
-/* Diagram specific styles - keeping these as they are functional */
 .flag-diagram-wrapper {
     direction: ltr;
 }
@@ -162,7 +153,6 @@
 
 
 
-/* Responsive */
 @media (max-width: 768px) {
     .header h1 {
         font-size: 2.2em;
@@ -179,7 +169,6 @@
     }
 }
 
-/* Added for flag proportions diagram */
 .flag-diagram-wrapper {
     position: relative;
     max-width: 900px;
@@ -223,7 +212,6 @@
 .flag-visual .white {
     background-color: #ffffff;
     position: relative;
-    /* Changed from flex to relative for absolute positioning of stars */
 }
 
 .star {
@@ -250,7 +238,6 @@
     transform: translate(-50%, -50%);
 }
 
-/* Measurement annotations */
 .measurement {
     position: absolute;
     color: var(--text-secondary);
@@ -270,7 +257,6 @@
     background-color: var(--border-color);
 }
 
-/* Horizontal Line Styling */
 .dim-line.h-line {
     height: 1px;
 }
@@ -290,7 +276,6 @@
     right: 0;
 }
 
-/* Vertical Line Styling */
 .dim-line.v-line {
     width: 1px;
 }
@@ -310,7 +295,6 @@
     bottom: 0;
 }
 
-/* Positioning */
 .top-line-h {
     top: -2.5rem;
     left: 0;
@@ -515,7 +499,6 @@
     transform: translateX(-50%);
 }
 
-/* Corrected Left Measurements for star height */
 .left-line-v {
     left: -3.5rem;
     top: 37.5%;
@@ -534,17 +517,14 @@
     left: -3.5rem;
     width: 1rem;
     top: 37.5%;
-    /* Corresponds to top of star */
 }
 
 .left-line-h-2 {
     left: -3.5rem;
     width: 1rem;
     top: 62.5%;
-    /* Corresponds to bottom of star */
 }
 
-/* HayyakumAllah Font Definitions */
 @font-face {
     font-family: 'HayyakumAllah';
     src: url('/syid-assets/fonts/HayyakumAllah/WOFF2/HayyakumAllah-Regular.woff2') format('woff2'),

@@ -11,15 +11,10 @@ use Illuminate\Support\Facades\Auth;
 /**
  * Dev-only identity switching.
  *
- * A "dev role" here is a PRESET, not a `users.role` value. The presets used to
- * double as real roles, and the ones named after a module were only privileged
- * because of a role-prefix table that no longer exists. Each preset is now a
- * plain `user` holding that module's capabilities outright, which is what keeps
- * the dev switcher working.
- *
- * So each preset is now a plain `user` account carrying an explicit capability
- * list, named after the module it previews. The switcher UI is unchanged: it
- * still lists presets, and `/dev/impersonate/{preset}` still accepts them.
+ * A "dev role" here is a PRESET, not a `users.role` value: each preset is a
+ * plain `user` account carrying an explicit capability list, named after the
+ * module it previews. The switcher UI is unchanged: it still lists presets, and
+ * `/dev/impersonate/{preset}` still accepts them.
  */
 class AutoLoginDevUser
 {
@@ -78,8 +73,8 @@ class AutoLoginDevUser
         'admin' => [
             'name' => 'Dev Admin',
             'email' => 'dev-admin@syrian.zone',
-            // The whole catalogue explicitly, so this preset keeps previewing
-            // "staff with everything" after the `admin` alias is retired.
+            // The whole catalogue explicitly, so this preset previews "staff
+            // with everything".
             'permissions' => ['catalogue'],
         ],
         'superadmin' => [

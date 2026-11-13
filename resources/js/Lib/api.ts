@@ -172,7 +172,6 @@ function transportMessage(err: unknown): string | null {
   return null;
 }
 
-/** Every field message in the response, first message per field. */
 function fieldMessages(err: unknown): Record<string, string> {
   const raw = errorBody(err)?.errors;
   if (!raw || typeof raw !== 'object') return {};

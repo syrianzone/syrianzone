@@ -45,7 +45,6 @@ class CompassAdminController extends Controller
         ]);
     }
 
-    /** The character/personality manager. */
     public function renderFigures(Request $request)
     {
         return inertia('Admin/Compass/Figures', [
@@ -203,9 +202,6 @@ class CompassAdminController extends Controller
         return $positions;
     }
 
-    // ---------------- personas ----------------
-
-    /** The persona (spectrum) manager. */
     public function renderPersonas(Request $request)
     {
         return inertia('Admin/Compass/Personas', [

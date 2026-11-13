@@ -57,7 +57,6 @@ class AppIconController extends Controller
 
                 $html = $response->body();
 
-                // Parse JSON-LD for icon
                 if (preg_match('/<script type="application\/ld\+json">(.*?)<\/script>/s', $html, $matches)) {
                     $json = json_decode($matches[1], true);
                     if (! empty($json['image'])) {
@@ -65,7 +64,6 @@ class AppIconController extends Controller
                     }
                 }
 
-                // Fallback: og:image meta
                 if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']/', $html, $matches)) {
                     return $matches[1];
                 }

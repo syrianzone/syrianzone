@@ -176,7 +176,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
         facets,
     });
 
-    // A shared link carries `?q=`. It arrives after hydration, exactly as before.
+    // A shared link carries `?q=`, which arrives after hydration.
     const applyInitialQuery = directory.setQuery;
     useEffect(() => {
         const q = new URLSearchParams(window.location.search).get('q');
@@ -188,10 +188,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
 
     const canModule = useCanModule();
     const canAny = useCanAny();
-    // Gated per action, matching the route each link opens. This used to test
-    // three role strings including syofficial_admin — a role that stopped
-    // granting anything when the role prefixes were removed, so a
-    // syofficial_admin account was shown edit controls that all 403.
+    // Gated per action, matching the route each link opens:
     //   panel link   -> syofficial_admin:any
     //   edit pencil  -> syofficial.edit (the save it leads to)
     const canOpenPanel = canModule('syofficial');
@@ -227,7 +224,6 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
         <MainLayout>
             
 
-            {/* Header / Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background py-12 md:py-16 border-b border-border/40">
                 <div className="container mx-auto px-4 text-center relative z-10 max-w-4xl">
 
@@ -251,7 +247,6 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                         {t.description}
                     </p>
 
-                    {/* Language Switcher */}
                     <div className="flex justify-center gap-2 mb-6">
                         {(['ar', 'en', 'tr', 'ku'] as Language[]).map(lang => (
                             <Button
@@ -267,7 +262,6 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                         ))}
                     </div>
 
-                    {/* Social List Links */}
                     <div className="flex justify-center gap-4 mb-8">
                         <a
                             href="https://x.com/i/lists/1906101934660174006"
@@ -310,7 +304,6 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                 </div>
             </section>
 
-            {/* Main Content / Entity Grid */}
             <div className="container mx-auto px-4 py-8">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <DirectoryResultCount>
@@ -319,7 +312,6 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                         ) : t.noResults}
                     </DirectoryResultCount>
 
-                    {/* View Switcher (Grid / Table) */}
                     <div className="flex items-center gap-2">
                         <DirectoryViewToggle value={viewMode} onChange={setViewMode} className="rounded-xl bg-muted" />
                     </div>

@@ -9,13 +9,13 @@ echo "🚀 Running production startup tasks..."
 echo "🔄 Running database migrations..."
 php /var/www/html/artisan migrate --force
 
-# 1b. Migrate local tierlist images & GeoJSON master files to Cloudflare R2 if present
 echo "📦 Migrating TierList assets to R2..."
 php /var/www/html/artisan tierlist:migrate-to-r2 || echo "⚠️ Tierlist asset migration skipped or failed."
 echo "🗺️ Migrating GeoJSON master downloads to R2..."
 php /var/www/html/artisan geojson:upload-to-r2 || echo "⚠️ GeoJSON asset migration skipped or failed."
 
-# 2. Seed the database (runs each seeder independently to avoid DatabaseSeeder factory dependency on dev-only Faker)
+# Seed the database, running each seeder independently to avoid DatabaseSeeder's
+# factory dependency on dev-only Faker.
 # Skipped on staging: without the real best-ministers poll this seeder falls back
 # to 12 dummy characters whose image files do not exist, which just fills the
 # staging lobby with broken cards. StagingGuessWhoSeeder covers it properly.
@@ -48,7 +48,6 @@ php /var/www/html/artisan promises:import-research || echo "⚠️ Promises rese
 echo "🖼️ Checking the share card renderer..."
 php /var/www/html/artisan og:doctor || echo "⚠️ Share cards cannot be drawn; record pages will use their section card."
 
-# 5. Optimize configurations and cache
 echo "⚡ Optimizing Laravel application..."
 php /var/www/html/artisan optimize:clear
 php /var/www/html/artisan config:cache

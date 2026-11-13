@@ -73,7 +73,6 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
       });
   }, [isLoggedIn, refreshAccount]);
 
-  // ---- build the flattened question list for the chosen version ----
   const items = useMemo(() => {
     const list: { key: string; text: string; axis?: string; target?: string }[] = [];
     for (const a of AXES) {
@@ -89,7 +88,6 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
 
   const totals = useMemo(() => versionTotals(version), [version]);
 
-  // ---- resume offer on mount ----
   useEffect(() => {
     const p = loadProgress();
     if (p && Object.keys(p.answers).length > 0) {
@@ -97,7 +95,6 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
     }
   }, []);
 
-  // ---- autosave progress ----
   useEffect(() => {
     if (phase !== 'quiz') return;
     saveProgress({ version, answers, index, updatedAt: new Date().toISOString() });
@@ -156,7 +153,6 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
     setResumeInfo(null);
   };
 
-  // keyboard 1..5
   useEffect(() => {
     if (phase !== 'quiz') return;
     const onKey = (e: KeyboardEvent) => {
@@ -248,7 +244,6 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
   );
 }
 
-// ---------------- Intro ----------------
 function IntroPanel({
   resumeInfo,
   onStart,
@@ -326,7 +321,6 @@ function IntroPanel({
   );
 }
 
-// ---------------- Quiz ----------------
 function QuizPanel({
   index,
   total,

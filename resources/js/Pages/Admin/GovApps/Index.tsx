@@ -21,8 +21,7 @@ interface AdminGovAppsProps {
 
 export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
 
-    // Gated per capability, matching the route tags. The panel used to render
-    // every control for any govapps.* holder.
+    // Each control is gated on the capability its route requires (routes/web.php).
     const can = useCan();
     const canCreate = can('govapps.create');
     const canEdit = can('govapps.edit');
@@ -33,7 +32,6 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
     const [appDialogOpen, setAppDialogOpen] = useState(false);
     const [selectedApp, setSelectedApp] = useState<GovApp | null>(null);
 
-    // Auto open edit dialog if URL contains ?edit={appId}
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const editId = params.get('edit');
@@ -71,7 +69,6 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
             
 
             <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6" dir="rtl">
-                {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-2xl border shadow-xs">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

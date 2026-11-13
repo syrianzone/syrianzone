@@ -10,9 +10,6 @@ use Inertia\Inertia;
 
 class PhonebookController extends Controller
 {
-    /**
-     * Display the official phonebook page.
-     */
     public function index()
     {
         $categories = Cache::remember(PhonebookCache::CATEGORIES_KEY, 600, function () {
@@ -22,7 +19,6 @@ class PhonebookController extends Controller
                 try {
                     (new \Database\Seeders\PhonebookSeeder())->run();
                 } catch (\Exception $e) {
-                    // Fail gracefully
                 }
             }
 

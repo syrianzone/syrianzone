@@ -88,7 +88,6 @@ class CandidateGroupController extends Controller
             'groups.*.sort_order' => 'required|integer',
         ]);
 
-        // Ensure all group IDs belong to the same poll
         $groupIds = collect($data['groups'])->pluck('id');
         $pollIds = CandidateGroup::whereIn('id', $groupIds)->pluck('poll_id')->unique();
 

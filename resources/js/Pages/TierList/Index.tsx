@@ -41,7 +41,6 @@ export default function Index({ poll, candidates = [], groups = [], voteDay }: T
         <MainLayout>
             
             <div className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
-                {/* Results Link */}
                 <div className="max-w-screen-lg mx-auto mb-4 flex justify-end">
                     <Link href="/tierlist/leaderboard">
                         <Button variant="outline" className="gap-2">

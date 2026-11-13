@@ -184,7 +184,7 @@ $guessWhoRoutes = function (string $room, string $action, ?string $namePrefix): 
     Route::post("/{$room}/{roomCode}/join", [GuessWhoController::class, 'joinRoom'])
         ->middleware('throttle:30,1')
         ->name($name('rooms.join'));
-    // The game's own moves go over Reverb; the WebRTC signaling path is gone.
+    // The game's own moves go over Reverb.
     Route::post("/{$room}/{roomCode}/{$action}", [GuessWhoController::class, 'action'])
         ->middleware('throttle:120,1')
         ->name($name('rooms.actions.store'));
@@ -275,10 +275,8 @@ Route::post('/logout', [AuthController::class, 'logout']);
 Route::get('/dev/impersonate/{role}', [DevController::class, 'impersonate'])->name('dev.impersonate');
 
 Route::middleware('auth:web,sanctum')->group(function () {
-    // 1. Unified User Dashboard Views and Actions
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Legacy unversioned account & user aliases (/api/*)
     Route::post('/api/account/update', [DashboardController::class, 'updateAccount']);
     Route::post('/api/account/avatar', [DashboardController::class, 'updateAvatar'])->middleware('throttle:10,1');
     Route::post('/api/account/delete', [DashboardController::class, 'deleteAccount']);
@@ -315,9 +313,8 @@ Route::middleware('auth:web,sanctum')->group(function () {
             ->middleware('agent_tokens');
     });
 
-    // Hosted-file manager. Was superadmin-only because the group had no
-    // capability; `assets.manage` is granted to the superadmin role through
-    // User::effectivePermissions(), so the default audience is unchanged.
+    // Hosted-file manager. `assets.manage` is granted to the superadmin role
+    // through User::effectivePermissions(), so the audience is superadmins.
     Route::middleware('assets_admin')->group(function () {
         Route::get('/admin/assets', [AssetUploadController::class, 'index'])
             ->middleware('assets_admin:assets.manage');
@@ -367,8 +364,8 @@ Route::middleware('auth:web,sanctum')->group(function () {
             ->name('api.v1.admin.api-tokens.destroy');
     });
 
-    // 2. Polls & General Admin Panel (accessible to core admins and superadmins)
-    // Poll management lives in the unified user dashboard (/dashboard polls tab).
+    // Polls and general admin panel (core admins and superadmins). Poll
+    // management lives in the unified user dashboard (/dashboard polls tab).
     // The legacy /admin/polls/* pages were removed to avoid a duplicate editor;
     // keep redirects so old bookmarks/links land on the dashboard editor.
     Route::redirect('/admin/polls', '/dashboard', 301);
@@ -377,7 +374,7 @@ Route::middleware('auth:web,sanctum')->group(function () {
     Route::middleware('polls_admin')->group(function () {
         // Polls, candidate groups and candidates are one editable surface. The
         // dashboard editor calls the unversioned /api/* paths, so this is the
-        // only mount: the /api/v1/admin/* copy nothing requested is gone.
+        // only mount.
         Route::prefix('api')->group(function () {
             Route::post('/polls', [PollController::class, 'store'])
                 ->middleware('polls_admin:polls.create');
@@ -430,12 +427,9 @@ Route::middleware('auth:web,sanctum')->group(function () {
         });
     });
 
-    // Guess Who content management (migrated from Filament).
-    //
-    // Was gated on the `superadmin` role because the novelty game had no
-    // capability ids. It now has `guesswho.manage`, which only the superadmin
-    // role holds by default (User::effectivePermissions() resolves the whole
-    // catalogue), so the audience is unchanged.
+    // Guess Who content management, gated on `guesswho.manage`, which only the
+    // superadmin role holds by default (User::effectivePermissions() resolves
+    // the whole catalogue).
     Route::middleware('guesswho_admin')->group(function () {
         Route::get('/admin/guesswho', [GuessWhoAdminController::class, 'renderIndex'])
             ->middleware('guesswho_admin:guesswho.manage');
@@ -473,7 +467,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
         });
     });
 
-    // 2b. Hidden Places moderation (core admins, superadmins, places.* holders)
     Route::middleware('places_admin')->group(function () {
         Route::get('/admin/places', [PlaceAdminController::class, 'renderIndex'])
             ->middleware('places_admin:any');
@@ -530,8 +523,7 @@ Route::middleware('auth:web,sanctum')->group(function () {
         })->middleware('transit_admin:any');
 
         // Transit admin API. The dashboard and the studio call the
-        // /api/v1/admin/* paths, so that is the only mount: the
-        // /api/v1/admin/transit/* twin no client requested is gone.
+        // /api/v1/admin/* paths, so that is the only mount.
         Route::prefix('api/v1/admin')->group(function () {
             Route::get('/route-drafts', [TransitAdminController::class, 'index'])
                 ->middleware('transit_admin:transit.review_drafts');
@@ -573,19 +565,11 @@ Route::middleware('auth:web,sanctum')->group(function () {
     });
 
     // Banning a user is a dashboard action, not a transit one: it is called from
-    // resources/js/Pages/Dashboard/Index.tsx. It used to be declared inside the
-    // transit_admin group, which was both a misfiling and a hazard — that group
-    // gates by transit capability, so a user holding only `transit.review_drafts`
-    // reached a user-moderation endpoint, and saving it required the blanket
-    // `any` tag that ModuleCapabilityRoutesTest rightly rejects on a mutating
-    // route.
-    //
-    // It is authorised by the `users.ban` capability rather than the role list
-    // the controller used to carry inline, so it can be granted to one person
+    // resources/js/Pages/Dashboard/Index.tsx. It is authorised by the `users.ban`
+    // capability rather than a role list, so it can be granted to one person
     // without granting it to everyone who shares a role.
     //
-    // No throttle added: this route had none before, and picking a limit is an
-    // operator decision rather than a side effect of moving it.
+    // No throttle: picking a limit is an operator decision.
     Route::middleware('users_admin')->group(function () {
         Route::patch('/api/v1/admin/users/{id}/ban', [DashboardController::class, 'toggleBan'])
             ->middleware('users_admin:users.ban')
@@ -594,7 +578,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
             ->middleware('users_admin:users.ban');
     });
 
-    // 4. SyOfficial Admin Panel (accessible to core admins, syofficial_admin, and superadmins)
     Route::middleware('syofficial_admin')->group(function () {
         Route::get('/admin/syofficial', [SyOfficialAdminController::class, 'renderIndex'])
             ->middleware('syofficial_admin:any');
@@ -632,7 +615,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
         });
     });
 
-    // 5. GovApps Admin Panel
     Route::middleware('govapps_admin')->group(function () {
         Route::get('/admin/govapps', [GovAppsAdminController::class, 'renderIndex'])
             ->middleware('govapps_admin:any');
@@ -655,7 +637,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
         });
     });
 
-    // 6. Phonebook Admin Panel
     Route::middleware('phonebook_admin')->group(function () {
         Route::get('/admin/phonebook', [PhonebookAdminController::class, 'renderIndex'])
             ->middleware('phonebook_admin:any');
@@ -863,7 +844,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
     });
 });
 
-// Legacy unversioned user settings & radio usage endpoints
 Route::post('/api/user/settings', [UserSettingsController::class, 'update'])
     ->middleware('throttle:60,1');
 Route::post('/api/user/radio-usage', [RadioUsageController::class, 'add'])

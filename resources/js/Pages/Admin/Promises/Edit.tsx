@@ -191,7 +191,6 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
 
     const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
 
-    /** Take a promise returned by the server as both the record and the form. */
     const adopt = (next: AdminPromiseDetail) => {
         const nextForm = toForm(next);
         setPromise(next);

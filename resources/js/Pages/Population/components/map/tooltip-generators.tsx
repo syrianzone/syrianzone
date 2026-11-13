@@ -75,7 +75,6 @@ export function generateEnvironmentalTooltipHtml(name: string, data: any) {
     const aqi = data.air_quality?.estimated_aqi || 0;
     const droughtRisk = escapeHtml(data.drought_risk?.drought_risk || 'N/A');
 
-    // Weather icon based on description
     let weatherIcon = '☀️';
     const desc = (weatherDesc || '').toLowerCase();
     if (desc.includes('rain') || desc.includes('drizzle')) weatherIcon = '🌧️';
@@ -89,13 +88,11 @@ export function generateEnvironmentalTooltipHtml(name: string, data: any) {
     // so the tooltip number and the province colour always agree.
     const tempColor = getTemperatureColor(temp);
 
-    // AQI colour
     let aqiColor = STATUS_COLORS.good;
     let aqiBg = 'rgba(34, 197, 94, 0.2)';
     if (aqi > 100) { aqiColor = STATUS_COLORS.critical; aqiBg = 'rgba(239, 68, 68, 0.2)'; }
     else if (aqi > 50) { aqiColor = STATUS_COLORS.warning; aqiBg = 'rgba(234, 179, 8, 0.2)'; }
 
-    // Drought colour
     let droughtColor = STATUS_COLORS.good;
     if (droughtRisk === 'Very High') droughtColor = STATUS_COLORS.critical;
     else if (droughtRisk === 'High') droughtColor = STATUS_COLORS.serious;

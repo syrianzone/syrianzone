@@ -27,7 +27,6 @@ class ImportTransitGeoJson extends Command
 
         $cities = json_decode(File::get($citiesPath), true);
         
-        // Disable foreign key checks for truncation
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('route_stop')->truncate();
         RouteGeometry::truncate();
@@ -38,7 +37,6 @@ class ImportTransitGeoJson extends Command
 
         foreach ($cities as $cityData) {
             $bounds = $cityData['bounds'];
-            // Create Polygon WKT: POLGYON((minLng minLat, maxLng minLat, maxLng maxLat, minLng maxLat, minLng minLat))
             $minLng = $bounds[0][0];
             $minLat = $bounds[0][1];
             $maxLng = $bounds[1][0];
@@ -119,7 +117,6 @@ class ImportTransitGeoJson extends Command
             
             if (isset($props['routeId'])) {
                 $routeId = $props['routeId'];
-                // Ensure route exists
                 if (!Route::find($routeId)) continue;
 
                 if (!isset($orderCounts[$routeId])) {

@@ -18,16 +18,13 @@ export const ANALYTICS_CONSENT_KEY = 'sz-analytics-consent';
 /** The two answers a visitor can give. No value at all means "unset". */
 export type AnalyticsConsent = 'granted' | 'denied';
 
-/** The slice of Storage this module needs, so tests can pass a plain object. */
 export interface ConsentStorage {
     getItem(key: string): string | null;
     setItem(key: string, value: string): void;
 }
 
-/** Everything the page-view sender needs, so it stays a pure function. */
 export interface PageViewContext {
     consent: AnalyticsConsent | null;
-    /** gtag.js has loaded and the bootstrap has run. */
     loaded: boolean;
     id: string | null;
     origin: string;

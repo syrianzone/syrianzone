@@ -45,7 +45,6 @@ export default function Index() {
   const location = useLocationPreference();
   const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
-  // Index top strip: next prayer countdown + Hijri date.
   const [now, setNow] = useState(() => new Date());
   const [lastBookmark, setLastBookmark] = useState<LastBookmark | null>(null);
   const { timings, hijri } = usePrayerTimes(location, prefs.method, { timeoutMs: null });
@@ -75,7 +74,6 @@ export default function Index() {
   // The hub lists the five prayers only, but it still rolls over after Isha.
   const upcoming = useMemo(() => nextPrayer(timings, now, { includeSunrise: false }), [timings, now]);
 
-  // Warm the reader's data file as soon as the visitor aims at a link into it.
   const quranWarmProps = {
     onPointerEnter: warmQuranData,
     onFocus: warmQuranData,
@@ -103,7 +101,6 @@ export default function Index() {
             <p className="text-sm text-muted-foreground">أدواتك اليومية في مكان واحد</p>
           </div>
 
-          {/* Time till next prayer + Hijri date. */}
           <Link
             href={toolHref('prayer')}
             className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-right no-underline transition-colors hover:bg-primary/10"
@@ -124,7 +121,6 @@ export default function Index() {
             </span>
           </Link>
 
-          {/* Last Quran bookmark: quick access back into reading. */}
           {lastBookmark && (
             <Link
               href={toolHref('quran')}

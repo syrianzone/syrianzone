@@ -5,11 +5,9 @@ import { cn } from '@/lib/utils';
 
 // Preset identities, mirrored from AutoLoginDevUser::DEV_USERS; dev-only.
 //
-// These are NOT users.role values any more. Each preset is a plain `user`
-// account holding an explicit capability list, named after the module it
-// previews — see AutoLoginDevUser. The names are kept because they are the
-// switcher's vocabulary, and because a module preset is still the most useful
-// thing to log in as when working on that panel.
+// These are not `users.role` values: each preset is a plain `user` account
+// holding an explicit capability list, named after the module it previews —
+// see AutoLoginDevUser.
 const ROLE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
     user:              { label: 'مستخدم (User)',                    icon: User },
     transit_admin:     { label: 'مشرف تنقل (Transit)',               icon: Bus },

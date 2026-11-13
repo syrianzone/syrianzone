@@ -1,5 +1,4 @@
 // Compass scoring + matching engine.
-// Ported from the study prototype (study/compass-update/axes-render.html).
 //
 // Two ideas:
 //  1) Axis scoring is WEIGHTED and VERSION-AWARE: score = Σ(answer·effect·weight) / (2·Σweight).
@@ -101,7 +100,6 @@ export function computeConsistency(answers: AnswerMap, version: QuizVersion): nu
   return total ? consistent / total : 1;
 }
 
-// ---- whitening (built once) ----
 interface Whitener {
   axes: AxisId[];
   mean: Partial<Record<AxisId, number>>;

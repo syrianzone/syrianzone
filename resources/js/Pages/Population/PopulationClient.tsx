@@ -14,14 +14,13 @@ type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
 const MapClient = lazy(() => import('./components/map/MapClient'));
 
-// Helper functions for UI
 const getWeatherIcon = (description: string) => {
     if (!description) return <ThermometerSun size={24} />;
     const desc = description.toLowerCase();
     if (desc.includes('rain') || desc.includes('drizzle')) return <CloudRain size={24} />;
     if (desc.includes('cloud') || desc.includes('overcast')) return <Cloud size={24} />;
     if (desc.includes('clear') || desc.includes('sun') || desc.includes('main')) return <ThermometerSun size={24} />;
-    if (desc.includes('snow')) return <ThermometerSun size={24} />; // Fallback or add snow icon
+    if (desc.includes('snow')) return <ThermometerSun size={24} />;
     return <ThermometerSun size={24} />;
 };
 
@@ -36,14 +35,11 @@ export default function PopulationClient() {
     const [currentSourceId, setCurrentSourceId] = useState<number | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-    // Comparison tool state
     const [selectedProvinces, setSelectedProvinces] = useState<string[]>([]);
 
-    // Detail States
     const [selectedRainfallProvince, setSelectedRainfallProvince] = useState<{ name: string, data: any[] } | null>(null);
     const [selectedEnvProvince, setSelectedEnvProvince] = useState<{ name: string, data: any } | null>(null);
 
-    // Data fetching state
     const [rainfallData, setRainfallData] = useState<RainfallData>({});
     const [environmentalData, setEnvironmentalData] = useState<any>(null);
 
@@ -205,7 +201,6 @@ export default function PopulationClient() {
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden relative bg-background text-foreground" dir="rtl">
 
-            {/* Comparison Pop-up */}
             {comparisonData && currentDataType !== DATA_TYPES.RAINFALL && currentDataType !== DATA_TYPES.ENVIRONMENTAL && (
                 <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[1100] w-[90%] max-w-2xl bg-card border-2 border-primary rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
                     <div className="flex justify-between items-center p-4 border-b border-border">
@@ -260,7 +255,6 @@ export default function PopulationClient() {
                 </div>
             )}
 
-            {/* Header Overlay */}
             <div className="absolute top-4 end-4 z-[400] pointer-events-none">
                 <div className="bg-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-border pointer-events-auto max-w-xs">
                     <h1 className="text-base font-bold text-foreground mb-0.5">أطلس سوريا</h1>
@@ -275,7 +269,6 @@ export default function PopulationClient() {
                 </div>
             </div>
 
-            {/* Map Area */}
             <div className="flex-grow relative z-0">
                 <Suspense fallback={<div className="h-full w-full flex items-center justify-center bg-card text-muted-foreground">جاري تحميل الخريطة...</div>}>
                     <MapClient
@@ -290,7 +283,6 @@ export default function PopulationClient() {
                             const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
                             const nameAr = getCanonicalGovernorateName(name);
 
-                            // --- HANDLE RAINFALL CLICK ---
                             if (currentDataType === DATA_TYPES.RAINFALL) {
                                 const props = feature.properties;
                                 const codeKeys = ['ADM1_PCODE', 'ADM2_PCODE', 'admin1Pcode', 'admin2Pcode', 'code', 'id', 'PCODE'];
@@ -322,7 +314,6 @@ export default function PopulationClient() {
                                 }
                             }
 
-                            // --- HANDLE ENVIRONMENTAL CLICK ---
                             else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
                                 if (environmentalData && environmentalData.cities) {
                                     const englishName = getGovernorateDatasetNameEn(nameAr);
@@ -338,7 +329,6 @@ export default function PopulationClient() {
                     />
                 </Suspense>
 
-                {/* Legend Overlay */}
                 <div className="absolute bottom-6 end-20 z-[400] bg-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-border text-sm min-w-[150px]">
                     <h2 className="font-bold mb-2 text-foreground flex items-center gap-2">
                         {currentDataType === DATA_TYPES.RAINFALL && <CloudRain size={16} className="text-primary" />}
@@ -357,7 +347,6 @@ export default function PopulationClient() {
                 </div>
             </div>
 
-            {/* Side Panel */}
             <div className={`absolute top-0 start-0 bottom-0 z-[500] w-full sm:w-80 bg-card border-e border-border shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isPanelOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'}`}>
                 <button aria-label={isPanelOpen ? 'إغلاق اللوحة' : 'فتح اللوحة'} onClick={() => setIsPanelOpen(!isPanelOpen)} className="absolute -end-10 top-1/2 transform -translate-y-1/2 w-10 h-16 bg-card text-primary rounded-e-lg shadow-md flex items-center justify-center hover:bg-accent border-y border-e border-border transition-colors" title={isPanelOpen ? 'إغلاق اللوحة' : 'فتح اللوحة'}>
                     {isPanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -399,7 +388,6 @@ export default function PopulationClient() {
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-card">
 
-                    {/* OPTION 1: RAINFALL DETAILS */}
                     {currentDataType === DATA_TYPES.RAINFALL ? (
                         <div className="flex flex-col h-full">
                             {selectedRainfallProvince ? (
@@ -437,11 +425,9 @@ export default function PopulationClient() {
                             )}
                         </div>
                     ) : currentDataType === DATA_TYPES.ENVIRONMENTAL ? (
-                        /* OPTION 2: ENVIRONMENTAL PANEL CONTENT */
                         <div className="flex flex-col h-full">
                             {selectedEnvProvince ? (
                                 <div className="space-y-4 animate-in fade-in slide-in-from-start-4 duration-300">
-                                    {/* Enhanced Header with Weather Icon */}
                                     <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-sky-500/20 via-cyan-500/10 to-emerald-500/20 border border-sky-500/20">
                                         <div className="absolute top-2 left-2 opacity-20">
                                             {getWeatherIcon(selectedEnvProvince.data.current_conditions?.weather_description ?? '')}
@@ -485,7 +471,6 @@ export default function PopulationClient() {
                                         </div>
                                     </div>
 
-                                    {/* Tomorrow's Forecast Card */}
                                     <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-lg p-3 border border-indigo-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <Calendar size={14} className="text-indigo-400" />
@@ -519,7 +504,6 @@ export default function PopulationClient() {
                                         </div>
                                     </div>
 
-                                    {/* Enhanced Current Conditions */}
                                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                         <h2 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                                             <Thermometer size={16} className="text-orange-500" />
@@ -579,7 +563,6 @@ export default function PopulationClient() {
                                         </div>
                                     </div>
 
-                                    {/* Air Quality */}
                                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                         <h2 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                                             <Activity size={16} className="text-green-500" />
@@ -611,7 +594,6 @@ export default function PopulationClient() {
                                         </p>
                                     </div>
 
-                                    {/* Drought Risk */}
                                     {selectedEnvProvince.data.drought_risk && Object.keys(selectedEnvProvince.data.drought_risk).length > 0 && (
                                         <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                             <h2 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
@@ -644,7 +626,6 @@ export default function PopulationClient() {
                                         </div>
                                     )}
 
-                                    {/* Climate Trends */}
                                     {selectedEnvProvince.data.climate_trends && Object.keys(selectedEnvProvince.data.climate_trends).length > 0 && (
                                         <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                             <h2 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
@@ -690,7 +671,6 @@ export default function PopulationClient() {
                                         </div>
                                     )}
 
-                                    {/* Historical Summary */}
                                     {selectedEnvProvince.data.historical_summary && Object.keys(selectedEnvProvince.data.historical_summary).length > 0 && (
                                         <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                             <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
@@ -737,7 +717,6 @@ export default function PopulationClient() {
                                         </div>
                                     )}
 
-                                    {/* Data Sources */}
                                     <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-3 rounded-lg border border-primary/20">
                                         <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">مصادر البيانات</span>
                                         <div className="flex flex-wrap gap-1.5 mt-2">
@@ -750,14 +729,12 @@ export default function PopulationClient() {
                                     </div>
                                 </div>
                             ) : !environmentalData ? (
-                                /* No environmental data loaded yet */
                                 <div className="flex flex-col items-center justify-center text-center h-full text-muted-foreground py-10 px-4">
                                     <ThermometerSun className="opacity-50 mb-4" size={48} />
                                     <h2 className="font-bold text-foreground mb-2">البيانات البيئية</h2>
                                     <p className="text-sm leading-relaxed">لا تتوفر بيانات بيئية حالياً.</p>
                                 </div>
                             ) : (
-                                /* Country-Level Summary when no province selected */
                                 <div className="space-y-4 animate-in fade-in slide-in-from-start-4 duration-300">
                                     <div className="text-center py-4">
                                         <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
@@ -769,7 +746,6 @@ export default function PopulationClient() {
                                         </p>
                                     </div>
 
-                                    {/* Key Findings */}
                                     <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg p-3 border border-amber-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <AlertTriangle size={16} className="text-amber-500" />
@@ -785,7 +761,6 @@ export default function PopulationClient() {
                                         </ul>
                                     </div>
 
-                                    {/* Climate Challenges */}
                                     <div className="bg-gradient-to-r from-red-500/10 to-rose-500/10 rounded-lg p-3 border border-red-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <Thermometer size={16} className="text-red-400" />
@@ -801,7 +776,6 @@ export default function PopulationClient() {
                                         </ul>
                                     </div>
 
-                                    {/* Key Water Basins */}
                                     <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg p-3 border border-cyan-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <Droplets size={16} className="text-cyan-400" />
@@ -816,7 +790,6 @@ export default function PopulationClient() {
                                         </div>
                                     </div>
 
-                                    {/* Recommendations */}
                                     <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-lg p-3 border border-emerald-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <Leaf size={16} className="text-emerald-400" />
@@ -832,7 +805,6 @@ export default function PopulationClient() {
                                         </ul>
                                     </div>
 
-                                    {/* Climate Classification */}
                                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50 text-center">
                                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">التصنيف المناخي</span>
                                         <p className="text-sm font-bold text-foreground mt-1">
@@ -840,7 +812,6 @@ export default function PopulationClient() {
                                         </p>
                                     </div>
 
-                                    {/* Data Info */}
                                     <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
                                         <div className="flex justify-between items-center text-xs text-muted-foreground">
                                             <span>المدن المحللة</span>
@@ -858,7 +829,6 @@ export default function PopulationClient() {
                             )}
                         </div>
                     ) : (
-                        /* OPTION 3: POPULATION LIST (Existing) */
                         livePopulationData[currentDataType]?.map((source: DataSource) => {
                             const isExpanded = currentSourceId === source.source_id;
 

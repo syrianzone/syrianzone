@@ -206,8 +206,6 @@ const useQuranPlayer = create<QuranPlayerState>((set, get) => ({
   },
 }));
 
-// --- audio element + listeners ----------------------------------------------
-
 function ensureAudio(): HTMLAudioElement | null {
   if (typeof Audio === 'undefined') return null;
   if (!audio) {
@@ -259,8 +257,6 @@ function attach(el: HTMLAudioElement): void {
     }
   }
 }
-
-// --- playback core -----------------------------------------------------------
 
 /** Jump to a queue position: load/seek to the ayah and play. */
 function playIndex(i: number, ayah: PlayerAyah): void {
@@ -398,8 +394,6 @@ function updateActiveWord(t: number, surah: number, entry: SurahAudio): void {
     useQuranPlayer.setState({ activeWord: next });
   }
 }
-
-// --- data loading ------------------------------------------------------------
 
 async function loadSurah(surah: number, signal?: AbortSignal): Promise<SurahAudio | null> {
   const cached = cache.get(surah);

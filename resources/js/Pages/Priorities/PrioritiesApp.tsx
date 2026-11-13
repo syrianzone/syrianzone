@@ -91,7 +91,6 @@ const getStoryThemeStyles = (themeKey: string) => {
   const cardBg = isLight ? 'rgba(255, 255, 255, 0.75)' : 'rgba(15, 23, 42, 0.5)';
   const cardBorder = isLight ? 'rgba(203, 213, 225, 0.8)' : 'rgba(30, 41, 59, 0.6)';
 
-  // Contrast configurations for the header text and URL
   const headerTitle = isLight ? '#0f172a' : '#ffffff';
   const headerSubtitle = priorities.headerSubtitle;
   const urlLabel = isLight ? '#64748b' : '#cbd5e1';
@@ -210,22 +209,17 @@ export default function PrioritiesApp() {
   const storyThemeStyles = getStoryThemeStyles(storyTheme);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set(['economy', 'justice', 'housing', 'security', 'politics', 'digital']));
 
-  // Budget violations warning
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Image export target ref
   const storyCardRef = useRef<HTMLDivElement>(null);
 
-  // Load banner preference, query state, and observe theme
   useEffect(() => {
-    // Banner preference
     const bannerDismissed = localStorage.getItem('sz-priorities-banner-dismissed');
     if (bannerDismissed === 'true') {
       setShowBanner(false);
     }
 
-    // Active theme observation
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
     setActiveTheme(currentTheme);
 
@@ -236,7 +230,6 @@ export default function PrioritiesApp() {
 
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-    // Load state from URL parameters if present
     const params = new URLSearchParams(window.location.search);
     const stateParam = params.get('state');
     if (stateParam) {
@@ -347,7 +340,6 @@ export default function PrioritiesApp() {
     localStorage.setItem('sz-priorities-banner-dismissed', 'true');
   };
 
-  // Interdependency Logic
   const interdependencyInfo = useMemo(() => {
     if (selectedSubFiles.size === 0) {
       return {
@@ -442,7 +434,6 @@ export default function PrioritiesApp() {
     };
   }, [selectedSubFiles, topics]);
 
-  // Persona Logic
   const persona = useMemo(() => {
     if (totalAllocated < 100) return null;
 
@@ -498,7 +489,6 @@ export default function PrioritiesApp() {
     return { ...result, id: highest.id };
   }, [totalAllocated, topics]);
 
-  // Theme-sensitive chart colors
   const activeThemeConfig = getThemeById(activeTheme) || getThemeById('dark') || THEME_REGISTRY[2];
   const themeColors = useMemo(() => ({
     primary: activeThemeConfig.primary,
@@ -524,7 +514,6 @@ export default function PrioritiesApp() {
   const isDark = Boolean(getThemeById(activeTheme)?.isDark);
   const labelColor = isDark ? '#ffffff' : '#475569';
 
-  // Export & Sharing actions
   const handleCopyText = () => {
     if (totalAllocated < 100) {
       notify.warning("⚠️ يرجى إتمام موازنة الـ 100 نقطة كاملة قبل النسخ!");
@@ -637,7 +626,6 @@ export default function PrioritiesApp() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome & Education Banner */}
       <div className="relative overflow-hidden bg-card text-card-foreground border border-border p-6 rounded-2xl shadow-sm transition-all duration-300">
         <div className="absolute top-0 start-0 w-32 h-32 bg-primary/5 rounded-full -ms-16 -mt-16 -z-10 opacity-60"></div>
         <div className="absolute bottom-0 end-0 w-48 h-48 bg-muted/20 rounded-full -me-24 -mb-24 -z-10 opacity-60"></div>
@@ -655,7 +643,6 @@ export default function PrioritiesApp() {
         </div>
       </div>
 
-      {/* Warning Box */}
       {showWarning && (
         <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2 animate-pulse">
           <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
@@ -663,10 +650,8 @@ export default function PrioritiesApp() {
         </div>
       )}
 
-      {/* App Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        {/* Right Panel: Sliders & Sub-files (7 columns) */}
         <Card className="lg:col-span-7 bg-card text-card-foreground border-border border shadow-sm p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-border">
             <div>
@@ -677,7 +662,6 @@ export default function PrioritiesApp() {
               <p className="text-xs text-muted-foreground mt-1">وزّع النقاط بحكمة واكتشف الملفات المتشعبة بداخلها</p>
             </div>
 
-            {/* Global Budget Counter */}
             <div
               className={`border rounded-xl px-4 py-3 text-center flex flex-col justify-center items-center min-w-[140px] transition-all ${remainingPoints === 0
                 ? 'bg-primary/10 border-primary text-primary animate-pulse font-bold'
@@ -698,12 +682,10 @@ export default function PrioritiesApp() {
             </div>
           </div>
 
-          {/* Interactive Topics List */}
           <div className="space-y-4">
             {topics.map(topic => {
               const isExpanded = expandedTopics.has(topic.id);
               const percentage = topic.points;
-              // Dynamic gradient background for input range
               const sliderGradient = `linear-gradient(to left, ${themeColors.primary} ${percentage}%, hsl(var(--muted)) ${percentage}%)`;
 
               return (
@@ -711,7 +693,6 @@ export default function PrioritiesApp() {
                   key={topic.id}
                   className="p-4 sm:p-5 rounded-2xl border border-border bg-muted/20 hover:bg-muted/30 transition-all duration-200"
                 >
-                  {/* Top Header of Card */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3">
                       <span className="bg-card w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border border-border p-2">
@@ -729,7 +710,6 @@ export default function PrioritiesApp() {
                       </div>
                     </div>
 
-                    {/* Topic Points Controller Badge */}
                     <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1 self-start sm:self-auto shadow-sm">
                       <button aria-label="تقليل بمقدار 1 نقطة"
                         onClick={() => changePoints(topic.id, -1)}
@@ -751,7 +731,6 @@ export default function PrioritiesApp() {
                     </div>
                   </div>
 
-                  {/* Main Slider */}
                   <div className="flex items-center gap-3 mt-2">
                     <span className="text-[10px] text-muted-foreground font-medium">0%</span>
                     <div className="flex-grow relative flex items-center">
@@ -770,7 +749,6 @@ export default function PrioritiesApp() {
                     <span className="text-[10px] text-muted-foreground font-bold">100%</span>
                   </div>
 
-                  {/* Expandable Sub-priorities & Connections Drawer */}
                   {isExpanded && (
                     <div className="mt-4 pt-4 border-t border-border/60 animate-in fade-in slide-in-from-top-1 duration-200">
                       <p className="text-xs text-muted-foreground mb-3 leading-relaxed bg-card p-3 rounded-xl border border-border shadow-sm">
@@ -820,7 +798,6 @@ export default function PrioritiesApp() {
             })}
           </div>
 
-          {/* Reset Options */}
           <div className="mt-6 pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <Button
               variant="outline"
@@ -837,12 +814,9 @@ export default function PrioritiesApp() {
           </div>
         </Card>
 
-        {/* Left Panel: Live Analysis, Chart, Interdependency Map & Share (5 columns) */}
         <div className="lg:col-span-5 space-y-6">
 
-          {/* Section 2: Decisional Interdependency Engine & Insights */}
           <Card className="bg-card text-card-foreground border-border border shadow-sm p-6">
-            {/* Title / Header */}
             <div className="mb-4">
               <h3 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
                 <GitFork className="w-5 h-5 text-primary" />
@@ -851,7 +825,6 @@ export default function PrioritiesApp() {
               <p className="text-xs text-muted-foreground mt-1">تتبع كيف تؤثر خياراتك الفرعية على الملفات السيادية والأمنية الأخرى</p>
             </div>
 
-            {/* Comparison Selector Tab */}
             <div className="mb-4 border-t border-border/60 pt-4">
               <label className="text-xs font-bold text-foreground block mb-2 font-sans">مقارنة بروفايلك الخاص مع:</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-xl text-[10px] sm:text-xs font-medium border border-border">
@@ -873,7 +846,6 @@ export default function PrioritiesApp() {
               </div>
             </div>
 
-            {/* Interactive Chart Container */}
             <div className="relative w-full h-[260px] flex items-center justify-center bg-muted/20 rounded-xl border border-border p-2 mb-4">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
@@ -925,7 +897,6 @@ export default function PrioritiesApp() {
               </ResponsiveContainer>
             </div>
 
-            {/* Persona Badge & Description */}
             <div className="p-4 bg-muted/40 rounded-xl border border-border flex items-start gap-3.5 mb-5">
               <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 p-2.5">
                 {persona && TOPIC_ICONS[persona.id] ? (
@@ -948,7 +919,6 @@ export default function PrioritiesApp() {
               </div>
             </div>
 
-            {/* Complexity & Implementation Score Meter */}
             <div className="p-3.5 bg-muted/50 rounded-xl border border-border mb-4">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-bold text-foreground">مقياس تداخل وتعقيد رؤيتك:</span>
@@ -965,7 +935,6 @@ export default function PrioritiesApp() {
               </p>
             </div>
 
-            {/* Dynamic Interconnection Output Box (Non-scrollable) */}
             <div className="space-y-3">
               {interdependencyInfo.alerts.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground text-xs italic">
@@ -1016,7 +985,6 @@ export default function PrioritiesApp() {
               )}
             </div>
 
-            {/* Section 4: Export & Sharing (Moved under everything else) */}
             <div className="border-t border-border/60 pt-5 mt-5">
               <div className="mb-4">
                 <h3 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
@@ -1026,7 +994,6 @@ export default function PrioritiesApp() {
                 <p className="text-xs text-muted-foreground mt-1">انشر بروفايلك الفريد بصورة مخصصة كستوري إنستغرام أو انسخ الرابط</p>
               </div>
 
-              {/* Share buttons */}
               <div className="space-y-2">
                 <Button
                   onClick={openStoryModal}
@@ -1062,7 +1029,6 @@ export default function PrioritiesApp() {
         </div>
       </div>
 
-      {/* Instagram Story Modal Overlay */}
       {isStoryModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <Card className="bg-card text-card-foreground border-border border shadow-2xl p-6 max-w-lg w-full flex flex-col items-center">
@@ -1080,10 +1046,8 @@ export default function PrioritiesApp() {
               </button>
             </div>
 
-            {/* Scrollable Viewport Frame for Preview */}
             <div className="w-full flex justify-center py-2 overflow-x-auto">
 
-              {/* Instagram Story Layout Canvas Template (9:16 Ratio) */}
               <div
                 ref={storyCardRef}
                 id="story-card-canvas"
@@ -1095,7 +1059,6 @@ export default function PrioritiesApp() {
                   fontFamily: 'IBM Plex Sans Arabic, sans-serif'
                 }}
               >
-                {/* Decorative Background Elements for Premium Vibe */}
                 <div
                   className="story-card-bg-blur absolute top-0 right-0 w-44 h-44 rounded-full blur-[60px] pointer-events-none"
                   style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb}, 0.15)` }}
@@ -1105,12 +1068,10 @@ export default function PrioritiesApp() {
                   style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb}, 0.05)` }}
                 ></div>
 
-                {/* Header */}
                 <div
                   className="flex items-center justify-between pt-2 pb-2 border-b"
                   style={{ borderBottomColor: storyThemeStyles.cardBorder }}
                 >
-                  {/* Right: Brand Info */}
                   <div className="flex items-center gap-2">
                     <div
                       style={{
@@ -1137,7 +1098,6 @@ export default function PrioritiesApp() {
                     </div>
                   </div>
 
-                  {/* Left: QR Code and URL */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', direction: 'ltr' }}>
                     <div style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px', borderRadius: '6px', backgroundColor: '#ffffff', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <svg style={{ width: '100%', height: '100%', display: 'block' }} viewBox="0 0 31 31" shapeRendering="crispEdges">
@@ -1151,9 +1111,7 @@ export default function PrioritiesApp() {
                   </div>
                 </div>
 
-                {/* Main Section: Dynamic Persona Badge */}
                 <div style={{ textAlign: 'center', margin: '8px 0', padding: '0 8px' }}>
-                  {/* Mini SVG Radar Chart */}
                   {(() => {
                     const RADAR_ORDER = ['economy', 'justice', 'housing', 'security', 'politics', 'digital'];
                     const SIZE = 80;
@@ -1164,7 +1122,6 @@ export default function PrioritiesApp() {
                     const accentColor = storyThemeStyles.urlText;
                     const gridColor = storyThemeStyles.isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)';
 
-                    // Points values keyed by topic id
                     const pointsMap: Record<string, number> = {};
                     topics.forEach(t => { pointsMap[t.id] = t.points; });
                     const maxVal = 100;
@@ -1172,7 +1129,6 @@ export default function PrioritiesApp() {
                     // angle for each axis: start at top (-90°), go clockwise
                     const angle = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
 
-                    // grid rings at 25%, 50%, 75%, 100%
                     const rings = [0.25, 0.5, 0.75, 1.0];
 
                     const ringPath = (ratio: number) => {
@@ -1185,7 +1141,6 @@ export default function PrioritiesApp() {
                       }).join(' ') + ' Z';
                     };
 
-                    // data polygon
                     const dataPath = RADAR_ORDER.map((id, i) => {
                       const val = pointsMap[id] ?? 0;
                       const ratio = val / maxVal;
@@ -1208,7 +1163,6 @@ export default function PrioritiesApp() {
                           xmlns="http://www.w3.org/2000/svg"
                           style={{ display: 'block', overflow: 'visible' }}
                         >
-                          {/* Grid rings */}
                           {rings.map((ratio, ri) => (
                             <path
                               key={ri}
@@ -1218,7 +1172,6 @@ export default function PrioritiesApp() {
                               strokeWidth={ratio === 1.0 ? 0.8 : 0.5}
                             />
                           ))}
-                          {/* Spokes */}
                           {RADAR_ORDER.map((_, i) => {
                             const a = angle(i);
                             return (
@@ -1233,7 +1186,6 @@ export default function PrioritiesApp() {
                               />
                             );
                           })}
-                          {/* Data polygon fill */}
                           <path
                             d={dataPath}
                             fill={accentColor}
@@ -1242,7 +1194,6 @@ export default function PrioritiesApp() {
                             strokeWidth={1.5}
                             strokeLinejoin="round"
                           />
-                          {/* Data point dots */}
                           {RADAR_ORDER.map((id, i) => {
                             const val = pointsMap[id] ?? 0;
                             const ratio = val / maxVal;
@@ -1278,7 +1229,6 @@ export default function PrioritiesApp() {
                   <p className="text-[8px] mt-1 leading-relaxed px-1" style={{ color: storyThemeStyles.textSecondary }}>{persona?.desc}</p>
                 </div>
 
-                {/* Center Section: All 6 Priorities Visualization */}
                 <div
                   className="space-y-1 rounded-xl p-3 my-1 backdrop-blur-sm border"
                   style={{
@@ -1330,7 +1280,6 @@ export default function PrioritiesApp() {
                   </div>
                 </div>
 
-                {/* Bottom Section: Selected Sub-priorities (Files) */}
                 {selectedSubFilesData.length > 0 && (
                   <div
                     className="rounded-xl p-2 my-0.5 border text-right"
@@ -1371,7 +1320,6 @@ export default function PrioritiesApp() {
                   </div>
                 )}
 
-                {/* Clean Bottom Slogan */}
                 <div className="text-center pb-2">
                   <p className="text-[7.5px]" style={{ color: storyThemeStyles.textMuted }}>المساحة السورية - مشروع سوري مفتوح المصدر</p>
                 </div>
@@ -1380,7 +1328,6 @@ export default function PrioritiesApp() {
 
             </div>
 
-            {/* Theme Selector Section */}
             <div className="w-full mt-4 mb-2" dir="rtl">
               <label className="block text-xs font-bold text-muted-foreground text-right mb-2">
                 اختر لون المظهر للبطاقة:
@@ -1417,7 +1364,6 @@ export default function PrioritiesApp() {
               </div>
             </div>
 
-            {/* Action buttons inside modal */}
             <div className="w-full grid grid-cols-2 gap-3 mt-5">
               <Button
                 onClick={() => setIsStoryModalOpen(false)}

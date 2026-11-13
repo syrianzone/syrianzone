@@ -25,7 +25,6 @@ export function findRainData(feature: any, rainData: RainfallData | undefined) {
 
     const props = feature.properties;
 
-    // 1. Try Direct P-Code Match
     const codeKeys = ['ADM1_PCODE', 'ADM2_PCODE', 'admin1Pcode', 'admin2Pcode', 'code', 'id', 'PCODE'];
     for (const key of codeKeys) {
         if (props[key] && rainData[props[key]]) {
@@ -33,7 +32,6 @@ export function findRainData(feature: any, rainData: RainfallData | undefined) {
         }
     }
 
-    // 2. Try Name Match
     const nameKeys = ['province_name', 'ADM1_EN', 'ADM1_AR', 'name', 'Name', 'NAME', 'admin1Name_en'];
         for (const key of nameKeys) {
             if (props[key]) {

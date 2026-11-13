@@ -1,5 +1,3 @@
-// Shared types for the Syrian Compass (v2).
-
 export type AxisId =
   | 'auth_lib'
   | 'rel_sec'

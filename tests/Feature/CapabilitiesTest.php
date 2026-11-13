@@ -18,23 +18,18 @@ use Illuminate\Support\Facades\Schema;
 | `role` holds two values: `superadmin` and `user`. Everything else — the six
 | module roles and the old catch-all `admin` — is an inert string.
 |
-| This file is organised by the invariant it protects rather than by the order
-| the migration was carried out in. Each section states a rule that must keep
-| holding; the rollout order is in the git history (phases A to G) and in the
-| migrations themselves, which is where a reader should look for "why".
+| This file is organised by the invariant it protects. Each section states a rule
+| that must keep holding; the migrations themselves are where a reader should
+| look for "why".
 |
-| The negative direction carries most of the weight. Before the migration, each
-| phase could only prove something was still granted; the interesting property
-| now is that nothing is, so a stray role can never quietly become a back door.
+| The negative direction carries most of the weight: the interesting property is
+| that a retired role grants nothing, so a stray role can never quietly become a
+| back door.
 |
 */
 
-// ─── Fixtures ──────────────────────────────────────────────────────────────
-
 /**
- * Every role value that no longer grants anything. The six module roles stopped
- * conferring capabilities when the prefix table was deleted; `admin` stopped
- * when the catch-all short-circuit was.
+ * Every role value that grants nothing.
  *
  * @return array<int, string>
  */
@@ -50,8 +45,6 @@ function retiredRoles(): array
         'users_admin',
     ];
 }
-
-// ─── `permissions` is the only thing that grants access ────────────────────
 
 it('grants a retired role nothing at all', function (string $role) {
     $user = User::factory()->create(['role' => $role, 'permissions' => []]);
@@ -147,8 +140,6 @@ it('defaults an omitted role to user, and the column default agrees', function (
     expect(trim((string) $default, "'\" "))->toBe('user');
 });
 
-// ─── The role vocabulary is exactly two values ─────────────────────────────
-
 it('offers exactly superadmin and user in the role select', function () {
     // The one place roles are assigned. Both retired groups are asserted absent
     // explicitly rather than by set difference, so re-adding either fails here.
@@ -164,8 +155,6 @@ it('offers exactly superadmin and user in the role select', function () {
             'users_admin',
         );
 });
-
-// ─── Staff accounts are minted capability-backed ───────────────────────────
 
 it('creates a staff account as a user holding the full catalogue', function () {
     $this->actingAs(User::factory()->create(['role' => 'superadmin']))
@@ -200,7 +189,6 @@ it('discards a retired role requested at the admin API', function () {
         ->and($created->effectivePermissions())->toEqual(PermissionCatalogue::all());
 });
 
-// ─── Dev impersonation is capability-backed, not role-backed ────────────────
 //
 // The presets are named after the module they preview, which made them read as
 // role values. They are not: each is a `user` account holding that module's
@@ -278,7 +266,6 @@ it('re-syncs a dev account whose capabilities were edited', function () {
     expect($middleware->ensureDevUser('places_admin')->effectivePermissions())->toHaveCount(5);
 });
 
-// ─── Capability gates actually gate ────────────────────────────────────────
 //
 // Every case below was a place where the UI or the middleware gated on a
 // capability while a second check in the controller contradicted it. The symptom
@@ -450,8 +437,7 @@ it('keeps a scoped transit editor inside their governorates', function () {
 });
 
 it('does not let a transit approver edit a draft they do not own', function () {
-    // transit.approve is a real capability that used to fall through the role
-    // list and land on the owner check.
+    // transit.approve is a real capability and must not land on the owner check.
     seedCity('damascus', ['name_ar' => 'Damascus', 'name_en' => 'Damascus']);
     $owner = User::factory()->create();
 
@@ -474,10 +460,8 @@ it('still lets the owner edit their own draft without a capability', function ()
 });
 
 it('gates GuessWho on guesswho.manage', function () {
-    // This used to be superadmin-only by role, because minting a guesswho.*
-    // capability for a novelty game was judged not worth a catalogue module.
-    // It is now part of the one capability vocabulary: the superadmin role
-    // resolves it through the catalogue, and anyone else needs the explicit
+    // guesswho.manage is part of the one capability vocabulary: the superadmin
+    // role resolves it through the catalogue, and anyone else needs the explicit
     // grant, exactly like every other admin module.
     $plain = User::factory()->create(['role' => 'user', 'permissions' => []]);
     $this->actingAs($plain)->get('/admin/guesswho')->assertForbidden();
@@ -488,8 +472,6 @@ it('gates GuessWho on guesswho.manage', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $this->actingAs($superadmin)->get('/admin/guesswho')->assertOk();
 });
-
-// ─── The role machinery is gone, not merely bypassed ───────────────────────
 
 it('has no role-to-capability machinery left on the model', function () {
     // Stronger than asserting behaviour: the members are gone, so nothing can
@@ -509,7 +491,6 @@ it('has no admin middleware class or route alias left', function () {
         ->and(file_exists(app_path('Http/Middleware/Admin.php')))->toBeFalse();
 });
 
-// ─── Migration safety ──────────────────────────────────────────────────────
 //
 // The 2026-09-27 migration rewrote every retired role to `user`, granting the
 // catalogue first so the rewrite could not cost anyone access. It is deployed

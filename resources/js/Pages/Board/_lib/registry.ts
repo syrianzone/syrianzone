@@ -105,7 +105,6 @@ export function defaultDoc(): BoardDoc {
   };
 }
 
-/** The gallery's sections: every declared category that holds a widget. */
 export const GALLERY_CATEGORIES = CATEGORIES.filter(
   (category) => WIDGETS.some((def) => def.category === category.id),
 );

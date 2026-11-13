@@ -44,8 +44,6 @@ export interface TrixOptions {
 
 export const DEFAULT_TRIX: TrixOptions = { teams: false };
 
-// ---- a deal -----------------------------------------------------------------
-
 interface TrixAvoidDeal {
   contract: 'queens' | 'diamonds' | 'tricks' | 'kingOfHearts';
   round: AvoidanceRound;
@@ -64,7 +62,6 @@ interface TrixShedDeal {
 
 export type TrixDeal = TrixAvoidDeal | TrixShedDeal;
 
-/** Four hands of thirteen, dealt from a full deck. */
 export function dealHands(random: () => number = Math.random): Card[][] {
   const deck = shuffle(createDeck(), random).map((card) => ({ ...card, faceUp: true }));
   return Array.from({ length: TRIX_PLAYERS }, (_, seat) =>
@@ -80,7 +77,6 @@ export function buildDeal(contract: Contract, hands: Card[][], leader: Seat): Tr
   return { contract, round: createAvoidanceRound(hands, leader), phase: 'playing' };
 }
 
-/** A whole deal in one call: a fresh deal plus its contract. */
 export function createDeal(contract: Contract, dealer: Seat, random: () => number = Math.random): TrixDeal {
   return buildDeal(contract, dealHands(random), dealer);
 }
@@ -167,8 +163,6 @@ export function scoreDeal(deal: TrixDeal): number[] {
   }
   return points;
 }
-
-// ---- the session ------------------------------------------------------------
 
 export interface TrixGame {
   options: TrixOptions;

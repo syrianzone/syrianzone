@@ -26,7 +26,6 @@ function normalizeConfig(c: unknown): Record<string, unknown> {
   return c as Record<string, unknown>;
 }
 
-// ***** parsing *****
 // Never throws. A corrupt localStorage entry or an unreadable server document
 // must fall back to defaults, not white-screen /board.
 
@@ -92,7 +91,6 @@ export function migrate(raw: unknown, fallback: BoardDoc): BoardDoc {
   }
 }
 
-// ***** mutations *****
 // All pure: they return a new document with a fresh updatedAt, and the caller
 // persists. Index.tsx owns the document, matching Places/Index.tsx.
 

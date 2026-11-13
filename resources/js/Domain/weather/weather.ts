@@ -98,8 +98,7 @@ export interface UseWeatherOptions {
 
 /**
  * Current conditions for the user's location. A plain effect because both
- * callers (Home, Roznama) are plain-effect surfaces; the two of them were
- * fetching the same endpoint for the same point with a copy each.
+ * callers (Home, Roznama) are plain-effect surfaces.
  */
 export function useWeather(
   location: LocationPreference,

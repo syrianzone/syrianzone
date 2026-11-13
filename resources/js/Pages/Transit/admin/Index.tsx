@@ -41,8 +41,6 @@ import {
 import ImportTab from './ImportTab'
 import { useAuth } from '@/Contexts/AuthContext'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 const STATUS_LABELS: Record<Draft['status'], string> = {
   pending: 'قيد الانتظار',
   approved: 'مقبول',
@@ -105,7 +103,6 @@ function LogIcon({ action }: { action: string }) {
   }
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 function TransitAdminPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -139,18 +136,14 @@ function TransitAdminPageContent() {
   const [cities, setCities] = useState<City[]>([])
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
-  // ─── Capabilities + governorate scope ───────────────────────────────────────
   const { user, can, canInCity, allowedTransitCities } = useAuth()
   const allowedCities = allowedTransitCities()
   const scopeRestricted = allowedCities !== null
   const visibleCities = scopeRestricted ? cities.filter(c => allowedCities!.includes(c.id)) : cities
   const cityLabel = (id?: string | null) => cities.find(c => c.id === id)?.nameAr ?? id ?? ''
   const cityInScope = (cityId?: string | null) => allowedCities === null || (!!cityId && allowedCities.includes(cityId))
-  // transit.edit_routes is the whole test. The role list this replaced included
-  // transit_admin, which stopped granting anything when the role prefixes were
-  // removed — so a transit_admin account was offered studio edit controls that
-  // the server refuses. Server side this is the same capability, checked by
-  // TransitStudioController::canEditDraft() plus the governorate scope.
+  // transit.edit_routes is the whole test; server side the same capability is
+  // checked by TransitStudioController::canEditDraft() plus the governorate scope.
   const canStudioEdit = (cityId?: string | null) => cityInScope(cityId) && canInCity('transit.edit_routes', cityId)
 
   const [isCombineModalOpen, setIsCombineModalOpen] = useState(false)
@@ -179,7 +172,6 @@ function TransitAdminPageContent() {
   const [editRouteColorIndex, setEditRouteColorIndex] = useState<number>(0)
   const [approveColorIndex, setApproveColorIndex] = useState<number>(0)
 
-  // Google My Maps import preview (rendered on the shared map via draft-source)
   const [importPreviewGeoJson, setImportPreviewGeoJson] = useState<unknown>(null)
   const [importColorIndex, setImportColorIndex] = useState<number>(0)
   const [importCityId, setImportCityId] = useState<string | undefined>(undefined)
@@ -236,7 +228,6 @@ function TransitAdminPageContent() {
     } finally { setLoadingLogs(false) }
   }, [])
 
-  // ─── Map init ───────────────────────────────────────────────────────────────
   // The basemap's runtime sources and layers are re-added on every `style.load`:
   // setStyle() (a theme switch) drops them, and re-creating the map instead would
   // throw away the camera, the loaded data and the current selection.
@@ -294,7 +285,6 @@ function TransitAdminPageContent() {
     }
   }, [addMapLayers])
 
-  // Follow the theme on the live canvas instead of rebuilding it.
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     if (styleRef.current === styleUrl) return
@@ -321,7 +311,6 @@ function TransitAdminPageContent() {
     }
   }, [mapReady, styleVersion, selectedDraft, selectedRouteGeoJson, importPreviewGeoJson, adminTab])
 
-  // Update line color, casing, points, and background dimming dynamically
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
@@ -358,7 +347,6 @@ function TransitAdminPageContent() {
     ;(mapRef.current.getSource('ref-stops') as maplibregl.GeoJSONSource | undefined)?.setData(refData?.stops ?? empty)
   }, [mapReady, styleVersion, refData])
 
-  // ─── API Handlers ───────────────────────────────────────────────────────────
   const handleApprove = useCallback(async (id: number, colorIndex?: number) => {
     setActionLoading(true)
     const selectedColor = colorIndex ?? approveColorIndex
@@ -397,7 +385,6 @@ function TransitAdminPageContent() {
     setSelectedRoute(route)
     setMobileView('map')
 
-    // 1. Zoom in immediately using memory geometry from refData if present
     const featureFromRef = refData?.routes?.features?.find(f => String(f.properties?.id) === String(route.id))
     if (featureFromRef) {
       const geojson = normalizeFeatureCollection({ type: 'FeatureCollection', features: [featureFromRef] })
@@ -408,7 +395,6 @@ function TransitAdminPageContent() {
       }
     }
 
-    // 2. Fetch full GeoJSON (with stops) from server
     try {
       const full = await transitApi.routeGeoJson(route.id)
       const fullGeojson = normalizeFeatureCollection(full)
@@ -529,7 +515,6 @@ function TransitAdminPageContent() {
       setSelectedRoute(updatedRoute)
       setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: newColorIndex } : r))
 
-      // Update active geojson properties in state immediately so map reflects color
       setSelectedRouteGeoJson((prev) => {
         if (!prev) return null
         return {
@@ -573,7 +558,6 @@ function TransitAdminPageContent() {
     }
   }, [selectedRoute, fetchRoutes, showToast, queryClient])
 
-  // ─── Derived ────────────────────────────────────────────────────────────────
   const stats = {
     pending: drafts.filter((d) => d.status === 'pending').length,
     approved: drafts.filter((d) => d.status === 'approved').length,
@@ -599,7 +583,6 @@ function TransitAdminPageContent() {
   return (
     <>
     <div className="h-full overflow-hidden flex flex-col lg:flex-row bg-background text-foreground" dir="rtl">
-      {/* Mobile View Switcher (< lg) */}
       <div className="flex lg:hidden items-center justify-between gap-2 px-4 py-2 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-1.5 flex-1">
           <Button
@@ -623,7 +606,6 @@ function TransitAdminPageContent() {
         </div>
       </div>
 
-      {/* Sidebar */}
       <aside className={`w-full lg:w-[400px] xl:w-[440px] flex-shrink-0 flex-col border-e border-border bg-card overflow-hidden max-h-full ${mobileView === 'list' ? 'flex flex-1 lg:flex-none' : 'hidden lg:flex'}`}>
         <header className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
@@ -664,16 +646,13 @@ function TransitAdminPageContent() {
             )}
           </TabsList>
 
-          {/* ── DRAFTS TAB ─────────────────────────────────────────────────── */}
           <TabsContent value="drafts" className="flex-1 flex flex-col overflow-hidden mt-0">
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-2 px-4 pt-3">
               <Card className="py-2 text-center"><CardContent className="p-1"><span className="text-xl font-bold text-amber-500">{stats.pending}</span><p className="text-[10px] text-muted-foreground">بانتظار المراجعة</p></CardContent></Card>
               <Card className="py-2 text-center"><CardContent className="p-1"><span className="text-xl font-bold text-green-500">{stats.approved}</span><p className="text-[10px] text-muted-foreground">مقبول</p></CardContent></Card>
               <Card className="py-2 text-center"><CardContent className="p-1"><span className="text-xl font-bold text-red-500">{stats.rejected}</span><p className="text-[10px] text-muted-foreground">مرفوض</p></CardContent></Card>
             </div>
 
-            {/* Filters */}
             <div className="px-4 pt-3 space-y-2">
               <div className="flex gap-1.5">
                 {(['all', 'pending', 'approved', 'rejected'] as const).map(s => (
@@ -695,7 +674,6 @@ function TransitAdminPageContent() {
 
             <Separator className="my-2" />
 
-            {/* List */}
             <ScrollArea className="flex-1 px-4">
               <div className="space-y-2 pb-4">
                 {isLoading ? (
@@ -755,9 +733,7 @@ function TransitAdminPageContent() {
             </ScrollArea>
           </TabsContent>
 
-          {/* ── ROUTES TAB ─────────────────────────────────────────────────── */}
           <TabsContent value="routes" className="flex-1 flex flex-col overflow-hidden mt-0">
-            {/* Quick Actions */}
             {can('transit.edit_routes') && (
               <div className="px-4 pt-3">
                 <Button variant="default" size="sm" className="w-full text-xs gap-1.5" onClick={() => { setCombineCityId(''); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); setIsCombineModalOpen(true) }}>
@@ -766,7 +742,6 @@ function TransitAdminPageContent() {
               </div>
             )}
 
-            {/* Filters */}
             <div className="px-4 pt-3 space-y-2">
               <Input aria-label="بحث باسم الخط" placeholder="بحث باسم الخط..." value={routeSearchQuery} onChange={e => setRouteSearchQuery(e.target.value)} className="h-8 text-xs" />
               <div className="flex gap-1.5">
@@ -819,7 +794,6 @@ function TransitAdminPageContent() {
             </ScrollArea>
           </TabsContent>
 
-          {/* ── IMPORT TAB (Google My Maps) ────────────────────────────────── */}
           <TabsContent value="import" className="flex-1 flex flex-col overflow-hidden mt-0 pt-3">
             <ImportTab
               cities={visibleCities}
@@ -846,7 +820,6 @@ function TransitAdminPageContent() {
             />
           </TabsContent>
 
-          {/* ── LOGS TAB ───────────────────────────────────────────────────── */}
           <TabsContent value="logs" className="flex-1 flex flex-col overflow-hidden mt-0">
             <ScrollArea className="flex-1 px-4 pt-3">
               <div className="space-y-2 pb-4">
@@ -879,7 +852,6 @@ function TransitAdminPageContent() {
       <div className={`relative overflow-hidden ${mobileView === 'map' ? 'flex-1' : 'h-0 opacity-0 pointer-events-none'} lg:h-auto lg:opacity-100 lg:pointer-events-auto lg:flex-1`}>
         <div ref={mapContainer} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
-        {/* Draft detail overlay */}
         {selectedDraft && adminTab === 'drafts' && (
           <Card className="absolute bottom-4 end-4 z-10 w-[360px] max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] overflow-y-auto shadow-2xl bg-card/95 backdrop-blur-sm" dir="rtl">
             <CardHeader className="pb-3">
@@ -964,7 +936,6 @@ function TransitAdminPageContent() {
           </Card>
         )}
 
-        {/* Route detail overlay */}
         {selectedRoute && adminTab === 'routes' && (
           <Card className="absolute bottom-4 end-4 z-10 w-[360px] max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] overflow-y-auto shadow-2xl bg-card/95 backdrop-blur-sm" dir="rtl">
             <CardHeader className="pb-3">
@@ -1063,7 +1034,6 @@ function TransitAdminPageContent() {
           </Card>
         )}
 
-        {/* Empty state */}
         {!selectedDraft && adminTab === 'drafts' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl px-5 py-3 text-sm text-muted-foreground">اختر مسودة لمعاينتها على الخريطة</div>
@@ -1086,7 +1056,6 @@ function TransitAdminPageContent() {
         )}
       </div>
 
-      {/* ── Reject Dialog ─────────────────────────────────────────────────── */}
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
@@ -1103,7 +1072,6 @@ function TransitAdminPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Combine Dialog ────────────────────────────────────────────────── */}
       <Dialog open={isCombineModalOpen} onOpenChange={setIsCombineModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-lg">
           <DialogHeader>
@@ -1156,7 +1124,6 @@ function TransitAdminPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Split Dialog ──────────────────────────────────────────────────── */}
       <Dialog open={isSplitModalOpen} onOpenChange={setIsSplitModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-lg">
           <DialogHeader>
@@ -1192,7 +1159,6 @@ function TransitAdminPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Move Dialog ───────────────────────────────────────────────────── */}
       <Dialog open={isMoveModalOpen} onOpenChange={setIsMoveModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
@@ -1215,7 +1181,6 @@ function TransitAdminPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Edit Route Dialog ────────────────────────────────────────────── */}
       <Dialog open={isEditRouteModalOpen} onOpenChange={setIsEditRouteModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
@@ -1260,7 +1225,6 @@ function TransitAdminPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Route Dialog ──────────────────────────────────────────── */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>

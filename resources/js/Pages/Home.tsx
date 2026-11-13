@@ -65,14 +65,11 @@ export default function Home() {
     // Last-visited page badge. Read after mount (localStorage) so the server
     // render and first client render agree; see the SSR note below.
     const [lastPage, setLastPage] = useState<string | null>(null);
-    // The shared location preference (city, manual coordinates, GPS/IP point).
     const location = useLocationPreference();
     const [mounted, setMounted] = useState(false);
 
-    // Weather and the upcoming prayer for that same location.
     const [eventsGovernorate, setEventsGovernorate] = useState('all');
 
-    // Widget visibility states
     const [showWeather, setShowWeather] = useState(true);
     const [showPrayerTimes, setShowPrayerTimes] = useState(true);
     const [showEvents, setShowEvents] = useState(true);
@@ -84,9 +81,8 @@ export default function Home() {
         sessionCache: true,
     });
 
-    // Debounced account-settings saver: per-keystroke POSTs (lat/lon, toggles)
-    // previously hit /api/user/settings unthrottled. Coalesce partials over
-    // 500ms so rapid toggles collapse into one request.
+    // Debounced account-settings saver: coalesce partial updates (lat/lon,
+    // toggles) over 500ms so rapid toggles collapse into one POST.
     const pendingSettings = React.useRef<Record<string, any>>({});
     const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,7 +123,6 @@ export default function Home() {
     // first client render match.
     useEffect(() => { setLastPage(getLastPage()); }, []);
 
-    // Load settings from localStorage
     useEffect(() => {
         const accSettings = user?.settings || {};
 
@@ -153,8 +148,8 @@ export default function Home() {
             }
         }
 
-        // Sync to localStorage (everything except the location keys, which the
-        // location module already seeded above).
+        // Everything except the location keys, which the location module already
+        // seeded above.
         if (savedTheme) persistTheme(savedTheme);
         if (savedFont) applyFont(savedFont);
         if (localStorage.getItem('eventsGovernorate') === null) {
@@ -172,7 +167,6 @@ export default function Home() {
         setShowEvents(savedShowEvents);
         setCustomLinks(parsedLinks);
 
-        // If user logged in and has missing account settings, sync initial state to DB
         if (user && Object.keys(accSettings).length === 0) {
             saveAccountSettings({
                 theme: savedTheme,
@@ -187,7 +181,6 @@ export default function Home() {
         setMounted(true);
     }, []);
 
-    // Track the device scheme so system-resolved UI (logo, sun/moon icon) stays in sync
     useEffect(() => {
         const query = window.matchMedia('(prefers-color-scheme: dark)');
         setSystemDark(query.matches);
@@ -234,7 +227,6 @@ export default function Home() {
     const activeTheme = theme || SYSTEM_THEME;
     const isDark = isDarkTheme(activeTheme, systemDark);
 
-    // Navbar info strip (static per render): next prayer + weather + date.
     const prayerMini = showPrayerTimes ? nextPrayer(prayerTimes, new Date()) : null;
     const weatherMini = showWeather && weather ? weather : null;
 
@@ -249,7 +241,6 @@ export default function Home() {
             
       <h1 className="sr-only">المساحة السورية</h1>
             <div className="min-h-screen text-foreground transition-colors" dir="rtl">
-                {/* Home Navbar (desktop): logo + dates + minis + controls */}
                 <header className="hidden lg:block border-b border-border bg-card/60 backdrop-blur-sm">
                     <div className="mx-auto max-w-6xl px-3 pt-1.5 pb-3 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-5">
@@ -260,7 +251,6 @@ export default function Home() {
                                 className="h-10 w-auto"
                             />
                         </a>
-                        {/* Info strip (left of logo): prayer • weather • date, single line each */}
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             {prayerMini && (
                                 <span className="flex items-center gap-1.5 whitespace-nowrap">
@@ -313,9 +303,7 @@ export default function Home() {
                     </div>
                 </header>
 
-                {/* Main Content */}
                 <div className="container mx-auto px-4 pt-6 pb-12 max-w-6xl">
-                    {/* Dates (mobile only; PC shows them in the navbar) */}
                     <div className="flex flex-col items-center gap-1 mb-6 lg:hidden">
                         {mounted && (
                             <>
@@ -325,7 +313,6 @@ export default function Home() {
                         )}
                     </div>
 
-                    {/* Quick row: weather + next prayer (mobile only; PC shows them in the navbar) */}
                     <div className="flex items-center justify-center gap-4 mb-6 text-sm lg:hidden">
                         {showWeather && weather && (
                             <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -342,16 +329,13 @@ export default function Home() {
                         )}
                     </div>
 
-                    {/* Events */}
                     {showEvents && (
                         <div className="mb-8">
                             <F3aliaEvents governorate={eventsGovernorate} language="ar" variant="single" />
                         </div>
                     )}
 
-                    {/* Search Bar + Internal & External Syrian Zone Tools (in-place search on PC & Mobile) */}
                     <HomeInlineSearchSection>
-                        {/* Internal Syrian Zone Tools */}
                         <div className="mb-12">
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
                                 {homeLinks.filter((l) => l.isInternal).map((link) => {
@@ -380,7 +364,6 @@ export default function Home() {
                             </div>
                         </div>
 
-                        {/* External & Sister Links */}
                         <div>
                             <h2 className="text-xl font-bold text-foreground mb-6 text-center">
                                 روابط خارجية وشقيقة
@@ -408,7 +391,6 @@ export default function Home() {
                         </div>
                     </HomeInlineSearchSection>
 
-                    {/* Custom Links */}
                     <div>
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-foreground">
@@ -565,7 +547,6 @@ export default function Home() {
                             </Card>
                         )}
                     </div>
-                    {/* Footer */}
                     <footer className="mt-4 border-t border-border pt-6 flex flex-col items-center gap-3">
                         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                             <a href="/about" className="flex items-center gap-1.5 hover:text-primary transition-colors">
@@ -591,7 +572,6 @@ export default function Home() {
                     </footer>
                 </div>
 
-                {/* Lazy-loaded Dialogs */}
                 {settingsOpen && (
                     <React.Suspense fallback={null}>
                         <HomeSettingsDialog

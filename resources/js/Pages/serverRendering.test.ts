@@ -8,9 +8,6 @@ import { QueryProvider } from '@/Providers/QueryProvider';
 /**
  * Renders a page the way the SSR server does (resources/js/ssr.tsx) and returns
  * the markup a crawler, or a visitor before JavaScript loads, receives.
- *
- * These pages once rendered nothing on the server: one waited for a "mounted"
- * flag, the other fetched its data in the browser and showed a spinner.
  */
 async function renderOnServer(component: string, props: Record<string, unknown>, url: string): Promise<string> {
     const page = {

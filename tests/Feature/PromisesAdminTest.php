@@ -10,12 +10,6 @@ use App\Services\Promises\SpeakerDirectory;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 
-/*
-|--------------------------------------------------------------------------
-| Promises tracker (عداد الوعود): admin, review queue and import
-|--------------------------------------------------------------------------
-*/
-
 test('guests and accounts without the promises module are kept out', function () {
     $promise = Promise::factory()->create();
     $outsider = moduleStaff('places');

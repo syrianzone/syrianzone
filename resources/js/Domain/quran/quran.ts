@@ -83,8 +83,6 @@ export function ensureRtlBidi(token: string): string {
   return `${RLM}${token}${RLM}`;
 }
 
-// --- Manifest + shard loading (lazy, hash-invalidated) ---
-
 export interface UnifiedPart {
   l: number;
   t: string;
@@ -112,8 +110,6 @@ interface HydratedAyah {
 interface AnchorState {
   manifest: MushafManifest | null;
   manifestPromise: Promise<MushafManifest> | null;
-  // Legacy typed manifest state
-  // Unified state handles the actual ayahs.
 }
 
 const HASH_KEY = 'sz-mushaf-hash-';
@@ -261,8 +257,6 @@ export function surahNameForPage(manifest: MushafManifest, page: number): string
 async function ensureUnified(): Promise<void> {
   await loadAll();
 }
-
-// --- Page render model (port of renderPageData) ---
 
 export interface PagePart {
   /** RLM-wrapped display text (continuous part, never word-split). */

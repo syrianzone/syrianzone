@@ -15,7 +15,7 @@ import { useFocusMode } from '@/Contexts/FocusModeContext';
 
 interface Props {
   /**
-   * The game's slug in `_lib/games.ts`. Its title and icon come from the
+   * The game's slug in `Domain/games/games.ts`. Its title and icon come from the
    * registry, so renaming a game is one edit rather than one per page.
    */
   slug: string;

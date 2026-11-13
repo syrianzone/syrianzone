@@ -33,7 +33,6 @@ export function getFeatureStyle(
 ) {
     let value = 0;
     
-    // Environmental Data Style (Temperature)
     if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
         if (!environmentalData) {
             return noDataStyle();
@@ -53,16 +52,15 @@ export function getFeatureStyle(
                 fillColor: getTemperatureColor(temp),
                 weight: 1.5,
                 opacity: 1,
-                color: 'rgba(255,255,255,0.4)', // Semi-transparent white border for glow
-                fillOpacity: 0.6, // Lower opacity for glass effect
-                className: 'pulsing-region' // CSS animation class
+                color: 'rgba(255,255,255,0.4)',
+                fillOpacity: 0.6,
+                className: 'pulsing-region'
             };
         }
 
         return noDataStyle();
     }
 
-    // Rainfall Data Style
     if (currentDataType === DATA_TYPES.RAINFALL) {
         const rData = findRainData(feature, rainfallData);
         if (rData && rData.length > 0) {
@@ -77,7 +75,7 @@ export function getFeatureStyle(
             fillColor: baseColor,
             weight: 1.5,
             opacity: 1,
-            color: 'rgba(14, 165, 233, 0.4)', // Cyan border
+            color: 'rgba(14, 165, 233, 0.4)',
             fillOpacity: 0.7,
             className: ''
         };
@@ -95,7 +93,7 @@ export function getFeatureStyle(
         fillColor: fillColor,
         weight: 1.5,
         opacity: 1,
-        color: 'rgba(255,255,255,0.2)', // Subtle border
+        color: 'rgba(255,255,255,0.2)',
         fillOpacity: 0.75,
         className: ''
     };
@@ -105,7 +103,7 @@ export function getHighlightStyle(currentDataType: DataType) {
     if (currentDataType === DATA_TYPES.RAINFALL) {
         return {
             weight: 3,
-            color: '#67e8f9', // Cyan-300
+            color: '#67e8f9',
             fillOpacity: 0.9,
             fillColor: '#22d3ee'
         };
@@ -120,7 +118,6 @@ export function getHighlightStyle(currentDataType: DataType) {
         };
     }
 
-    // Default Highlight (Population/IDP)
     return {
         weight: 3,
         color: HIGHLIGHT_STROKE,

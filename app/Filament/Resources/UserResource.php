@@ -34,26 +34,14 @@ class UserResource extends Resource
     protected static ?string $pluralModelLabel = 'المستخدمون';
 
     /**
-     * Assignable roles and their Arabic labels.
-     *
-     * Kept as a method rather than an inline array so a test can assert it holds
-     * exactly the roles User still gives meaning to. It once had to stay in step
-     * with a role-prefix table on the model, and a role that existed there but was
-     * missing here became unassignable — which is how phonebook_admin went missing
-     * from the form. That table is gone and this list is now the whole vocabulary.
+     * Assignable roles and their Arabic labels. Kept as a method rather than an
+     * inline array so a test can assert it holds exactly the roles User still
+     * gives meaning to.
      *
      * @return array<string, string>
      */
     public static function roleOptions(): array
     {
-        // The whole vocabulary, and it is two values.
-        //
-        // Phase B dropped the six per-module roles, which implied a fixed bundle
-        // of capabilities and made a role inseparable from that bundle. Phase D
-        // deleted the table they were resolved through. Phase G dropped `admin`,
-        // the catch-all that short-circuited every permission check. What is left
-        // distinguishes unbounded authority from a community member; everything
-        // in between is a capability ticked below.
         return [
             'superadmin' => 'مدير عام (وصول كامل غير مقيد)',
             'user' => 'مستخدم عادي',
@@ -178,8 +166,6 @@ class UserResource extends Resource
                                         ->hiddenLabel()
                                         ->options(PermissionCatalogue::groups()[$group])
                                         ->columns(2)
-                                        // Only the transit group drives the reactive
-                                        // governorate-scope selector below.
                                         ->live($group === 'transit'),
                                 ];
 
@@ -261,7 +247,6 @@ class UserResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
         ];
     }
 

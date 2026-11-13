@@ -66,7 +66,6 @@ export function ManagePlaceDialog(props: {
   const [loadFailed, setLoadFailed] = useState(false);
   const [status, setStatus] = useState<PlaceStatus>('pending');
 
-  // section 1: details
   const [name, setName] = useState('');
   const [category, setCategory] = useState<PlaceCategory | null>(null);
   const [description, setDescription] = useState('');
@@ -75,21 +74,18 @@ export function ManagePlaceDialog(props: {
   const [detailsFieldErrors, setDetailsFieldErrors] = useState<Record<string, string>>({});
   const [detailsDone, setDetailsDone] = useState(false);
 
-  // section 2: photos
   const [photos, setPhotos] = useState<PlacePhoto[]>([]);
   const [busyPhoto, setBusyPhoto] = useState<number | null>(null);
   const [addingPhoto, setAddingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
 
-  // section 3: location
   const [coords, setCoords] = useState('');
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationDone, setLocationDone] = useState(false);
 
-  // section 4: danger
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 

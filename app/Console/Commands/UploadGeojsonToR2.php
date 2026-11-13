@@ -8,18 +8,8 @@ use Illuminate\Support\Facades\Storage;
 
 class UploadGeojsonToR2 extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'geojson:upload-to-r2 {--dry-run : Only log actions without uploading}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Upload original master GeoJSON files to R2 storage (/downloads/)';
 
     /**
@@ -30,9 +20,6 @@ class UploadGeojsonToR2 extends Command
         'public/assets/population/syr_admin1.geojson' => 'downloads/syr_admin1.geojson',
     ];
 
-    /**
-     * Execute the console command.
-     */
     public function handle(): int
     {
         $isDryRun = $this->option('dry-run');

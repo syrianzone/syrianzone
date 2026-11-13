@@ -93,7 +93,6 @@ export default function TierBoard({
         D: [],
         F: [],
     });
-    // Single-select tier modal disabled — clicks toggle multi-select instead
     // Deterministic seeded shuffle to avoid SSR/CSR hydration mismatch
     const shuffledInitial = useMemo(() => {
         function xmur3(str: string): number {
@@ -125,7 +124,6 @@ export default function TierBoard({
         return copy;
     }, [initialCandidates, pollId, voteDay]);
 
-    // Initial selected category: default group or first group or "all"
     const [selectedGroupId, setSelectedGroupId] = useState<string>(
         groups.find(g => g.is_default)?.id || groups[0]?.id || "all"
     );
@@ -190,7 +188,6 @@ export default function TierBoard({
 
         const filtered = shuffledInitial.filter((c) => {
             if (groups.length > 0) {
-                // Match by group ID if present (Strict filtering)
                 if (c.candidate_group_id) {
                     return c.candidate_group_id === selectedGroupId;
                 }
@@ -283,7 +280,6 @@ export default function TierBoard({
         e.dataTransfer.dropEffect = "move";
     }
 
-    // Single-select tier modal disabled — clicks toggle multi-select instead
     async function submit() {
         const totalAssigned = tierKeys.reduce((acc, k) => acc + tiers[k].length, 0);
         if (totalAssigned < MIN_SELECTIONS) {

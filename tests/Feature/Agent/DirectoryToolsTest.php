@@ -45,8 +45,6 @@ beforeEach(function () {
     ]);
 });
 
-// ─── Capability isolation ──────────────────────────────────────────────────
-
 it('lets a create-only token create but not delete a category', function () {
     agentToken($this->user, ['syofficial.create']);
 
@@ -94,8 +92,6 @@ it('refuses a reorder without the reorder capability', function () {
         ->and($category->fresh()->order_column)->toBe(1);
 });
 
-// ─── Read tools accept any of the module's five ───────────────────────────
-
 it('lets a delete-only token read the directory, since reading needs no write grant', function () {
     OfficialCategory::factory()->count(2)->create();
     agentToken($this->user, ['syofficial.delete']);
@@ -112,8 +108,6 @@ it('refuses the directory listing to a token with no capability in the module', 
 
     expect(toolText($response))->toContain('Permission denied');
 });
-
-// ─── Behaviour the tools must preserve ─────────────────────────────────────
 
 it('keeps a directory entity visible when the edit omits socials', function () {
     $entity = OfficialEntity::factory()->create(['socials' => ['https://keep.me']]);
@@ -178,8 +172,6 @@ it('catches a mixed-category entity reorder before it scrambles the order', func
         ->and($one->fresh()->order_column)->toBe(1)
         ->and($two->fresh()->order_column)->toBe(1);
 });
-
-// ─── Gov Apps: the soft-delete difference ──────────────────────────────────
 
 it('requires both delete and edit to restore a soft-deleted app', function () {
     $app = GovApp::factory()->create();

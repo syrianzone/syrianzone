@@ -3,7 +3,6 @@ import { notify } from '@/Lib/notify';
 export const COPY_SUCCESS_MESSAGE = 'تم النسخ';
 export const COPY_FAILURE_MESSAGE = 'تعذّر النسخ إلى الحافظة';
 
-/** The clipboard and the feedback channel, injectable so the helper is testable. */
 export interface CopyPorts {
     writeText?: (text: string) => Promise<void>;
     reportCopied?: (message: string) => void;

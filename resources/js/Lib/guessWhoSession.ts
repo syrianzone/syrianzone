@@ -9,7 +9,6 @@ const getTabId = (): string => {
     // window.name might throw in some iframe/cross-origin or private contexts
   }
   if (!tabId || !tabId.startsWith('guess_who_tab_')) {
-    // Generate fallback or random UUID if crypto isn't available
     const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
       ? crypto.randomUUID()
       : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -17,7 +16,6 @@ const getTabId = (): string => {
     try {
       window.name = tabId;
     } catch (e) {
-      // Ignore errors when setting window.name
     }
   }
   return tabId;

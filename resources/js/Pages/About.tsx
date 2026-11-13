@@ -20,7 +20,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
             
 
             <div className="container mx-auto px-4 py-12 max-w-4xl min-h-screen text-foreground">
-                {/* Page Header */}
                 <div className="text-center mb-10 space-y-4">
                     <div className="inline-flex p-3 bg-primary/10 rounded-full text-primary mb-2">
                         <Info className="w-10 h-10" />
@@ -32,7 +31,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                 </div>
 
                 <div className="space-y-6" dir="rtl">
-                        {/* Overview Card */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -60,7 +58,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </CardContent>
                         </Card>
 
-                        {/* Founders Card */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -138,7 +135,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </CardContent>
                         </Card>
 
-                        {/* Contributors & Credits Card */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -203,7 +199,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </CardContent>
                         </Card>
 
-                        {/* GitHub Contributors (auto-fetched, bots excluded) */}
                         {contributors.length > 0 && (
                             <Card className="border-border bg-card/50 backdrop-blur-sm">
                                 <CardHeader>
@@ -240,7 +235,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </Card>
                         )}
 
-                        {/* Open Source & License Card */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -269,7 +263,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </CardContent>
                         </Card>
 
-                        {/* Resource Attributions */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">

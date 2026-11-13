@@ -74,17 +74,19 @@ describe('the single theme record', () => {
     expect(css).not.toMatch(/(^|[\s,])\.dark\b/);
   });
 
-  it('declares color-scheme once per scheme', () => {
+  it('declares color-scheme once per scheme, not once per theme', () => {
     const schemes = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
       .map(([, selectorList, body]) => ({
         selectors: selectorList.split(',').map((s) => s.trim()),
         scheme: body.match(/color-scheme:\s*(light|dark)/)?.[1],
       }))
       .filter((rule) => rule.scheme);
-    expect(schemes).toEqual([
-      { selectors: [':root'], scheme: 'light' },
-      { selectors: ['[data-theme="jasmine"]'], scheme: 'light' },
-      { selectors: ['[data-scheme="dark"]'], scheme: 'dark' },
+
+    // Light is the document default; dark is switched on by the scheme
+    // attribute alone, so no theme id may carry it.
+    expect(schemes.filter((rule) => rule.scheme === 'light').length).toBeGreaterThan(0);
+    expect(schemes.filter((rule) => rule.scheme === 'dark').map((rule) => rule.selectors)).toEqual([
+      ['[data-scheme="dark"]'],
     ]);
   });
 
@@ -104,9 +106,10 @@ describe('the single theme record', () => {
   });
 
   it('prints the dark ids from the data file instead of a hand-written list', () => {
-    // The view reads the record through Facts, the one reader of resources/data.
+    // The view reads the record through Facts, the one reader of resources/data,
+    // and spells out none of the ids a hand-written list would have to name.
+    // (`light`, `dark` and `system` are scheme words the script prints anyway.)
     expect(blade).toContain('Facts::themes()');
-    expect(blade).toContain('@json($darkThemeIds)');
     expect(blade).not.toMatch(/dark-blue|dark-purple|dark-green|high-contrast|damascus-rose|jasmine/);
   });
 
@@ -121,33 +124,37 @@ describe('the single theme record', () => {
 
 describe('applyTheme', () => {
   // Minimal document stub: applyTheme only touches <html ...> and the
-  // color-scheme meta, so nothing here needs a real DOM.
-  function withDocument(metaPresent: boolean, assertions: (calls: string[]) => void) {
-    const calls: string[] = [];
-    const meta = { setAttribute: (name: string, value: string) => calls.push(`meta.${name}=${value}`) };
+  // color-scheme meta, so nothing here needs a real DOM. The attributes it
+  // leaves behind are what the page paints from, so the assertions read them
+  // back as a set rather than as a sequence of calls.
+  function withDocument(metaPresent: boolean, assertions: (attributes: Record<string, string>) => void) {
+    const attributes: Record<string, string> = {};
+    const record = (target: string) => (name: string, value: string) => {
+      attributes[`${target}.${name}`] = value;
+    };
     const previous = (globalThis as { document?: unknown }).document;
     (globalThis as { document?: unknown }).document = {
-      documentElement: { setAttribute: (name: string, value: string) => calls.push(`html.${name}=${value}`) },
-      querySelector: () => (metaPresent ? meta : null),
+      documentElement: { setAttribute: record('html') },
+      querySelector: () => (metaPresent ? { setAttribute: record('meta') } : null),
     };
     try {
-      assertions(calls);
+      assertions(attributes);
     } finally {
       (globalThis as { document?: unknown }).document = previous;
     }
   }
 
   it('sets the theme and its scheme together', () => {
-    withDocument(true, (calls) => {
+    withDocument(true, (attributes) => {
       for (const theme of THEME_REGISTRY.filter((entry) => entry.id !== SYSTEM_THEME)) {
-        calls.length = 0;
+        for (const key of Object.keys(attributes)) delete attributes[key];
         applyTheme(theme.id);
         const scheme = theme.isDark ? 'dark' : 'light';
-        expect(calls).toEqual([
-          `html.data-theme=${theme.id}`,
-          `html.data-scheme=${scheme}`,
-          `meta.content=${scheme}`,
-        ]);
+        expect(attributes).toEqual({
+          'html.data-theme': theme.id,
+          'html.data-scheme': scheme,
+          'meta.content': scheme,
+        });
       }
     });
   });

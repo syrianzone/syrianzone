@@ -136,13 +136,19 @@ test('accepts the methods the picker does not offer, from the shared table', fun
   Http::assertSentCount(count($table['unlisted_method_ids']));
 });
 
-test('the accepted methods are the offered ones plus the unlisted ids', function () {
-  $table = App\Support\Facts::prayer();
+test('accepts every calculation method the picker offers', function () {
+  Http::fake(['*' => Http::response(prayerPayload(), 200)]);
 
-  $offered = array_column($table['methods'], 'id');
-  expect(App\Http\Controllers\PrayerController::methods())
-    ->toEqualCanonicalizing([...$offered, ...$table['unlisted_method_ids']])
-    ->and(App\Http\Controllers\PrayerController::defaultMethod())->toBe($table['default_method']);
+  // Behaviour, not the controller's own list: each id the shared table offers
+  // must actually be served, so a method silently dropped from the accepted set
+  // fails here instead of resetting a stored choice to the default.
+  $methodIds = array_column(App\Support\Facts::prayer()['methods'], 'id');
+
+  foreach ($methodIds as $id) {
+    $this->getJson("/api/prayer-times?governorate=damascus&method={$id}")->assertOk();
+  }
+
+  Http::assertSentCount(count($methodIds));
 });
 
 test('caches a successful response instead of refetching', function () {

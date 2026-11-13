@@ -59,14 +59,6 @@ test('a superadmin gets the page with the data it needs', function () {
         );
 });
 
-test('the owner list only offers users who hold a capability', function () {
-    User::factory()->superadmin()->create();
-
-    $this->actingAs(User::factory()->superadmin()->create())
-        ->get('/admin/api-tokens')
-        ->assertInertia(fn ($page) => $page->component('Admin/ApiTokens/Index'));
-});
-
 test('a superadmin can mint a token and gets the plaintext once', function () {
     $owner = moduleStaff('places');
 

@@ -49,11 +49,4 @@ test('the pre-commit hook checks exactly the paths .terminology.json lists', fun
     foreach ($filters as $filter) {
         expect($filter)->toBe($expected);
     }
-
-    // The commented-out auto-fix example repeats the filter; keep it in step too.
-    $source = (string) file_get_contents(base_path('.pre-commit-config.yaml'));
-    preg_match_all('/^\s*#\s*-\s*id:\s*quranic-terminology-unsafe-fix\s*\n\s*#\s*files:\s*\'(.*)\'\s*$/m', $source, $commented);
-    foreach ($commented[1] as $filter) {
-        expect($filter)->toBe($expected);
-    }
 });

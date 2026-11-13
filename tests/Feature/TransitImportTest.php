@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\Transit\TransitCache;
 use App\Services\TransitKmlImportService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -198,12 +199,14 @@ test('a studio edit submission busts the public cities cache as well as the map 
 
     $route = transitRoute('route-homs-1', 'homs', ['name_ar' => 'خط منشور']);
 
-    // transit:cities:api is a separate key from transit:cities: the studio used
-    // to forget only the latter, leaving the public API stale for an hour.
-    Cache::put('transit:cities', 'stale', 600);
-    Cache::put('transit:cities:api', 'stale', 600);
-    Cache::put('transit:map-data:homs', 'stale', 600);
-    Cache::put('transit:routes:homs', 'stale', 600);
+    // The public API's city list is a separate cache entry from the page's: the
+    // studio used to forget only the latter, leaving the API stale for an hour.
+    $cache = app(TransitCache::class);
+
+    Cache::put(TransitCache::CITIES, 'stale', 600);
+    Cache::put(TransitCache::CITIES_API, 'stale', 600);
+    Cache::put($cache->mapDataKey('homs'), 'stale', 600);
+    Cache::put($cache->routesKey(['homs']), 'stale', 600);
 
     $this->actingAs(User::factory()->create())
         ->postJson('/api/v1/studio/routes', [
@@ -220,8 +223,8 @@ test('a studio edit submission busts the public cities cache as well as the map 
         ->assertCreated();
 
     expect($route->fresh()->status)->toBe('disapproved')
-        ->and(Cache::has('transit:cities'))->toBeFalse()
-        ->and(Cache::has('transit:cities:api'))->toBeFalse()
-        ->and(Cache::has('transit:map-data:homs'))->toBeFalse()
-        ->and(Cache::has('transit:routes:homs'))->toBeFalse();
+        ->and(Cache::has(TransitCache::CITIES))->toBeFalse()
+        ->and(Cache::has(TransitCache::CITIES_API))->toBeFalse()
+        ->and(Cache::has($cache->mapDataKey('homs')))->toBeFalse()
+        ->and(Cache::has($cache->routesKey(['homs'])))->toBeFalse();
 });

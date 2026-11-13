@@ -1,11 +1,12 @@
 <?php
 
 use App\Models\User;
+use App\Services\Transit\TransitCache;
 use Illuminate\Support\Facades\Cache;
 
 test('city routes list reports integer stop counts, never null', function () {
     seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
-    Cache::forget('transit:routes:homs');
+    Cache::forget(app(TransitCache::class)->routesKey(['homs']));
 
     $route = transitRoute('route-homs-test', 'homs', ['name_ar' => 'خط اختبار']);
 
@@ -31,7 +32,7 @@ test('city routes list reports integer stop counts, never null', function () {
         'created_at' => now(),
         'updated_at' => now(),
     ]);
-    Cache::forget('transit:routes:homs');
+    Cache::forget(app(TransitCache::class)->routesKey(['homs']));
 
     $this->getJson('/api/v1/cities/homs/routes')
         ->assertOk()
@@ -47,7 +48,7 @@ test('cities list exposes name, route count and governorate icon', function () {
     }
 
     seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
-    Cache::forget('transit:cities:api');
+    Cache::forget(TransitCache::CITIES_API);
 
     $cities = $this->getJson('/api/v1/cities')->assertOk()->json();
 
@@ -87,7 +88,7 @@ test('signed-in studio submitters are not held to the guest rate', function () {
 
 test('the city page carries the same route list as the api', function () {
     seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
-    Cache::forget('transit:routes:homs');
+    Cache::forget(app(TransitCache::class)->routesKey(['homs']));
 
     transitRoute('route-homs-page', 'homs', ['name_ar' => 'خط الصفحة']);
     transitRoute('route-homs-draft', 'homs', ['name_ar' => 'مسودة', 'status' => 'draft']);
@@ -109,8 +110,8 @@ test('the city page carries the city payload the api serves', function () {
 
     seedCity('damascus', ['name_ar' => 'دمشق', 'name_en' => 'Damascus']);
     seedCity('rif-dimashq', ['name_ar' => 'ريف دمشق', 'name_en' => 'Rif Dimashq']);
-    Cache::forget('transit:cities');
-    Cache::forget('transit:cities:api');
+    Cache::forget(TransitCache::CITIES);
+    Cache::forget(TransitCache::CITIES_API);
 
     $api = collect($this->getJson('/api/v1/cities')->assertOk()->json())->keyBy('id');
     $served = $api->get('rif-dimashq');
@@ -170,7 +171,7 @@ test('the map payload carries one colour key and no phantom stop fields', functi
         'created_at' => now(),
         'updated_at' => now(),
     ]);
-    Cache::forget('transit:map-data:homs');
+    Cache::forget(app(TransitCache::class)->mapDataKey('homs'));
 
     $map = $this->getJson('/api/v1/cities/homs/map-data')->assertOk()->json();
 
@@ -196,7 +197,7 @@ test('the landing page and the studio carry the city list from the table', funct
 
     seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     transitRoute('route-homs-landing', 'homs');
-    Cache::forget('transit:cities');
+    Cache::forget(TransitCache::CITIES);
 
     $this->get('/transit')
         ->assertOk()

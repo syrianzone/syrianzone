@@ -4,7 +4,7 @@ use App\Exceptions\Directories\DirectoryActionException;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
-use Illuminate\Support\Facades\Cache;
+use Inertia\Testing\AssertableInertia as Assert;
 
 /*
 |--------------------------------------------------------------------------
@@ -140,21 +140,32 @@ it('refuses to delete a category that does not exist', function () {
 })->throws(DirectoryActionException::class, 'No Category exists with id ghost');
 
 it('flushes both public read caches on every write', function () {
-    Cache::put(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY, 'stale', 600);
-    Cache::put(SyOfficialDirectoryService::ENTITIES_CACHE_KEY, 'stale', 600);
+    $category = OfficialCategory::factory()->create(['is_active' => true]);
+    OfficialEntity::factory()->inCategory($category)->create(['is_active' => true, 'name_ar' => 'قبل التعطيل']);
 
-    $category = OfficialCategory::factory()->create();
+    // Prime the cached page: one active category with one entity.
+    $this->get('/syofficial')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->has('categories', 1)
+        ->has('initialData', 1)
+    );
+
     $this->service->setCategoryActive($category->id, false);
 
-    expect(Cache::has(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY))->toBeFalse()
-        ->and(Cache::has(SyOfficialDirectoryService::ENTITIES_CACHE_KEY))->toBeFalse();
+    // Deactivating the category must reach the page at once, both props: it
+    // disappears from the list and its entity is no longer published.
+    $this->get('/syofficial')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->has('categories', 0)
+        ->has('initialData', 0)
+    );
 });
 
 it('applies a reorder and forgets the cache', function () {
-    Cache::put(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY, 'stale', 600);
+    $first = OfficialCategory::factory()->create(['order_column' => 1, 'is_active' => true]);
+    $second = OfficialCategory::factory()->create(['order_column' => 2, 'is_active' => true]);
 
-    $first = OfficialCategory::factory()->create(['order_column' => 1]);
-    $second = OfficialCategory::factory()->create(['order_column' => 2]);
+    $this->get('/syofficial')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('categories.0.id', $first->id)
+    );
 
     $written = $this->service->reorderCategories([
         ['id' => $second->id, 'order_column' => 1],
@@ -163,8 +174,12 @@ it('applies a reorder and forgets the cache', function () {
 
     expect($written)->toBe(2)
         ->and($first->fresh()->order_column)->toBe(2)
-        ->and($second->fresh()->order_column)->toBe(1)
-        ->and(Cache::has(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY))->toBeFalse();
+        ->and($second->fresh()->order_column)->toBe(1);
+
+    // The public page reads the new order immediately.
+    $this->get('/syofficial')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('categories.0.id', $second->id)
+    );
 });
 
 it('reports a not-found kind so the transport layer can answer 404', function () {

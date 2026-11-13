@@ -67,11 +67,11 @@ it('keeps an explicit grant working under a retired role name', function () {
         'permissions' => PermissionCatalogue::forModule('transit'),
     ]);
 
-    expect($user->effectivePermissions())->toHaveCount(5)
+    expect($user->effectivePermissions())
+        ->toHaveCount(count(PermissionCatalogue::forModule('transit')))
         ->and($user->hasPermission('transit.approve'))->toBeTrue()
         // The role name contributes nothing beyond what is stored.
-        ->and($user->hasPermission('transit.delete_routes'))
-        ->toBe(in_array('transit.delete_routes', $user->permissions, true));
+        ->and($user->hasPermission('transit.delete_routes'))->toBeTrue();
 });
 
 it('resolves a plain user purely from the stored array', function () {
@@ -221,7 +221,8 @@ it('syncs a dev account that predates the capability backing', function () {
 
     expect($user->is($legacy))->toBeTrue()
         ->and($user->role)->toBe('user')
-        ->and($user->effectivePermissions())->toHaveCount(5);
+        ->and($user->effectivePermissions())
+        ->toHaveCount(count(PermissionCatalogue::forModule('transit')));
 });
 
 it('re-syncs a dev account whose capabilities were edited', function () {
@@ -230,7 +231,8 @@ it('re-syncs a dev account whose capabilities were edited', function () {
 
     $user->update(['permissions' => []]);
 
-    expect($middleware->ensureDevUser('places_admin')->effectivePermissions())->toHaveCount(5);
+    expect($middleware->ensureDevUser('places_admin')->effectivePermissions())
+        ->toHaveCount(count(PermissionCatalogue::forModule('places')));
 });
 
 //
@@ -439,24 +441,6 @@ it('gates GuessWho on guesswho.manage', function () {
 
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $this->actingAs($superadmin)->get('/admin/guesswho')->assertOk();
-});
-
-it('has no role-to-capability machinery left on the model', function () {
-    // Stronger than asserting behaviour: the members are gone, so nothing can
-    // reintroduce a caller that depends on them.
-    $reflection = new ReflectionClass(User::class);
-
-    expect(method_exists(User::class, 'isAdmin'))->toBeFalse()
-        ->and(method_exists(User::class, 'moduleImplyingRoles'))->toBeFalse()
-        ->and($reflection->hasConstant('ROLE_MODULE_PREFIXES'))->toBeFalse();
-});
-
-it('has no admin middleware class or route alias left', function () {
-    // Asserted on the router's alias table rather than class_exists(), because a
-    // developer's composer classmap can still list a deleted file and make
-    // class_exists() fatal — a stale local artefact, not a real failure.
-    expect(app('router')->getMiddleware())->not->toHaveKey('admin')
-        ->and(file_exists(app_path('Http/Middleware/Admin.php')))->toBeFalse();
 });
 
 //

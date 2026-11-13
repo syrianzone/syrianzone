@@ -218,8 +218,8 @@ test('caches the forecast separately from current conditions', function () {
 
   $this->getJson('/api/weather?governorate=damascus')->assertOk();
 
-  // expire the current reading only, the way its shorter ttl eventually does
-  Cache::forget('weather:damascus');
+  // let the current reading's shorter ttl run out, leaving the forecast warm
+  $this->travel(11)->minutes();
 
   $this->getJson('/api/weather?governorate=damascus')
     ->assertOk()
@@ -239,9 +239,10 @@ test('does not cache a failed forecast', function () {
     ->assertOk()
     ->assertJsonPath('forecast', []);
 
-  Cache::forget('weather:damascus');
+  // past the current reading's ttl: the retry reaches the forecast upstream,
+  // which it could not do if the 500 had been cached
+  $this->travel(11)->minutes();
 
-  // the retry reaches upstream, which it could not do if the 500 had been cached
   $this->getJson('/api/weather?governorate=damascus')
     ->assertOk()
     ->assertJsonCount(3, 'forecast');

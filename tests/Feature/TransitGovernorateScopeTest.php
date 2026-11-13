@@ -4,6 +4,7 @@ use App\Filament\Resources\UserResource;
 use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Models\TransitRouteLog;
 use App\Models\User;
+use App\Support\Facts;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -409,13 +410,17 @@ test('filament user form renders grouped permissions with project icons', functi
         'permission_scopes' => ['transit' => ['homs']],
     ]);
 
+    // The drawing the panel must render is the one in the shared icon file, not
+    // a copy: its own viewBox is what tells a project icon from Filament's.
+    $projectViewBox = Facts::projectIcons()['icons']['transit']['viewBox'];
+
     Livewire::actingAs($superadmin)
         ->test(EditUser::class, ['record' => $target->getRouteKey()])
         ->assertOk()
         ->assertSee('الحسابات الرسمية')
         ->assertSee('ترانزيت')
         ->assertSee('نطاق المحافظات')
-        ->assertSee('viewBox="0 0 32 32"', false);
+        ->assertSee('viewBox="'.$projectViewBox.'"', false);
 });
 
 test('filament panel stays arabic even when the app locale is english', function () {
@@ -427,6 +432,8 @@ test('filament panel stays arabic even when the app locale is english', function
         'permissions' => ['transit.approve'],
     ]);
 
+    $projectViewBox = Facts::projectIcons()['icons']['transit']['viewBox'];
+
     $this->actingAs($superadmin)
         ->get("/superadmin/users/{$target->getRouteKey()}/edit")
         ->assertOk()
@@ -434,7 +441,7 @@ test('filament panel stays arabic even when the app locale is english', function
         ->assertSee('نطاق المحافظات')
         // Filament's own UI translations follow the forced panel locale.
         ->assertSee('حفظ التغييرات')
-        ->assertSee('viewBox="0 0 32 32"', false);
+        ->assertSee('viewBox="'.$projectViewBox.'"', false);
 });
 
 test('filament user form saves grouped permissions and governorate scope', function () {

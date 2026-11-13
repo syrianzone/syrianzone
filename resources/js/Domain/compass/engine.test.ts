@@ -83,10 +83,18 @@ describe('compass engine', () => {
   });
 
   it('random uniform answers rarely produce a strong match', () => {
+    // A fixed sample, so a rare roll cannot fail the build: the claim is about
+    // the distribution, and this is the same 200 draws every run.
+    let state = 20260718;
+    const random = () => {
+      state = (state * 1664525 + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+
     let strong = 0;
     for (let t = 0; t < 200; t++) {
       const answers: Record<string, number> = {};
-      for (const id of AXIS_IDS) for (const { i } of activeQuestions(id, 'standard')) answers[axisKey(id, i)] = Math.floor(Math.random() * 5) - 2;
+      for (const id of AXIS_IDS) for (const { i } of activeQuestions(id, 'standard')) answers[axisKey(id, i)] = Math.floor(random() * 5) - 2;
       const scores = computeScores(answers, 'standard');
       const { hasStrongMatch } = matchFigures(scores.axes, scores.align, FIGURES);
       if (hasStrongMatch) strong++;
@@ -95,7 +103,7 @@ describe('compass engine', () => {
   });
 
   it('consistency is high for one-sided fillers and low for contradictory ones', () => {
-    const oneSided = fillForFigure('حافظ الأسد'.length ? FIGURES[0].name : '', 'standard');
+    const oneSided = fillForFigure(FIGURES[0].name, 'standard');
     const cHigh = computeConsistency(oneSided, 'standard');
     // contradictory: answer both poles +2 on auth_lib
     const contradictory: Record<string, number> = {};

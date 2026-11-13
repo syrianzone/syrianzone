@@ -85,14 +85,10 @@ test('production passes only build args the image declares, and declares nothing
     expect((string) file_get_contents(base_path('Dockerfile')))->toContain('VITE_SENTRY_RELEASE=${GIT_SHA}');
 });
 
-test('staging deliberately passes no Sentry build args, and says so', function () {
-    $staging = (string) file_get_contents(base_path('.github/workflows/deploy-staging.yml'));
-
+test('staging deliberately passes no Sentry build args', function () {
     // Sending the production DSN would make staging report browser errors into
-    // the production project. The workflow carries the explanation; if the args
-    // are ever added back, that comment has to go with them.
-    expect(workflowBuildNames('deploy-staging.yml'))->toBe([])
-        ->and($staging)->toContain('deliberately NOT passing VITE_SENTRY_DSN');
+    // the production project, so the workflow carries none of the names.
+    expect(workflowBuildNames('deploy-staging.yml'))->toBe([]);
 });
 
 test('every declared name is consumed, and every consumed name is declared', function () {

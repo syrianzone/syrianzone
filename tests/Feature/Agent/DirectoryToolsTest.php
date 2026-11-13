@@ -176,7 +176,6 @@ it('catches a mixed-category entity reorder before it scrambles the order', func
 it('requires both delete and edit to restore a soft-deleted app', function () {
     $app = GovApp::factory()->create();
     agentToken($this->user, ['govapps.delete']);
-    GovAppService::class;
     app(GovAppService::class)->delete($app->id);
 
     // Delete alone is not enough to put content back in public view.

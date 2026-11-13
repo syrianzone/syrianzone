@@ -100,18 +100,21 @@ it('approves a linked edit when the draft and its route are both in scope', func
 // holding one must not imply another. TransitGovernorateScopeTest proves the
 // delete capability is required; this covers the other three.
 
-it('separates the moderation capabilities from one another', function (string $action, string $path, array $granted) {
+it('separates the moderation capabilities from one another', function (string $action, array $granted) {
     seedCity('homs');
+    $draft = transitDraft('homs');
 
     $reviewer = capabilityUser(array_values(array_diff(PermissionCatalogue::forModule('transit'), $granted)));
 
     $this->actingAs($reviewer)
-        ->postJson("/api/v1/admin/route-drafts/{transitDraft('homs')->id}/{$path}")
+        ->postJson("/api/v1/admin/route-drafts/{$draft->id}/{$action}")
         ->assertForbidden();
+
+    expect($draft->fresh()->status)->toBe('pending');
 })->with([
     // Without transit.approve, but holding reject and the rest.
-    'approve without transit.approve' => ['approve', 'approve', ['transit.approve']],
-    'reject without transit.reject' => ['reject', 'reject', ['transit.reject']],
+    'approve without transit.approve' => ['approve', ['transit.approve']],
+    'reject without transit.reject' => ['reject', ['transit.reject']],
 ]);
 
 it('refuses a route edit to a reviewer holding only the moderation capabilities', function () {

@@ -268,9 +268,8 @@ test('show caches contributor points per user for five minutes', function () {
   $place = Place::factory()->approved()->create(['user_id' => $owner->id, 'saves_count' => 0]);
 
   $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 15);
-  expect(Cache::has("places:guide-points:{$owner->id}"))->toBeTrue();
 
-  // staleness accepted: fresh photos are invisible until the per-user key expires
+  // staleness accepted: fresh photos are invisible until the per-user entry expires
   PlacePhoto::factory()->create(['place_id' => $place->id]);
   $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 15);
 
@@ -439,7 +438,9 @@ test('owner moves pin of an approved place back to pending and busts the map cac
   $place = Place::factory()->approved()->create([
     'user_id' => $user->id, 'lat' => 33.5, 'lng' => 36.3, 'approved_at' => now(),
   ]);
-  Cache::put('places:map', ['type' => 'FeatureCollection', 'features' => []], 300);
+
+  // Prime the map while the pin is still approved.
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $this->actingAs($user)
     ->patchJson("/api/v1/my/places/{$place->id}/location", ['lat' => 33.51234, 'lng' => 36.29876])
@@ -455,7 +456,9 @@ test('owner moves pin of an approved place back to pending and busts the map cac
   expect($fresh->status)->toBe('pending');
   expect($fresh->rejection_reason)->toBeNull();
   expect($fresh->approved_at)->toBeNull();
-  expect(Cache::missing('places:map'))->toBeTrue();
+
+  // The cached map must not keep serving the pin that is back in review.
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('owner moves pin of a rejected place and the rejection reason clears', function () {
@@ -591,7 +594,8 @@ test('owner edits details and the place goes back to pending', function () {
   $place = Place::factory()->approved()->create([
     'user_id' => $user->id, 'name' => 'الاسم القديم', 'approved_at' => now(),
   ]);
-  Cache::put('places:map', ['stale'], 300);
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $this->actingAs($user)
     ->patchJson("/api/v1/my/places/{$place->id}", ['name' => 'الاسم الجديد'])
@@ -605,7 +609,9 @@ test('owner edits details and the place goes back to pending', function () {
   expect($fresh->status)->toBe('pending');
   expect($fresh->rejection_reason)->toBeNull();
   expect($fresh->approved_at)->toBeNull();
-  expect(Cache::missing('places:map'))->toBeTrue();
+
+  // The edited pin is back in review, so the cached map drops it.
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('owner edits a rejected place and the rejection reason clears', function () {
@@ -673,7 +679,8 @@ test('owner adds a photo and the place goes back to pending', function () {
   $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id, 'approved_at' => now()]);
   placePhoto($place->id);
-  Cache::put('places:map', ['stale'], 300);
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $response = $this->actingAs($user)
     ->postJson("/api/v1/my/places/{$place->id}/photos", [
@@ -690,7 +697,8 @@ test('owner adds a photo and the place goes back to pending', function () {
   expect($fresh->status)->toBe('pending');
   expect($fresh->rejection_reason)->toBeNull();
   expect($fresh->approved_at)->toBeNull();
-  expect(Cache::missing('places:map'))->toBeTrue();
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('owner add photo is refused at ten photos', function () {
@@ -744,7 +752,8 @@ test('owner deletes a photo, files go and the place goes back to pending', funct
   $place = Place::factory()->approved()->create(['user_id' => $user->id, 'approved_at' => now()]);
   placePhoto($place->id);
   $victim = placePhoto($place->id, 1, 'b.jpg');
-  Cache::put('places:map', ['stale'], 300);
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $this->actingAs($user)
     ->deleteJson("/api/v1/my/place-photos/{$victim->id}")
@@ -758,7 +767,8 @@ test('owner deletes a photo, files go and the place goes back to pending', funct
   expect($fresh->status)->toBe('pending');
   expect($fresh->rejection_reason)->toBeNull();
   expect($fresh->approved_at)->toBeNull();
-  expect(Cache::missing('places:map'))->toBeTrue();
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('owner cannot delete the last photo', function () {
@@ -851,14 +861,15 @@ test('owner deletes their place along with photo rows and files', function () {
   $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id]);
   $photo = placePhoto($place->id);
-  Cache::put('places:map', ['stale'], 300);
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $this->actingAs($user)->deleteJson("/api/v1/my/places/{$place->id}")->assertNoContent();
 
   $this->assertDatabaseMissing('places', ['id' => $place->id]);
   $this->assertDatabaseMissing('place_photos', ['id' => $photo->id]);
   Storage::disk('public')->assertMissing([$photo->original_path, $photo->display_path, $photo->thumb_path]);
-  expect(Cache::missing('places:map'))->toBeTrue();
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('stranger cannot delete another user place', function () {

@@ -71,8 +71,8 @@ describe('population atlas legend and classification', () => {
             ...TEMPERATURE_BANDS.map((band) => band.label),
         ]);
 
+        expect(getTemperatureColor(-100)).toBe(TEMPERATURE_BANDS[0].color);
         for (const band of TEMPERATURE_BANDS) {
-            expect(getTemperatureColor(-100)).toBe(TEMPERATURE_BANDS[0].color);
             if (band.max !== null) {
                 expect(getTemperatureColor(band.max)).toBe(
                     band.maxInclusive ? band.color : TEMPERATURE_BANDS[TEMPERATURE_BANDS.indexOf(band) + 1].color,

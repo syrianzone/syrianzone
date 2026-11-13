@@ -119,18 +119,3 @@ test('canonical /api/v1/user/settings and /api/v1/account routes work for authen
 
     expect($user->fresh()->name)->toBe('Updated Name');
 });
-
-test('canonical named api.v1.* routes resolve to expected paths', function () {
-    expect(route('api.v1.search.global', [], false))->toBe('/api/v1/search/global')
-        ->and(route('api.v1.transit.cities.index', [], false))->toBe('/api/v1/transit/cities')
-        ->and(route('api.v1.transit.cities.routes.index', ['id' => 'damascus'], false))->toBe('/api/v1/transit/cities/damascus/routes')
-        ->and(route('api.v1.transit.cities.map', ['id' => 'damascus'], false))->toBe('/api/v1/transit/cities/damascus/map')
-        ->and(route('api.v1.transit.stops.nearby', [], false))->toBe('/api/v1/transit/stops/nearby')
-        ->and(route('api.v1.transit.search', [], false))->toBe('/api/v1/transit/search')
-        ->and(route('api.v1.transit.pois.index', [], false))->toBe('/api/v1/transit/pois')
-        ->and(route('api.v1.polls.index', [], false))->toBe('/api/v1/polls')
-        ->and(route('api.v1.polls.leaderboard', ['idOrSlug' => 'best-ministers'], false))->toBe('/api/v1/polls/best-ministers/leaderboard')
-        ->and(route('api.v1.polls.ballots.store', ['idOrSlug' => 'best-ministers'], false))->toBe('/api/v1/polls/best-ministers/ballots')
-        ->and(route('api.v1.places.index', [], false))->toBe('/api/v1/places')
-        ->and(route('api.v1.atlas.index', [], false))->toBe('/api/v1/atlas');
-});

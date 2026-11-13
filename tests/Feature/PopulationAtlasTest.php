@@ -4,7 +4,6 @@ use App\Models\Population\PopulationDemographic;
 use App\Models\Population\PopulationEnvironmentalLog;
 use App\Models\Population\PopulationRainfall;
 use App\Services\Population\PopulationCache;
-use Illuminate\Support\Facades\Cache;
 
 /*
 |--------------------------------------------------------------------------
@@ -236,10 +235,8 @@ it('caches the master payload and serves the second read from it', function () {
 
     $this->getJson('/api/population/master')->assertOk();
 
-    expect(Cache::has(PopulationCache::MASTER))->toBeTrue();
-
-    // A row added after the first read must not appear until the key is flushed,
-    // which is the whole point of the hour-long cache.
+    // A row added after the first read must not appear until the cache is
+    // flushed, which is the whole point of the hour-long stale window.
     PopulationDemographic::create([
         'data_type' => 'population', 'source_id' => 1, 'city_name' => 'Aleppo', 'value' => 2,
     ]);
@@ -255,19 +252,19 @@ it('caches the master payload and serves the second read from it', function () {
     expect($fresh)->toBe(['Damascus' => 1, 'Aleppo' => 2]);
 });
 
-it('caches the environmental report under its own key', function () {
+it('caches the environmental report and refreshes it on demand', function () {
     envLog('Damascus', 33.51, 36.29);
 
-    $this->getJson('/api/population/env-report')->assertOk();
+    expect($this->getJson('/api/population/env-report')->assertOk()->json('metadata.cities_analyzed'))->toBe(1);
 
-    expect(Cache::has(PopulationCache::ENVIRONMENT))->toBeTrue();
+    // A log added after the first read is invisible until the report is rebuilt.
+    envLog('Aleppo', 36.20, 37.13);
 
-    // Independent of the master key: flushing both is one call, but a refresh of
-    // one must not silently drop the other.
-    Cache::forget(PopulationCache::MASTER);
+    expect($this->getJson('/api/population/env-report')->assertOk()->json('metadata.cities_analyzed'))->toBe(1);
+
     PopulationCache::forget();
 
-    expect(Cache::has(PopulationCache::ENVIRONMENT))->toBeFalse();
+    expect($this->getJson('/api/population/env-report')->assertOk()->json('metadata.cities_analyzed'))->toBe(2);
 });
 
 it('renders the atlas page without inlining the payload', function () {

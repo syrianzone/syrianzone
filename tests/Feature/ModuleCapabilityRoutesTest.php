@@ -134,9 +134,10 @@ it('only ever tags routes with real capabilities', function () use ($guarded) {
 });
 
 it('declares only real capabilities in each middleware', function () {
-    (new ModuleCapabilityGuard)->assertCapabilitiesAreReal();
-
-    expect(true)->toBeTrue();
+    // Throws if any module middleware tags a capability that is not in the
+    // catalogue, which would deny the route outright.
+    expect(fn () => (new ModuleCapabilityGuard)->assertCapabilitiesAreReal())
+        ->not->toThrow(Throwable::class);
 });
 
 it('registers every guard alias to the one parameterised guard', function () {

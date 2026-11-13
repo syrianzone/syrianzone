@@ -183,6 +183,10 @@ test('the catalogue is the single source of truth for capability ids', function 
         ->toEqual(array_keys(collect(PermissionCatalogue::groups())->collapse()->all()));
 
     expect(PermissionCatalogue::isKnown('places.approve'))->toBeTrue()
-        ->and(PermissionCatalogue::isKnown('places.approv'))->toBeFalse()
-        ->and(PermissionCatalogue::forModule('places'))->toHaveCount(5);
+        ->and(PermissionCatalogue::isKnown('places.approv'))->toBeFalse();
+
+    // A module's capabilities are exactly the ids that carry its prefix.
+    expect(PermissionCatalogue::forModule('places'))
+        ->toContain('places.review', 'places.approve')
+        ->each->toStartWith('places.');
 });

@@ -206,7 +206,11 @@ describe('findLetterAt', () => {
 
 describe('wordOccurrenceKey', () => {
   it('distinguishes repeated occurrences of the same word', () => {
-    expect(wordOccurrenceKey(1, 10, 1)).not.toBe(wordOccurrenceKey(1, 10, 2));
-    expect(wordOccurrenceKey(1, 10, 1)).toBe('1:10:1');
+    const first = wordOccurrenceKey(1, 10, 1);
+
+    // Two readings of a repeated word, and the same word in another verse, must
+    // never collapse onto one key.
+    expect(first).not.toBe(wordOccurrenceKey(1, 10, 2));
+    expect(new Set([first, wordOccurrenceKey(1, 11, 1), wordOccurrenceKey(2, 10, 1)]).size).toBe(3);
   });
 });

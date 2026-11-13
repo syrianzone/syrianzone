@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CAPABILITIES, canAny, canModule, hasCapability, type Capability } from './capabilities';
+import { CAPABILITIES, canAny, canModule, hasCapability, type Capability, type CapabilityModule } from './capabilities';
 
 /**
  * The capability check itself, exercised over the shapes the server shares.
@@ -11,17 +11,19 @@ import { CAPABILITIES, canAny, canModule, hasCapability, type Capability } from 
  * role table on this side, so these four fixtures are also the proof that the
  * check does not re-derive one.
  */
-const superadmin = [...CAPABILITIES];
 const placesReviewer: Capability[] = ['places.review'];
 const plainUser: string[] = [];
 const guest = undefined;
 
 describe('capability checks', () => {
-    it('lets a superadmin do everything the catalogue lists', () => {
+    it('names every capability by its module, so module checks can see it', () => {
         expect(CAPABILITIES.length).toBeGreaterThan(0);
 
         for (const capability of CAPABILITIES) {
-            expect(hasCapability(superadmin, capability)).toBe(true);
+            const [module] = capability.split('.');
+            expect(module, capability).not.toBe('');
+            expect(module, capability).not.toBe(capability);
+            expect(canModule([capability], module as CapabilityModule), capability).toBe(true);
         }
     });
 

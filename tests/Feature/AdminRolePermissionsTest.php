@@ -104,22 +104,24 @@ test('capabilities from two modules combine without implying a third', function 
 
 // The role select is asserted once, in CapabilitiesTest.
 
-test('dev impersonation covers every preset in the one table', function () {
-    $offered = array_keys(AutoLoginDevUser::DEV_USERS);
-
-    expect($offered)->toEqualCanonicalizing(AutoLoginDevUser::names())
-        ->and($offered)->toContain('places_admin', 'phonebook_admin');
-
-    // The switcher renders what the server sends: every preset carries the
-    // label and icon key it needs, so the client keeps no second table.
+test('dev impersonation offers every preset with the display data the switcher needs', function () {
     $presets = AutoLoginDevUser::presets();
 
-    expect($presets)->toHaveCount(count($offered));
+    expect($presets)->toHaveCount(count(AutoLoginDevUser::DEV_USERS));
 
+    // The switcher renders what the server sends: every preset carries the id,
+    // label and icon key it needs, so the client keeps no second table.
     foreach ($presets as $preset) {
-        expect($preset['label'])->not->toBe('')
-            ->and($preset['icon'])->toBeIn(['user', 'bus', 'settings', 'shield']);
+        expect($preset['id'])->not->toBe('')
+            ->and($preset['label'])->not->toBe('')
+            ->and($preset['icon'])->not->toBe('');
     }
+
+    $ids = collect($presets)->pluck('id');
+
+    expect($ids->all())->toContain('places_admin', 'phonebook_admin')
+        // Duplicate ids would make one preset overwrite another in the switcher.
+        ->and($ids->unique()->count())->toBe($ids->count());
 });
 
 test('superadmin still holds every capability', function () {
@@ -130,15 +132,6 @@ test('superadmin still holds every capability', function () {
     foreach (PermissionCatalogue::all() as $permission) {
         expect($user->hasPermission($permission))->toBeTrue();
     }
-});
-
-// The full-catalogue shape is covered in CapabilitiesTest; what is worth
-// asserting here is that it survives the trip through the shared payload.
-test('the shared auth payload carries the capabilities it was given', function () {
-    $user = User::factory()->withPermissions(PermissionCatalogue::all())->create();
-
-    expect($user->toAuthPayload()['effective_permissions'])
-        ->toHaveCount(count(PermissionCatalogue::all()));
 });
 
 test('a places-scoped account passes the places admin middleware', function () {

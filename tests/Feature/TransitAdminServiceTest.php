@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\Transit\TransitActionException;
+use App\Models\City;
 use App\Models\Route;
 use App\Models\TransitRouteLog;
 use App\Models\User;
@@ -186,18 +187,19 @@ it('moves a stop-less route to another governorate and clears both caches', func
     seedCity('aleppo', ['name_ar' => 'حلب', 'name_en' => 'Aleppo']);
     $route = transitRoute('route-homs-1', 'homs');
 
-    Cache::put('transit:map-data:homs', 'stale', 600);
-    Cache::put('transit:map-data:aleppo', 'stale', 600);
-    Cache::put('transit:routes:homs', 'stale', 600);
-    Cache::put('transit:cities', 'stale', 600);
+    $cache = app(TransitCache::class);
+    Cache::put($cache->mapDataKey('homs'), 'stale', 600);
+    Cache::put($cache->mapDataKey('aleppo'), 'stale', 600);
+    Cache::put($cache->routesKey(['homs']), 'stale', 600);
+    Cache::put(TransitCache::CITIES, 'stale', 600);
 
     $this->service->moveRoute($route, 'aleppo', $this->actor->id);
 
     expect($route->fresh()->city_id)->toBe('aleppo')
-        ->and(Cache::has('transit:map-data:homs'))->toBeFalse()
-        ->and(Cache::has('transit:map-data:aleppo'))->toBeFalse()
-        ->and(Cache::has('transit:routes:homs'))->toBeFalse()
-        ->and(Cache::has('transit:cities'))->toBeFalse();
+        ->and(Cache::has($cache->mapDataKey('homs')))->toBeFalse()
+        ->and(Cache::has($cache->mapDataKey('aleppo')))->toBeFalse()
+        ->and(Cache::has($cache->routesKey(['homs'])))->toBeFalse()
+        ->and(Cache::has(TransitCache::CITIES))->toBeFalse();
 });
 
 it('refuses a move to the governorate the route is already in', function () {
@@ -277,18 +279,21 @@ it('invalidates the combined map when either of the paired governorates changes'
     seedCity('damascus');
     seedCity('rif-dimashq');
 
-    Cache::put('transit:map-data:damascus', 'stale', 600);
-    Cache::put('transit:map-data:rif-dimashq', 'stale', 600);
-    Cache::put('transit:routes:damascus+rif-dimashq', 'stale', 600);
-    Cache::put('transit:routes:aleppo', 'stale', 600);
+    $cache = app(TransitCache::class);
+    $pair = City::mapGroup('damascus');
 
-    app(TransitCache::class)->forgetCity('rif-dimashq');
+    Cache::put($cache->mapDataKey('damascus'), 'stale', 600);
+    Cache::put($cache->mapDataKey('rif-dimashq'), 'stale', 600);
+    Cache::put($cache->routesKey($pair), 'stale', 600);
+    Cache::put($cache->routesKey(['aleppo']), 'stale', 600);
 
-    expect(Cache::has('transit:map-data:damascus'))->toBeFalse()
-        ->and(Cache::has('transit:map-data:rif-dimashq'))->toBeFalse()
-        ->and(Cache::has('transit:routes:damascus+rif-dimashq'))->toBeFalse()
+    $cache->forgetCity('rif-dimashq');
+
+    expect(Cache::has($cache->mapDataKey('damascus')))->toBeFalse()
+        ->and(Cache::has($cache->mapDataKey('rif-dimashq')))->toBeFalse()
+        ->and(Cache::has($cache->routesKey($pair)))->toBeFalse()
         // An unrelated governorate must be left alone.
-        ->and(Cache::has('transit:routes:aleppo'))->toBeTrue();
+        ->and(Cache::has($cache->routesKey(['aleppo'])))->toBeTrue();
 });
 
 /*

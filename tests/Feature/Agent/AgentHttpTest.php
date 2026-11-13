@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Support\Agents\TokenIssuer;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\Date;
 
 /*
@@ -116,18 +117,31 @@ test('tools/list advertises only what the token can actually call', function () 
 
 test('a superadmin token with every capability sees the full catalogue', function () {
     $super = User::factory()->create(['role' => 'superadmin']);
-    $token = app(TokenIssuer::class)->issue($super, 'full', ['places.approve', 'places.edit', 'places.delete', 'places.moderate_photos', 'places.review'])['token'];
+    $token = app(TokenIssuer::class)->issue(
+        $super,
+        'full',
+        PermissionCatalogue::all(),
+    )['token'];
 
+    // tools/list is paginated at 15 per page, so ask for a page big enough to
+    // hold the whole advertised set rather than half of it.
     $names = collect(
-        $this->withHeader('Authorization', 'Bearer '.$token->plainTextToken)
-            ->postJson('/mcp/admin', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'])
-            ->assertOk()
-            ->json('result.tools')
+        mcpCall($token->plainTextToken, [
+            'method' => 'tools/list',
+            'params' => ['per_page' => 50],
+        ])->assertOk()->json('result.tools')
     )->pluck('name');
 
-    // Read tools are advertised directly; write tools live in the searchable
-    // catalogue, so they are reachable via search_tools rather than listed.
-    expect($names)->toContain('list-places', 'get-place', 'search_tools', 'execute_tools');
+    // One read tool per module, so no module is missing from the catalogue.
+    expect($names)->toContain(
+        'list-places',
+        'list-promises',
+        'list-syofficial-categories',
+        'list-gov-apps',
+        'list-transit-drafts',
+        'search_tools',
+        'execute_tools',
+    );
 });
 
 test('a banned owner is rejected even with a live token', function () {

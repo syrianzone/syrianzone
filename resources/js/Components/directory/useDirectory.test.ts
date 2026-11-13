@@ -104,13 +104,14 @@ describe('directory search and facets', () => {
     it('exposes the facets to the smart search field without their value maps', () => {
         const { state } = render({ items: ROWS, facets: [TYPE_FACET] });
 
-        expect(state.searchFacets).toEqual([{
+        expect(state.searchFacets).toHaveLength(1);
+        expect(state.searchFacets[0]).toMatchObject({
             key: 'type',
             label: 'النوع',
-            aliases: undefined,
-            selectionMode: undefined,
             options: TYPE_FACET.options,
-        }]);
+        });
+        // `valueOf` reads rows, so it cannot cross into the shared search field.
+        expect(Object.hasOwn(state.searchFacets[0], 'valueOf')).toBe(false);
     });
 
     it('counts what matches, not what was passed in', () => {
@@ -120,7 +121,6 @@ describe('directory search and facets', () => {
             initialFilters: { type: ['org'] },
         });
 
-        expect(state.total).toBe(state.results.length);
         expect(state.total).toBe(2);
     });
 

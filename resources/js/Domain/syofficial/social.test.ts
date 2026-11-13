@@ -26,7 +26,14 @@ describe('social platform vocabulary', () => {
         }
     });
 
-    it('falls back for a key no one knows', () => {
-        expect(socialVisual('mastodon')).toBe(fallback);
+    it('falls back to one painted icon for a key no one knows', () => {
+        const unknown = socialVisual('mastodon');
+
+        // A link nobody has described still draws: a generic icon, not nothing.
+        expect(unknown.Icon).toBeDefined();
+        expect(unknown).toEqual(socialVisual('__also-unknown__'));
+        for (const platform of platforms) {
+            expect(unknown, platform.key).not.toEqual(socialVisual(platform.key));
+        }
     });
 });

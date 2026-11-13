@@ -279,14 +279,18 @@ test('admin update returns an arabic message for a blank name and a non-numeric 
 });
 
 test('admin update busts the map cache', function () {
-  $place = Place::factory()->approved()->create();
-  \Illuminate\Support\Facades\Cache::put('places:map', ['stale'], 3600);
+  $place = Place::factory()->approved()->create(['name' => 'اسم قديم للخريطة']);
+
+  // Prime the cached map, then edit through the dashboard.
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonPath('features.0.properties.name', 'اسم قديم للخريطة');
 
   $this->actingAs(moduleStaff('places'))
     ->patchJson("/api/v1/admin/places/{$place->id}", ['name' => 'اسم محدث للخريطة'])
     ->assertOk();
 
-  expect(\Illuminate\Support\Facades\Cache::missing('places:map'))->toBeTrue();
+  $this->getJson('/api/v1/places/map')
+    ->assertOk()
+    ->assertJsonPath('features.0.properties.name', 'اسم محدث للخريطة');
 });
 
 test('admin can add a photo and it lands after the existing ones', function () {

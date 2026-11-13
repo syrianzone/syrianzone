@@ -63,13 +63,36 @@ test('guides description one char short of 200 misses the bonus', function () {
     ->assertJsonPath('guides.0.points', 15);
 });
 
+/**
+ * The level thresholds the milestones sheet draws, read from its own table.
+ *
+ * The sheet mirrors GuideLevelService::LEVELS because the browser cannot import
+ * the PHP constant; this is the drift check that keeps the two honest, in place
+ * of an assertion that only repeated the PHP array back to itself.
+ *
+ * @return array<int, int> level => points required
+ */
+function milestoneSheetThresholds(): array
+{
+  $source = (string) file_get_contents(resource_path('js/Pages/Places/_components/MilestonesSheet.tsx'));
+
+  preg_match_all('/\{\s*level:\s*(\d+),\s*points:\s*(\d+)\s*\}/', $source, $rows, PREG_SET_ORDER);
+
+  $levels = [];
+  foreach ($rows as $row) {
+    $levels[(int) $row[1]] = (int) $row[2];
+  }
+
+  return $levels;
+}
+
 test('level boundaries: 14 is L1, exactly 15 is L2, 74 is L2, 75 is L3', function () {
   $levels = app(App\Services\GuideLevelService::class);
-  // pins the thresholds the frontend milestones table mirrors
-  expect(App\Services\GuideLevelService::LEVELS)->toBe([
-    1 => 0, 2 => 15, 3 => 75, 4 => 250, 5 => 500,
-    6 => 1500, 7 => 5000, 8 => 15000, 9 => 50000, 10 => 100000,
-  ]);
+
+  // The milestone sheet the visitor reads ranks on the same thresholds the API
+  // awards, or a profile can show a badge the points do not support.
+  expect(milestoneSheetThresholds())->toBe(App\Services\GuideLevelService::LEVELS);
+
   expect($levels->levelFor(0))->toBe(1);
   expect($levels->levelFor(14))->toBe(1); // unreachable via one approved place (base 15) but the math holds
   expect($levels->levelFor(15))->toBe(2);
@@ -227,7 +250,6 @@ test('guides caches per sort for five minutes', function () {
   Place::factory()->approved()->create(['user_id' => $guide->id]);
 
   $this->getJson('/api/v1/guides')->assertOk()->assertJsonCount(1, 'guides');
-  expect(Cache::has('places:guides:points'))->toBeTrue();
 
   // new data is invisible until the 5-minute cache expires
   Place::factory()->approved()->create(['user_id' => User::factory()->create()->id]);

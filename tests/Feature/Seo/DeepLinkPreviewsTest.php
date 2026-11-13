@@ -50,18 +50,59 @@ test('a place link previews as the place, while the map stays the canonical page
         ->and($card->model['photo'])->toContain("places/{$place->id}/a_display.webp");
 });
 
+/**
+ * The tags a link scraper reads, parsed into values keyed by property/name/rel.
+ *
+ * @return array{meta: array<string, string>, links: array<string, string>, title: string}
+ */
+function deepLinkHead(string $html): array
+{
+    $attributesOf = function (string $source): array {
+        preg_match_all('/([a-zA-Z:-]+)="([^"]*)"/', $source, $pairs, PREG_SET_ORDER);
+
+        return array_column($pairs, 2, 1);
+    };
+
+    $meta = [];
+    preg_match_all('/<meta\b([^>]*)>/i', $html, $metaTags);
+    foreach ($metaTags[1] as $source) {
+        $tag = $attributesOf($source);
+        $key = $tag['property'] ?? $tag['name'] ?? null;
+        if ($key !== null) {
+            $meta[$key] = $tag['content'] ?? '';
+        }
+    }
+
+    $links = [];
+    preg_match_all('/<link\b([^>]*)>/i', $html, $linkTags);
+    foreach ($linkTags[1] as $source) {
+        $tag = $attributesOf($source);
+        if (isset($tag['rel'])) {
+            $links[$tag['rel']] = $tag['href'] ?? '';
+        }
+    }
+
+    preg_match('/<title\b[^>]*>(.*?)<\/title>/is', $html, $title);
+
+    return [
+        'meta' => $meta,
+        'links' => $links,
+        'title' => html_entity_decode($title[1] ?? '', ENT_QUOTES | ENT_HTML5),
+    ];
+}
+
 test('the place tags reach the html a scraper reads', function () {
     $place = Place::factory()->approved()->create(['name' => 'بحيرة قطينة']);
 
-    $html = $this->get('/mishwar?place='.$place->id)->assertOk()->getContent();
+    $head = deepLinkHead($this->get('/mishwar?place='.$place->id)->assertOk()->getContent());
 
-    expect($html)->toContain('<title inertia>بحيرة قطينة | مشوار</title>')
-        ->and($html)->toContain('<meta property="og:title" content="بحيرة قطينة" inertia>')
-        ->and($html)->toContain('<meta name="twitter:title" content="بحيرة قطينة" inertia>')
-        ->and($html)->toContain('<meta property="og:image:alt" content="بحيرة قطينة" inertia>')
-        ->and($html)->toContain('<meta property="og:url" content="https://syrian.zone/mishwar?place='.$place->id.'" inertia>')
-        ->and($html)->toContain('<link rel="canonical" href="https://syrian.zone/mishwar" inertia>')
-        ->and($html)->toContain('content="https://syrian.zone/og/r/place/'.$place->id.'.png?v=');
+    expect($head['title'])->toBe('بحيرة قطينة | مشوار')
+        ->and($head['meta']['og:title'])->toBe('بحيرة قطينة')
+        ->and($head['meta']['twitter:title'])->toBe('بحيرة قطينة')
+        ->and($head['meta']['og:image:alt'])->toBe('بحيرة قطينة')
+        ->and($head['meta']['og:url'])->toBe('https://syrian.zone/mishwar?place='.$place->id)
+        ->and($head['links']['canonical'])->toBe('https://syrian.zone/mishwar')
+        ->and($head['meta']['og:image'])->toStartWith('https://syrian.zone/og/r/place/'.$place->id.'.png?v=');
 });
 
 test('a place without a photograph gets a drawn card; without a description, a written one', function () {

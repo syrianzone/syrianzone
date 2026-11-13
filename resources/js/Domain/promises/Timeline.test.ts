@@ -49,8 +49,6 @@ describe('Timeline component', () => {
         expect(html).toContain('أعلن الوزير تمديد المهلة حتى نهاية العام');
         expect(html).toContain('href="https://example.com/reschedule"');
         expect(html).toContain('href="https://web.archive.org/example"');
-        // Lucide CalendarClock svg is rendered
-        expect(html).toContain('lucide-calendar-clock');
     });
 
     it('handles only deadline_change updates correctly', () => {

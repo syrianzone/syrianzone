@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Support\Agents\ApiTokenIssuer;
 use App\Support\Agents\InvalidTokenAbilities;
 use App\Support\Agents\TokenIssuer;
@@ -111,12 +112,16 @@ test('the eligible-owner list excludes users holding no capability', function ()
 });
 
 test('the token ttl options are the ones the issuer understands', function () {
-    $options = collect(TokenIssuer::TTL_OPTIONS)
-        ->map(fn (int $days) => ['value' => $days.'d', 'label' => $days.' يوم'])
-        ->values();
-
-    expect($options->pluck('value')->all())->toBe(array_keys(TokenIssuer::TTL_OPTIONS))
-        ->and($options)->toHaveCount(4);
+    // The form's values and the issuer's table must agree, or a token is minted
+    // with the fallback TTL while the UI shows the chosen one.
+    $this->actingAs(User::factory()->superadmin()->create())
+        ->get('/admin/api-tokens')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('ttlOptions', fn ($options) => collect($options)->count() > 0
+                && collect($options)->every(fn ($option) => array_key_exists($option['value'], TokenIssuer::TTL_OPTIONS)
+                    && $option['label'] !== ''))
+        );
 });
 
 test('every catalogue capability can be granted to a superadmin token', function () {

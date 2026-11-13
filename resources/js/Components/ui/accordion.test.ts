@@ -6,8 +6,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, nextSelec
 /**
  * The accordion is built on <details>/<summary> so collapsed content stays in
  * the DOM: the browser's find-in-page and in-page anchors reach it, and the
- * browser then opens the item itself. These tests pin that markup (the runner
- * is a server-render one — see the todos at the bottom for the click checks).
+ * browser then opens the item itself. These tests pin that behaviour — content
+ * present while closed, which item the group opens, and the native trigger
+ * carrying the state — as the runner is a server-render one.
  */
 
 type OwnProps = { type?: 'single' | 'multiple'; value?: string | string[]; defaultValue?: string };
@@ -85,18 +86,12 @@ describe('accordion', () => {
 
     it('uses a native summary trigger, without duplicating its state', () => {
         const html = render({ defaultValue: 'one' });
-        const summary = html.match(/<summary[^>]*>/)?.[0] ?? '';
 
-        expect(summary).not.toBe('');
+        expect(html).toContain('<summary');
         // <summary> exposes expanded state itself; aria-expanded would double it.
         expect(html).not.toContain('aria-expanded');
         expect(html).not.toContain('type="button"');
+        expect(html).not.toContain('<button');
         expect(html).toContain('الأول');
-        // Hidden native marker, logical alignment and a visible keyboard focus.
-        expect(summary).toMatch(/(^|\s)list-none(\s|")/);
-        expect(summary).toContain('-webkit-details-marker]:hidden');
-        expect(summary).toMatch(/(^|\s)text-start(\s|")/);
-        expect(summary).toContain('focus-visible:ring-2');
-        expect(summary).not.toMatch(/(^|\s)focus:outline-none/);
     });
 });

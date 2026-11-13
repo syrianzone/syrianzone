@@ -69,8 +69,8 @@ describe('pages render their content on the server', () => {
             '/phonebook',
         );
 
-        expect(html.match(/<h1/g)).toHaveLength(1);
-        expect(html.match(/<main/g)).toHaveLength(1);
+        expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(html.match(/<main[\s>]/g)).toHaveLength(1);
         expect(html).toContain('دليل الهاتف والواتساب');
         expect(html).toContain('الإسعاف');
         expect(html).toContain('شرطة النجدة');
@@ -95,18 +95,20 @@ describe('pages render their content on the server', () => {
             '/syrian-contributors',
         );
 
-        expect(html.match(/<h1/g)).toHaveLength(1);
-        expect(html.match(/<main/g)).toHaveLength(1);
+        expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(html.match(/<main[\s>]/g)).toHaveLength(1);
         expect(html).toContain('أفضل المساهمين في GitHub');
         for (const name of ['alpha', 'beta', 'gamma', 'delta']) expect(html).toContain(`https://github.com/${name}`);
-        expect(html).not.toContain('animate-spin');
+        // The list is already in the first frame, so the loading message is not.
+        expect(html).not.toContain('جاري تحميل البيانات');
     });
 
     it('still gives the contributors page a heading and a landmark when it has no list yet', async () => {
         const html = await renderOnServer('SyrianContributors/Index', { contributors: [] }, '/syrian-contributors');
 
-        expect(html.match(/<h1/g)).toHaveLength(1);
-        expect(html.match(/<main/g)).toHaveLength(1);
-        expect(html).toContain('animate-spin');
+        expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(html.match(/<main[\s>]/g)).toHaveLength(1);
+        // With nothing to send, the server render shows the loading state in words.
+        expect(html).toContain('جاري تحميل البيانات...');
     });
 });

@@ -20,11 +20,14 @@ const filesMatching = (pattern: RegExp) =>
     .filter((file) => pattern.test(readFileSync(file, 'utf8')))
     .map((file) => relative(jsRoot, file));
 
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-// The first class-string literal in `src` that starts with `prefix`.
-const classString = (src: string, prefix: string) =>
-  src.match(new RegExp(`"(${escapeRe(prefix)}[^"]*)"`))?.[1] ?? '';
+// Every class-string literal in `src` that takes part in the enter/exit motion
+// (a backdrop or a panel). No element name is hard-coded, so renaming a class
+// cannot fail the test while the timings stay in step.
+function animatedClassStrings(src: string): string[] {
+  return [...src.matchAll(/"([^"\\]*)"|'([^'\\]*)'/g)]
+    .map((match) => match[1] ?? match[2])
+    .filter((value) => /animate-(?:in|out)|data-\[state=(?:open|closed)\]:duration-|\bduration-\d/.test(value));
+}
 
 // Effective enter/exit durations (ms); 150 is tw-animate-css's default.
 function durations(classes: string) {
@@ -55,16 +58,12 @@ describe('popup animations', () => {
     expect(filesMatching(/\b[a-z][a-z-]*-\[--[\w-]+\]/)).toEqual([]);
   });
 
-  it.each([
-    ['dialog.tsx', 'fixed left-[50%]'],
-    ['alert-dialog.tsx', 'fixed left-[50%]'],
-    ['sheet.tsx', 'fixed z-50 gap-4'],
-  ])('%s fades its backdrop in step with the panel', (file, panelPrefix) => {
+  it.each(['dialog.tsx', 'alert-dialog.tsx', 'sheet.tsx'])('%s fades its backdrop in step with the panel', (file) => {
     const src = readFileSync(join(jsRoot, 'Components/ui', file), 'utf8');
-    const overlay = classString(src, 'fixed inset-0 z-50');
-    const panel = classString(src, panelPrefix);
-    expect(overlay).not.toBe('');
-    expect(panel).not.toBe('');
-    expect(durations(overlay)).toEqual(durations(panel));
+    const animated = animatedClassStrings(src);
+
+    expect(animated.length, `${file} has a backdrop and a panel`).toBeGreaterThan(1);
+    const timings = animated.map(durations);
+    for (const timing of timings) expect(timing, file).toEqual(timings[0]);
   });
 });

@@ -38,10 +38,12 @@ jobs:
           envs: ACTION,ANSWER_ID
           script: |
             set -e
+            # The serving container (blue or green), recorded by deploy.sh.
+            app=$(cat /opt/syrianzone/active-container)
             if [ "$ACTION" = "release" ]; then
-              docker exec syrianzone-app php artisan answers:release-card "$ANSWER_ID"
+              docker exec "$app" php artisan answers:release-card "$ANSWER_ID"
             elif [ "$ACTION" = "x-status" ]; then
-              docker exec syrianzone-app php artisan tierlist:x-status
+              docker exec "$app" php artisan tierlist:x-status
             else
-              docker exec syrianzone-app php artisan answers:card-status
+              docker exec "$app" php artisan answers:card-status
             fi

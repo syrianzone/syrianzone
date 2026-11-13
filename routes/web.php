@@ -43,7 +43,15 @@ use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index']);
 
+// Caddy sends traffic only to an app container that answers 200 here.
+// deploy.sh creates the draining flag in the outgoing container before it
+// stops it, so Caddy moves traffic to the new release first and in-flight
+// requests finish instead of being cut.
 Route::get('/healthcheck', function () {
+    if (file_exists(storage_path('framework/draining'))) {
+        return response('draining', 503)->header('Content-Type', 'text/plain');
+    }
+
     return response('OK', 200)->header('Content-Type', 'text/plain');
 });
 

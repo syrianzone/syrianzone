@@ -1,0 +1,33 @@
+#!/bin/sh
+# One pass of the idempotent boot syncs, after the container is serving.
+# None of them is needed to answer a request, and two call third-party
+# services, so they must not hold up the switch to a new release.
+# A longrun service that exits is restarted by s6, so it sleeps afterwards.
+cd /var/www/html
+
+echo "📦 post-boot: TierList assets to R2"
+php artisan tierlist:migrate-to-r2 || echo "⚠️ Tierlist asset migration skipped or failed."
+echo "🗺️ post-boot: GeoJSON master downloads to R2"
+php artisan geojson:upload-to-r2 || echo "⚠️ GeoJSON asset migration skipped or failed."
+
+# Skipped on staging: without the real best-ministers poll this seeder falls back
+# to 12 dummy characters whose image files do not exist. StagingGuessWhoSeeder
+# (part of StagingSeeder, run at startup) covers staging.
+if [ "${APP_ENV}" != "staging" ]; then
+  echo "🌱 post-boot: Guess Who seed"
+  php artisan db:seed --class=GuessWhoSeeder --force || echo "⚠️ GuessWho seeding failed."
+fi
+
+echo "🏨 post-boot: HalaSyria hotels"
+php artisan hotels:sync || echo "⚠️ HalaSyria hotel sync skipped or failed."
+
+echo "📜 post-boot: promises research & speakers"
+php artisan promises:import-research || echo "⚠️ Promises research import skipped or failed."
+
+# Share cards of single records are drawn on demand by Node. A failure there
+# is quiet by design (the visitor gets the section card), so report it here.
+echo "🖼️ post-boot: share card renderer"
+php artisan og:doctor || echo "⚠️ Share cards cannot be drawn; record pages will use their section card."
+
+echo "✅ post-boot tasks done"
+exec sleep infinity

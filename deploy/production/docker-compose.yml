@@ -1,0 +1,89 @@
+# Installed at /opt/syrianzone/docker-compose.yml on the production VPS.
+# Two copies of the app (blue, green) so a release starts next to the running
+# one: deploy.sh brings up the idle colour, waits until it is healthy, then
+# stops the other. Caddy proxies to both names and only sends traffic to the
+# one that passes its health check, so a deploy never leaves the site without
+# a serving container.
+name: syrianzone
+
+x-app: &app
+  restart: unless-stopped
+  env_file: .env
+  depends_on:
+    db:
+      condition: service_healthy
+  networks:
+    - default
+    - caddy_shared
+  volumes:
+    # guesswho seeder images + the storage:link target; without this every
+    # deploy re-downloads all character images on boot
+    - app_public:/var/www/html/storage/app/public
+    # spatie/laravel-backup local destination, must survive container recreation
+    - ./backups:/var/www/html/storage/app/backups
+  healthcheck:
+    # overrides the dockerfile healthcheck: that one has no start_period and a
+    # 1m interval, which makes compose up --wait stall on every deploy
+    test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthcheck"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 180s
+    start_interval: 3s
+  mem_limit: 4g
+  cpus: "4"
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  app_blue:
+    <<: *app
+    image: ghcr.io/syrianzone/syrianzone:${IMAGE_TAG_BLUE:-latest}
+    container_name: syrianzone-app-blue
+
+  app_green:
+    <<: *app
+    image: ghcr.io/syrianzone/syrianzone:${IMAGE_TAG_GREEN:-latest}
+    container_name: syrianzone-app-green
+
+  db:
+    image: mysql:8.4
+    container_name: syrianzone-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    command:
+      - --innodb-buffer-pool-size=1G
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      # not on caddy_shared: unreachable from other stacks
+      - default
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+      start_interval: 2s
+    mem_limit: 2g
+    cpus: "2"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  caddy_shared:
+    external: true
+
+volumes:
+  app_public:
+  db_data:

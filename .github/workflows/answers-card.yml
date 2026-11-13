@@ -84,6 +84,8 @@ jobs:
           command_timeout: 10m
           script: |
             set -e
+            # The serving container (blue or green), recorded by deploy.sh.
+            app=$(cat /opt/syrianzone/active-container)
             # Always clean up: leftovers from an aborted run would otherwise
             # be re-posted by the next run's glob, even after upstream
             # moderation deleted the answer.
@@ -93,9 +95,9 @@ jobs:
               meta="${png%.png}.json"
               # One bad card must not block the rest of the batch.
               if [ ! -f "$meta" ]; then echo "missing meta for $png" >&2; status=1; continue; fi
-              docker cp "$png" syrianzone-app:/tmp/answer-card.png \
-                && docker cp "$meta" syrianzone-app:/tmp/answer-card.json \
-                && docker exec syrianzone-app php artisan answers:post-card /tmp/answer-card.png /tmp/answer-card.json \
+              docker cp "$png" "$app":/tmp/answer-card.png \
+                && docker cp "$meta" "$app":/tmp/answer-card.json \
+                && docker exec "$app" php artisan answers:post-card /tmp/answer-card.png /tmp/answer-card.json \
                 || status=1
               sleep 10
             done

@@ -101,13 +101,15 @@ jobs:
           envs: PERIOD
           script: |
             set -e
+            # The serving container (blue or green), recorded by deploy.sh.
+            app=$(cat /opt/syrianzone/active-container)
             for group in ministers governors security; do
               png="/tmp/tierlist-cards/${group}-${PERIOD}.png"
               txt="/tmp/tierlist-cards/${group}-${PERIOD}.txt"
               [ -f "$png" ] && [ -f "$txt" ] || { echo "missing $group files" >&2; exit 1; }
-              docker cp "$png" syrianzone-app:/tmp/card.png
-              docker cp "$txt" syrianzone-app:/tmp/card.txt
-              docker exec syrianzone-app php artisan tierlist:post-card /tmp/card.png /tmp/card.txt
+              docker cp "$png" "$app":/tmp/card.png
+              docker cp "$txt" "$app":/tmp/card.txt
+              docker exec "$app" php artisan tierlist:post-card /tmp/card.png /tmp/card.txt
               sleep 10
             done
             rm -rf /tmp/tierlist-cards

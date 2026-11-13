@@ -8,7 +8,11 @@ Caddy at /opt/caddy and Cloudflare. Every push to `main` deploys automatically:
       -> buildx builds the Dockerfile (linux/amd64, gha layer cache)
       -> image pushed to ghcr.io/syrianzone/syrianzone:<sha> (+ :latest)
       -> ssh to the vps, /opt/syrianzone/deploy.sh <sha>
-      -> docker compose pull + up -d --wait (healthcheck-gated)
+      -> start the release in the idle colour (blue/green), wait until healthy
+      -> drain the old colour, stop it
+
+Deploys have no downtime: the running container keeps serving until the new
+one passes its healthcheck, and Caddy only routes to a healthy one.
 
 Warm end-to-end time is about 3 minutes.
 
@@ -18,15 +22,45 @@ Single production image (see `Dockerfile`): bun builds the Vite assets, then
 serversideup/php:8.4-fpm-nginx runs php-fpm + nginx with s6 longruns for the
 queue worker, the scheduler, and reverb (websockets, proxied at `/app/`).
 On boot `docker/10-startup.sh` runs `migrate --force` (fatal on failure by
-design), seeds GuessWho, links storage, and caches config/routes/views.
+design), links storage and caches config/routes/views; nginx and PHP-FPM
+start only after it, so keep it to what a request needs. The idempotent syncs
+that can run while the site serves (R2 asset moves, the Guess Who seed, the
+HalaSyria hotel sync, the promises research import, the share-card renderer
+check) run once per container in the `post-boot` s6 service
+(`docker/s6/post-boot-run`).
 
 ## Server layout
 
     /opt/syrianzone/
-    ├── docker-compose.yml   # app (ghcr image) + db (mysql:8.4)
-    ├── .env                 # production env; secrets mirrored in 1password "Syrian Zone VPS"
-    ├── deploy.sh            # pull + health-gated swap + prune; writes deploy.log
+    ├── docker-compose.yml   # app_blue + app_green (ghcr image) + db (mysql:8.4)
+    ├── .env                 # production env (IMAGE_TAG_BLUE/GREEN = each colour's sha); secrets mirrored in 1password "Syrian Zone VPS"
+    ├── deploy.sh            # blue/green swap + prune; writes deploy.log
+    ├── active-container     # name of the serving container (syrianzone-app-blue|green)
     └── backups/             # spatie/laravel-backup local zips (also copied to r2)
+
+The source of `docker-compose.yml`, `deploy.sh` and the `syrian.zone` block of
+`/opt/caddy/Caddyfile` is `deploy/production/` in this repo; after changing one,
+copy it to the server (they are not synced by the workflow).
+
+## Zero-downtime switch
+
+Two app containers exist, `syrianzone-app-blue` and `syrianzone-app-green`;
+normally one runs. `deploy.sh` starts the release in the stopped colour and
+waits for its healthcheck (migrations run there while the old colour keeps
+serving). It then creates `storage/framework/draining` in the old container,
+which makes its `/healthcheck` answer 503, so Caddy (active health checks every
+2s, `lb_policy first`, `lb_try_duration 30s`) moves traffic to the new one;
+after 8 seconds for in-flight requests the old container is stopped. If the new
+container never becomes healthy it is stopped and the old one keeps serving.
+
+Because old and new code run against the same database for a few seconds,
+migrations must be backward-compatible for one release (add columns, backfill,
+drop in a later release). Sessions, cache, queue and locks are database-backed,
+so both colours share them.
+
+To run an artisan command in production:
+
+    docker exec "$(cat /opt/syrianzone/active-container)" php artisan <command>
 
 ## Rollback
 
@@ -39,7 +73,7 @@ backward-compatible for one release.
 
 `backup:run --only-db` runs every 6h via the scheduler, writing to
 `/opt/syrianzone/backups` and to the private `syrianzone-backups` R2 bucket.
-Manual dump: `docker exec syrianzone-app php artisan backup:run --only-db`.
+Manual dump: `docker exec "$(cat /opt/syrianzone/active-container)" php artisan backup:run --only-db`.
 
 ## CI credentials
 
@@ -84,7 +118,7 @@ prepared or delivered announcements per day. Override them with
 
 Check the configured account without publishing or changing automation state:
 
-    docker exec syrianzone-app php artisan tierlist:x-status
+    docker exec "$(cat /opt/syrianzone/active-container)" php artisan tierlist:x-status
 
 The `answers ops` workflow also exposes this check through `action=x-status`.
 Failures print a fixed local summary and the numeric HTTP status when known.
@@ -94,7 +128,7 @@ or app setting caused it. `answers:card-status` shows recorded answer outcomes.
 
 To run detection immediately:
 
-    docker exec syrianzone-app php artisan tierlist:detect-rank-changes
+    docker exec "$(cat /opt/syrianzone/active-container)" php artisan tierlist:detect-rank-changes
 
 This command writes automation state and can queue a public post. Only a new
 installation's first enabled run records a silent baseline. Delivery outcomes live in

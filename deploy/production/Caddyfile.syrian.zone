@@ -1,0 +1,21 @@
+# The syrian.zone site block in /opt/caddy/Caddyfile (shared with other sites).
+# Both app colours are listed; active health checks keep traffic on the one
+# that answers /healthcheck, and lb_try_duration holds a request while the
+# switch happens instead of failing it.
+syrian.zone {
+	tls internal
+
+	import cloudflare_only
+	import dotfile_block
+
+	reverse_proxy syrianzone-app-blue:8080 syrianzone-app-green:8080 {
+		lb_policy first
+		lb_try_duration 30s
+		lb_try_interval 250ms
+		fail_duration 10s
+		health_uri /healthcheck
+		health_interval 2s
+		health_timeout 2s
+		health_status 200
+	}
+}

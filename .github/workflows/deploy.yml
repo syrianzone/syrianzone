@@ -150,7 +150,9 @@ jobs:
               # Advisory for the same reason, and it matters more here: the
               # release is already live by this point, so a failed post must not
               # report a successful deploy as a failed job.
-              if ! docker exec syrianzone-app php artisan tierlist:detect-rank-changes; then
+              # deploy.sh records which colour (blue/green) is serving.
+              app=$(cat /opt/syrianzone/active-container)
+              if ! docker exec "$app" php artisan tierlist:detect-rank-changes; then
                 echo "::warning::tierlist:detect-rank-changes failed. The release is deployed; only the X announcement was skipped."
               fi
             fi

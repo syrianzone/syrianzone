@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import { useMap } from '@/Components/map/MapContext';
+import { PLACE_MARKER_COLOR } from './PinLayer';
 import type { LatLng } from '@/Domain/places/types';
 
 export function HighlightMarker(props: { point: LatLng | null }) {
@@ -11,7 +12,7 @@ export function HighlightMarker(props: { point: LatLng | null }) {
     markerRef.current?.remove();
     markerRef.current = null;
     if (props.point) {
-      markerRef.current = new maplibregl.Marker({ color: '#7d8a5c' })
+      markerRef.current = new maplibregl.Marker({ color: PLACE_MARKER_COLOR })
         .setLngLat([props.point.lng, props.point.lat])
         .addTo(map);
     }

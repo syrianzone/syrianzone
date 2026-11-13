@@ -10,12 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Com
 import { Plus, Search, Edit3, Trash2, Smartphone, ArrowUpDown, Globe } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import AppDialog, { GovAppData } from './_components/AppDialog';
-import SortableList from './_components/SortableList';
+import AppDialog from './_components/AppDialog';
+import SortableList from '@/Components/directory/SortableList';
 import { useCan } from '@/Lib/useCan';
+import type { GovApp } from '@/Domain/govapps/types';
 
 interface AdminGovAppsProps {
-    apps: GovAppData[];
+    apps: GovApp[];
 }
 
 export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
@@ -30,7 +31,7 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
     const [searchTerm, setSearchTerm] = useState('');
 
     const [appDialogOpen, setAppDialogOpen] = useState(false);
-    const [selectedApp, setSelectedApp] = useState<GovAppData | null>(null);
+    const [selectedApp, setSelectedApp] = useState<GovApp | null>(null);
 
     // Auto open edit dialog if URL contains ?edit={appId}
     useEffect(() => {
@@ -57,10 +58,12 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
 
     const handleDeleteApp = async (appId: string) => {
         const ok = await confirmDialog({ title: 'حذف هذا التطبيق الحكومي؟', destructive: true, confirmText: 'حذف' });
-        if (ok) {
-            router.delete(`/api/v1/admin/govapps/${appId}`);
-            notify.success('تم حذف التطبيق');
-        }
+        if (!ok) return;
+        router.delete(`/api/v1/admin/govapps/${appId}`, {
+            preserveScroll: true,
+            onSuccess: () => notify.success('تم حذف التطبيق'),
+            onError: () => notify.error('تعذر حذف التطبيق'),
+        });
     };
 
     return (
@@ -214,7 +217,12 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
                     </TabsContent>
 
                     <TabsContent value="reorder" className="mt-6">
-                        <SortableList items={apps} canReorder={canReorder} />
+                        <SortableList
+                            items={apps.map((app) => ({ id: app.id, label: app.name_ar || app.name, subtitle: app.id, image: app.icon ?? undefined }))}
+                            endpoint="/api/v1/admin/govapps/reorder"
+                            capability="govapps.reorder"
+                            canReorder={canReorder}
+                        />
                     </TabsContent>
                 </Tabs>
 

@@ -1,21 +1,17 @@
 import React, { useId } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
-import { Label } from "@/Components/ui/label";
-import { Input } from "@/Components/ui/input";
 import { Switch } from "@/Components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { MapPin } from 'lucide-react';
-import LocationModeSelector from '@/Domain/location/LocationModeSelector';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/Components/ui/sheet";
-import { getGeo, getLocMode, setLocMode, useLocSignal } from '@/Domain/location/location';
+import { isDeviceLocation, usesCustomCoordinates, useLocationPreference, type LocationPatch } from '@/Domain/location/preference';
+import PrayerSettingsFields from '@/Domain/prayer/PrayerSettingsFields';
 import { useIsMobile } from '@/Lib/useIsMobile';
-import { GOVERNORATES, GOVERNORATES_BY_ID, getGovernorateNameAr } from '@/Domain/geography/governorates';
+import { GOVERNORATES, getGovernorateNameAr } from '@/Domain/geography/governorates';
 
 interface HomeSettingsFields {
-    governorate: string;
-    setGovernorate: (gov: string) => void;
     eventsGovernorate: string;
     setEventsGovernorate: (gov: string) => void;
     showWeather: boolean;
@@ -24,13 +20,9 @@ interface HomeSettingsFields {
     setShowPrayerTimes: (show: boolean) => void;
     showEvents: boolean;
     setShowEvents: (show: boolean) => void;
-    useCustomCoords: boolean;
-    setUseCustomCoords: (use: boolean) => void;
-    customLat: string;
-    setCustomLat: (lat: string) => void;
-    customLon: string;
-    setCustomLon: (lon: string) => void;
-    saveAccountSettings: (settings: Record<string, any>) => void;
+    /** Mirror a location edit to the account; device storage belongs to Domain/location. */
+    onLocationChange: (patch: LocationPatch) => void;
+    saveAccountSettings: (settings: Record<string, unknown>) => void;
 }
 
 interface HomeSettingsDialogProps extends HomeSettingsFields {
@@ -39,8 +31,7 @@ interface HomeSettingsDialogProps extends HomeSettingsFields {
 }
 
 function HomeSettingsBody(props: HomeSettingsFields) {
-    const { governorate,
-    setGovernorate,
+    const {
     eventsGovernorate,
     setEventsGovernorate,
     showWeather,
@@ -49,44 +40,19 @@ function HomeSettingsBody(props: HomeSettingsFields) {
     setShowPrayerTimes,
     showEvents,
     setShowEvents,
-    useCustomCoords,
-    setUseCustomCoords,
-    customLat,
-    setCustomLat,
-    customLon,
-    setCustomLon,
+    onLocationChange,
     saveAccountSettings,
   } = props;
-    // Saved location display (GPS/IP point or manual governorate).
-    const locSig = useLocSignal();
-    const locMode = getLocMode();
-    const geo = getGeo();
-    const geoActive = (locMode === 'gps' || locMode === 'ip') && !!geo;
-    const customActive = locMode === 'custom' || useCustomCoords;
-    const activeGovName = getGovernorateNameAr(governorate);
-    const latId = useId();
-    const lonId = useId();
+    // Saved location display (GPS/IP point, manual coordinates or governorate).
+    const location = useLocationPreference();
+    const geoActive = isDeviceLocation(location);
+    const customActive = usesCustomCoordinates(location);
+    const activeGovName = getGovernorateNameAr(location.city);
     // Ids for the visible toggle captions: Radix Switch renders a <button>, so
     // the caption names it through aria-labelledby rather than <Label htmlFor>.
     const weatherLabelId = useId();
     const prayerLabelId = useId();
     const eventsLabelId = useId();
-    void locSig;
-
-    // Mode radio doubles as the custom-coords switch (mutually exclusive).
-    const selectMode = (m: 'city' | 'gps' | 'ip' | 'custom') => {
-        setLocMode(m);
-        const on = m === 'custom';
-        if (on !== useCustomCoords) {
-            setUseCustomCoords(on);
-            try {
-                localStorage.setItem('useCustomCoords', String(on));
-            } catch {
-                // private mode
-            }
-            saveAccountSettings({ useCustomCoords: on });
-        }
-    };
 
     return (
         <>
@@ -152,82 +118,32 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                                     حدد موقعك عبر GPS أو الإنترنت، أو أدخل إحداثياتك يدوياً — تُستخدم للمواقيت والطقس معاً.
                                 </p>
                             </div>
-                            <LocationModeSelector
-                                mode={locMode}
-                                onChange={selectMode}
-                            />
                             <div className="flex items-center gap-2.5 rounded-lg border border-border/50 bg-card/20 p-3">
                                 <span className="rounded-lg bg-primary/10 p-2 text-primary">
                                     <MapPin className="h-4 w-4" />
                                 </span>
                                 <div className="min-w-0 flex-1">
                                     <div className="truncate text-xs font-bold text-foreground">
-                                        {geoActive ? geo.label : activeGovName}
+                                        {geoActive && location.geo ? location.geo.label : activeGovName}
                                     </div>
                                     <div className="text-[11px] text-muted-foreground">
                                         {geoActive
-                                            ? (locMode === 'gps' ? 'موقع الجهاز (GPS)' : 'التعرف عبر الإنترنت')
-                                            : customActive && customLat && customLon
-                                                ? `إحداثيات مخصصة (${customLat}، ${customLon})`
+                                            ? (location.mode === 'gps' ? 'موقع الجهاز (GPS)' : 'التعرف عبر الإنترنت')
+                                            : customActive && location.customLat && location.customLon
+                                                ? `إحداثيات مخصصة (${location.customLat}، ${location.customLon})`
                                                 : 'المحافظة الافتراضية'}
                                     </div>
                                 </div>
                             </div>
 
-                            {locMode === 'city' && (
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold">مدينة المواقيت والطقس</Label>
-                                    <Select value={governorate} onValueChange={(v) => {
-                                        setGovernorate(v);
-                                        localStorage.setItem('governorate', v);
-                                        saveAccountSettings({ governorate: v });
-                                    }}>
-                                        <SelectTrigger dir="rtl" aria-label="مدينة المواقيت والطقس"><SelectValue /></SelectTrigger>
-                                        <SelectContent dir="rtl">
-                                            {GOVERNORATES.map((governorate) => (
-                                                <SelectItem key={governorate.id} value={governorate.id}>{governorate.nameAr}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
-
-                            {customActive && (
-                                <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-card/10 p-3">
-                                    <div className="space-y-1 text-start">
-                                        <Label htmlFor={latId} className="text-xs">خط العرض (Lat)</Label>
-                                        <Input id={latId}
-                                            type="text"
-                                            value={customLat}
-                                            onChange={(e) => {
-                                                setCustomLat(e.target.value);
-                                                localStorage.setItem('customLat', e.target.value);
-                                                saveAccountSettings({ customLat: e.target.value });
-                                            }}
-                                            placeholder={String(GOVERNORATES_BY_ID['damascus'].lat)}
-                                        />
-                                    </div>
-                                    <div className="space-y-1 text-start">
-                                        <Label htmlFor={lonId} className="text-xs">خط الطول (Lon)</Label>
-                                        <Input id={lonId}
-                                            type="text"
-                                            value={customLon}
-                                            onChange={(e) => {
-                                                setCustomLon(e.target.value);
-                                                localStorage.setItem('customLon', e.target.value);
-                                                saveAccountSettings({ customLon: e.target.value });
-                                            }}
-                                            placeholder={String(GOVERNORATES_BY_ID['damascus'].lng)}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {customActive && customLat === '' && customLon === '' && (
-                                <p className="text-[11px] text-muted-foreground">
-                                    أدخل الإحداثيات يدوياً.
-                                </p>
-                            )}
+                            <PrayerSettingsFields
+                                cities={GOVERNORATES}
+                                cityLabel="مدينة المواقيت والطقس"
+                                cityLabelIcon={false}
+                                showGeoLabel={false}
+                                showEmptyCoordsHint
+                                onLocationChange={onLocationChange}
+                            />
                         </div>
 
                         <div className="h-[1px] bg-border w-full" />

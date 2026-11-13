@@ -1,36 +1,55 @@
-export const ROUTE_PALETTE = [
-  '#e8a838', // saffron gold
-  '#c44b4b', // pomegranate red
-  '#4a8fa8', // Damascene tile blue
-  '#7ab87a', // olive green
-  '#d4956a', // terracotta / apricot
-  '#9b6bb5', // Byzantine purple
-  '#5ba08a', // copper dome patina
-  '#c9784a', // burnt sienna
-]
+import type maplibregl from 'maplibre-gl'
+import { MAP_COLOR_TOKENS, type MapColorEntry } from '@/Components/map/mapColors'
+import { ROUTE_PALETTE } from '@/Domain/transit/limits'
 
-export function getRouteColor(colorIndex: number | null | undefined): string {
-  const index = typeof colorIndex === 'number' && !isNaN(colorIndex) 
-    ? Math.abs(Math.floor(colorIndex)) 
+/**
+ * Categorical route colours, not theme colours: a route's `color_index` is
+ * stored data, so the table is static and the theme must not repaint it. The
+ * table lives in `resources/data/transit.json` because the share card (PHP)
+ * draws the same colours.
+ */
+export { ROUTE_PALETTE }
+
+export const ROUTE_COLOR_COUNT = ROUTE_PALETTE.length
+
+export function getRouteColor(colorIndex: number | string | null | undefined): string {
+  const index = typeof colorIndex === 'number' && !isNaN(colorIndex)
+    ? Math.abs(Math.floor(colorIndex))
     : typeof colorIndex === 'string' && !isNaN(parseInt(colorIndex, 10))
     ? Math.abs(parseInt(colorIndex, 10))
     : 0
   return ROUTE_PALETTE[index % ROUTE_PALETTE.length]
 }
 
-export function buildColorMatch(): unknown {
+/**
+ * `line-color` for the published-routes layer: the route's `color_index` (the
+ * GeoJSON key is `colorIndex`) wrapped around the palette, the same rule as
+ * `getRouteColor`.
+ */
+export function buildColorMatch(): maplibregl.ExpressionSpecification {
   return [
-    'match',
-    ['%', ['to-number', ['coalesce', ['get', 'colorIndex'], ['get', 'color_index'], 0], 0], 8],
-    0, getRouteColor(0),
-    1, getRouteColor(1),
-    2, getRouteColor(2),
-    3, getRouteColor(3),
-    4, getRouteColor(4),
-    5, getRouteColor(5),
-    6, getRouteColor(6),
-    7, getRouteColor(7),
-    getRouteColor(0),
+    'to-color',
+    [
+      'at',
+      ['%', ['abs', ['floor', ['to-number', ['coalesce', ['get', 'colorIndex'], ['get', 'color_index'], 0], 0]]], ROUTE_COLOR_COUNT],
+      ['literal', [...ROUTE_PALETTE]],
+    ],
   ]
 }
 
+/**
+ * The transit map's own colours. `gold` and `pomegranate` are the feature's two
+ * theme accents (the same pair `transit.css` defines), so they follow the
+ * active theme; the rest are the transit visual language and stay fixed.
+ */
+export const TRANSIT_MAP_COLORS = {
+  gold: MAP_COLOR_TOKENS.primary,
+  pomegranate: MAP_COLOR_TOKENS.destructive,
+  stop: '#d4956a',
+  userLocation: '#4a8fa8',
+  userLocationHalo: 'rgba(74, 143, 168, 0.15)',
+  poiMarker: '#8b5cf6',
+  markerStroke: '#ffffff',
+} satisfies Record<string, MapColorEntry>
+
+export type TransitMapColors = typeof TRANSIT_MAP_COLORS

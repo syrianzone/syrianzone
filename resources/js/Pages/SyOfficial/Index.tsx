@@ -1,8 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { OfficialEntity } from './types';
-import { Search, X, Table as TableIcon, LayoutGrid, Globe, Send, Link as LinkIcon, MessageCircle, Pencil, Settings } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Globe, Send, Link as LinkIcon, MessageCircle, Pencil, Settings } from 'lucide-react';
 import { Facebook, Instagram, Linkedin, Twitter, Youtube } from '@/Components/ui/icons';
-import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
@@ -11,22 +9,20 @@ import MainLayout from '@/Layouts/MainLayout';
 import { useCanAny, useCanModule } from '@/Lib/useCan';
 import { formatEntityImage } from '@/Lib/entityImage';
 import { socialPlatformLabel } from '@/Domain/syofficial/social';
-
-interface CategoryData {
-    id: string;
-    label_ar: string;
-    label_en: string;
-    icon?: string;
-    order_column: number;
-}
+import type { OfficialCategory, OfficialEntity } from '@/Domain/syofficial/types';
+import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
+import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import DirectoryViewToggle, { type DirectoryView } from '@/Components/directory/DirectoryViewToggle';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 
 interface SyOfficialClientProps {
     initialData: OfficialEntity[];
-    categories?: CategoryData[];
+    categories?: OfficialCategory[];
 }
 
 type Language = 'ar' | 'en' | 'tr' | 'ku';
-type ViewMode = 'grid' | 'table';
 
 const TRANSLATIONS = {
     ar: {
@@ -145,16 +141,16 @@ const getSocialStyle = (platform: string) => {
     }
 };
 
-export default function SyOfficialIndex({ initialData = [], categories = [] }: SyOfficialClientProps) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentCategory, setCurrentCategory] = useState('all');
-    const [language, setLanguage] = useState<Language>('ar');
-    const [viewMode, setViewMode] = useState<ViewMode>('grid');
+const entitySearchText = (item: OfficialEntity) => [item.name, item.name_ar, item.description, item.description_ar]
+    .filter((value): value is string => Boolean(value))
+    .join(' ');
 
-    useEffect(() => {
-        const q = new URLSearchParams(window.location.search).get('q');
-        if (q) setSearchTerm(q);
-    }, []);
+const nonEmptySocials = (entity: OfficialEntity) => Object.entries(entity.socials ?? {})
+    .filter(([, url]) => url && typeof url === 'string' && url.trim().length > 0);
+
+export default function SyOfficialIndex({ initialData = [], categories = [] }: SyOfficialClientProps) {
+    const [language, setLanguage] = useState<Language>('ar');
+    const [viewMode, setViewMode] = useState<DirectoryView>('grid');
 
     const categoryList = useMemo(() => {
         const dynamicCats = categories.map(c => ({
@@ -165,25 +161,30 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
         return [{ key: 'all', label_ar: 'الكل', label_en: 'All' }, ...dynamicCats];
     }, [categories]);
 
-    const filteredData = useMemo(() => {
-        let items = initialData;
+    const facets = useMemo<DirectoryFacet<OfficialEntity>[]>(() => [{
+        key: 'category',
+        label: 'التصنيف',
+        options: categoryList
+            .filter(cat => cat.key !== 'all')
+            .map(cat => ({ value: cat.key, label: language === 'ar' ? cat.label_ar : cat.label_en })),
+        valueOf: (item) => item.category,
+    }], [categoryList, language]);
 
-        if (currentCategory !== 'all') {
-            items = items.filter(item => item.category === currentCategory);
-        }
+    const directory = useDirectory<OfficialEntity>({
+        items: initialData,
+        searchText: entitySearchText,
+        facets,
+    });
 
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase().trim();
-            items = items.filter(item =>
-                item.name.toLowerCase().includes(term) ||
-                item.name_ar.toLowerCase().includes(term) ||
-                (item.description && item.description.toLowerCase().includes(term)) ||
-                (item.description_ar && item.description_ar.toLowerCase().includes(term))
-            );
-        }
+    // A shared link carries `?q=`. It arrives after hydration, exactly as before.
+    const applyInitialQuery = directory.setQuery;
+    useEffect(() => {
+        const q = new URLSearchParams(window.location.search).get('q');
+        if (q) applyInitialQuery(q);
+    }, [applyInitialQuery]);
 
-        return items;
-    }, [initialData, searchTerm, currentCategory]);
+    const currentCategory = directory.filters.category?.[0] ?? 'all';
+    const filteredData = directory.results;
 
     const canModule = useCanModule();
     const canAny = useCanAny();
@@ -289,85 +290,48 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
-                        <div className="relative w-full">
-                            <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
-                            <Input
-                                type="text"
-                                placeholder={t.searchPlaceholder}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full ps-12 pe-10 h-14 text-lg bg-card border-border rounded-xl shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-                            />
-                            {searchTerm && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setSearchTerm('')}
-                                    aria-label="مسح البحث"
-                                    className="absolute end-3 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            )}
-                        </div>
+                        <DirectorySearch
+                            size="lg"
+                            value={directory.query}
+                            onChange={directory.setQuery}
+                            placeholder={t.searchPlaceholder}
+                            ariaLabel={t.searchPlaceholder}
+                        />
                     </div>
 
-                    <div className="mt-6 flex flex-wrap justify-center gap-2">
-                        {categoryList.map(cat => (
-                            <Button
-                                key={cat.key}
-                                variant={currentCategory === cat.key ? "default" : "outline"}
-                                onClick={() => setCurrentCategory(cat.key)}
-                                className="rounded-full"
-                                size="sm"
-                            >
-                                {language === 'ar' ? cat.label_ar : cat.label_en}
-                            </Button>
-                        ))}
-                    </div>
+                    <DirectoryFilterChips
+                        label="التصنيف"
+                        allLabel={language === 'ar' ? 'الكل' : 'All'}
+                        className="mt-6"
+                        options={facets[0].options}
+                        value={directory.filters.category ?? []}
+                        onChange={(next) => directory.setFilters({ ...directory.filters, category: next })}
+                    />
                 </div>
             </section>
 
             {/* Main Content / Entity Grid */}
             <div className="container mx-auto px-4 py-8">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                    <div role="status" aria-live="polite" className="text-sm text-muted-foreground font-medium">
+                    <DirectoryResultCount>
                         {filteredData.length > 0 ? (
                             language === 'ar' ? `عرض ${filteredData.length} حساب رسمي` : `Showing ${filteredData.length} official accounts`
                         ) : t.noResults}
-                    </div>
+                    </DirectoryResultCount>
 
                     {/* View Switcher (Grid / Table) */}
                     <div className="flex items-center gap-2">
-                        <div className="bg-muted p-1 rounded-xl flex items-center gap-1 border border-border">
-                            <Button
-                                variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                                size="icon"
-                                aria-label="عرض كجدول"
-                                onClick={() => setViewMode('table')}
-                                className="h-8 w-8"
-                            >
-                                <TableIcon className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                                size="icon"
-                                aria-label="عرض كبطاقات"
-                                onClick={() => setViewMode('grid')}
-                                className="h-8 w-8"
-                            >
-                                <LayoutGrid className="h-4 w-4" />
-                            </Button>
-                        </div>
+                        <DirectoryViewToggle value={viewMode} onChange={setViewMode} className="rounded-xl bg-muted" />
                     </div>
                 </div>
 
                 {filteredData.length === 0 ? (
-                    <div className="text-center py-16 bg-card rounded-2xl border border-border shadow-xs">
-                        <Globe className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold mb-2 text-foreground">{t.noResults}</h3>
-                        <p className="text-muted-foreground max-w-sm mx-auto">{t.noResultsDesc}</p>
-                    </div>
+                    <DirectoryEmptyState
+                        icon={Globe}
+                        title={t.noResults}
+                        description={t.noResultsDesc}
+                        className="border-border py-16"
+                    />
                 ) : (
                     <>
                         {viewMode === 'grid' ? (
@@ -420,22 +384,20 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                             )}
                                                         </div>
 
-                                                        {item.socials && Object.entries(item.socials).filter(([_, url]) => url && typeof url === 'string' && url.trim().length > 0).length > 0 && (
+                                                        {nonEmptySocials(item).length > 0 && (
                                                             <div className="flex flex-wrap justify-center gap-1.5 pt-1">
-                                                                {Object.entries(item.socials)
-                                                                    .filter(([_, url]) => url && typeof url === 'string' && url.trim().length > 0)
-                                                                    .map(([plat, url]) => (
-                                                                        <a
-                                                                            key={plat}
-                                                                            href={url}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${getSocialStyle(plat)}`}
-                                                                            title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
-                                                                        >
-                                                                            {getSocialIcon(plat)}
-                                                                        </a>
-                                                                    ))}
+                                                                {nonEmptySocials(item).map(([plat, url]) => (
+                                                                    <a
+                                                                        key={plat}
+                                                                        href={url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${getSocialStyle(plat)}`}
+                                                                        title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                                    >
+                                                                        {getSocialIcon(plat)}
+                                                                    </a>
+                                                                ))}
                                                             </div>
                                                         )}
                                                     </CardContent>
@@ -487,20 +449,18 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                        {Object.entries(item.socials || {})
-                                                            .filter(([_, url]) => url && typeof url === 'string' && url.trim().length > 0)
-                                                            .map(([plat, url]) => (
-                                                                <a
-                                                                    key={plat}
-                                                                    href={url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${getSocialStyle(plat)}`}
-                                                                    title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
-                                                                >
-                                                                    {getSocialIcon(plat)}
-                                                                </a>
-                                                            ))}
+                                                        {nonEmptySocials(item).map(([plat, url]) => (
+                                                            <a
+                                                                key={plat}
+                                                                href={url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${getSocialStyle(plat)}`}
+                                                                title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                            >
+                                                                {getSocialIcon(plat)}
+                                                            </a>
+                                                        ))}
                                                     </div>
                                                 </TableCell>
                                                 {canEditEntries && (

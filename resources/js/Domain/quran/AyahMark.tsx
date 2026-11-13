@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import rawSvg from './marker-015-regular.svg?raw';
+import './quran.css';
 
 // Ayah-mark rosette from quranpedia/ayah-marks (015-regular — see
 // ATTRIBUTION.md). Rendered inline so the line's measured width stays close

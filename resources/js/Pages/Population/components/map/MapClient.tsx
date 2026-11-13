@@ -5,21 +5,17 @@ import 'leaflet/dist/leaflet.css';
 import { DATA_TYPES, CityData, RainfallData } from '../../types';
 import { getFeatureStyle } from './map-styles';
 import { setupFeatureInteractions, hideCursorTooltip } from './map-interactions';
-import MapUpdater from './MapUpdater';
+import { ensureLeafletDefaultIcon } from '@/Components/map/leaflet/defaultIcon';
+import { FitBounds } from '@/Components/map/leaflet/FitBounds';
+import { useInvalidateSizeOnLayout } from '@/Components/map/leaflet/useInvalidateSizeOnLayout';
+import { featureCollectionBounds, normalizeFeatureCollection } from '@/Components/map/geo';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
-// Fix for Leaflet icons
-// @ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+ensureLeafletDefaultIcon();
 
 interface MapClientProps {
-    geoJsonData: any;
+    geoJsonData: unknown;
     populationData: CityData | null;
     rainfallData?: RainfallData;
     environmentalData?: any;
@@ -27,6 +23,13 @@ interface MapClientProps {
     currentSourceId: number | null;
     customThresholds: number[];
     onFeatureClick?: (feature: any) => void;
+}
+
+// Leaflet measures its container when it mounts only; the shared hook keeps it
+// in sync with the real size instead of guessing with a timer.
+function MapSizeSync() {
+    useInvalidateSizeOnLayout();
+    return null;
 }
 
 // Hides the cursor tooltip while the map is being dragged / zoomed so a
@@ -58,6 +61,9 @@ export default function MapClient({
     const tipRef = useRef<HTMLDivElement>(null);
     const getTip = React.useCallback(() => tipRef.current, []);
     const getWrap = React.useCallback(() => wrapRef.current, []);
+
+    const geoJson = React.useMemo(() => normalizeFeatureCollection(geoJsonData), [geoJsonData]);
+    const bounds = React.useMemo(() => featureCollectionBounds(geoJson), [geoJson]);
 
     const style = (feature: any) => {
         return getFeatureStyle(feature, currentDataType, populationData, rainfallData, environmentalData, customThresholds);
@@ -327,11 +333,12 @@ path.leaflet-interactive:hover {
                 {/* Controls live on the end (left) side: the data panel docks on the start (right) side in RTL */}
                 <ZoomControl position="bottomleft" />
                 <AttributionControl position="bottomleft" />
-                <MapUpdater geoJsonData={geoJsonData} />
+                <MapSizeSync />
+                <FitBounds bounds={bounds} />
                 <DismissTooltipOnMapMove getTip={getTip} />
                 <GeoJSON
                     key={`${currentDataType}-${currentSourceId}`}
-                    data={geoJsonData}
+                    data={geoJson}
                     style={style}
                     onEachFeature={onEachFeature}
                 />

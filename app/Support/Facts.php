@@ -221,7 +221,7 @@ final class Facts
      */
     public static function transit(): array
     {
-        /** @var array{color_index_max: int, nearby_stops_radius_m: int, nearby_stops_radius_max_m: int} $transit */
+        /** @var array{color_index_max: int, nearby_stops_radius_m: int, nearby_stops_radius_max_m: int, route_palette: array<int, string>} $transit */
         $transit = self::read('transit');
 
         return $transit;
@@ -247,6 +247,41 @@ final class Facts
         $site = self::read('site');
 
         return $site;
+    }
+
+    /**
+     * The site-module catalogue: every navigation entry the site ships with,
+     * the search copy for each one, and the admin cards the dashboard offers.
+     * The stored `site_navigation` row overrides the navigation half; the rest
+     * is read from here directly on both sides of the wire.
+     *
+     * @return array{
+     *     navbar: array{topCount: int},
+     *     modules: array<int, array<string, mixed>>,
+     *     adminSections: array<int, array<string, mixed>>
+     * }
+     */
+    public static function siteModules(): array
+    {
+        /** @var array{navbar: array{topCount: int}, modules: array<int, array<string, mixed>>, adminSections: array<int, array<string, mixed>>} $modules */
+        $modules = self::read('site-modules');
+
+        return $modules;
+    }
+
+    /**
+     * The one drawing per icon key, rendered by `Components/Icons/ProjectIcons`
+     * in React and by `<x-project-icon>` in Blade. A key is either an `alias`
+     * of another key or a `viewBox` + `body` of SVG markup.
+     *
+     * @return array{icons: array<string, array<string, mixed>>}
+     */
+    public static function projectIcons(): array
+    {
+        /** @var array{icons: array<string, array<string, mixed>>} $icons */
+        $icons = self::read('project-icons');
+
+        return $icons;
     }
 
     /**

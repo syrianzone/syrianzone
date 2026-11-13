@@ -52,7 +52,10 @@ Two invariants, both covered by tests or manual checks:
 - `grid-template-columns` and spans are **inline styles** driven by the `useBreakpoint()` media-query hook, not `md:`/`lg:` utilities: code-split CSS chunks each emit their own Tailwind layer, so responsive classes lose cascade order in a page chunk (`Places/Lightbox.tsx` documents the same trap).
 - Row height 76px, gap 12px, `grid-auto-flow: dense`.
 - Reorder uses `@dnd-kit/sortable` with `rectSortingStrategy`, an 8px pointer activation distance, and the keyboard sensor. dnd-kit is transform-based, so RTL needs no mirroring. The drag surface is the header handle only, so scrolling a list widget on touch never starts a drag.
-- **Resize is discrete**, chosen from `SizeMenu` and bounded by each widget's `minSize`/`maxSize`. There are no drag handles.
+- **Resize is discrete**, chosen from `SizeMenu` and bounded by each widget's
+  `minSize`/`maxSize`. There are no drag handles. The menu offers only
+  `allowedSizes(def)` and the reducer stores only `clampSize(size, def)`, both in
+  `_lib/doc.ts`, so no caller can bypass the grid caps or a widget's own bounds.
 
 ## 5. BACKEND CONTRACT
 
@@ -85,19 +88,35 @@ No CRDT and no field-level merge. Simultaneous edits on two devices means one lo
 
 ## 7. WIDGET CONTRACT
 
-`WidgetDefinition` (see `_lib/types.ts`) carries `id`, Arabic `name`/`description`, a lucide `icon`, `category`, `defaultSize`/`minSize`/`maxSize`, `fields`, `requires`, `refresh`, `multiple`, and a `lazy()` `Component`.
+`WidgetDeclaration` (see `_lib/types.ts`) carries `id`, Arabic `name`/`description`,
+a lucide `icon`, `category`, `defaultSize`/`minSize`/`maxSize`, `fields`,
+`requires`, `refresh`, `multiple`, `seed` (where the widget sits on a new
+visitor's board, or `null`), and `source` (the read it uses from `_lib/sources.ts`,
+or `null`). The registry attaches the lazy `View` from the folder, so the
+declaration never imports the widget's own code.
 
 - `fields: ConfigField[]` is a declarative schema (`text` | `number` | `switch` | `select`). `WidgetConfigDialog` renders it generically, so a configurable widget ships no settings UI of its own. `[]` means not configurable.
 - `requires: ('auth' | 'geo')[]` is enforced in `BoardTile`. `auth` renders a locked tile with a sign-in link and issues no request. `geo` requests one fix for the whole board via `GeoProvider`, caches it in `sz-board:geo`, and renders an enable-location tile on denial.
 - `refresh: { staleMs, intervalMs }` feeds `useWidgetQuery`. `refetchIntervalInBackground` is always false: several polling widgets across many open tabs is real load for no benefit while hidden.
 - `multiple: false` disables the widget in the gallery once placed.
+- `category` must be one of `CATEGORIES`; the gallery's sections are exactly the categories its widgets use.
+- `seed` sets both the default board's array order (one order is one visual row) and its size there. `null` keeps the widget in the gallery only.
+- `source` names the fetcher in `_lib/sources.ts` that the widget's queries go
+  through (`null` for a widget that reads nothing outside the document). The
+  registry publishes the resulting table as `WIDGET_SOURCES`, and
+  `registry.test.ts` fails if a declared source does not exist, is not a
+  function, or is claimed by no widget.
 
 Adding a widget:
 
-1. Create `_widgets/<id>/index.ts` (eager, tiny, so the gallery renders without pulling widget code) and `_widgets/<id>/View.tsx` (lazy).
-2. Add one import plus one array entry in `_lib/registry.ts`.
+1. Create `_widgets/<id>/index.ts` (the declaration, `export default`) and
+   `_widgets/<id>/View.tsx` (the lazy view). The `id` must equal the folder name.
+2. Nothing else. `_lib/registry.ts` discovers every folder under `_widgets/` with
+   `import.meta.glob`, so the gallery, seeded board, category sections and source
+   table pick the widget up with no edit to the core.
 
-That is the whole extension surface. The gallery, config dialog, sizing, persistence, and sync all pick it up with no further changes.
+That is the whole extension surface. The config dialog, sizing, persistence, and
+sync all pick it up with no further changes.
 
 ## 8. FILE MANIFEST
 
@@ -109,7 +128,7 @@ Backend:
 
 Frontend, `resources/js/Pages/Board/`:
 - `Index.tsx` owns the document and passes it down, matching `Places/Index.tsx`. No zustand.
-- `_lib/`: `types.ts`, `layout.ts`, `registry.ts`, `storage.ts`, `api.ts`, `sync.ts`, `query.ts`, `sources.ts`
+- `_lib/`: `types.ts`, `doc.ts`, `layout.ts`, `registry.ts`, `storage.ts`, `api.ts`, `sync.ts`, `query.ts`, `sources.ts`
 - `_components/`: `BoardGrid`, `BoardTile`, `BoardToolbar`, `DashboardTabs`, `WidgetShell`, `TileChrome`, `SizeMenu`, `MissingWidget`, `WidgetGallery`, `WidgetConfigDialog`, `GeoProvider`
 - `_widgets/<id>/{index.ts,View.tsx}`: `clock`, `weather`, `prayer`, `quran`, `pomodoro`, `todo`, `notes`, `rss`, `answers`, `events-today`, `guides`, `places-nearby`, `transit-cities`, `recipe`
 
@@ -121,7 +140,7 @@ Shared: `resources/js/Providers/QueryProvider.tsx` (moved out of `Pages/Transit/
 |---|---|---|---|---|
 | `clock` | time | local | | yes |
 | `weather` | time | Cloudflare worker (cross-origin) | | yes |
-| `prayer` | time | `api.aladhan.com`, method 3 (Muslim World League) | | no |
+| `prayer` | time | `GET /api/prayer-times`, method 3 (Muslim World League) by default; follows the shared location preference (`Domain/location`) and `Domain/prayer/times` | | no |
 | `quran` | time | the global player (`Domain/quran/quranPlayer`); follows the recitation | | yes |
 | `pomodoro` | personal | local timer | | no |
 | `todo` | personal | text lives in `c` | | yes |
@@ -157,7 +176,13 @@ Automated (`tests/Feature/BoardTest.php`, 9 tests): guest 401s, null document fo
 
 `UserFactory` defaults `role` to `user`; privileged accounts need explicit grants.
 
-The pure frontend engines are covered by Vitest (`bun run test:js`); the Board UI itself has no unit tests, so it was verified by driving the running app. What was checked, and what a future change should re-check:
+The pure frontend engines are covered by Vitest (`bun run test:js`) in
+`_lib/registry.test.ts`: the declarations (ids, categories, sizes inside the
+grid and their own bounds, source table, seed order), the clamped resize, and a
+stored v1 document — including an unknown widget id and PHP's `[]` for an empty
+config — round-tripping unchanged through `migrate()`. The Board UI itself has no
+unit tests, so it was verified by driving the running app. What was checked, and
+what a future change should re-check:
 
 - Renders at 375 / 820 / 1280: 2 / 6 / 12 columns, spans clamped, no horizontal overflow.
 - Keyboard drag reorder, and that ArrowLeft moves a tile later in the order (correct in RTL).

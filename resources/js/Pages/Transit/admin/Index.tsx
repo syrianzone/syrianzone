@@ -1,13 +1,18 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import maplibregl from 'maplibre-gl'
+import type maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection } from 'geojson'
 import { useAdminDrafts, useMapData } from '../_hooks/useMapData'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from '@inertiajs/react';
-import { useTransitTheme } from '../_components/TransitThemeContext'
-import { THEME_REGISTRY } from '@/Lib/theme'
-import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
+import { createBaseMap } from '@/Components/map/createMap'
+import { useMapStyle } from '@/Components/map/useMapStyle'
+import { resolveBasemapStyle } from '@/Components/map/resolveStyle'
+import { featureCollectionBounds, normalizeFeatureCollection } from '@/Components/map/geo'
+import { useMapColors } from '@/Components/map/mapColors'
+import { ROUTE_COLOR_COUNT, ROUTE_PALETTE, TRANSIT_MAP_COLORS, getRouteColor, buildColorMatch } from '../_lib/mapColors'
+import type { City } from '../_types'
+import type { ActivityLog, Draft, PublishedRoute, RouteStop } from '../_types/admin'
 import TransitLayout from '../layout'
 import { Button } from '@/Components/ui/button'
 import { Badge } from '@/Components/ui/badge'
@@ -19,11 +24,6 @@ import { ScrollArea } from '@/Components/ui/scroll-area'
 import { FilterChip } from '@/Components/ui/filter-chip'
 import { notify } from '@/Lib/notify'
 import { Separator } from '@/Components/ui/separator'
-
-// RTL text shaping for Arabic labels on the vector basemap
-if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
-  maplibregl.setRTLTextPlugin('/styles/mapbox-gl-rtl-text.min.js', true)
-}
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/Components/ui/select'
@@ -39,51 +39,8 @@ import ImportTab from './ImportTab'
 import { useAuth } from '@/Contexts/AuthContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type DraftStatus = 'pending' | 'approved' | 'rejected'
-type RouteStatus = 'published' | 'disapproved' | 'hidden'
 
-interface Draft {
-  id: number
-  user_id: number
-  user: { name: string } | null
-  route_id: string | null
-  linked_route: { name_ar: string; name_en: string } | null
-  city_id: string
-  city: { name_ar: string; name_en: string } | null
-  name_ar: string
-  name_en: string | null
-  price: number | null
-  notes: string | null
-  geojson: any
-  status: DraftStatus
-  rejection_reason: string | null
-  created_at: string
-}
-
-interface PublishedRoute {
-  id: string
-  city_id: string
-  city: { name_ar: string; name_en: string } | null
-  name_ar: string
-  name_en: string | null
-  color_index?: number
-  price_old: number | null
-  price_new: number | null
-  status: RouteStatus
-  stops_count: number
-  created_at: string
-}
-
-interface ActivityLog {
-  id: number
-  route_id: string | null
-  action: string
-  description: string
-  user: { name: string } | null
-  created_at: string
-}
-
-const STATUS_LABELS: Record<DraftStatus, string> = {
+const STATUS_LABELS: Record<Draft['status'], string> = {
   pending: 'قيد الانتظار',
   approved: 'مقبول',
   rejected: 'مرفوض',
@@ -101,7 +58,7 @@ function pickNextPendingDraft(drafts: Draft[], statusFilter: string, cityFilter:
   )
 }
 
-const ROUTE_STATUS_LABELS: Record<RouteStatus, string> = {
+const ROUTE_STATUS_LABELS: Record<PublishedRoute['status'], string> = {
   published: 'منشور',
   disapproved: 'معطل',
   hidden: 'مخفي',
@@ -128,42 +85,8 @@ function getCsrfToken(): string {
   return match ? decodeURIComponent(match[1]) : ''
 }
 
-function normalizeGeoJson(raw: any): FeatureCollection {
-  const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-  let geojson = raw
-  if (typeof geojson === 'string') {
-    try { geojson = JSON.parse(geojson) } catch { return empty }
-  }
-  if (!geojson || !Array.isArray(geojson.features)) return empty
-
-  return {
-    ...geojson,
-    type: 'FeatureCollection',
-    features: geojson.features.map((f: any) => {
-      if (f?.geometry?.type === 'Point' && Array.isArray(f.geometry.coordinates)) {
-        let coords = f.geometry.coordinates
-        while (Array.isArray(coords) && Array.isArray(coords[0])) {
-          coords = coords[0]
-        }
-        return {
-          ...f,
-          geometry: {
-            ...f.geometry,
-            coordinates: coords,
-          },
-        }
-      }
-      return f
-    }),
-  }
-}
-
-function stopCount(draft: Draft) {
-  let geojson = draft.geojson
-  if (typeof geojson === 'string') {
-    try { geojson = JSON.parse(geojson) } catch { /* */ }
-  }
-  return geojson?.features?.filter((f: any) => f.geometry?.type === 'Point').length ?? 0
+function stopCount(draft: Draft): number {
+  return normalizeFeatureCollection(draft.geojson).features.filter((feature) => feature.geometry.type === 'Point').length
 }
 
 function LogIcon({ action }: { action: string }) {
@@ -189,7 +112,14 @@ function TransitAdminPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [mapReady, setMapReady] = useState(false)
-  const { theme } = useTransitTheme()
+  const [styleVersion, setStyleVersion] = useState(0)
+  const styleRef = useRef('')
+  const { scheme, styleUrl } = useMapStyle()
+  const schemeRef = useRef(scheme)
+  schemeRef.current = scheme
+  const mapColors = useMapColors(TRANSIT_MAP_COLORS)
+  const mapColorsRef = useRef(mapColors)
+  mapColorsRef.current = mapColors
   const [selectedDraft, setSelectedDraft] = useState<Draft | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [cityFilter, setCityFilter] = useState('all')
@@ -202,13 +132,13 @@ function TransitAdminPageContent() {
   const [publishedRoutes, setPublishedRoutes] = useState<PublishedRoute[]>([])
   const [loadingRoutes, setLoadingRoutes] = useState(false)
   const [selectedRoute, setSelectedRoute] = useState<PublishedRoute | null>(null)
-  const [selectedRouteGeoJson, setSelectedRouteGeoJson] = useState<any>(null)
+  const [selectedRouteGeoJson, setSelectedRouteGeoJson] = useState<FeatureCollection | null>(null)
   const [routeSearchQuery, setRouteSearchQuery] = useState('')
   const [routeCityFilter, setRouteCityFilter] = useState('all')
   const [routeStatusFilter, setRouteStatusFilter] = useState<string>('all')
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loadingLogs, setLoadingLogs] = useState(false)
-  const [cities, setCities] = useState<any[]>([])
+  const [cities, setCities] = useState<City[]>([])
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   // ─── Capabilities + governorate scope ───────────────────────────────────────
@@ -239,7 +169,7 @@ function TransitAdminPageContent() {
   const [splitNameAEn, setSplitNameAEn] = useState('')
   const [splitNameBAr, setSplitNameBAr] = useState('')
   const [splitNameBEn, setSplitNameBEn] = useState('')
-  const [routeStops, setRouteStops] = useState<any[]>([])
+  const [routeStops, setRouteStops] = useState<RouteStop[]>([])
 
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false)
   const [targetCityId, setTargetCityId] = useState('')
@@ -252,7 +182,7 @@ function TransitAdminPageContent() {
   const [approveColorIndex, setApproveColorIndex] = useState<number>(0)
 
   // Google My Maps import preview (rendered on the shared map via draft-source)
-  const [importPreviewGeoJson, setImportPreviewGeoJson] = useState<any>(null)
+  const [importPreviewGeoJson, setImportPreviewGeoJson] = useState<unknown>(null)
   const [importColorIndex, setImportColorIndex] = useState<number>(0)
   const [importCityId, setImportCityId] = useState<string | undefined>(undefined)
 
@@ -282,7 +212,7 @@ function TransitAdminPageContent() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/v1/cities').then(r => r.json()).then(setCities).catch(() => {})
+    fetch('/api/v1/cities').then(r => r.json() as Promise<City[]>).then(setCities).catch(() => {})
   }, [])
 
   const fetchRoutes = useCallback(async (): Promise<PublishedRoute[]> => {
@@ -290,7 +220,7 @@ function TransitAdminPageContent() {
     try {
       const res = await fetch('/api/v1/admin/routes')
       if (res.ok) {
-        const rows = await res.json()
+        const rows = await res.json() as PublishedRoute[]
         setPublishedRoutes(rows)
         return rows
       }
@@ -302,118 +232,101 @@ function TransitAdminPageContent() {
     setLoadingLogs(true)
     try {
       const res = await fetch('/api/v1/admin/routes/logs')
-      if (res.ok) setLogs(await res.json())
+      if (res.ok) setLogs(await res.json() as ActivityLog[])
     } catch { /* */ } finally { setLoadingLogs(false) }
   }, [])
 
   // ─── Map init ───────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!mapContainer.current || mapRef.current) return
-
-    const dark = THEME_REGISTRY.find((t) => t.id === theme)?.isDark ?? true
-    const map = new maplibregl.Map({
-      container: mapContainer.current,
-      style: dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json',
-      center: [36.29, 33.51],
-      zoom: 7,
-      attributionControl: false,
-    })
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
-    map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
-    map.on('load', () => {
-      const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+  // The basemap's runtime sources and layers are re-added on every `style.load`:
+  // setStyle() (a theme switch) drops them, and re-creating the map instead would
+  // throw away the camera, the loaded data and the current selection.
+  const addMapLayers = useCallback((map: maplibregl.Map) => {
+    const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+    const colors = mapColorsRef.current
+    if (!map.getSource('ref-routes')) {
       map.addSource('ref-routes', { type: 'geojson', data: empty })
-      map.addSource('ref-stops', { type: 'geojson', data: empty })
-      map.addLayer({ id: 'ref-layer-routes', type: 'line', source: 'ref-routes', paint: { 'line-color': buildColorMatch() as any, 'line-width': 3, 'line-opacity': 0.45 } })
+      map.addLayer({ id: 'ref-layer-routes', type: 'line', source: 'ref-routes', paint: { 'line-color': buildColorMatch(), 'line-width': 3, 'line-opacity': 0.45 } })
       map.addLayer({ id: 'ref-layer-routes-hit', type: 'line', source: 'ref-routes', paint: { 'line-width': 16, 'line-opacity': 0 } })
-      map.addLayer({ id: 'ref-layer-stops', type: 'circle', source: 'ref-stops', paint: { 'circle-radius': 4, 'circle-color': '#c8963a', 'circle-opacity': 0.35 } })
-      
+    }
+    if (!map.getSource('ref-stops')) {
+      map.addSource('ref-stops', { type: 'geojson', data: empty })
+      map.addLayer({ id: 'ref-layer-stops', type: 'circle', source: 'ref-stops', paint: { 'circle-radius': 4, 'circle-color': colors.gold, 'circle-opacity': 0.35 } })
+    }
+    if (!map.getSource('draft-source')) {
       map.addSource('draft-source', { type: 'geojson', data: empty })
       map.addLayer({
         id: 'draft-line', type: 'line', source: 'draft-source',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#c8963a', 'line-width': 5, 'line-opacity': 0.9 },
+        paint: { 'line-color': colors.gold, 'line-width': 5, 'line-opacity': 0.9 },
       })
       map.addLayer({
         id: 'draft-points', type: 'circle', source: 'draft-source',
-        paint: { 'circle-radius': 5, 'circle-color': '#c44b4b', 'circle-stroke-width': 1.5, 'circle-stroke-color': '#ffffff' },
+        paint: { 'circle-radius': 5, 'circle-color': colors.pomegranate, 'circle-stroke-width': 1.5, 'circle-stroke-color': colors.markerStroke },
         filter: ['==', '$type', 'Point'],
       })
-      map.resize()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mapContainer.current || mapRef.current) return
+
+    const map = createBaseMap({
+      container: mapContainer.current,
+      scheme: schemeRef.current,
+      center: [36.29, 33.51],
+      zoom: 7,
+      controls: 'bottom-right',
+    })
+    styleRef.current = resolveBasemapStyle(schemeRef.current)
+
+    map.on('style.load', () => {
+      addMapLayers(map)
+      setStyleVersion(v => v + 1)
+    })
+    map.on('load', () => {
       mapRef.current = map
       setMapReady(true)
     })
-    return () => { map.remove(); mapRef.current = null; setMapReady(false) }
-  }, [theme])
-
-function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
-  if (!geojson) return null
-  const coords: [number, number][] = []
-
-  const pushValidCoord = (c: any) => {
-    let cur = c
-    while (Array.isArray(cur) && Array.isArray(cur[0])) {
-      cur = cur[0]
+    return () => {
+      map.remove()
+      mapRef.current = null
+      setMapReady(false)
     }
-    if (Array.isArray(cur) && cur.length >= 2 && typeof cur[0] === 'number' && typeof cur[1] === 'number' && !Number.isNaN(cur[0]) && !Number.isNaN(cur[1])) {
-      coords.push([cur[0], cur[1]])
-    }
-  }
+  }, [addMapLayers])
 
-  const extractCoords = (geom: any) => {
-    if (!geom || !geom.coordinates) return
-    const { type, coordinates } = geom
-    if (type === 'Point') {
-      pushValidCoord(coordinates)
-    } else if (type === 'LineString' || type === 'MultiPoint') {
-      if (Array.isArray(coordinates)) coordinates.forEach((c: any) => pushValidCoord(c))
-    } else if (type === 'MultiLineString' || type === 'Polygon') {
-      if (Array.isArray(coordinates)) coordinates.forEach((line: any) => Array.isArray(line) && line.forEach((c: any) => pushValidCoord(c)))
-    } else if (type === 'MultiPolygon') {
-      if (Array.isArray(coordinates)) coordinates.forEach((poly: any) => Array.isArray(poly) && poly.forEach((line: any) => Array.isArray(line) && line.forEach((c: any) => pushValidCoord(c))))
-    }
-  }
-
-  if (geojson.type === 'FeatureCollection' && Array.isArray(geojson.features)) {
-    geojson.features.forEach((f: any) => extractCoords(f.geometry))
-  } else if (geojson.type === 'Feature') {
-    extractCoords(geojson.geometry)
-  } else {
-    extractCoords(geojson)
-  }
-
-  if (coords.length === 0) return null
-  const bounds = new maplibregl.LngLatBounds(coords[0], coords[0])
-  coords.forEach(c => bounds.extend(c as maplibregl.LngLatLike))
-  return bounds
-}
+  // Follow the theme on the live canvas instead of rebuilding it.
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    if (styleRef.current === styleUrl) return
+    styleRef.current = styleUrl
+    mapRef.current.setStyle(styleUrl)
+  }, [mapReady, styleUrl])
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const src = mapRef.current.getSource('draft-source') as maplibregl.GeoJSONSource | undefined
-    const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-    let geojsonData: any = empty
+    let geojsonData: FeatureCollection = { type: 'FeatureCollection', features: [] }
     if (adminTab === 'drafts') {
-      geojsonData = normalizeGeoJson(selectedDraft?.geojson)
+      geojsonData = normalizeFeatureCollection(selectedDraft?.geojson)
     } else if (adminTab === 'routes') {
-      geojsonData = normalizeGeoJson(selectedRouteGeoJson)
+      geojsonData = normalizeFeatureCollection(selectedRouteGeoJson)
     } else if (adminTab === 'import') {
-      geojsonData = normalizeGeoJson(importPreviewGeoJson)
+      geojsonData = normalizeFeatureCollection(importPreviewGeoJson)
     }
     src?.setData(geojsonData)
 
-    const bounds = getGeoJsonBounds(geojsonData)
+    const bounds = featureCollectionBounds(geojsonData)
     if (bounds) {
       mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
     }
-  }, [mapReady, selectedDraft, selectedRouteGeoJson, importPreviewGeoJson, adminTab])
+  }, [mapReady, styleVersion, selectedDraft, selectedRouteGeoJson, importPreviewGeoJson, adminTab])
 
   // Update line color, casing, points, and background dimming dynamically
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
 
-    let color = '#c8963a'
+    let color = mapColors.gold
     if (adminTab === 'drafts' && selectedDraft) {
       color = getRouteColor(approveColorIndex)
     } else if (adminTab === 'routes' && selectedRoute) {
@@ -436,18 +349,14 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       map.setPaintProperty('ref-layer-routes', 'line-opacity', isSelected ? 0.15 : 0.45)
       map.setPaintProperty('ref-layer-routes', 'line-width', 3)
     }
-  }, [mapReady, adminTab, approveColorIndex, selectedRoute, selectedDraft, importPreviewGeoJson, importColorIndex])
+  }, [mapReady, styleVersion, adminTab, approveColorIndex, selectedRoute, selectedDraft, importPreviewGeoJson, importColorIndex, mapColors])
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-    ;(mapRef.current.getSource('ref-routes') as maplibregl.GeoJSONSource | undefined)?.setData((refData?.routes ?? empty) as any)
-    ;(mapRef.current.getSource('ref-stops') as maplibregl.GeoJSONSource | undefined)?.setData((refData?.stops ?? empty) as any)
-  }, [mapReady, refData])
-
-  useEffect(() => {
-    if (mobileView === 'map') setTimeout(() => mapRef.current?.resize(), 60)
-  }, [mobileView])
+    ;(mapRef.current.getSource('ref-routes') as maplibregl.GeoJSONSource | undefined)?.setData(refData?.routes ?? empty)
+    ;(mapRef.current.getSource('ref-stops') as maplibregl.GeoJSONSource | undefined)?.setData(refData?.stops ?? empty)
+  }, [mapReady, styleVersion, refData])
 
   // ─── API Handlers ───────────────────────────────────────────────────────────
   const handleApprove = useCallback(async (id: number, colorIndex?: number) => {
@@ -506,12 +415,12 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     setMobileView('map')
 
     // 1. Zoom in immediately using memory geometry from refData if present
-    const featureFromRef = refData?.routes?.features?.find((f: any) => String(f.properties?.id) === String(route.id))
+    const featureFromRef = refData?.routes?.features?.find(f => String(f.properties?.id) === String(route.id))
     if (featureFromRef) {
-      const geojson = { type: 'FeatureCollection', features: [featureFromRef] }
+      const geojson = normalizeFeatureCollection({ type: 'FeatureCollection', features: [featureFromRef] })
       setSelectedRouteGeoJson(geojson)
       if (mapRef.current) {
-        const bounds = getGeoJsonBounds(geojson)
+        const bounds = featureCollectionBounds(geojson)
         if (bounds) mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
       }
     }
@@ -520,10 +429,10 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     try {
       const res = await fetch(`/api/v1/admin/routes/${route.id}/geojson`)
       if (res.ok) {
-        const fullGeojson = await res.json()
+        const fullGeojson = normalizeFeatureCollection(await res.json())
         setSelectedRouteGeoJson(fullGeojson)
         if (mapRef.current) {
-          const bounds = getGeoJsonBounds(fullGeojson)
+          const bounds = featureCollectionBounds(fullGeojson)
           if (bounds) mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
         }
       }
@@ -539,7 +448,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         credentials: 'include',
         body: JSON.stringify({ status: newStatus }),
       })
-      if (res.ok) { showToast('تم تحديث حالة الخط'); fetchRoutes(); if (selectedRoute?.id === routeId) setSelectedRoute(p => p ? { ...p, status: newStatus as RouteStatus } : null) }
+      if (res.ok) { showToast('تم تحديث حالة الخط'); fetchRoutes(); if (selectedRoute?.id === routeId) setSelectedRoute(p => p ? { ...p, status: newStatus as PublishedRoute['status'] } : null) }
       else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
     } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
   }, [fetchRoutes, selectedRoute, showToast])
@@ -631,7 +540,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
 
       try {
         const resGeo = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/geojson`)
-        if (resGeo.ok) setSelectedRouteGeoJson(await resGeo.json())
+        if (resGeo.ok) setSelectedRouteGeoJson(normalizeFeatureCollection(await resGeo.json()))
       } catch { /* */ }
 
       queryClient.invalidateQueries({ queryKey: ['mapData'] })
@@ -670,13 +579,13 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: newColorIndex } : r))
 
       // Update active geojson properties in state immediately so map reflects color
-      setSelectedRouteGeoJson((prev: any) => {
+      setSelectedRouteGeoJson((prev) => {
         if (!prev) return null
         return {
           ...prev,
-          features: (prev.features || []).map((f: any) => ({
-            ...f,
-            properties: { ...f.properties, colorIndex: newColorIndex, color_index: newColorIndex }
+          features: prev.features.map((feature) => ({
+            ...feature,
+            properties: { ...feature.properties, colorIndex: newColorIndex, color_index: newColorIndex }
           }))
         }
       })
@@ -724,15 +633,15 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
 
   // ─── Derived ────────────────────────────────────────────────────────────────
   const stats = {
-    pending: drafts.filter((d: Draft) => d.status === 'pending').length,
-    approved: drafts.filter((d: Draft) => d.status === 'approved').length,
-    rejected: drafts.filter((d: Draft) => d.status === 'rejected').length,
+    pending: drafts.filter((d) => d.status === 'pending').length,
+    approved: drafts.filter((d) => d.status === 'approved').length,
+    rejected: drafts.filter((d) => d.status === 'rejected').length,
   }
-  const uniqueCities: string[] = [...new Set<string>(drafts.map((d: Draft) => d.city_id as string))]
+  const uniqueCities: string[] = [...new Set<string>(drafts.map((d) => d.city_id))]
   const filteredDrafts = drafts
-    .filter((d: Draft) => statusFilter === 'all' || d.status === statusFilter)
-    .filter((d: Draft) => cityFilter === 'all' || d.city_id === cityFilter)
-    .sort((a: Draft, b: Draft) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .filter((d) => statusFilter === 'all' || d.status === statusFilter)
+    .filter((d) => cityFilter === 'all' || d.city_id === cityFilter)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   const filteredRoutes = publishedRoutes
     .filter(r => routeStatusFilter === 'all' || r.status === routeStatusFilter)
     .filter(r => routeCityFilter === 'all' || r.city_id === routeCityFilter)
@@ -853,7 +762,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                   <div className="text-center py-8 text-destructive text-sm">تعذّر تحميل البيانات</div>
                 ) : filteredDrafts.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">لا توجد نتائج</div>
-                ) : filteredDrafts.map((draft: Draft) => (
+                ) : filteredDrafts.map((draft) => (
                   <div key={draft.id}
                     className={`w-full text-right p-3 rounded-lg border transition-colors ${selectedDraft?.id === draft.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}>
                     <div className="flex items-start justify-between gap-2">
@@ -949,7 +858,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelectRoute(route) }}>
                     <div className="flex items-start justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="w-3 h-3 rounded-full shrink-0 border border-black/10 shadow-xs" style={{ backgroundColor: getRouteColor(route.color_index ?? 0) }} title={`لون المسار ${((route.color_index ?? 0) % 8) + 1}`} />
+                        <span className="w-3 h-3 rounded-full shrink-0 border border-black/10 shadow-xs" style={{ backgroundColor: getRouteColor(route.color_index ?? 0) }} title={`لون المسار ${((route.color_index ?? 0) % ROUTE_COLOR_COUNT) + 1}`} />
                         <span className="text-sm font-semibold leading-tight truncate">{route.name_ar}</span>
                       </div>
                       <Badge variant={route.status === 'published' ? 'default' : route.status === 'disapproved' ? 'destructive' : 'secondary'} className="text-[10px] shrink-0">
@@ -989,7 +898,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                 setSelectedDraft(null)
                 setAdminTab('routes')
                 const rows = await fetchRoutes()
-                const created = route && rows.find((r: PublishedRoute) => r.id === route.id)
+                const created = route && rows.find((r) => r.id === route.id)
                 if (created) handleSelectRoute(created)
               }}
             />
@@ -1192,7 +1101,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                     try {
                       const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/stops`, { headers: { 'Accept': 'application/json' }, credentials: 'include' })
                       if (res.ok) {
-                        const sd = await res.json(); setRouteStops(sd)
+                        const sd = await res.json() as RouteStop[]; setRouteStops(sd)
                         setSplitAtStopId(sd[1]?.id || '')
                         setSplitNameAAr(`${selectedRoute.name_ar} (القسم الأول)`)
                         setSplitNameBAr(`${selectedRoute.name_ar} (القسم الثاني)`)

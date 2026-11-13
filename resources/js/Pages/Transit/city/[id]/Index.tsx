@@ -1,5 +1,6 @@
 import React, { Suspense, useMemo, useEffect, useRef, lazy } from 'react'
 import citiesData from '@/Domain/transit/cities.json'
+import type { Bounds } from '@/Components/map/geo'
 import { useMapData } from '../../_hooks/useMapData'
 import { useMapStore } from '../../_store/useMapStore'
 import type { City, FeatureCollection, RouteProperties, StopProperties } from '../../_types'
@@ -38,12 +39,11 @@ export default function CityPage({ id }: CityPageProps) {
       if (urlRoute !== selectedRouteId) setSelectedRouteId(urlRoute)
       return
     }
-    const fresh = useMapStore.getState().selectedRouteId
-    const target = fresh ? `/transit/city/${id}?route=${fresh}` : `/transit/city/${id}`
+    const target = selectedRouteId ? `/transit/city/${id}?route=${selectedRouteId}` : `/transit/city/${id}`
     if (window.location.pathname + window.location.search !== target) {
       window.history.pushState({ ...window.history.state }, '', target)
     }
-  }, [id, selectedRouteId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id, selectedRouteId, setSelectedRouteId])
 
   useEffect(() => {
     const onPop = () => {
@@ -55,7 +55,7 @@ export default function CityPage({ id }: CityPageProps) {
 
   const bounds = useMemo(() => {
     if (!city?.bounds) return null
-    return city.bounds as [[number, number], [number, number]]
+    return city.bounds as Bounds
   }, [city?.bounds])
 
   const routes: FeatureCollection<RouteProperties> = useMemo(() => {

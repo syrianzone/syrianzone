@@ -9,8 +9,11 @@ across Syrian Zone, and what to touch when adding or changing a page.
    title, description, canonical, robots, Open Graph, Twitter and JSON-LD tags on
    every response. They never depend on the React tree or on the SSR process.
 2. **One place decides them.** `App\Support\Seo\SeoMeta` resolves the metadata
-   once per request. Fixed pages are listed in `SeoMeta::PAGES`; each kind of
-   database-backed page has one `PreviewResolver` class.
+   once per request. Every fixed page is one record in
+   [`resources/data/seo.json`](../../resources/data/seo.json) (path, title,
+   description, share card, og:type, JSON-LD type, breadcrumb parent); each kind
+   of database-backed page has one `PreviewResolver` class and registers itself
+   in `Previews::RESOLVERS`.
 3. **Every shareable URL has its own card.** Fixed pages have a committed card;
    records get one drawn on demand. Both come from the same renderer and
    templates.
@@ -27,7 +30,7 @@ across Syrian Zone, and what to touch when adding or changing a page.
 Request ─► SeoMeta::resolve()
              1. Previews::resolve()   a PreviewResolver claims the request
                                       (/promises/7, /mishwar?place=12, ...)
-             2. SeoMeta::PAGES        a fixed page (/promises, /about, ...)
+             2. Pages table           a fixed page (/promises, /about, ...)
              3. site defaults         anything else
            ─► app.blade.php           prints the tags on every response
            ─► `seo` Inertia prop  ─►  <SeoHead> keeps them current during
@@ -46,17 +49,20 @@ render their own `<Head>` for title or meta tags.
 
 | File | Responsibility |
 | --- | --- |
-| [`app/Support/Seo/SeoMeta.php`](../../app/Support/Seo/SeoMeta.php) | Resolves metadata per request; `PAGES` holds every fixed page's title and description, `SCHEMA` its JSON-LD type |
+| [`resources/data/seo.json`](../../resources/data/seo.json) | The single table of public pages: one record per path (title, description, card, og:type, JSON-LD type, breadcrumb parent), plus the `non_pages` route list |
+| [`app/Support/Seo/Pages.php`](../../app/Support/Seo/Pages.php) | The PHP reader of that table; `SeoMeta` and `StaticCards` derive from it |
+| [`app/Support/Seo/SeoMeta.php`](../../app/Support/Seo/SeoMeta.php) | Resolves metadata per request from the page table, a resolver, or the site defaults |
 | [`app/Support/Seo/Preview/`](../../app/Support/Seo/Preview) | `PreviewResolver` classes, one per kind of record page, registered in `Previews::RESOLVERS` |
 | [`app/Support/Seo/Og/`](../../app/Support/Seo/Og) | Card plumbing: `StaticCards` (committed cards), `RecordCard`, `NodeCardRenderer`, `CardImages`, `CardCache` |
 | [`app/Http/Controllers/OgCardController.php`](../../app/Http/Controllers/OgCardController.php) | Serves `/og/r/{type}/{key}.{png\|jpg}` |
-| [`resources/og/cards.json`](../../resources/og/cards.json) | The card of every fixed page: slug, paths, title, sentence, icon |
+| [`resources/og/cards.json`](../../resources/og/cards.json) | What each fixed-page card is drawn from: slug, title, sentence, icon. The page a card belongs to is in the page table |
 | [`scripts/og/`](../../scripts/og) | The renderer: templates (`lib/cards.mjs`), text fitting (`lib/text.mjs`), `build.mjs`, `preview.mjs` |
 | [`public/og/`](../../public/og) | Committed fixed-page cards and `manifest.json` |
 | [`config/seo.php`](../../config/seo.php) | Canonical host, default title and description, `twitter_site`, card renderer settings |
 | [`resources/views/app.blade.php`](../../resources/views/app.blade.php) | Prints the tags |
 | [`resources/js/Components/SeoHead.tsx`](../../resources/js/Components/SeoHead.tsx) | Updates the tags during client-side navigation |
 | [`app/Services/Sitemap/`](../../app/Services/Sitemap) | `SitemapBuilder` and `SitemapWriter` for `/sitemap.xml` |
+| [`scripts/seo-head.php`](../../scripts/seo-head.php) | Prints the resolved head of every public page route as JSON, for diffing a change to the page table |
 | [`app/Support/Seo/LlmsTxt.php`](../../app/Support/Seo/LlmsTxt.php) | The sections and pages of `/llms.txt` |
 | [`public/robots.txt`](../../public/robots.txt) | Disallowed areas and the sitemap address |
 
@@ -69,17 +75,20 @@ A page has one name, used two ways:
 - **Preview title** (`og:title`, `twitter:title`): the name alone. The site name
   already travels in `og:site_name`, and chat apps show both.
 
-In `SeoMeta::PAGES` write the bare name; the suffix is added for you. In a
-resolver, set `title` (document) and `shareTitle` (preview).
+In the page table's `title` write the bare name; the suffix is added for you. In
+a resolver, set `title` (document) and `shareTitle` (preview).
 
 ## Adding a fixed page
 
-1. Add the path to `SeoMeta::PAGES` with an Arabic `title` and a `description`
-   of roughly 110 to 160 characters. Add a `SCHEMA` entry if it is more specific
-   than `WebPage`, and a `PARENT_BREADCRUMBS` entry if it sits under a hub.
-2. Add its card to `resources/og/cards.json`: a `slug`, the `paths` that use it,
-   a short `title`, one `subtitle` sentence written for the card (not the meta
-   description), and an `icon` key from `SITE_ICON_MAP`.
+1. Add one record to `resources/data/seo.json`: the `path`, an Arabic `title`,
+   a `description` of roughly 110 to 160 characters, the `card` slug, and — when
+   they differ from the defaults — `type` (`article`), `schema` (a JSON-LD type
+   more specific than `WebPage`), `parent` (the hub's path) and `parentLabel`
+   (only when the hub's own title is too long to repeat in a breadcrumb).
+2. Reuse an existing card from `resources/og/cards.json`, or add one there: a
+   `slug`, a short `title`, one `subtitle` sentence written for the card (not the
+   meta description), and an `icon` key from `SITE_ICON_MAP`. The page table is
+   what says which page uses it, so `cards.json` no longer lists paths.
 3. Run `npm run og:build` and commit `public/og/<slug>.png` and `manifest.json`.
 4. Add `[path, priority, changefreq]` to `SitemapBuilder::STATIC_PAGES`.
 5. Give the page a single `<h1>` (use `sr-only` when the design has none),
@@ -87,7 +96,9 @@ resolver, set `title` (document) and `shareTitle` (preview).
 6. If the page is one a reader should be pointed to, add it to a section of
    `LlmsTxt::SECTIONS`.
 
-`tests/Feature/Seo/RouteCoverageTest.php` fails until steps 1 to 3 are done.
+`tests/Feature/Seo/RouteCoverageTest.php` fails until steps 1 to 3 are done, and
+`tests/Feature/Seo/PagesTableTest.php` asserts that the page table, the cards and
+the resolvers still agree.
 
 ## What the first HTML must contain
 
@@ -241,7 +252,7 @@ have a card: a game room link is meant to be shared.
    as `alternateName` and the project's profiles as `sameAs` (both in
    `config/seo.php`)
 2. `WebSite` (`https://syrian.zone/#website`, `inLanguage: ar`)
-3. The page node: `WebPage`, or the type from `SeoMeta::SCHEMA` or the resolver.
+3. The page node: `WebPage`, or the type the page table (or the resolver) declares.
    `Article` nodes also get `headline`, `image` (the share card), `author` and
    `publisher`. A resolver that sets `published` and `modified` on its
    `Preview` adds `datePublished` and `dateModified`; set them only from the
@@ -259,7 +270,7 @@ raw. Titles can come from visitors, so `<`, `>` and `&` are escaped in it.
 `/llms.txt` is a short Markdown index of the site in the format proposed at
 [llmstxt.org](https://llmstxt.org): a title, a one-line summary, and sections
 of links with a note each. `LlmsTxt::SECTIONS` lists the pages; their names and
-notes come from `SeoMeta::PAGES`. Search engines do not read the file. It is
+notes come from the page table. Search engines do not read the file. It is
 there for coding agents and assistants that are handed the site's address.
 
 `/llms.txt` and `/sitemap.xml` are registered outside the `web` middleware
@@ -272,7 +283,7 @@ Every fixed page has its own card at `/og/<slug>.png`; the slug is in
 
 | Path | Preview source | Card | Sitemap |
 | --- | --- | --- | --- |
-| Fixed pages in `SeoMeta::PAGES` (41) | `PAGES` | committed, one each | `SitemapBuilder::STATIC_PAGES` |
+| Fixed pages in `resources/data/seo.json` (41) | the page table | committed, one each | `SitemapBuilder::STATIC_PAGES` |
 | `/promises/{number}` | `PromisePreview` | `/og/r/promise/{number}.png` | published promises |
 | `/polls/{slug}`, `/polls/{slug}/leaderboard` | `PollPreview` | `/og/r/poll/{slug}.png` (the tier list poll uses its page cards) | active polls |
 | `/transit/city/{id}` | `TransitCityPreview` | `/og/r/city/{id}.png` | published cities |

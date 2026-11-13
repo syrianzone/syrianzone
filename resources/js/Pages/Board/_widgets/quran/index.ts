@@ -1,10 +1,9 @@
-import { lazy } from 'react';
 import { Radio } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
 
 export interface QuranConfig {}
 
-export const quranWidget: WidgetDefinition<QuranConfig> = {
+export const quranWidget: WidgetDeclaration = {
   id: 'quran',
   name: 'إذاعة القرآن الكريم',
   description: 'تلاوة متابَعة متواصلة مع نصّ ما يُقرأ، مشتركة مع الركن الإسلامي',
@@ -17,5 +16,8 @@ export const quranWidget: WidgetDefinition<QuranConfig> = {
   requires: [],
   refresh: { staleMs: 24 * 60 * 60_000, intervalMs: null },
   multiple: true,
-  Component: lazy(() => import('./View')),
+  seed: { order: 4, w: 4, h: 2 },
+  source: null,
 };
+
+export default quranWidget;

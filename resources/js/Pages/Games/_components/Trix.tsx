@@ -30,6 +30,7 @@ import { DialogClose } from '@/Components/ui/dialog';
 import PlayingCard from '@/Domain/games/PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
 import GameMenu from './GameMenu';
+import './table.css';
 
 /** Seat 0 is the player; 1 left, 2 opposite, 3 right. */
 const HUMAN = 0;

@@ -1,7 +1,5 @@
-import React, { useEffect, useId, useMemo, useState } from 'react';
-import {
-  AlertCircle, Check, Clock, MapPin, Moon, MoonStar, Settings, Sun, SunDim, Sunrise, Sunset,
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, Check, Settings } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
@@ -11,31 +9,17 @@ import {
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from '@/Components/ui/sheet';
-import { Input } from '@/Components/ui/input';
-import { Label } from '@/Components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { governorateById, governoratesByPickerOrder } from '@/Domain/geography/governorates';
 import { formatDuration } from '../../../Lib/format';
-import { PRAYER_KEYS, PRAYER_LABELS, PRAYER_METHODS, type PrayerKey } from '../../../Domain/prayer/methods';
+import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from '../../../Domain/prayer/methods';
 import { TRACKED_PRAYERS, todayKey, type MuslimPrefs } from '../../../Domain/settings/prefs';
-import {
-  effectivePrayerParams,
-} from '../../../Domain/location/location';
-import LocationModeSelector from '@/Domain/location/LocationModeSelector';
+import { hijriDateLabel } from '../../../Domain/prayer/hijri';
+import { prayerSchedule } from '../../../Domain/prayer/nextPrayer';
+import { PrayerIcon } from '../../../Domain/prayer/PrayerIcon';
+import PrayerSettingsFields from '../../../Domain/prayer/PrayerSettingsFields';
+import { usePrayerTimes } from '../../../Domain/prayer/times';
+import { resolvePlaceLabel, useLocationPreference } from '../../../Domain/location/preference';
 import { useIsMobile } from '@/Lib/useIsMobile';
 import { useAppShell } from '@/Lib/appShell';
-
-function prayerIcon(key: string, className?: string) {
-  switch (key) {
-    case 'Fajr': return <MoonStar className={className} />;
-    case 'Sunrise': return <Sunrise className={className} />;
-    case 'Dhuhr': return <Sun className={className} />;
-    case 'Asr': return <SunDim className={className} />;
-    case 'Maghrib': return <Sunset className={className} />;
-    case 'Isha': return <Moon className={className} />;
-    default: return <Clock className={className} />;
-  }
-}
 
 interface Props {
   prefs: MuslimPrefs;
@@ -43,157 +27,25 @@ interface Props {
   isLoggedIn: boolean;
 }
 
-// Settings body shared by the desktop Dialog and the mobile bottom Sheet.
-function PrayerSettingsBody({ prefs, setPrefs }: {
-  prefs: MuslimPrefs;
-  setPrefs: (p: Partial<MuslimPrefs>) => void;
-}) {
-  const latId = useId();
-  const lonId = useId();
-  return (
-    <div className="space-y-4">
-      <LocationModeSelector
-        mode={prefs.locMode}
-        onChange={(m) => setPrefs({ locMode: m, useCustomCoords: m === 'custom' })}
-      />
-
-      {prefs.locMode !== 'city' && prefs.locMode !== 'custom' && prefs.geo && (
-        <div className="rounded-lg border border-border/50 bg-card/10 p-3">
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            الموقع الحالي: <span className="font-semibold text-foreground">{prefs.geo.label}</span>
-            <span dir="ltr" className="tabular-nums"> ({prefs.geo.lat}، {prefs.geo.lon})</span>
-          </p>
-        </div>
-      )}
-
-      {prefs.locMode === 'city' && (
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-sm font-semibold">
-            <MapPin className="h-4 w-4 text-primary" /> المدينة
-          </Label>
-          <Select value={prefs.city} onValueChange={(v) => setPrefs({ city: v })}>
-            <SelectTrigger dir="rtl" aria-label="المدينة"><SelectValue /></SelectTrigger>
-            <SelectContent dir="rtl">
-              {governoratesByPickerOrder().map((governorate) => (
-                <SelectItem key={governorate.id} value={governorate.id}>{governorate.nameAr}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {prefs.locMode === 'custom' && (
-        <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-card/10 p-3">
-          <div className="space-y-1">
-            <Label htmlFor={latId} className="text-xs">خط العرض (Lat)</Label>
-            <Input id={latId} dir="ltr" inputMode="decimal" placeholder="33.51" value={prefs.customLat}
-              onChange={(e) => setPrefs({ customLat: e.target.value })} />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor={lonId} className="text-xs">خط الطول (Lon)</Label>
-            <Input id={lonId} dir="ltr" inputMode="decimal" placeholder="36.27" value={prefs.customLon}
-              onChange={(e) => setPrefs({ customLon: e.target.value })} />
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-2">
-        <Label className="text-sm font-semibold">طريقة الحساب</Label>
-        <Select value={String(prefs.method)} onValueChange={(v) => setPrefs({ method: Number(v) })}>
-          <SelectTrigger dir="rtl" aria-label="طريقة الحساب"><SelectValue /></SelectTrigger>
-          <SelectContent dir="rtl">
-            {PRAYER_METHODS.map((m) => (
-              <SelectItem key={m.id} value={String(m.id)}>{m.nameAr}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-[11px] leading-relaxed text-muted-foreground">
-          {PRAYER_METHODS.find((m) => m.id === prefs.method)?.detail}
-          {' — '}الطريقة رأي فقهي: قارن مع مسجدك، وبدّلها إن خالفته.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
   const [now, setNow] = useState(() => new Date());
-  const [timings, setTimings] = useState<Record<string, string> | null>(null);
-  const [hijri, setHijri] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
+  const location = useLocationPreference();
+  const { timings, hijri, loading, error: prayerError, reload } = usePrayerTimes(location, prefs.method, {
+    timeoutMs: 12_000,
+  });
+  // A timed-out request keeps the previous list on screen (no error copy) on
+  // this page; the "إعادة المحاولة" button appears only for real failures.
+  const error = prayerError && !prayerError.timedOut
+    ? prayerError.message || 'حدث خطأ أثناء الاتصال'
+    : null;
 
   useEffect(() => {
     const t = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(t);
   }, []);
 
-  // Fetch via the server proxy (same contract as Roznama/Board widgets).
-  useEffect(() => {
-    const ctrl = new AbortController();
-    const timer = window.setTimeout(() => ctrl.abort(), 12000);
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams();
-    for (const [k, v] of Object.entries(effectivePrayerParams({
-      mode: prefs.locMode,
-      geo: prefs.geo,
-      manualCity: prefs.city,
-      method: prefs.method,
-      useCustomCoords: prefs.useCustomCoords,
-      customLat: prefs.customLat,
-      customLon: prefs.customLon,
-    }))) params.set(k, String(v));
-    fetch(`/api/prayer-times?${params.toString()}`, { signal: ctrl.signal })
-      .then((r) => {
-        if (!r.ok) throw new Error('فشل جلب مواقيت الصلاة');
-        return r.json();
-      })
-      .then((data) => {
-        setTimings(data.timings ?? null);
-        const h = data.hijri;
-        setHijri(h?.day && h?.month && h?.year ? `${h.day} ${h.month} ${h.year}` : null);
-      })
-      .catch((e) => {
-        if (e?.name !== 'AbortError') setError(e?.message ?? 'حدث خطأ أثناء الاتصال');
-      })
-      .finally(() => {
-        window.clearTimeout(timer);
-        setLoading(false);
-      });
-    return () => {
-      window.clearTimeout(timer);
-      ctrl.abort();
-    };
-  }, [prefs.city, prefs.useCustomCoords, prefs.customLat, prefs.customLon, prefs.method, prefs.locMode, prefs.geo, nonce]);
-
-  const activeAndNext = useMemo(() => {
-    if (!timings) return null;
-    const parsed = PRAYER_KEYS.map((key) => {
-      const raw = timings[key];
-      if (!raw) return null;
-      const [h, m] = raw.slice(0, 5).split(':').map(Number);
-      if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
-      const at = new Date(now);
-      at.setHours(h, m, 0, 0);
-      return { key: key as PrayerKey, label: PRAYER_LABELS[key as PrayerKey], at };
-    }).filter(Boolean) as { key: PrayerKey; label: string; at: Date }[];
-    if (parsed.length === 0) return null;
-    parsed.sort((a, b) => a.at.getTime() - b.at.getTime());
-    const idx = parsed.findIndex((p) => p.at > now);
-    if (idx === -1) {
-      const first = parsed[0];
-      const tmr = new Date(first.at);
-      tmr.setDate(tmr.getDate() + 1);
-      return { active: parsed[parsed.length - 1], next: { ...first, at: tmr }, diff: tmr.getTime() - now.getTime() };
-    }
-    return {
-      active: parsed[idx === 0 ? parsed.length - 1 : idx - 1],
-      next: parsed[idx],
-      diff: parsed[idx].at.getTime() - now.getTime(),
-    };
-  }, [timings, now]);
+  const schedule = useMemo(() => prayerSchedule(timings, now), [timings, now]);
+  const apiHijri = hijriDateLabel(hijri);
 
   // Today's completion log (Asia/Damascus day). Guests keep it in
   // localStorage; logged-in users sync it to their account.
@@ -210,12 +62,7 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
     });
   };
 
-  const usingGeo = (prefs.locMode === 'gps' || prefs.locMode === 'ip') && !!prefs.geo;
-  const cityLabel = usingGeo && prefs.geo
-    ? prefs.geo.label
-    : prefs.locMode === 'custom'
-      ? 'إحداثيات مخصصة'
-      : (governorateById(prefs.city)?.nameAr ?? prefs.city);
+  const cityLabel = resolvePlaceLabel(location);
 
   const prayerSettingsOpen = useAppShell((s) => s.muslimPrayerSettingsOpen);
   const setPrayerSettingsOpen = useAppShell((s) => s.setMuslimPrayerSettingsOpen);
@@ -228,7 +75,7 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
           <div className="mb-4 flex items-center justify-between gap-2 border-b border-border/60 pb-3">
             <h2 className="min-w-0 truncate text-lg font-bold">{cityLabel}</h2>
             <div className="flex shrink-0 items-center gap-1.5">
-              {hijri && <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">{hijri} هـ</Badge>}
+              {apiHijri && <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">{apiHijri} هـ</Badge>}
               <Badge variant="secondary" dir="ltr" className="text-[10px] tabular-nums lg:hidden">{doneCount}/5</Badge>
               {isMobile ? (
                 <Sheet open={prayerSettingsOpen} onOpenChange={setPrayerSettingsOpen}>
@@ -246,7 +93,13 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
                       </SheetDescription>
                     </SheetHeader>
                     <div className="max-h-[70dvh] overflow-y-auto sz-scroll">
-                      <PrayerSettingsBody prefs={prefs} setPrefs={setPrefs} />
+                      <PrayerSettingsFields
+                        cityLabel="المدينة"
+                        method={prefs.method}
+                        onMethodChange={(method) => setPrefs({ method })}
+                        methodNote=" — الطريقة رأي فقهي: قارن مع مسجدك، وبدّلها إن خالفته."
+                        onLocationChange={setPrefs}
+                      />
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -265,25 +118,31 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
                         المدينة والإحداثيات وطريقة الحساب — تُستخدم أيضاً في الروزنامة ولوح والرئيسية.
                       </DialogDescription>
                     </DialogHeader>
-                    <PrayerSettingsBody prefs={prefs} setPrefs={setPrefs} />
+                    <PrayerSettingsFields
+                      cityLabel="المدينة"
+                      method={prefs.method}
+                      onMethodChange={(method) => setPrefs({ method })}
+                      methodNote=" — الطريقة رأي فقهي: قارن مع مسجدك، وبدّلها إن خالفته."
+                      onLocationChange={setPrefs}
+                    />
                   </DialogContent>
                 </Dialog>
               )}
             </div>
           </div>
 
-          {activeAndNext && (
+          {schedule?.next && (
             <div className="mb-4 flex items-center justify-between rounded-xl border border-primary/10 bg-primary/5 p-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                  {prayerIcon(activeAndNext.next.key, 'h-5 w-5')}
+                  <PrayerIcon prayer={schedule.next.key} className="h-5 w-5" />
                 </div>
-                <span className="text-base font-bold text-primary">صلاة {activeAndNext.next.label}</span>
+                <span className="text-base font-bold text-primary">صلاة {schedule.next.label}</span>
               </div>
               <div className="text-left font-mono">
                 <span className="block text-right text-xs font-medium text-foreground/70">المتبقي</span>
                 <span dir="ltr" className="text-xl font-bold tracking-wider text-primary">
-                  {formatDuration(activeAndNext.diff)}
+                  {formatDuration(schedule.next.remainingMs)}
                 </span>
               </div>
             </div>
@@ -296,13 +155,13 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
           ) : error ? (
             <div className="flex flex-col items-center gap-2 py-8 text-sm text-red-500">
               <AlertCircle className="h-8 w-8" /><p>{error}</p>
-              <Button variant="outline" size="sm" onClick={() => setNonce((n) => n + 1)}>إعادة المحاولة</Button>
+              <Button variant="outline" size="sm" onClick={reload}>إعادة المحاولة</Button>
             </div>
           ) : timings ? (
             <div className="space-y-2">
               {PRAYER_KEYS.map((key) => {
-                const isActive = activeAndNext?.active.key === key;
-                const isNext = activeAndNext?.next.key === key;
+                const isActive = schedule?.active?.key === key;
+                const isNext = schedule?.next?.key === key;
                 const trackable = (TRACKED_PRAYERS as readonly string[]).includes(key);
                 const checked = trackable && !!doneToday[key];
                 return (
@@ -313,7 +172,7 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
                       : 'border-border/50 bg-muted/10 hover:bg-muted/20'
                     }`}>
                     <div className="flex min-w-0 items-center gap-3">
-                      {prayerIcon(key, `h-4 w-4 shrink-0 ${isActive ? '' : 'text-primary'}`)}
+                      <PrayerIcon prayer={key} className={`h-4 w-4 shrink-0 ${isActive ? '' : 'text-primary'}`} />
                       <span className="text-sm font-semibold">{PRAYER_LABELS[key]}</span>
                       {isActive && (
                         <Badge className="h-5 bg-primary-foreground px-1.5 text-[10px] font-bold text-primary">الآن</Badge>

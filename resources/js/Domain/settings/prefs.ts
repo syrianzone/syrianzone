@@ -1,23 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import axios from '@/Lib/axios';
+import { SYRIA_TIMEZONE } from '@/Domain/geography/syria';
 import { DEFAULT_PRAYER_METHOD } from '../prayer/methods';
 import { DEFAULT_RECITATION_CODE, normalizeRecitationCode } from '../quran/quran';
-import { effectivePrayerParams, getGeo, getLocMode, setGeo, setLocMode, clearGeo, LOC_CHANGED_EVENT, type GeoPoint, type LocMode } from '../location/location';
-import { SYRIA_TIMEZONE } from '@/Domain/geography/syria';
+import {
+  adoptAccountLocation,
+  readLocationPreference,
+  updateLocationPreference,
+  useLocationPreference,
+  type LocationPatch,
+} from '../location/preference';
+import type { GeoPoint, LocMode } from '../location/location';
 
-// Single source of truth for everything the prayer widgets share.
-// /muslim is the writer; Home, Board and Roznama are readers.
+// The account side of the prayer widgets' preferences: the calculation method,
+// the prayer log and the Quran position. The location half (city, manual
+// coordinates, mode and resolved point) is owned by `Domain/location`; this
+// module mirrors it into `MuslimPrefs` and mirrors edits to `users.settings`.
 // Guests persist to localStorage only; logged-in users also sync to
-// users.settings via POST /api/user/settings (debounced, same pattern as
-// Home.tsx saveAccountSettings).
+// users.settings via POST /api/user/settings (debounced).
 export interface MuslimPrefs {
   city: string;
   useCustomCoords: boolean;
   customLat: string;
   customLon: string;
   method: number;
-  /** Location mode: manual city list, GPS, or IP. Device-local. */
+  /** Location mode: manual city list, GPS, IP or manual coordinates. Device-local. */
   locMode: LocMode;
   /** Last resolved GPS/IP point. Device-local, never synced to the account. */
   geo: GeoPoint | null;
@@ -39,10 +47,6 @@ interface AuthSettings {
 }
 
 const LS = {
-  city: 'sz-muslim-city',
-  useCustom: 'sz-muslim-use-custom',
-  lat: 'sz-muslim-lat',
-  lon: 'sz-muslim-lon',
   method: 'sz-muslim-method',
   plog: 'sz-muslim-prayer-log',
   page: 'sz-muslim-quran-page',
@@ -50,7 +54,7 @@ const LS = {
   reciter: 'sz-muslim-quran-reciter',
 } as const;
 
-/** LocalStorage keys (exported for the login sync engine — single source). */
+/** LocalStorage keys of the non-location prefs (exported for the login sync engine). */
 export const MUSLIM_LS_KEYS = LS;
 
 function readLS(key: string, fallback: string): string {
@@ -89,50 +93,48 @@ export function prunePrayerLog(log: Record<string, Record<string, boolean>>): Re
   return pruned;
 }
 
+/** The stored calculation method, falling back to the Syrian standard. */
+export function readStoredMethod(): number {
+  return Number(readLS(LS.method, String(DEFAULT_PRAYER_METHOD))) || DEFAULT_PRAYER_METHOD;
+}
+
+/** Store the calculation method (the account mirror is a separate `setPrefs` call). */
+export function writeStoredMethod(method: number): void {
+  try {
+    window.localStorage.setItem(LS.method, String(method));
+  } catch {
+    // private mode: state still works for the session
+  }
+}
+
 export function defaultMuslimPrefs(): MuslimPrefs {
+  const location = readLocationPreference();
   return {
-    city: readLS(LS.city, readLS('governorate', 'damascus')),
-    useCustomCoords: readLS(LS.useCustom, '') === 'true',
-    customLat: readLS(LS.lat, readLS('customLat', '')),
-    customLon: readLS(LS.lon, readLS('customLon', '')),
-    method: Number(readLS(LS.method, String(DEFAULT_PRAYER_METHOD))) || DEFAULT_PRAYER_METHOD,
-    locMode: getLocMode(),
-    geo: getGeo(),
+    city: location.city,
+    useCustomCoords: location.useCustomCoords,
+    customLat: location.customLat,
+    customLon: location.customLon,
+    method: readStoredMethod(),
+    locMode: location.mode,
+    geo: location.geo,
     prayerLog: readPrayerLog(),
     quranPage: Number(readLS(LS.page, '1')) || 1,
     quranReciterId: normalizeRecitationCode(readLS(LS.reciter, DEFAULT_RECITATION_CODE)),
   };
 }
 
-export function prayerQueryParams(
-  p: Pick<MuslimPrefs, 'city' | 'useCustomCoords' | 'customLat' | 'customLon' | 'method' | 'locMode' | 'geo'>,
-): Record<string, string | number> {
-  return effectivePrayerParams({
-    mode: p.locMode,
-    geo: p.geo,
-    manualCity: p.city,
-    method: p.method,
-    useCustomCoords: p.useCustomCoords,
-    customLat: p.customLat,
-    customLon: p.customLon,
-  });
-}
-
 export function useMuslimPrefs() {
   const { props } = usePage<{ auth?: { user?: { settings?: AuthSettings | null } | null } }>();
   const serverSettings = props.auth?.user?.settings ?? null;
   const isLoggedIn = Boolean((props as unknown as { auth?: { user?: { id?: number } } }).auth?.user?.id);
+  const location = useLocationPreference();
 
   const [prefs, setPrefsState] = useState<MuslimPrefs>(() => {
     const base = defaultMuslimPrefs();
     if (!serverSettings) return base;
     return {
       ...base,
-      city: serverSettings.muslimCity ?? base.city,
       method: serverSettings.muslimMethod ?? base.method,
-      useCustomCoords: serverSettings.muslimUseCustomCoords ?? base.useCustomCoords,
-      customLat: serverSettings.muslimLat !== undefined ? String(serverSettings.muslimLat) : base.customLat,
-      customLon: serverSettings.muslimLon !== undefined ? String(serverSettings.muslimLon) : base.customLon,
       prayerLog: serverSettings.prayerLog ?? base.prayerLog,
       quranPage: serverSettings.quranLastPage ?? base.quranPage,
       quranReciterId: serverSettings.quranReciterId
@@ -140,6 +142,21 @@ export function useMuslimPrefs() {
         : base.quranReciterId,
     };
   });
+
+  // Location: fill an empty device from the account once per mount. A device
+  // value is never overwritten here — the login sync compares both sides and
+  // the conflict modal owns that decision.
+  const serverLocation = useRef(serverSettings);
+  useEffect(() => {
+    const settings = serverLocation.current;
+    if (!settings) return;
+    adoptAccountLocation({
+      city: settings.muslimCity,
+      useCustomCoords: settings.muslimUseCustomCoords,
+      customLat: settings.muslimLat,
+      customLon: settings.muslimLon,
+    });
+  }, []);
 
   const pending = useRef<Record<string, unknown>>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -167,51 +184,42 @@ export function useMuslimPrefs() {
     };
   }, [flush]);
 
-  // Device-local geo/mode may change from any surface (Home, Roznama,
-  // Board follow the same storage): re-read into state on change.
-  useEffect(() => {
-    const sync = () => {
-      setPrefsState((prev) => {
-        const locMode = getLocMode();
-        const geo = getGeo();
-        if (prev.locMode === locMode && JSON.stringify(prev.geo) === JSON.stringify(geo)) return prev;
-        return { ...prev, locMode, geo };
-      });
-    };
-    window.addEventListener(LOC_CHANGED_EVENT, sync);
-    return () => window.removeEventListener(LOC_CHANGED_EVENT, sync);
-  }, []);
-
   const setPrefs = useCallback(
     (patch: Partial<MuslimPrefs>) => {
-      // locMode/geo live in location.ts storage (device-local, event-synced).
-      if (patch.locMode !== undefined) setLocMode(patch.locMode);
-      if (patch.geo !== undefined) {
-        if (patch.geo === null) clearGeo();
-        else setGeo(patch.geo);
-      }
-      setPrefsState((prev) => {
-        const next = { ...prev, ...patch };
-        try {
-          window.localStorage.setItem(LS.city, next.city);
-          window.localStorage.setItem(LS.useCustom, String(next.useCustomCoords));
-          window.localStorage.setItem(LS.lat, next.customLat);
-          window.localStorage.setItem(LS.lon, next.customLon);
-          window.localStorage.setItem(LS.method, String(next.method));
-          window.localStorage.setItem(LS.plog, JSON.stringify(prunePrayerLog(next.prayerLog)));
-          window.localStorage.setItem(LS.page, String(next.quranPage));
-          window.localStorage.setItem(LS.reciter, next.quranReciterId);
-          // Fan-out to the legacy keys Home + Roznama already read, so the
-          // city saved in /muslim drives every prayer widget on the site.
-          if (patch.city !== undefined) {
-            window.localStorage.setItem('governorate', next.city);
-            window.localStorage.setItem('sz-roznama-governorate', next.city);
+      // Location fields belong to Domain/location: it writes the device keys
+      // both key families read and tells every surface.
+      const locationPatch: LocationPatch = {};
+      if (patch.city !== undefined) locationPatch.city = patch.city;
+      if (patch.useCustomCoords !== undefined) locationPatch.useCustomCoords = patch.useCustomCoords;
+      if (patch.customLat !== undefined) locationPatch.customLat = patch.customLat;
+      if (patch.customLon !== undefined) locationPatch.customLon = patch.customLon;
+      if (patch.locMode !== undefined) locationPatch.mode = patch.locMode;
+      if (patch.geo !== undefined) locationPatch.geo = patch.geo;
+      if (Object.keys(locationPatch).length > 0) updateLocationPreference(locationPatch);
+
+      const devicePatch =
+        patch.method !== undefined ||
+        patch.prayerLog !== undefined ||
+        patch.quranPage !== undefined ||
+        patch.quranReciterId !== undefined;
+      if (devicePatch) {
+        setPrefsState((prev) => {
+          const next = { ...prev, ...patch };
+          try {
+            if (patch.method !== undefined) window.localStorage.setItem(LS.method, String(next.method));
+            if (patch.prayerLog !== undefined) {
+              window.localStorage.setItem(LS.plog, JSON.stringify(prunePrayerLog(next.prayerLog)));
+            }
+            if (patch.quranPage !== undefined) window.localStorage.setItem(LS.page, String(next.quranPage));
+            if (patch.quranReciterId !== undefined) {
+              window.localStorage.setItem(LS.reciter, next.quranReciterId);
+            }
+          } catch {
+            // private mode: state still works for the session
           }
-        } catch {
-          // private mode: state still works for the session
-        }
-        return next;
-      });
+          return next;
+        });
+      }
 
       if (!isLoggedIn) return;
       const serverPatch: Record<string, unknown> = {};
@@ -240,5 +248,17 @@ export function useMuslimPrefs() {
     [flush, isLoggedIn],
   );
 
-  return { prefs, setPrefs, isLoggedIn };
+  return {
+    prefs: {
+      ...prefs,
+      city: location.city,
+      useCustomCoords: location.useCustomCoords,
+      customLat: location.customLat,
+      customLon: location.customLon,
+      locMode: location.mode,
+      geo: location.geo,
+    },
+    setPrefs,
+    isLoggedIn,
+  };
 }

@@ -1,11 +1,14 @@
 import { useEffect } from 'react'
 import maplibregl from 'maplibre-gl'
 import { useMap, useStyleVersion } from '@/Components/map/MapContext'
+import { useMapColors } from '@/Components/map/mapColors'
+import { TRANSIT_MAP_COLORS } from '../../_lib/mapColors'
 import { useUserLocation } from './MapCanvas'
 
 export default function UserLocationLayer() {
   const map = useMap()
   const styleVersion = useStyleVersion()
+  const colors = useMapColors(TRANSIT_MAP_COLORS)
   const location = useUserLocation()
 
   useEffect(() => {
@@ -23,7 +26,7 @@ export default function UserLocationLayer() {
         source: 'user-location',
         paint: {
           'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 10, 18, 20],
-          'circle-color': 'rgba(74, 143, 168, 0.15)',
+          'circle-color': colors.userLocationHalo,
           'circle-stroke-width': 0,
         },
       })
@@ -34,9 +37,9 @@ export default function UserLocationLayer() {
         source: 'user-location',
         paint: {
           'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 18, 8],
-          'circle-color': '#4a8fa8',
+          'circle-color': colors.userLocation,
           'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': colors.markerStroke,
         },
       })
     }
@@ -49,7 +52,7 @@ export default function UserLocationLayer() {
       } catch { /* map may have been removed already */ }
     }
     // styleVersion: re-add layers after a basemap style swap (setStyle wipes them)
-  }, [map, styleVersion])
+  }, [map, styleVersion, colors])
 
   useEffect(() => {
     if (!map || !location) return

@@ -22,12 +22,13 @@ import {
     CommandList,
 } from '@/Components/ui/command';
 import { useAppShell } from '@/Lib/appShell';
+import { pathnameOf } from '@/Lib/routes';
 import { FILTER_TABS, IS_MAC, SearchResultsContent, useGlobalSearchData } from './GlobalSearch';
 import type { FilterScope } from './GlobalSearch';
 
 export default function GlobalCommandPalette() {
     const { url } = usePage();
-    const pathname = url.split('?')[0];
+    const pathname = pathnameOf(url);
     const open = useAppShell((s) => s.searchOpen);
     const setOpen = useAppShell((s) => s.setSearchOpen);
 

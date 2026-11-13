@@ -131,12 +131,19 @@ The map canvas loads vector tiles using MapLibre GL and layers them in order of 
 +-------------------------------------------------------+
 |  Layer 2: Background reference lines (Opacity 0.22)   |
 +-------------------------------------------------------+
-|  Layer 1: MapLibre Base Vector (dark-matter style)    |
+|  Layer 1: MapLibre Base Vector (theme's basemap style) |
 +-------------------------------------------------------+
 ```
 
-### Style Scheme (`dark-matter.json`)
-The application relies on a locally hosted dark-themed style sheet to ensure privacy and allow potential offline operations.
+### Style Scheme
+Every MapLibre map (city map, admin, studio) resolves its basemap through
+`Components/map/resolveStyle.ts`: `light-vector.json` for a light scheme and
+`dark-matter-vector.json` for a dark one, both hosted under
+`public/styles/styles/` so no API key or third party is involved. The canvas is
+created by `Components/map/createMap.ts` (RTL text plugin, compact attribution +
+navigation controls) and restyles the live instance with `setStyle` when the
+visitor switches theme — the camera, the loaded GeoJSON and the current
+selection survive the switch.
 
 ### Hover and Selection Store (`useMapStore.ts`)
 Tracks the user's interactions with map entities:

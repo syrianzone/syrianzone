@@ -1,13 +1,12 @@
-import { lazy } from 'react';
 import { Clock } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
 
 export interface ClockConfig {
   format: '12' | '24';
   showDate: boolean;
 }
 
-export const clockWidget: WidgetDefinition<ClockConfig> = {
+export const clockWidget: WidgetDeclaration = {
   id: 'clock',
   name: 'الساعة',
   description: 'الوقت والتاريخ الحالي',
@@ -34,5 +33,8 @@ export const clockWidget: WidgetDefinition<ClockConfig> = {
   requires: [],
   refresh: { staleMs: 0, intervalMs: null },
   multiple: true,
-  Component: lazy(() => import('./View')),
+  seed: { order: 3, w: 4, h: 2 },
+  source: null,
 };
+
+export default clockWidget;

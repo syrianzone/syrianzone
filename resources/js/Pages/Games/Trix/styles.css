@@ -1,0 +1,39 @@
+/* Imported by this game's Index.tsx; the rest of the table is _components/table.css. */
+/* The التركس centre: four suits, each a fixed column of thirteen slots running
+   Ace (top) down to 2 (bottom), so the Jack sits in the middle — queen/king/ace
+   above it, ten down to two below. The height is reserved up front, so laying a
+   card drops it into place and never shifts the board. */
+.sz-tbl__layout {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.sz-tbl__run {
+    --sz-card-w: var(--sz-tbl-seat-w);
+    position: relative;
+    width: var(--sz-tbl-seat-w);
+    height: calc(var(--sz-tbl-seat-w) * var(--sz-card-h-ratio) + 12 * var(--sz-tbl-run-step));
+}
+
+.sz-tbl__run-slot {
+    position: absolute;
+    left: 0;
+    width: 100%;
+}
+
+.sz-tbl__run .sz-card {
+    width: var(--sz-tbl-seat-w);
+}
+
+.sz-tbl__run-suit {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: hsl(var(--muted-foreground) / 0.5);
+}

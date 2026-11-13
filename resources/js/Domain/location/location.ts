@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
-
-// Shared device-location layer for prayer times (GPS → IP → manual city).
+// Device geolocation primitives: the mode, the last resolved point, and the
+// browser/IP requests that produce it. The composed preference (city, manual
+// coordinates, mode and point) and the "preference -> coordinates" resolvers
+// live in `./preference`; this module knows nothing about prayer or weather.
+//
 // GPS and IP resolve to coordinates consumed by the existing
 // /api/prayer-times?latitude=&longitude= path; manual city lists stay as the
 // last resort everywhere. Geo state is device-local (localStorage only, never
@@ -27,17 +29,6 @@ function notifyChanged(): void {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(LOC_CHANGED_EVENT));
   }
-}
-
-/** Re-render/signal hook for surfaces that read location outside React state. */
-export function useLocSignal(): number {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const bump = () => setTick((t) => t + 1);
-    window.addEventListener(LOC_CHANGED_EVENT, bump);
-    return () => window.removeEventListener(LOC_CHANGED_EVENT, bump);
-  }, []);
-  return tick;
 }
 
 export function getLocMode(): LocMode {
@@ -195,34 +186,3 @@ export async function resolveIp(signal?: AbortSignal): Promise<GeoPoint> {
   }
 }
 
-// --- Effective prayer params shared by /muslim, Home, Roznama, Board ---
-// GPS/IP modes use the resolved point; anything unresolved falls back to the
-// surface's manual city (and its own custom coords when enabled).
-
-export interface EffectiveInput {
-  mode: LocMode;
-  geo: GeoPoint | null;
-  manualCity: string;
-  method: number;
-  useCustomCoords?: boolean;
-  customLat?: string;
-  customLon?: string;
-}
-
-export function effectivePrayerParams(input: EffectiveInput): Record<string, string | number> {
-  const { mode, geo, manualCity, method } = input;
-  if ((mode === 'gps' || mode === 'ip') && geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon)) {
-    return { latitude: geo.lat, longitude: geo.lon, method };
-  }
-  // Manual coordinates are a first-class mode now; the legacy flag path
-  // stays for states stored before the radio existed.
-  const customOn = input.useCustomCoords === true || mode === 'custom';
-  if (customOn && input.customLat && input.customLon) {
-    const lat = Number(input.customLat);
-    const lon = Number(input.customLon);
-    if (Number.isFinite(lat) && Number.isFinite(lon)) {
-      return { latitude: lat, longitude: lon, method };
-    }
-  }
-  return { governorate: manualCity || 'damascus', method };
-}

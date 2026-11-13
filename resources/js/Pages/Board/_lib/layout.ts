@@ -1,9 +1,11 @@
-import type { BoardDoc, Breakpoint, DashboardDef, WidgetDefinition, WidgetInstance, WidgetSize } from './types';
+import { findWidget } from './registry';
+import { clampSize, defaultConfig, newId, nowStamp } from './doc';
+import type { BoardDoc, Breakpoint, DashboardDef, WidgetDeclaration, WidgetInstance, WidgetSize } from './types';
+import { GRID_COLS, GRID_ROWS } from './types';
 
 const DOC_VERSION = 1;
 export const MAX_DASHBOARDS = 10;
 const MAX_WIDGETS = 40;
-const GRID_COLS = 12;
 
 // Mirrors the container's grid-cols-2 / md:grid-cols-6 / lg:grid-cols-12.
 // One stored width renders at three breakpoints, so the document never holds
@@ -16,24 +18,12 @@ export function spanAt(w: number, bp: Breakpoint): number {
   return Math.min(w, colsAt(bp));
 }
 
-export function newId(prefix: string): string {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-export function nowStamp(): string {
-  return new Date().toISOString();
-}
-
 // PHP decodes an empty JSON object as [], so a config that round-trips through
 // the server comes back as an array. Coerce it back rather than letting widgets
 // each guard against it.
 function normalizeConfig(c: unknown): Record<string, unknown> {
   if (!c || typeof c !== 'object' || Array.isArray(c)) return {};
   return c as Record<string, unknown>;
-}
-
-export function defaultConfig(def: WidgetDefinition): Record<string, unknown> {
-  return Object.fromEntries(def.fields.map((f) => [f.key, f.default]));
 }
 
 // ***** parsing *****
@@ -46,7 +36,7 @@ function isWidget(v: unknown): v is WidgetInstance {
     && typeof w.i === 'string' && w.i.length > 0 && w.i.length <= 40
     && typeof w.d === 'string' && w.d.length > 0 && w.d.length <= 40
     && Number.isInteger(w.w) && w.w >= 1 && w.w <= GRID_COLS
-    && Number.isInteger(w.h) && w.h >= 1 && w.h <= 8;
+    && Number.isInteger(w.h) && w.h >= 1 && w.h <= GRID_ROWS;
 }
 
 function isDashboard(v: unknown): v is DashboardDef {
@@ -118,13 +108,14 @@ export function activeDashboard(doc: BoardDoc): DashboardDef {
   return doc.dashboards.find((d) => d.id === doc.activeId) ?? doc.dashboards[0];
 }
 
-export function addWidget(doc: BoardDoc, def: WidgetDefinition): BoardDoc {
+export function addWidget(doc: BoardDoc, def: WidgetDeclaration): BoardDoc {
   if (activeDashboard(doc).widgets.length >= MAX_WIDGETS) return doc;
+  const size = clampSize(def.defaultSize, def);
   const widget: WidgetInstance = {
     i: newId('w'),
     d: def.id,
-    w: def.defaultSize.w,
-    h: def.defaultSize.h,
+    w: size.w,
+    h: size.h,
     c: defaultConfig(def),
   };
   return mapActive(doc, (d) => ({ ...d, widgets: [...d.widgets, widget] }));
@@ -134,10 +125,14 @@ export function removeWidget(doc: BoardDoc, instanceId: string): BoardDoc {
   return mapActive(doc, (d) => ({ ...d, widgets: d.widgets.filter((w) => w.i !== instanceId) }));
 }
 
+// Every size written here is clamped to the widget's declaration, so no caller
+// (menu, keyboard, a future gesture) can store a size outside its bounds.
 export function resizeWidget(doc: BoardDoc, instanceId: string, size: WidgetSize): BoardDoc {
   return mapActive(doc, (d) => ({
     ...d,
-    widgets: d.widgets.map((w) => (w.i === instanceId ? { ...w, w: size.w, h: size.h } : w)),
+    widgets: d.widgets.map((w) => (
+      w.i === instanceId ? { ...w, ...clampSize(size, findWidget(w.d)) } : w
+    )),
   }));
 }
 

@@ -1,17 +1,26 @@
-import { DATA_TYPES } from '../../types';
-import { getColor } from '../../utils/color-calculator';
+import { DATA_TYPES, DATA_TYPE_CONFIG } from '../../types';
+import { getColor, getTemperatureColor } from '../../utils/color-calculator';
 import { findPopulation, findRainData } from '../../utils/data-finder';
 import { CityData, RainfallData } from '../../types';
 import { getCanonicalGovernorateName, getGovernorateDatasetNameEn } from '@/Domain/geography/governorates';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
-function getTemperatureColor(temp: number): string {
-    // Must match the ENVIRONMENTAL legend in data-config.ts
-    if (temp < 10) return '#3b82f6';      // بارد
-    if (temp <= 20) return '#22c55e';     // معتدل
-    if (temp <= 30) return '#eab308';     // دافئ
-    return '#ef4444';                     // حار
+// Province with nothing to show: the same "no data" colour as the legend's
+// first entry, plus a hairline that reads on the atlas background.
+const NO_DATA_FILL = DATA_TYPE_CONFIG[DATA_TYPES.ENVIRONMENTAL].colors.none;
+const NO_DATA_STROKE = '#334155';
+const HIGHLIGHT_STROKE = '#ffffff';
+
+function noDataStyle() {
+    return {
+        fillColor: NO_DATA_FILL,
+        weight: 1,
+        opacity: 0.5,
+        color: NO_DATA_STROKE,
+        fillOpacity: 0.3,
+        className: ''
+    };
 }
 
 export function getFeatureStyle(
@@ -27,14 +36,7 @@ export function getFeatureStyle(
     // Environmental Data Style (Temperature)
     if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
         if (!environmentalData) {
-             return {
-                fillColor: '#1e293b',
-                weight: 1,
-                opacity: 0.5,
-                color: '#334155',
-                fillOpacity: 0.3,
-                className: ''
-            };
+            return noDataStyle();
         }
 
         const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
@@ -45,14 +47,7 @@ export function getFeatureStyle(
         if (envData) {
             const temp = envData.current_conditions?.temperature_celsius;
             if (temp === null || temp === undefined || Number.isNaN(Number(temp))) {
-                return {
-                    fillColor: '#1e293b',
-                    weight: 1,
-                    opacity: 0.5,
-                    color: '#334155',
-                    fillOpacity: 0.3,
-                    className: ''
-                };
+                return noDataStyle();
             }
             return {
                 fillColor: getTemperatureColor(temp),
@@ -64,14 +59,7 @@ export function getFeatureStyle(
             };
         }
 
-        return {
-            fillColor: '#1e293b',
-            weight: 1,
-            opacity: 0.5,
-            color: '#334155',
-            fillOpacity: 0.3,
-            className: ''
-        };
+        return noDataStyle();
     }
 
     // Rainfall Data Style
@@ -126,7 +114,7 @@ export function getHighlightStyle(currentDataType: DataType) {
     if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
         return {
             weight: 3,
-            color: '#ffffff',
+            color: HIGHLIGHT_STROKE,
             fillOpacity: 0.85,
             dashArray: ''
         };
@@ -135,7 +123,7 @@ export function getHighlightStyle(currentDataType: DataType) {
     // Default Highlight (Population/IDP)
     return {
         weight: 3,
-        color: '#ffffff',
+        color: HIGHLIGHT_STROKE,
         fillOpacity: 0.9
     };
 }

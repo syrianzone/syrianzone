@@ -1,7 +1,7 @@
-import { lazy } from 'react';
 import { Moon } from 'lucide-react';
 import { governorateOptions } from '@/Domain/geography/governorates';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
+import { sources } from '../../_lib/sources';
 
 export interface PrayerConfig {
   governorate: string;
@@ -9,7 +9,7 @@ export interface PrayerConfig {
   method?: string;
 }
 
-export const prayerWidget: WidgetDefinition<PrayerConfig> = {
+export const prayerWidget: WidgetDeclaration = {
   id: 'prayer',
   name: 'مواقيت الصلاة',
   description: 'الصلاة القادمة والوقت المتبقي — يتبع موقعك المحفوظ (GPS/IP) أو مدينة يدوية',
@@ -38,5 +38,8 @@ export const prayerWidget: WidgetDefinition<PrayerConfig> = {
   // timings are fixed for the day; the countdown ticks locally
   refresh: { staleMs: 6 * 60 * 60_000, intervalMs: null },
   multiple: false,
-  Component: lazy(() => import('./View')),
+  seed: { order: 2, w: 4, h: 2 },
+  source: sources.prayerTimes,
 };
+
+export default prayerWidget;

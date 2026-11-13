@@ -1,19 +1,18 @@
 import { Plus } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/Components/ui/button';
-import { WIDGETS } from '../_lib/registry';
-import { CATEGORY_LABELS, CATEGORY_ORDER, type WidgetCategory, type WidgetDefinition } from '../_lib/types';
+import { GALLERY_CATEGORIES, WIDGETS } from '../_lib/registry';
+import type { WidgetDeclaration } from '../_lib/types';
 
 // The "marketplace": a browsable view over the in-repo registry. A new widget
-// appears here by existing, with no change to this file.
+// appears here by existing, with no change to this file: the sections are the
+// categories the declarations use.
 export function WidgetGallery(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   placedIds: string[];
-  onAdd: (def: WidgetDefinition) => void;
+  onAdd: (def: WidgetDeclaration) => void;
 }) {
-  const categories = CATEGORY_ORDER.filter((cat) => WIDGETS.some((w) => w.category === cat));
-
   return (
     <Sheet open={props.open} onOpenChange={props.onOpenChange}>
       <SheetContent side="bottom" className="max-h-[85svh] overflow-y-auto">
@@ -24,11 +23,11 @@ export function WidgetGallery(props: {
           </SheetHeader>
 
           <div className="mt-4 space-y-5">
-            {categories.map((category) => (
-              <section key={category}>
-                <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{CATEGORY_LABELS[category]}</h3>
+            {GALLERY_CATEGORIES.map((category) => (
+              <section key={category.id}>
+                <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{category.label}</h3>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {WIDGETS.filter((w) => w.category === category).map((def) => {
+                  {WIDGETS.filter((w) => w.category === category.id).map((def) => {
                     const placed = props.placedIds.includes(def.id);
                     const disabled = placed && !def.multiple;
                     const Icon = def.icon;

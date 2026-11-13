@@ -2,7 +2,8 @@
 //
 //   node scripts/og/preview.mjs [--out dir] [--samples file.json] [--meta file.json]
 //
-// Fixed pages come from resources/og/cards.json. Record cards (promises,
+// Fixed pages come from resources/data/seo.json (paths) and
+// resources/og/cards.json (artwork). Record cards (promises,
 // places, routes, ...) need data, so they are drawn from a samples file;
 // preview-samples.json is used unless another is given:
 //
@@ -20,7 +21,7 @@ import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:f
 import { join, resolve } from 'node:path'
 import { drawCard } from './lib/cards.mjs'
 import { init, renderPng, ROOT } from './lib/engine.mjs'
-import { pageModel, readCards } from './lib/pages.mjs'
+import { cardPaths, pageModel, readCards } from './lib/pages.mjs'
 
 const args = {}
 for (let i = 2; i < process.argv.length; i += 2) args[process.argv[i].replace(/^--/, '')] = process.argv[i + 1]
@@ -65,10 +66,11 @@ mkdirSync(OUT, { recursive: true })
 const groups = []
 
 const fixed = readCards().map((entry) => {
-  const path = entry.paths[0]
+  const paths = cardPaths(entry.slug)
+  const path = paths[0]
   const preview = meta[path] ?? {}
   return {
-    name: entry.paths.length ? entry.paths.join('  ') : `(${entry.slug})`,
+    name: paths.length ? paths.join('  ') : `(${entry.slug})`,
     files: draw(pageModel(entry), `page-${entry.slug}`),
     title: preview.title ?? entry.title,
     description: preview.description ?? entry.subtitle,

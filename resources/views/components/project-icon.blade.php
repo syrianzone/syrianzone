@@ -1,75 +1,62 @@
 @props(['name' => null])
 
 @php
-    // Ported from resources/js/Components/Icons/ProjectIcons.tsx so the
-    // Filament admin can group permission checkboxes with the same project
-    // icons the homepage uses. Colors are inline (not Tailwind arbitrary
-    // classes) because the Filament panel CSS does not scan the React app.
-    $icons = [
-        'syofficial' => <<<'SVG'
-            <path d="M16 3L5 7v9c0 7.2 4.7 13.9 11 16 6.3-2.1 11-8.8 11-16V7L16 3z" fill="#3B82F6" fill-opacity="0.15" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M11 16l3.5 3.5L21 11" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="21" cy="11" r="2" fill="rgb(var(--primary-500, 37 99 235))"/>
-        SVG,
-        'govapps' => <<<'SVG'
-            <rect x="8" y="3" width="16" height="26" rx="3" fill="#475569" fill-opacity="0.15" stroke="#475569" stroke-width="2"/>
-            <path d="M14 6h4" stroke="#64748B" stroke-width="2" stroke-linecap="round"/>
-            <rect x="11" y="10" width="4" height="4" rx="1" fill="#3DDC84"/>
-            <rect x="17" y="10" width="4" height="4" rx="1" fill="#3B82F6"/>
-            <rect x="11" y="16" width="4" height="4" rx="1" fill="#F59E0B"/>
-            <rect x="17" y="16" width="4" height="4" rx="1" fill="rgb(var(--primary-500, 217 119 6))"/>
-            <circle cx="16" cy="24" r="1.5" fill="#64748B"/>
-        SVG,
-        'transit' => <<<'SVG'
-            <rect x="6" y="5" width="20" height="19" rx="4" fill="#EAB308" fill-opacity="0.2" stroke="#CA8A04" stroke-width="2"/>
-            <path d="M6 13h20" stroke="#2563EB" stroke-width="2"/>
-            <circle cx="10" cy="18" r="2" fill="#2563EB"/>
-            <circle cx="22" cy="18" r="2" fill="#2563EB"/>
-            <path d="M9 24v4M23 24v4" stroke="#64748B" stroke-width="2.5" stroke-linecap="round"/>
-            <circle cx="16" cy="9" r="1.5" fill="rgb(var(--primary-500, 37 99 235))"/>
-        SVG,
-        'places' => <<<'SVG'
-            <path d="M16 3C10.5 3 6 7.5 6 13c0 7.5 10 16 10 16s10-8.5 10-16c0-5.5-4.5-10-10-10z" fill="#EF4444" fill-opacity="0.2" stroke="#DC2626" stroke-width="2" stroke-linejoin="round"/>
-            <circle cx="16" cy="13" r="3.5" fill="rgb(var(--primary-500, 37 99 235))" stroke="#FFFFFF" stroke-width="1.5"/>
-        SVG,
-        'phonebook' => <<<'SVG'
-            <rect x="6" y="4" width="20" height="24" rx="3" fill="#F59E0B" fill-opacity="0.15" stroke="#D97706" stroke-width="2"/>
-            <path d="M6 9h20" stroke="#059669" stroke-width="2"/>
-            <circle cx="16" cy="16" r="3.5" fill="#10B981" fill-opacity="0.25" stroke="#059669" stroke-width="2"/>
-            <path d="M11 24c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="#64748B" stroke-width="2" stroke-linecap="round"/>
-            <path d="M2 8v3M2 15v3M2 22v3" stroke="rgb(var(--primary-500, 37 99 235))" stroke-width="2.5" stroke-linecap="round"/>
-        SVG,
-        'polls' => <<<'SVG'
-            <rect x="4" y="5" width="24" height="6" rx="2" fill="#F59E0B" opacity="0.9"/>
-            <rect x="4" y="13" width="24" height="6" rx="2" fill="#3B82F6" opacity="0.85"/>
-            <rect x="4" y="21" width="24" height="6" rx="2" fill="#10B981" opacity="0.85"/>
-            <path d="M8 8h6M8 16h10M8 24h14" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="25" cy="8" r="1.5" fill="rgb(var(--primary-500, 37 99 235))"/>
-        SVG,
-        'compass' => <<<'SVG'
-            <circle cx="16" cy="16" r="12" fill="#3B82F6" fill-opacity="0.12" stroke="#2563EB" stroke-width="2"/>
-            <path d="M21.5 10.5l-3.2 7.8-7.8 3.2 3.2-7.8 7.8-3.2z" fill="#F59E0B" fill-opacity="0.85" stroke="#D97706" stroke-width="1.5" stroke-linejoin="round"/>
-            <circle cx="16" cy="16" r="1.8" fill="rgb(var(--primary-500, 37 99 235))"/>
-        SVG,
-        'promises' => <<<'SVG'
-            <path d="M8 4h16M8 28h16" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
-            <path d="M10 4v3.5c0 3 3 5.5 5 8.5-2 3-5 5.5-5 8.5V28h12v-3.5c0-3-3-5.5-5-8.5 2-3 5-5.5 5-8.5V4" fill="#F59E0B" fill-opacity="0.15" stroke="#D97706" stroke-width="2" stroke-linejoin="round"/>
-            <path d="M12.5 25c0-1.8 1.7-3.4 3.5-4.6 1.8 1.2 3.5 2.8 3.5 4.6z" fill="#F59E0B"/>
-            <path d="M21 21.5l2.5 2.5 5-5.5" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="16" cy="10" r="1.8" fill="rgb(var(--primary-500, 37 99 235))"/>
-        SVG,
-        'users' => <<<'SVG'
-            <circle cx="13" cy="11" r="5" fill="#3B82F6" fill-opacity="0.15" stroke="#2563EB" stroke-width="2"/>
-            <path d="M4 27c0-5 4-9 9-9s9 4 9 9" fill="#3B82F6" fill-opacity="0.15" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="24" cy="23" r="7" fill="#FFFFFF" fill-opacity="0.85" stroke="#DC2626" stroke-width="2.5"/>
-            <path d="M19.5 27.5l9-9" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round"/>
-        SVG,
-    ];
+    // The drawings live in resources/data/project-icons.json — the same file
+    // Components/Icons/ProjectIcons.tsx renders for the app — so a section or a
+    // capability group cannot end up with an icon on one side of the wire only.
+    //
+    // That file keeps the Tailwind classes the icons were drawn with. The
+    // Filament panel does not scan the app's stylesheet, so they are resolved
+    // to SVG attributes here, in the light colourway.
+    $icons = \App\Support\Facts::projectIcons()['icons'];
+
+    $resolve = static function (string $key) use ($icons): ?array {
+        for ($hop = 0; $hop < 5; $hop++) {
+            $entry = $icons[$key] ?? null;
+            if (! is_array($entry)) {
+                return null;
+            }
+            if (! isset($entry['alias'])) {
+                return $entry;
+            }
+            $key = (string) $entry['alias'];
+        }
+
+        return null;
+    };
+
+    $paint = static function (string $body): string {
+        $resolved = preg_replace_callback('/\sclass="([^"]*)"/', static function (array $match): string {
+            $attributes = [];
+            foreach (preg_split('/\s+/', trim($match[1])) ?: [] as $token) {
+                // A `dark:` token is the dark colourway; the panel draws light.
+                if (! preg_match('/^(fill|stroke)-\[(#[0-9a-fA-F]{3,8})\](?:\/(\d{1,3}))?$/', $token, $parts)) {
+                    continue;
+                }
+                $attributes[$parts[1]] = $parts[2];
+                if (isset($parts[3]) && $parts[3] !== '') {
+                    $attributes[$parts[1].'-opacity'] = rtrim(rtrim(number_format(((int) $parts[3]) / 100, 2, '.', ''), '0'), '.');
+                }
+            }
+
+            $out = '';
+            foreach ($attributes as $attribute => $value) {
+                $out .= sprintf(' %s="%s"', $attribute, $value);
+            }
+
+            return $out;
+        }, $body);
+
+        return str_replace('hsl(var(--primary))', 'rgb(var(--primary-500, 37 99 235))', (string) $resolved);
+    };
+
+    $icon = $name !== null ? $resolve((string) $name) : null;
+    $body = is_array($icon) ? $paint((string) ($icon['body'] ?? '')) : null;
 @endphp
 
-@if (isset($icons[$name]))
+@if ($body !== null)
     <svg
-        viewBox="0 0 32 32"
+        viewBox="{{ $icon['viewBox'] }}"
         width="20"
         height="20"
         fill="none"
@@ -77,6 +64,6 @@
         aria-hidden="true"
         {{ $attributes }}
     >
-        {!! $icons[$name] !!}
+        {!! $body !!}
     </svg>
 @endif

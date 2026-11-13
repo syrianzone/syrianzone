@@ -2,7 +2,7 @@
 
 Canonical route: `/atlas` (legacy `/population` 301-redirects to `/atlas`) · Controller: `App\Http\Controllers\Api\PopulationAtlasController` · Page: `Pages/Population`
 
-Interactive choropleth atlas of Syria combining population data and environmental/climate indicators, rendered with MapLibre on an SVG/GeoJSON Syria map (includes full-Golan geometry).
+Interactive choropleth atlas of Syria combining population data and environmental/climate indicators, rendered with Leaflet/react-leaflet on a GeoJSON Syria map (includes full-Golan geometry).
 
 ## API endpoints
 
@@ -42,5 +42,5 @@ The hourly `population:update-climate` job only refreshes existing environmental
 ## Notes
 
 - Aggregation scripts live in `scripts/syria_environmental_data_aggregator.py` and `scripts/optimize_geojson_floats.py` (geojson precision trimming before upload to R2).
-- Map UI: zoom locked to 6–11 (`MapClient.tsx`); province table / comparison headers render canonical Arabic governorate names (`Domain/geography/governorates.ts`, which reads `resources/data/governorates.json`; hyphens are treated as spaces for matching); legend bands are generated from the same dynamic thresholds used for map colors.
+- Map UI: zoom locked to 6–11 (`MapClient.tsx`); province table / comparison headers render canonical Arabic governorate names (`Domain/geography/governorates.ts`, which reads `resources/data/governorates.json`; hyphens are treated as spaces for matching); the legend is generated from the same band table the fill colours use (`constants/data-config.ts` + `utils/color-calculator.ts`): the page's data-driven thresholds replace both at once, so no legend entry can describe a boundary the map does not draw.
 - Community contributions credited in root README (SourceM7 — data collection; Golan boundary improvements).

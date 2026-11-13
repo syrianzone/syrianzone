@@ -20,15 +20,19 @@ import {
   UserCheck,
   UserX
 } from 'lucide-react'
-import { useStudioStore, type StopFeature } from '../_store/useStudioStore'
+import { useStudioStore, type StudioPatch, type StopFeature } from '../_store/useStudioStore'
 import { useMapData } from '../_hooks/useMapData'
 import cities from '@/Domain/transit/cities.json'
 import TransitLayout from '../layout'
-import { useTransitTheme } from '../_components/TransitThemeContext'
-import { THEME_REGISTRY } from '@/Lib/theme'
+import { createBaseMap } from '@/Components/map/createMap'
+import { useMapStyle } from '@/Components/map/useMapStyle'
+import { resolveBasemapStyle } from '@/Components/map/resolveStyle'
+import { geometryPositions } from '@/Components/map/geo'
+import { useMapColors } from '@/Components/map/mapColors'
+import { firstSymbolLayerId } from '@/Components/map/layers'
 import { useAuth } from '@/Contexts/AuthContext'
 import { canModule } from '@/Lib/capabilities'
-import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
+import { ROUTE_PALETTE, TRANSIT_MAP_COLORS, getRouteColor, buildColorMatch } from '../_lib/mapColors'
 import { BottomSheet } from '@/Components/BottomSheet'
 import {
   Accordion,
@@ -49,11 +53,6 @@ import {
   SelectValue,
 } from '@/Components/ui/select'
 
-// RTL text shaping for Arabic labels on the vector basemap
-if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
-  maplibregl.setRTLTextPlugin('/styles/mapbox-gl-rtl-text.min.js', true)
-}
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DrawMode = 'idle' | 'line' | 'point'
 
@@ -65,20 +64,20 @@ const SRC_REF_ROUTES = 'ref-routes'
 const SRC_REF_STOPS  = 'ref-stops'
 
 // ─── Conflict detection helpers ───────────────────────────────────────────────
-function getBbox(coords: [number, number][]): [number, number, number, number] {
+function getBbox(coords: readonly Position[]): [number, number, number, number] {
   const lngs = coords.map(c => c[0])
   const lats = coords.map(c => c[1])
   return [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)]
 }
 
-function checkConflict(drawnLine: [number, number][], routeFeatures: any[]): boolean {
+function checkConflict(drawnLine: [number, number][], routeFeatures: Feature[]): boolean {
   if (!routeFeatures.length) return false
   const [minX, minY, maxX, maxY] = getBbox(drawnLine)
   const drawnArea = (maxX - minX) * (maxY - minY)
   if (drawnArea === 0) return false
   for (const feat of routeFeatures) {
-    if (!feat.geometry?.coordinates) continue
-    const coords = feat.geometry.coordinates as [number, number][]
+    const coords = geometryPositions(feat.geometry)
+    if (coords.length === 0) continue
     const [bX, bY, bX2, bY2] = getBbox(coords)
     const ix1 = Math.max(minX, bX), iy1 = Math.max(minY, bY)
     const ix2 = Math.min(maxX, bX2), iy2 = Math.min(maxY, bY2)
@@ -218,11 +217,16 @@ function TransitStudioPageContent() {
   const currentStyleRef = useRef<string | null>(null)
   const modeRef      = useRef<DrawMode>('idle')
   const activeLine   = useRef<[number, number][]>([])
-  const isMobileRef  = useRef(false)
   const vertexMarkersRef = useRef<maplibregl.Marker[]>([])
   const stopMarkersRef = useRef<maplibregl.Marker[]>([])
   const lastTouchTimeRef = useRef<number>(0)
   const restoredEditIdRef = useRef<string | null>(null)
+  const { scheme, styleUrl } = useMapStyle()
+  const schemeRef = useRef(scheme)
+  schemeRef.current = scheme
+  const mapColors = useMapColors(TRANSIT_MAP_COLORS)
+  const mapColorsRef = useRef(mapColors)
+  mapColorsRef.current = mapColors
 
   const {
     cityId, drawnLine, stops, nameAr, nameEn, price, notes, submittedDraftId,
@@ -231,7 +235,6 @@ function TransitStudioPageContent() {
     setCity, setDrawnLine, addStop, removeStop, updateStopName, updateStopCoordinates, setMeta, setSubmittedDraftId,
     reset, loadDraft
   } = useStudioStore()
-  const { theme } = useTransitTheme()
   const { user, allowedTransitCities } = useAuth()
 
   const { url: pageUrl } = usePage()
@@ -277,13 +280,10 @@ function TransitStudioPageContent() {
   const ensureMapLayers = useCallback((map: maplibregl.Map, currentColorIndex: number) => {
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
     const activeColor = getRouteColor(currentColorIndex)
+    const colors = mapColorsRef.current
     // Keep transit geometry beneath the basemap's symbol layers so street and
     // place labels stay readable; call order still controls relative stacking.
-    const beforeId = (() => {
-      const layers = map.getStyle()?.layers
-      if (!Array.isArray(layers)) return undefined
-      return layers.find((l: any) => l.type === 'symbol')?.id
-    })()
+    const beforeId = firstSymbolLayerId(map)
 
     if (!map.getSource(SRC_REF_ROUTES)) {
       map.addSource(SRC_REF_ROUTES, { type: 'geojson', data: empty })
@@ -291,7 +291,7 @@ function TransitStudioPageContent() {
         id: 'ref-layer-routes',
         type: 'line',
         source: SRC_REF_ROUTES,
-        paint: { 'line-color': buildColorMatch() as any, 'line-width': 3, 'line-opacity': 0.4 },
+        paint: { 'line-color': buildColorMatch(), 'line-width': 3, 'line-opacity': 0.4 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       }, beforeId)
     }
@@ -302,7 +302,7 @@ function TransitStudioPageContent() {
         id: 'ref-layer-stops',
         type: 'circle',
         source: SRC_REF_STOPS,
-        paint: { 'circle-radius': 4, 'circle-color': '#d4956a', 'circle-opacity': 0.4 },
+        paint: { 'circle-radius': 4, 'circle-color': colors.stop, 'circle-opacity': 0.4 },
       }, beforeId)
     }
 
@@ -332,7 +332,7 @@ function TransitStudioPageContent() {
         type: 'circle',
         source: SRC_ACTIVE,
         filter: ['==', '$type', 'Point'],
-        paint: { 'circle-radius': 6, 'circle-color': activeColor, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 },
+        paint: { 'circle-radius': 6, 'circle-color': activeColor, 'circle-stroke-color': colors.markerStroke, 'circle-stroke-width': 2 },
       }, beforeId)
     }
   }, [])
@@ -360,10 +360,10 @@ function TransitStudioPageContent() {
         ? { ...refData.routes, features: refData.routes.features.filter(f => f.properties?.id !== editingId) }
         : refData.routes
       const stops = editingId
-        ? { ...refData.stops, features: refData.stops.features.filter(f => !(f.properties as any)?.routeIds?.includes(editingId)) }
+        ? { ...refData.stops, features: refData.stops.features.filter(f => !f.properties?.routeIds?.includes(editingId)) }
         : refData.stops
-      rSrc?.setData(routes as any)
-      sSrc?.setData(stops as any)
+      rSrc?.setData(routes)
+      sSrc?.setData(stops)
     } else {
       rSrc?.setData(empty)
       sSrc?.setData(empty)
@@ -380,7 +380,7 @@ function TransitStudioPageContent() {
 
     const src = map.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource | undefined
     if (!src) return
-    const features: any[] = []
+    const features: Feature[] = []
     const all = cursor && coords.length > 0 ? [...coords, cursor] : coords
     if (all.length >= 2) features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: all } })
     coords.forEach(c => features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }))
@@ -451,7 +451,7 @@ function TransitStudioPageContent() {
     if (pending) {
       try {
         const s = JSON.parse(pending)
-        const patch: any = {}
+        const patch: StudioPatch = {}
         if (s.cityId && cities.some(c => c.id === s.cityId)) patch.cityId = s.cityId
         if (s.drawnLine) patch.drawnLine = s.drawnLine
         if (s.stops) patch.stops = s.stops
@@ -571,32 +571,20 @@ function TransitStudioPageContent() {
     map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 500 })
   }, [mapReady, drawnLine, isEditMode])
 
-  // Helper to check dark mode state
-  const isDarkMode = useCallback(() => {
-    const html = document.documentElement
-    const themeConfig = THEME_REGISTRY.find((t) => t.id === theme)
-    return (
-      html.classList.contains('dark') ||
-      html.getAttribute('data-theme') === 'dark' ||
-      (themeConfig?.isDark ?? false)
-    )
-  }, [theme])
-
-  // Map initialization with User's Color Theme
+  // Map initialization with the applied scheme's basemap
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
 
-    const dark = isDarkMode()
     const initCity = cities.find(c => c.id === cityId) || activeCities[0]
-    const initialStyle = dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json'
-    currentStyleRef.current = initialStyle
+    currentStyleRef.current = resolveBasemapStyle(schemeRef.current)
 
-    const map = new maplibregl.Map({
+    const map = createBaseMap({
       container: mapContainer.current,
-      style: initialStyle,
+      scheme: schemeRef.current,
       center: initCity ? (initCity.center as [number, number]) : [36.2913, 33.5138],
       zoom: initCity ? initCity.zoom : 12,
-      attributionControl: false,
+      controls: 'bottom-right',
+      geolocate: true,
       doubleClickZoom: false,
     })
 
@@ -606,78 +594,51 @@ function TransitStudioPageContent() {
       map.setMaxBounds([[sw[0] - 0.08, sw[1] - 0.08], [ne[0] + 0.08, ne[1] + 0.08]])
     }
 
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
-    map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
-    map.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: false,
-      }),
-      'bottom-right'
-    )
-
     map.on('load', () => {
       ensureMapLayers(map, colorIndex)
       mapRef.current = map
       setMapReady(true)
     })
 
-    isMobileRef.current = window.innerWidth <= 768
-    const handleResize = () => { isMobileRef.current = window.innerWidth <= 768 }
-    window.addEventListener('resize', handleResize)
     return () => {
-      window.removeEventListener('resize', handleResize)
       map.remove()
       mapRef.current = null
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Dynamically sync Map vector style ONLY when dark/light style actually changes
+  // Follow the theme on the live canvas. setStyle wipes every runtime layer, so
+  // re-add ours on style.load — NOT styledata, which MapLibre also fires for
+  // each runtime mutation and would loop forever.
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
+    if (currentStyleRef.current === styleUrl) return
+    currentStyleRef.current = styleUrl
+    map.setStyle(styleUrl)
+    map.once('style.load', () => {
+      ensureMapLayers(map, colorIndex)
+      syncRefLayers(map)
 
-    const applyStyleIfNeeded = () => {
-      const dark = isDarkMode()
-      const targetStyle = dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json'
-
-      if (currentStyleRef.current !== targetStyle) {
-        currentStyleRef.current = targetStyle
-        map.setStyle(targetStyle)
-        // style.load, NOT styledata: MapLibre fires styledata for every runtime
-        // mutation too, so re-adding layers there loops forever.
-        map.once('style.load', () => {
-          ensureMapLayers(map, colorIndex)
-          syncRefLayers(map)
-
-          const store = useStudioStore.getState()
-          if (store.drawnLine?.length) {
-            const lSrc = map.getSource(SRC_LINES) as maplibregl.GeoJSONSource
-            lSrc?.setData({
-              type: 'FeatureCollection',
-              features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: store.drawnLine } }]
-            })
-          }
-
-          const pts = activeLine.current
-          if (pts.length >= 2) {
-            const aSrc = map.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource
-            const features: any[] = [
-              { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } },
-            ]
-            pts.forEach((c) => features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }))
-            aSrc?.setData({ type: 'FeatureCollection', features })
-          }
+      const store = useStudioStore.getState()
+      if (store.drawnLine?.length) {
+        const lSrc = map.getSource(SRC_LINES) as maplibregl.GeoJSONSource
+        lSrc?.setData({
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: store.drawnLine } }]
         })
       }
-    }
 
-    applyStyleIfNeeded()
-
-    const observer = new MutationObserver(applyStyleIfNeeded)
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] })
-    return () => observer.disconnect()
-  }, [mapReady, theme, isDarkMode, colorIndex, ensureMapLayers, syncRefLayers])
+      const pts = activeLine.current
+      if (pts.length >= 2) {
+        const aSrc = map.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource
+        const features: Feature[] = [
+          { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } },
+        ]
+        pts.forEach((c) => features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }))
+        aSrc?.setData({ type: 'FeatureCollection', features })
+      }
+    })
+  }, [mapReady, styleUrl, colorIndex, ensureMapLayers, syncRefLayers])
 
   // Sync reference routes/stops for current city
   useEffect(() => {

@@ -7,7 +7,10 @@ nowhere else.** Both languages read these files:
   `resource_path('data/<name>.json')`.
 - TypeScript: the thin modules under `resources/js/Domain/**` import the JSON
   and export typed values and lookups (`Domain/geography/governorates.ts`,
-  `Domain/places/categories.ts`, …). Import the module, never the JSON.
+  `Domain/places/categories.ts`, …). Import the module, never the JSON. Facts the
+  app shell needs (the site-module catalogue, the icon drawings) live in
+  `resources/js/Lib` for the same reason: `Lib/siteModules.ts`,
+  `Lib/projectIcons.tsx`.
 
 The files are copied into the production image by `Dockerfile` (`COPY . .`), so
 `resource_path()` resolves them there exactly as it does in development.
@@ -22,8 +25,11 @@ The files are copied into the production image by `Dockerfile` (`COPY . .`), so
 | `transit.json` | Transit constants: the `color_index` ceiling and the nearby-stops radius (metres). | `TransitAdminController`, `TransitImportController`, `TransitStudioController`, `Api\V1\TransitController`; `Domain/transit/limits.ts` |
 | `games.json` | The game hub registry: slug, title, link overrides and flags. Icons stay in `Domain/games/games.ts` because a React component cannot live in JSON. | `Domain/games/games.ts`; `SitemapBuilder` |
 | `social-platforms.json` | The social-link vocabulary of official entities (key, Arabic/English label), in display order. | `Domain/syofficial/social.ts` |
+| `seo.json` | The public page table: one record per path (title, description, share card, og:type, JSON-LD type, breadcrumb parent) and the `non_pages` route list. | `App\Support\Seo\Pages`, `SeoMeta`, `Og\StaticCards`; `scripts/og` |
 | `site.json` | The canonical site host used for sitemaps, share links and post footers. | `SitemapWriter`, `TierlistPostText`, `config/seo.php` |
 | `site-popup.json` | The homepage "unblock Syria" popup defaults (copy, link, version). The stored DB row overrides them. | `SiteSetting::defaults()`, `Components/UnblockSyriaNotification` |
+| `site-modules.json` | The site-module catalogue: every navigation entry (id, title, subtitle, href, target, icon key, sub-entries), its search copy, the layout flags (`fullBleedPrefixes`, `navbarSticky`), and the dashboard's admin cards with their capability gate. The stored `site_navigation` row is an override of the navigation half. | `SiteSetting::defaultNavigationItems()`, `SiteNavigationAdminController`; `Lib/siteModules.ts` (through `Lib/siteLinks.ts`, `Lib/routes.ts`, `Navbar`, `GlobalSearch`, `Dashboard`) |
+| `project-icons.json` | One drawing per icon key (`viewBox` + SVG body, or an `alias` of another key). Paint is the Tailwind class string the icon was drawn with; the Blade component resolves it to attributes because the Filament panel does not scan the app stylesheet. | `Facts::projectIcons()` (`<x-project-icon>`), `Lib/projectIcons.tsx` (`Components/Icons/ProjectIcons.tsx`) |
 
 ## Field notes
 

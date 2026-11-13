@@ -3,6 +3,7 @@ import { Bookmark, Check, ExternalLink, Share2 } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/Lib/utils';
+import { shareOrCopy } from '@/Lib/webShare';
 import { api } from '@/Domain/places/api';
 import { ReportButton } from './ReportButton';
 
@@ -53,22 +54,12 @@ export function EngagementBar(props: {
   };
 
   const share = async () => {
-    const url = `${window.location.origin}/mishwar?place=${placeId}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: placeName, url });
-        return;
-      } catch (e) {
-        // only a user cancel is silent; other rejections fall through to the clipboard
-        if ((e as DOMException)?.name === 'AbortError') return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      flashShareFeedback('copied');
-    } catch {
-      flashShareFeedback('failed');
-    }
+    const outcome = await shareOrCopy(
+      { title: placeName, url: `${window.location.origin}/mishwar?place=${placeId}` },
+      { successMessage: 'تم نسخ الرابط', failureMessage: 'تعذر نسخ الرابط' },
+    );
+    if (outcome === 'copied') flashShareFeedback('copied');
+    else if (outcome === 'failed') flashShareFeedback('failed');
   };
 
   return (

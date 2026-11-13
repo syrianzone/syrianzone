@@ -1,6 +1,6 @@
-import { lazy } from 'react';
 import { Rss } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
+import { sources } from '../../_lib/sources';
 
 export interface RssConfig {
   source: string;
@@ -16,7 +16,7 @@ export const RSS_SOURCES = [
   { value: 'syrian-observer', label: 'ذا سيريان أوبزرفر' },
 ];
 
-export const rssWidget: WidgetDefinition<RssConfig> = {
+export const rssWidget: WidgetDeclaration = {
   id: 'rss',
   name: 'الأخبار',
   description: 'آخر العناوين من مصدر إخباري سوري',
@@ -38,5 +38,8 @@ export const rssWidget: WidgetDefinition<RssConfig> = {
   // the endpoint caches for 10 minutes server-side
   refresh: { staleMs: 10 * 60_000, intervalMs: 15 * 60_000 },
   multiple: true,
-  Component: lazy(() => import('./View')),
+  seed: { order: 7, w: 6, h: 3 },
+  source: sources.feed,
 };
+
+export default rssWidget;

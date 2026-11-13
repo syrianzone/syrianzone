@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import maplibregl from 'maplibre-gl'
 import MapCanvas from './MapCanvas'
 import { useMap } from '@/Components/map/MapContext'
+import { boundsArePoint, geometryPositions, positionsBounds, type Bounds } from '@/Components/map/geo'
 import RouteLayer from './RouteLayer'
 import StopsLayer from './StopsLayer'
 import UserLocationLayer from './UserLocationLayer'
@@ -12,12 +12,12 @@ import type { FeatureCollection, RouteProperties, StopProperties } from '../../_
 
 interface MapViewProps {
   cityId: string
-  bounds: [[number, number], [number, number]]
+  bounds: Bounds
   routes: FeatureCollection<RouteProperties>
   stops: FeatureCollection<StopProperties>
 }
 
-function FitToCity({ bounds }: { bounds: [[number, number], [number, number]] }) {
+function FitToCity({ bounds }: { bounds: Bounds }) {
   const map = useMap()
 
   useEffect(() => {
@@ -50,7 +50,7 @@ function FitToSelectedRoute({ routes }: { routes: FeatureCollection<RoutePropert
   useEffect(() => {
     if (!map || !selectedRouteId) return
 
-    const feature = routes.features.find(f => f.properties.id === selectedRouteId)
+    const feature = routes.features.find(f => f.properties?.id === selectedRouteId)
     if (!feature) return
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
@@ -58,28 +58,14 @@ function FitToSelectedRoute({ routes }: { routes: FeatureCollection<RoutePropert
     const fit = () => {
       if (!map.loaded()) return
 
-      const geom = feature.geometry
-      if (geom.type !== 'LineString' && geom.type !== 'Point') return
+      const extent = positionsBounds(geometryPositions(feature.geometry))
+      if (!extent) return
 
-      const b = new maplibregl.LngLatBounds()
-      if (geom.type === 'LineString') {
-        for (const c of geom.coordinates) {
-          b.extend(c as [number, number])
-        }
+      if (boundsArePoint(extent)) {
+        const [[west, south], [east, north]] = extent
+        map.flyTo({ center: [(west + east) / 2, (south + north) / 2], zoom: 14, duration: 600 })
       } else {
-        b.extend(geom.coordinates as [number, number])
-      }
-
-      const corners = b.toArray()
-      const [[minLng, minLat], [maxLng, maxLat]] = corners
-      const lngSpan = Math.abs(maxLng - minLng)
-      const latSpan = Math.abs(maxLat - minLat)
-
-      if (lngSpan < 0.001 && latSpan < 0.001) {
-        const center = b.getCenter()
-        map.flyTo({ center, zoom: 14, duration: 600 })
-      } else {
-        map.fitBounds(b, {
+        map.fitBounds(extent, {
           padding: { top: 80, bottom: isMobile ? 270 : 80, left: 60, right: 60 },
           duration: 600,
           maxZoom: 16

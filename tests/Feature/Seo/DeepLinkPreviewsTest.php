@@ -3,10 +3,10 @@
 use App\Models\City;
 use App\Models\Place;
 use App\Models\PlacePhoto;
+use App\Support\Facts;
 use App\Support\Seo\Og\StaticCards;
 use App\Support\Seo\Preview\Previews;
 use App\Support\Seo\Preview\Resolvers\PlacePreview;
-use App\Support\Seo\Preview\Resolvers\TransitRoutePreview;
 
 /** The city row this file's deep links point at. */
 function seedDeepLinkCity(string $id, string $name): void
@@ -117,7 +117,7 @@ test('a route link previews as the route on its city map', function () {
         ->and($meta['image'])->toBe('https://syrian.zone/og/r/route/damascus-001.png?v='.$card->version())
         ->and($card->model['pills'][0])->toBe(['label' => 'دمشق', 'glyph' => 'MapPin'])
         // colour index 10 wraps around the eight map colours
-        ->and($card->model['art'])->toBe(['type' => 'route', 'colour' => TransitRoutePreview::PALETTE[2]]);
+        ->and($card->model['art'])->toBe(['type' => 'route', 'colour' => Facts::transit()['route_palette'][2]]);
 
     // A draft route, an unknown one, or a route of another city: the city itself.
     foreach (['damascus-draft', 'no-such-route', 'bad id!'] as $route) {
@@ -149,13 +149,6 @@ test('cities that share one map accept each other\'s routes', function () {
     expect(City::mapGroup('damascus'))->toBe(['damascus', 'rif-dimashq'])
         ->and(City::mapGroup('rif-dimashq'))->toBe(['damascus', 'rif-dimashq'])
         ->and(City::mapGroup('homs'))->toBe(['homs']);
-});
-
-test('route colours on the card are the ones the map uses', function () {
-    $source = file_get_contents(resource_path('js/Pages/Transit/_lib/mapColors.ts'));
-    preg_match_all("/'(#[0-9a-f]{6})'/i", str($source)->between('ROUTE_PALETTE = [', ']')->toString(), $colours);
-
-    expect($colours[1])->toBe(TransitRoutePreview::PALETTE);
 });
 
 test('a crossing link previews as the crossing', function () {

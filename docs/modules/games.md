@@ -234,9 +234,11 @@ browser — because the rules carry no React.
 2. Add a route in `routes/web.php` returning the new Inertia component.
 3. Add `Pages/Games/<Slug>/Index.tsx` wrapping its board in `GameShell`, passing
    the registry slug.
-4. Add the icon to `Components/Icons/ProjectIcons.tsx` following the house
+4. Add the icon to `resources/data/project-icons.json` following the house
    style (32×32 viewBox, light/dark Tailwind colour pairs, one
-   `hsl(var(--primary))` accent).
+   `hsl(var(--primary))` accent), name it in
+   `Components/Icons/ProjectIcons.tsx`, and let `projectIcons.test.ts` check the
+   paint tokens it lists.
 
 The hub grid, the `comingSoon` badge and the back navigation all follow from
 the registry, so nothing else needs touching.
@@ -401,7 +403,7 @@ whether the run set a record, so the UI can say so.
 
 ## 7. Discovery
 
-`/games` is one entry in the shared `Lib/siteLinks.ts` registry, so it appears
-in the homepage app grid and the navbar mega menu like every other tool (a
-single `/games` link — the hub, not each game), and it is listed in the
-sitemap's `STATIC_PAGES`.
+`/games` is one entry in `resources/data/site-modules.json` (the catalogue
+behind `Lib/siteLinks.ts`), so it appears in the homepage app grid and the
+navbar mega menu like every other tool (a single `/games` link — the hub, not
+each game), and it is listed in the sitemap's `STATIC_PAGES`.

@@ -2,35 +2,13 @@ import { useEffect, useState } from 'react';
 import { Moon } from 'lucide-react';
 import { WidgetShell } from '../../_components/WidgetShell';
 import { useWidgetQuery } from '../../_lib/query';
-import { sources, type PrayerTimes } from '../../_lib/sources';
+import { sources } from '../../_lib/sources';
 import { GOVERNORATES_BY_ID } from '@/Domain/geography/governorates';
 import type { WidgetProps } from '../../_lib/types';
 import { prayerWidget, type PrayerConfig } from './index';
-import { effectivePrayerParams, getGeo, getLocMode, useLocSignal } from '@/Domain/location/location';
-
-const PRAYERS: { key: string; label: string }[] = [
-  { key: 'Fajr', label: 'الفجر' },
-  { key: 'Sunrise', label: 'الشروق' },
-  { key: 'Dhuhr', label: 'الظهر' },
-  { key: 'Asr', label: 'العصر' },
-  { key: 'Maghrib', label: 'المغرب' },
-  { key: 'Isha', label: 'العشاء' },
-];
-
-type Timings = Record<string, string>;
-
-// Returns the next prayer today, or null once Isha has passed.
-function nextPrayer(timings: Timings, now: Date) {
-  for (const p of PRAYERS) {
-    const raw = timings[p.key];
-    if (!raw) continue;
-    const [h, m] = raw.slice(0, 5).split(':').map(Number);
-    const at = new Date(now);
-    at.setHours(h, m, 0, 0);
-    if (at > now) return { ...p, at, time: raw.slice(0, 5) };
-  }
-  return null;
-}
+import { useLocationPreference, resolvePrayerParams } from '@/Domain/location/preference';
+import { nextPrayer } from '@/Domain/prayer/nextPrayer';
+import { readStoredMethod } from '@/Domain/settings/prefs';
 
 function countdown(to: Date, now: Date): string {
   const total = Math.max(0, Math.floor((to.getTime() - now.getTime()) / 1000));
@@ -40,20 +18,17 @@ function countdown(to: Date, now: Date): string {
 }
 
 export default function PrayerView({ config }: WidgetProps<PrayerConfig>) {
-  // Per-widget manual city/method win by default; a resolved GPS/IP site
-  // location (set in /muslim, Home, or Roznama) overrides the city.
-  const locSig = useLocSignal();
-  const governorate = config.governorate
-    ?? (typeof window !== 'undefined' ? window.localStorage.getItem('sz-muslim-city') : null)
-    ?? 'damascus';
-  const method = Number(
-    config.method
-      ?? (typeof window !== 'undefined' ? window.localStorage.getItem('sz-muslim-method') : null)
-      ?? 3,
-  ) || 3;
-  const params = effectivePrayerParams({ mode: getLocMode(), geo: getGeo(), manualCity: governorate, method });
-  const queryKey = `${governorate}:${method}:${locSig}:${params.latitude ?? ''}:${params.longitude ?? ''}`;
-  const query = useWidgetQuery(prayerWidget, queryKey, () => sources.prayerTimes(params));
+  // The widget's own city/method win; otherwise it follows the site's location
+  // preference (set in /muslim, Home or Roznama), including a resolved GPS/IP
+  // point and manual coordinates.
+  const location = useLocationPreference();
+  const governorate = config.governorate ?? location.city;
+  const storedMethod = readStoredMethod();
+  const method = Number(config.method ?? storedMethod) || storedMethod;
+  const params = resolvePrayerParams({ ...location, city: governorate }, method);
+  const query = useWidgetQuery(prayerWidget, JSON.stringify(params), () =>
+    sources.prayerTimes(params),
+  );
   const [now, setNow] = useState(() => new Date());
 
   // the countdown ticks locally; refetching once a day is enough for the timings
@@ -62,9 +37,11 @@ export default function PrayerView({ config }: WidgetProps<PrayerConfig>) {
     return () => window.clearInterval(tick);
   }, []);
 
-  const data: PrayerTimes | undefined = query.data;
-  const next = data ? nextPrayer(data.timings, now) : null;
-  const hijri = data?.hijri;
+  const timings: Record<string, string> | undefined = query.data?.timings;
+  // A tile this small says "today's prayers are over" instead of showing
+  // tomorrow's Fajr: rollover off, the one named difference from the pages.
+  const next = timings ? nextPrayer(timings, now, { rollover: false }) : null;
+  const hijri = query.data?.hijri;
 
   return (
     <WidgetShell

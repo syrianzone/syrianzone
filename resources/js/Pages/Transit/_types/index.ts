@@ -1,4 +1,6 @@
-export interface RouteProperties {
+import type { FeatureCollection as GeoJsonFeatureCollection, Geometry } from 'geojson'
+
+export type RouteProperties = {
   id: string
   nameAr: string
   nameEn: string
@@ -10,7 +12,7 @@ export interface RouteProperties {
   stopsCount?: number
 }
 
-export interface StopProperties {
+export type StopProperties = {
   id: string
   nameAr: string
   nameEn?: string
@@ -29,17 +31,9 @@ export interface City {
   zoom: number
 }
 
-export interface GeoJsonFeature<T> {
-  type: 'Feature'
-  geometry: {
-    type: string
-    coordinates: number[] | number[][] | number[][][]
-  }
-  properties: T
-}
-
-export interface FeatureCollection<T> {
-  type: 'FeatureCollection'
-  generated_at?: string
-  features: GeoJsonFeature<T>[]
-}
+/**
+ * The GeoJSON payloads the transit API sends. The properties are aliases (not
+ * interfaces) so the collections are assignable to the `geojson` package types
+ * MapLibre's `setData` and the shared map helpers accept.
+ */
+export type FeatureCollection<P> = GeoJsonFeatureCollection<Geometry, P>

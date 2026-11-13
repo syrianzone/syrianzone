@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTabList } from '@/Lib/useTabList';
 import { HouseRow, PROVINCES, Mode } from './types';
 import { fetchHouseData } from './data';
-import { Search, RotateCcw, ChartBar, Users, Gavel, Filter, Sparkles } from 'lucide-react';
+import { RotateCcw, ChartBar, Users, Sparkles } from 'lucide-react';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface HouseClientProps {
@@ -18,22 +20,65 @@ const COLORS = {
     femaleDim: 'rgba(167, 63, 70, 0.3)'
 };
 
+/** The tab ids are the data's own `Mode` values, so one list drives both. */
+const MODES = ['voters', 'candidates', 'winners', 'presidential'] as const;
+
+const MODE_LABELS: Record<Mode, string> = {
+    voters: 'الهيئات الناخبة',
+    candidates: 'المرشحون',
+    winners: 'الفائزون',
+    presidential: 'الثلث الرئاسي',
+};
+
+/** Module-level so the hook's memo sees one stable function. */
+const houseSearchText = (row: HouseRow) => `${row.__nameNorm} ${row.__placeNorm}`;
+
+const AGE_GROUPS = [
+    { value: 'lt30', label: 'أقل من 30' },
+    { value: '30s', label: '30-39' },
+    { value: '40s', label: '40-49' },
+    { value: '50s', label: '50-59' },
+    { value: '60p', label: '+60' },
+];
+
 export default function HouseClient({ initialData, initialHeaders, initialMode }: HouseClientProps) {
     const [mode, setMode] = useState<Mode>(initialMode);
-    const tabs = useTabList({ ids: ['voters', 'candidates', 'winners', 'presidential'] as const, active: mode, onChange: (id) => setMode(id as Mode) });
+    const tabs = useTabList({ ids: MODES, active: mode, onChange: setMode });
     const [province, setProvince] = useState('damascus');
     const [data, setData] = useState<HouseRow[]>(initialData);
     const [headers, setHeaders] = useState<string[]>(initialHeaders);
     const [loading, setLoading] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
 
-    // Filters
-    const [searchInput, setSearchInput] = useState('');
-    const [sexFilter, setSexFilter] = useState('');
-    const [ageFilter, setAgeFilter] = useState('');
-    const [appealFilter, setAppealFilter] = useState('');
-    const [resultFilter, setResultFilter] = useState(''); // 'winner' | 'notWinner'
-    const [districtFilter, setDistrictFilter] = useState('all'); // specific or 'all'
+    const isWinnerRow = (row: HouseRow) => (row['النتيجة'] || row['Result'] || '').trim() === 'فائز';
+
+    // Filters: one facet per select below. Only the facets the current mode has
+    // carry a value, so a filter left over from another tab cannot hide rows.
+    const facets = useMemo<DirectoryFacet<HouseRow>[]>(() => [
+        { key: 'sex', label: 'الجنس', options: [{ value: 'ذكر', label: 'ذكر' }, { value: 'أنثى', label: 'أنثى' }], valueOf: (row) => row.__sexNorm },
+        { key: 'age', label: 'العمر', options: AGE_GROUPS, valueOf: (row) => row.__ageGroup },
+        { key: 'appeal', label: 'حالة الطعن', options: [{ value: 'appealed', label: 'مطعون' }, { value: 'notAppealed', label: 'سليم' }], valueOf: (row) => mode === 'voters' ? (row.__appealStatus === 'مطعون' ? 'appealed' : 'notAppealed') : undefined },
+        { key: 'result', label: 'النتيجة', options: [{ value: 'winner', label: 'فائز' }, { value: 'notWinner', label: 'غير فائز' }], valueOf: (row) => mode === 'candidates' ? (isWinnerRow(row) ? 'winner' : 'notWinner') : undefined },
+        { key: 'district', label: 'الدائرة الانتخابية', options: [], valueOf: (row) => mode === 'winners' ? (row['Electoral District (الدائرة الانتخابية)'] || '').trim() : undefined },
+    ], [mode]);
+
+    const directory = useDirectory<HouseRow>({
+        items: data,
+        searchText: houseSearchText,
+        facets,
+    });
+    const sexFilter = directory.filters.sex?.[0] ?? '';
+    const ageFilter = directory.filters.age?.[0] ?? '';
+    const appealFilter = directory.filters.appeal?.[0] ?? '';
+    const resultFilter = directory.filters.result?.[0] ?? '';
+    const districtFilter = directory.filters.district?.[0] ?? 'all';
+
+    const setFacet = (key: string, value: string) => {
+        const next = { ...directory.filters };
+        if (value) next[key] = [value];
+        else delete next[key];
+        directory.setFilters(next);
+    };
 
     // Sorting
     const [sortColumn, setSortColumn] = useState('Name'); // or 'الاسم'
@@ -91,42 +136,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         return Array.from(d).sort();
     }, [data, mode]);
 
-    // Filtering Logic
-    const filteredData = useMemo(() => {
-        return data.filter(row => {
-            // Text Search
-            const q = searchInput.toLowerCase();
-            if (q) {
-                const hay = `${row.__nameNorm} ${row.__placeNorm}`;
-                if (!hay.includes(q)) return false;
-            }
-
-            // Common Filters
-            if (sexFilter && row.__sexNorm !== sexFilter) return false;
-            if (ageFilter && row.__ageGroup !== ageFilter) return false;
-
-            // Mode specific
-            if (mode === 'voters') {
-                if (appealFilter === 'appealed' && row.__appealStatus !== 'مطعون') return false;
-                if (appealFilter === 'notAppealed' && row.__appealStatus === 'مطعون') return false;
-            }
-
-            if (mode === 'candidates') {
-                const isWinner = (row['النتيجة'] || row['Result'] || '').trim() === 'فائز';
-                if (resultFilter === 'winner' && !isWinner) return false;
-                if (resultFilter === 'notWinner' && isWinner) return false;
-            }
-
-            if (mode === 'winners') {
-                if (districtFilter !== 'all') {
-                    const d = (row['Electoral District (الدائرة الانتخابية)'] || '').trim();
-                    if (d !== districtFilter) return false;
-                }
-            }
-
-            return true;
-        });
-    }, [data, searchInput, sexFilter, ageFilter, appealFilter, resultFilter, districtFilter, mode]);
+    const filteredData = directory.results;
 
     // Sorting Logic
     const sortedData = useMemo(() => {
@@ -195,12 +205,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
     };
 
     const resetFilters = () => {
-        setSearchInput('');
-        setSexFilter('');
-        setAgeFilter('');
-        setAppealFilter('');
-        setResultFilter('');
-        setDistrictFilter('all');
+        directory.clear();
         if (mode === 'voters') setProvince('damascus');
     };
 
@@ -241,22 +246,17 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                 </p>
 
                 <div {...tabs.tabListProps} className="flex bg-muted p-1 rounded-lg">
-                    {[
-                        { id: 'voters', label: 'الهيئات الناخبة' },
-                        { id: 'candidates', label: 'المرشحون' },
-                        { id: 'winners', label: 'الفائزون' },
-                        { id: 'presidential', label: 'الثلث الرئاسي' }
-                    ].map(tab => (
+                    {MODES.map(id => (
                         <button
-                            key={tab.id}
+                            key={id}
                             type="button"
-                            {...tabs.tabProps(tab.id as Mode)}
-                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${mode === tab.id
+                            {...tabs.tabProps(id)}
+                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${mode === id
                                 ? 'bg-card shadow text-primary'
                                 : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
-                            {tab.label}
+                            {MODE_LABELS[id]}
                         </button>
                     ))}
                 </div>
@@ -282,15 +282,17 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             </label>
                             {mode === 'winners' ? (
                                 <select
+                                    aria-label="الدائرة الانتخابية"
                                     className="w-full h-10 px-3 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={districtFilter}
-                                    onChange={e => setDistrictFilter(e.target.value)}
+                                    onChange={e => setFacet('district', e.target.value === 'all' ? '' : e.target.value)}
                                 >
                                     <option value="all" className="bg-card">الكل</option>
                                     {districts.map(d => <option key={d} value={d} className="bg-card">{d}</option>)}
                                 </select>
                             ) : (
                                 <select
+                                    aria-label="المحافظة"
                                     className="w-full h-10 px-3 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={province}
                                     onChange={e => setProvince(e.target.value)}
@@ -304,16 +306,12 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                     {/* Search */}
                     <div className={mode === 'candidates' ? "md:col-span-2" : "md:col-span-1"}>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">بحث</label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="ابحث بالاسم..."
-                                value={searchInput}
-                                onChange={e => setSearchInput(e.target.value)}
-                                className="w-full h-10 pe-3 ps-10 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
-                            />
-                            <Search className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                        </div>
+                        <DirectorySearch
+                            value={directory.query}
+                            onChange={directory.setQuery}
+                            placeholder="ابحث بالاسم..."
+                            ariaLabel="ابحث بالاسم"
+                        />
                     </div>
 
                     {/* Filters Group */}
@@ -323,7 +321,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             <select
                                 className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                 value={sexFilter}
-                                onChange={e => setSexFilter(e.target.value)}
+                                onChange={e => setFacet('sex', e.target.value)}
                             >
                                 <option value="" className="bg-card">الكل</option>
                                 <option value="ذكر" className="bg-card">ذكر</option>
@@ -335,7 +333,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             <select
                                 className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                 value={ageFilter}
-                                onChange={e => setAgeFilter(e.target.value)}
+                                onChange={e => setFacet('age', e.target.value)}
                             >
                                 <option value="" className="bg-card">الكل</option>
                                 <option value="lt30" className="bg-card">أقل من 30</option>
@@ -352,7 +350,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                                 <select
                                     className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={appealFilter}
-                                    onChange={e => setAppealFilter(e.target.value)}
+                                    onChange={e => setFacet('appeal', e.target.value)}
                                 >
                                     <option value="" className="bg-card">الكل</option>
                                     <option value="appealed" className="bg-card">مطعون</option>
@@ -367,7 +365,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                                 <select
                                     className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={resultFilter}
-                                    onChange={e => setResultFilter(e.target.value)}
+                                    onChange={e => setFacet('result', e.target.value)}
                                 >
                                     <option value="" className="bg-card">الكل</option>
                                     <option value="winner" className="bg-card">فائز</option>
@@ -536,7 +534,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             {sortedData.length > 0 ? (
                                 sortedData.map((row, idx) => {
                                     const isAppealed = row.__appealStatus === 'مطعون';
-                                    const isWinner = (row['النتيجة'] || row['Result'] || '').trim() === 'فائز';
+                                    const isWinner = isWinnerRow(row);
 
                                     return (
                                         <tr

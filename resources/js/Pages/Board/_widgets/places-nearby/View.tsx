@@ -1,8 +1,8 @@
 import { MapPin } from 'lucide-react';
-import { api } from '@/Domain/places/api';
 import { WidgetShell } from '../../_components/WidgetShell';
 import { useGeo } from '../../_components/GeoProvider';
 import { useWidgetQuery } from '../../_lib/query';
+import { sources } from '../../_lib/sources';
 import type { WidgetProps } from '../../_lib/types';
 import { placesNearbyWidget, type PlacesNearbyConfig } from './index';
 
@@ -14,7 +14,7 @@ export default function PlacesNearbyView({ config }: WidgetProps<PlacesNearbyCon
   const query = useWidgetQuery(
     placesNearbyWidget,
     [coords?.lat, coords?.lng, radius],
-    () => api.nearby({ lat: coords!.lat, lng: coords!.lng, radius_km: radius }),
+    () => sources.nearby({ lat: coords!.lat, lng: coords!.lng, radius_km: radius }),
   );
 
   const places = query.data?.places ?? [];

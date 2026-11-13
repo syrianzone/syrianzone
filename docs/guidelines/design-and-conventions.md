@@ -71,6 +71,8 @@ lives in [accessibility.md](accessibility.md); the short version:
 - **Quran-related names follow the terminology standard** enforced by the
   `quranic-terminology-lint` pre-commit hook (`.terminology.json`). This is the
   model for any future naming standard: a machine-checkable rule, not prose.
+  The hook's `files:` regex is generated from `.terminology.json` by
+  `tests/Feature/Tooling/TerminologyPathsTest.php`, so the two cannot drift.
 - **Numbers/units** in LTR contexts (times, prices, coordinates) get `dir="ltr"`
   and `tabular-nums`; Arabic-Indic digits are used only where the design says so.
 
@@ -151,6 +153,16 @@ Rules:
 - **Do not run Pint on `bootstrap/app.php` either.** It is safe there, but Pint rewrites every inline FQCN into a new `use` import and realigns the whole alias table, so a one-line change to a middleware alias turns into a 40-line reformat that buries the real edit in review. Add the entry by hand and match the surrounding alignment.
 - Pint is **not** run in CI, and roughly 170 pre-existing files are not Pint-clean, so it is advisory. Do not reformat untouched files to "fix" a Pint run — keep the diff to what the change actually needs.
 - Feature suites cover Polls, Places, Voting API, Weather, Sitemap, Prayer, middleware, models, VotingService.
+- **A list that mirrors another list is asserted, not trusted.** Four places
+  restate something the code already knows, and each has a test that reads both
+  sides and fails on drift: `public/sw.js`'s path lists against `routes/*.php`
+  (`tests/Feature/Pwa/ServiceWorkerTest.php`), the terminology hook's `files:`
+  regex against `.terminology.json` (`Tooling/TerminologyPathsTest.php`),
+  `config/*.php`'s env keys against `.env.example`
+  (`Tooling/EnvExampleTest.php`), and the browser Sentry build-arg names across
+  `Dockerfile`, both deploy workflows and the code that consumes them
+  (`Tooling/BuildArgsTest.php`). When you change one side, run its test: it
+  prints the exact value the other side needs.
 
 ## Admin route authorisation
 
@@ -179,11 +191,12 @@ capability per route**:
   person without granting it to everyone who shares a role, so prefer it over an
   inline role list in a controller.
 - Adding a capability also means: `PermissionCatalogue::groups()` **and**
-  `groupMeta()`, the Filament role select and badge map, and an entry in
-  `resources/views/components/project-icon.blade.php` — the component renders
-  nothing for an unknown name rather than failing, so a missing icon is silent.
-  `TransitGovernorateScopeTest` asserts each group has meta and a matching
-  `{group}.` prefix.
+  `groupMeta()`, the Filament role select and badge map, and a drawing in
+  `resources/data/project-icons.json` — the one icon file both the React app
+  (`Lib/projectIcons.tsx`) and `<x-project-icon>` render, so the panel never
+  shows a blank icon. `SiteModuleCatalogueTest` asserts every group and every
+  site module names a drawing that exists, and `TransitGovernorateScopeTest`
+  asserts each group has meta and a matching `{group}.` prefix.
 
 ## Commits
 

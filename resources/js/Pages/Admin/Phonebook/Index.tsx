@@ -8,6 +8,7 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Badge } from "@/Components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/Components/ui/dialog";
+import CategoryDialog from '@/Components/directory/CategoryDialog';
 import { Label } from "@/Components/ui/label";
 import { Switch } from "@/Components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
@@ -15,28 +16,7 @@ import MainLayout from '@/Layouts/MainLayout';
 import { useCan } from '@/Lib/useCan';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-
-interface PhonebookCategory {
-    id: string;
-    label_ar: string;
-    label_en: string;
-    icon?: string;
-    order_column: number;
-    is_active: boolean;
-}
-
-interface PhonebookEntry {
-    id: string;
-    category_id: string;
-    name_ar: string;
-    name_en?: string;
-    number: string;
-    is_whatsapp: boolean;
-    source_url?: string;
-    order_column: number;
-    is_active: boolean;
-    category?: PhonebookCategory;
-}
+import type { PhonebookCategory, PhonebookEntry } from '@/Domain/phonebook/types';
 
 interface AdminPhonebookProps {
     categories: PhonebookCategory[];
@@ -59,7 +39,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
     // Dialog States
     const [categoryModalOpen, setCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<PhonebookCategory | null>(null);
-    const [catForm, setCatForm] = useState({ id: '', label_ar: '', label_en: '', is_active: true });
 
     const [entryModalOpen, setEntryModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<PhonebookEntry | null>(null);
@@ -90,40 +69,25 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
     // Category Handlers
     const openCreateCategory = () => {
         setEditingCategory(null);
-        setCatForm({ id: '', label_ar: '', label_en: '', is_active: true });
         setCategoryModalOpen(true);
     };
 
     const openEditCategory = (cat: PhonebookCategory) => {
         setEditingCategory(cat);
-        setCatForm({
-            id: cat.id,
-            label_ar: cat.label_ar,
-            label_en: cat.label_en,
-            is_active: cat.is_active,
-        });
         setCategoryModalOpen(true);
-    };
-
-    const handleSaveCategory = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (editingCategory) {
-            router.put(`/api/v1/admin/phonebook/categories/${editingCategory.id}`, catForm, {
-                onSuccess: () => setCategoryModalOpen(false),
-            });
-        } else {
-            router.post('/api/v1/admin/phonebook/categories', catForm, {
-                onSuccess: () => setCategoryModalOpen(false),
-            });
-        }
     };
 
     const handleDeleteCategory = async (id: string) => {
         const ok = await confirmDialog({ title: 'حذف هذه الفئة بالكامل؟', destructive: true, confirmText: 'حذف' });
-        if (ok) {
-            router.delete(`/api/v1/admin/phonebook/categories/${id}`);
-            notify.success('تم حذف الفئة');
-        }
+        if (!ok) return;
+        router.delete(`/api/v1/admin/phonebook/categories/${id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                notify.success('تم حذف الفئة');
+                setCategoryModalOpen(false);
+            },
+            onError: () => notify.error('تعذر حذف الفئة'),
+        });
     };
 
     // Entry Handlers
@@ -146,13 +110,13 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
         setEditingEntry(entry);
         setEntryForm({
             id: entry.id,
-            category_id: entry.category_id,
+            category_id: entry.category_id ?? categories[0]?.id ?? 'emergency',
             name_ar: entry.name_ar,
             name_en: entry.name_en || '',
             number: entry.number,
             is_whatsapp: entry.is_whatsapp,
             source_url: entry.source_url || '',
-            is_active: entry.is_active,
+            is_active: entry.is_active ?? true,
         });
         setEntryModalOpen(true);
     };
@@ -176,10 +140,12 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
 
     const handleDeleteEntry = async (id: string) => {
         const ok = await confirmDialog({ title: 'حذف هذا الرقم؟', destructive: true, confirmText: 'حذف' });
-        if (ok) {
-            router.delete(`/api/v1/admin/phonebook/entries/${id}`);
-            notify.success('تم حذف الرقم');
-        }
+        if (!ok) return;
+        router.delete(`/api/v1/admin/phonebook/entries/${id}`, {
+            preserveScroll: true,
+            onSuccess: () => notify.success('تم حذف الرقم'),
+            onError: () => notify.error('تعذر حذف الرقم'),
+        });
     };
 
     return (
@@ -479,75 +445,17 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         </DialogContent>
                     </Dialog>
 
-                    {/* Category Create/Edit Modal */}
-                    <Dialog open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
-                        <DialogContent className="max-w-md" dir="rtl">
-                            <DialogHeader>
-                                <DialogTitle>{editingCategory ? 'تعديل بيانات الفئة' : 'إضافة فئة جديدة'}</DialogTitle>
-                            </DialogHeader>
-                            <form onSubmit={handleSaveCategory} className="space-y-4 py-2">
-                                {!editingCategory && (
-                                    <div className="space-y-1">
-                                        <Label>معرف الفئة (Slug)</Label>
-                                        <Input aria-label="الوسوم (مفصولة بفواصل)"
-                                            required
-                                            value={catForm.id}
-                                            onChange={(e) => setCatForm({ ...catForm, id: e.target.value })}
-                                            placeholder="emergency, governorates, hospitals..."
-                                            className="font-mono text-sm"
-                                        />
-                                    </div>
-                                )}
-
-                                <div className="space-y-1">
-                                    <Label>اسم الفئة (بالعربية)</Label>
-                                    <Input aria-label="الفئة بالعربية"
-                                        required
-                                        value={catForm.label_ar}
-                                        onChange={(e) => setCatForm({ ...catForm, label_ar: e.target.value })}
-                                        placeholder="مثال: المستشفيات والمراكز الصحية"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label>اسم الفئة (بالإنكليزية)</Label>
-                                    <Input aria-label="الفئة بالإنجليزية"
-                                        required
-                                        value={catForm.label_en}
-                                        onChange={(e) => setCatForm({ ...catForm, label_en: e.target.value })}
-                                        placeholder="Example: Hospitals & Health Centers"
-                                    />
-                                </div>
-
-                                <div className="flex items-center gap-2 pt-2 border-t border-border">
-                                    <Switch
-                                        checked={catForm.is_active}
-                                        onCheckedChange={(val) => setCatForm({ ...catForm, is_active: val })}
-                                    />
-                                    <Label className="cursor-pointer text-sm">الفئة مفعّلة في الواجهة العامة</Label>
-                                </div>
-
-                                <DialogFooter className="gap-2 pt-4">
-                                    {editingCategory && canDelete && (
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            onClick={() => handleDeleteCategory(editingCategory.id)}
-                                            className="me-auto"
-                                        >
-                                            حذف الفئة
-                                        </Button>
-                                    )}
-                                    <Button type="button" variant="outline" onClick={() => setCategoryModalOpen(false)}>
-                                        إلغاء
-                                    </Button>
-                                    <Button type="submit">
-                                        حفظ الفئة
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                    <CategoryDialog
+                        open={categoryModalOpen}
+                        onOpenChange={setCategoryModalOpen}
+                        category={editingCategory}
+                        endpoint="/api/v1/admin/phonebook/categories"
+                        title={{ create: 'إضافة فئة جديدة', edit: 'تعديل بيانات الفئة' }}
+                        submit={{ create: 'حفظ الفئة', edit: 'حفظ الفئة' }}
+                        slug={{ label: 'معرف الفئة (Slug)', placeholder: 'emergency, governorates, hospitals...', maxLength: 64 }}
+                        activeLabel="الفئة مفعّلة في الواجهة العامة"
+                        onDelete={canDelete && editingCategory ? () => handleDeleteCategory(editingCategory.id) : undefined}
+                    />
 
                 </div>
             </div>

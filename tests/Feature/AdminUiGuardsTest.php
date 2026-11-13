@@ -146,17 +146,15 @@ it('keeps the superadmin-only asset upload out of reach of poll managers', funct
         ->toContain('disabled={!canUploadImages}');
 });
 
-it('makes both sortable lists read-only without their reorder capability', function () {
-    foreach ([
-        'resources/js/Pages/Admin/SyOfficial/_components/SortableList.tsx',
-        'resources/js/Pages/Admin/GovApps/_components/SortableList.tsx',
-    ] as $file) {
-        $source = file_get_contents(base_path($file));
+it('makes the sortable list read-only without its reorder capability', function () {
+    // One component serves both admin sections since the directories kit; the
+    // capability itself still comes from the caller (syofficial.reorder vs
+    // govapps.reorder), so it stays a prop and not a constant here.
+    $source = file_get_contents(base_path('resources/js/Components/directory/SortableList.tsx'));
 
-        expect($source)
-            ->toContain('canReorder')
-            ->toContain('if (!canReorder) return;');
-    }
+    expect($source)
+        ->toContain('canReorder')
+        ->toContain('if (!canReorder) return;');
 });
 
 it('never calls useAuth() from a page that renders MainLayout', function () {

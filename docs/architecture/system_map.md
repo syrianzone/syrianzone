@@ -39,7 +39,7 @@ graph TD
 | Frontend bridge | Inertia.js v3 (Laravel ↔ React page props), SSR enabled (`ssr.tsx`) |
 | View layer | React 19.2, TypeScript (strict), Tailwind CSS v4, shadcn-style components (Radix + CVA), Lucide icons |
 | State/data | Zustand for map/studio stores; TanStack react-query (staleTime 5 min) for API data; custom axios client in `resources/js/Lib` |
-| Mapping | MapLibre GL JS (+ `@mapbox/mapbox-gl-rtl-text`) and Leaflet/react-leaflet |
+| Mapping | MapLibre GL JS (shared canvas, RTL plugin and basemap styles in `Components/map/`) and Leaflet/react-leaflet (shared Leaflet bits in `Components/map/leaflet/`) |
 | Realtime | Laravel Reverb (websockets) — Guess Who state relay, echo client in `resources/js/echo.js` |
 | Database | MySQL/MariaDB with spatial geometry columns (production); sqlite in tests (no spatial) |
 | Search | Laravel Scout, `collection` driver by default (`SCOUT_DRIVER`) |

@@ -45,15 +45,57 @@ Stale/unknown values (city slugs or method IDs outside the allowlists) count as 
 
 ## 4. WRITE-THROUGH DISCIPLINE (load-bearing)
 
-Mount-time code must **never overwrite an existing device key with the server value** for conflict-tracked keys — that would destroy the logged-out side before sync compares. Rule: set-if-absent only.
+**`resources/js/Domain/location/preference.ts` is the only reader and writer of the
+location keys.** Home (`governorate`, `useCustomCoords`, `customLat`, `customLon`),
+Roznama, `/muslim` (`sz-muslim-city`, `sz-muslim-use-custom`, `sz-muslim-lat/lon`),
+the board widgets and this sync engine all go through it; no surface keeps its own
+copy of a key name or a write path.
 
-- `Home.tsx`: `governorate` is set-if-absent; all other keys keep server-wins.
-- `Roznama/Index.tsx`: `governorate` + `sz-roznama-governorate` set-if-absent; user edits write both device keys immediately and `settings.governorate` debounced (600ms, logged-in only).
-- `Domain/settings/prefs.ts`: device-first base, server overlaid in memory only; user edits write through (city fan-out to both legacy keys preserved).
+- `readLocationPreference()` / `useLocationPreference()` — the reactive read. One
+  store, so an edit on Home updates Roznama, `/muslim` and the board widgets
+  without a reload (and after the sync pulls a value).
+- `updateLocationPreference(patch)` — writes the device keys and notifies them.
+- `adoptAccountLocation(...)` — the mount-time seed (rule below), implemented once.
+- `readDeviceCity('prayer' | 'display')`, `writeDeviceCity(...)`,
+  `readDeviceCustomCoords()`, `writeDeviceCustomCoords(...)` — the per-family
+  accessors this engine compares and pulls with.
+
+**Two key families hold the same fact.** The *prayer family*
+(`sz-muslim-city`, `sz-muslim-use-custom`, `sz-muslim-lat`, `sz-muslim-lon`) is
+canonical, because it is the conflict-tracked one (`muslimCity`, `customLoc`); the
+*display family* (`governorate`, `sz-roznama-governorate`, `useCustomCoords`,
+`customLat`, `customLon`) is the older mirror Home and Roznama used to read alone.
+Read precedence, implemented and pinned by
+`Domain/location/preference.test.ts`:
+
+1. city: `sz-muslim-city` → `governorate` → `sz-roznama-governorate` → `damascus`;
+2. custom group: `sz-muslim-use-custom/lat/lon` → `useCustomCoords/customLat/customLon`;
+3. an unknown city slug counts as absent (the other side wins, §3).
+
+Every write lands in both families, so the surfaces and this engine keep seeing
+one value. Stored key names and value shapes are unchanged.
+
+**Mount-time seeding never overwrites.** `adoptAccountLocation()` fills device keys
+that do **not** exist from the account and leaves a present one alone — otherwise
+it would destroy the logged-out side before §3 compares them. This applies to the
+city and to the custom-coordinate group alike (Home used to overwrite the latter
+unconditionally).
+
+Account writes are unchanged and still belong to the surfaces:
+Home debounces `governorate/useCustomCoords/customLat/customLon` at 500 ms,
+Roznama at 600 ms, and `Domain/settings/prefs.ts` posts
+`muslimCity/muslimMethod/muslimUseCustomCoords/muslimLat/muslimLon` at 600 ms. The
+three prayer-settings surfaces render one component
+(`Domain/prayer/PrayerSettingsFields`) and mirror its `onLocationChange` patch to
+their own account call.
 
 ## 5. LABELS FOLLOW THE EFFECTIVE LOCATION
 
-`Roznama/Index.tsx` computes `placeLabel`: the resolved GPS/IP label while a device location is active (with a «موقع تلقائي» badge), else the governorate Arabic name. Weather badge and prayer header both render `placeLabel` — never a stale city while auto-location drives the numbers.
+`resolvePlaceLabel()` in `Domain/location/preference.ts` is the one rule: the
+resolved GPS/IP label while a device location is active (Roznama adds a «موقع
+تلقائي» badge), else «إحداثيات مخصصة» for manual coordinates, else the governorate
+Arabic name. Weather badge and prayer header both render it — never a stale city
+while auto-location drives the numbers.
 
 ## 6. ENDPOINT CONTRACTS
 

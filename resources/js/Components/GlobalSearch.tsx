@@ -37,6 +37,8 @@ import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useSiteNavigation } from '@/Lib/siteLinks';
+import { siteModule } from '@/Lib/siteModules';
+import { isActive } from '@/Lib/routes';
 import { normalizeArabic } from '@/Lib/arabic';
 import { useAppShell } from '@/Lib/appShell';
 import { useQuranTarget } from '@/Domain/quran/targetAyah';
@@ -59,37 +61,6 @@ const CITIES = citiesData as TransitCityItem[];
 const CITY_NAME_MAP: Record<string, string> = Object.fromEntries(
     CITIES.map((c) => [c.id, c.nameAr]),
 );
-
-// Descriptions & search keywords for SITE_LINKS items (keyed by href)
-const SITE_LINK_DESCRIPTIONS: Record<string, string> = {
-    '/roznama': 'التقويم السوري والهجري والمناسبات ومواقيت الصلاة',
-    '/muslim': 'مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن',
-    '/games': 'ألعاب ورق وذكاء جماعية وفردية: تركس، طرنيب، مين، سوليتير، 2048',
-    '/transit': 'خريطة خطوط النقل العام والسرفيس والباصات في المدن السورية',
-    '/mishwar': 'دليل الأماكن والمطاعم والمقاهي والفنادق في سوريا',
-    '/board': 'لوحة أدوات ومعلومات سورية مخصصة قابلة للترتيب',
-    '/compass': 'اختبار البوصلة السياسية السورية وتحديد توجهاتك',
-    '/tierlist': 'تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب',
-    '/priorities': 'استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا',
-    '/crossings': 'حالة المعابر البرية والمطارات والمرافئ السورية لحظة بلحظة',
-    'https://food.syrian.zone': 'موسوعة وصفات المطبخ السوري التقليدي الأصيل',
-    'https://answers.syrian.zone': 'منصة الأسئلة والأجوبة المجتمعية حول سوريا',
-    '/syofficial': 'دليل الحسابات والصفحات الرسمية للوزارات والمؤسسات السورية',
-    '/phonebook': 'أرقام الطوارئ والاستعلامات والخدمات العامة في المحافظات',
-    '/sites': 'دليل المواقع والمنصات والمبادرات الرقمية السورية',
-    '/syrian-contributors': 'لوحة المساهمين والمطورين في المشاريع السورية مفتوحة المصدر',
-    '/govapps': 'دليل التطبيقات الحكومية والخدمية الرسمية في سوريا',
-    '/party': 'دليل الأحزاب والتيارات والكيانات السياسية السورية',
-    '/house': 'مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء',
-    '/justice': 'العدالة الانتقالية والتوثيق والمحاسبة',
-    '/syid': 'دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات',
-    '/atlas': 'أطلس السكان والخرائط الديمغرافية والتقسيمات الإدارية',
-    'https://discord.gg/NqE8849VzA': 'مجتمع المبرمجين والمصممين السوريين على ديسكورد',
-    'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog': 'إضافة متصفح لاستبدال العلم القديم بالعلم السوري',
-    'https://joory.chat': 'مساعد ذكي باللغة العربية',
-    'https://jard.chat': 'منصة جرد',
-    'https://news.jard.chat': 'متابعة آخر أخبار سوريا من المصادر الموثوقة',
-};
 
 // All 114 Surahs (1-based index); the names and counts live in the Quran domain.
 const SURAHS: Array<{ number: number; name: string; ayahs: number }> = SURAH_NAMES_AR.slice(1).map(
@@ -194,7 +165,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
                 trimmedQuery,
                 item.text,
                 item.subtitle,
-                SITE_LINK_DESCRIPTIONS[item.href],
+                siteModule(item.id)?.description,
                 item.href,
             ),
         );
@@ -458,7 +429,7 @@ export function SearchResultsContent({
                     </p>
                     <ul className={cn('grid gap-x-2 gap-y-4 py-1', gridColsClass)}>
                         {matchedSiteLinks.map(({ id, href, text, icon: Icon, image, isFlag, external }) => {
-                            const isActive = pathname === href;
+                            const current = isActive(href, pathname);
                             const tileClassName =
                                 'group flex h-full select-none flex-col items-center gap-2 rounded-lg px-1 py-2 text-center no-underline outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring transition-colors';
                             const body = (
@@ -481,7 +452,7 @@ export function SearchResultsContent({
                                         <Icon
                                             className={cn(
                                                 'h-12 w-12 shrink-0 transition-all group-hover:scale-110',
-                                                isActive ? 'text-primary' : 'text-foreground group-hover:text-primary',
+                                                current ? 'text-primary' : 'text-foreground group-hover:text-primary',
                                             )}
                                         />
                                     ) : (
@@ -490,7 +461,7 @@ export function SearchResultsContent({
                                     <span
                                         className={cn(
                                             'line-clamp-2 text-xs font-medium leading-tight transition-colors',
-                                            isActive ? 'text-primary' : 'text-foreground group-hover:text-primary',
+                                            current ? 'text-primary' : 'text-foreground group-hover:text-primary',
                                         )}
                                     >
                                         {text}

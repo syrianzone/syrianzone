@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import SmartFilterSearch from '@/Components/SmartFilterSearch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
 import { FilterChip } from '@/Components/ui/filter-chip';
 import { Facebook, Twitter } from '@/Components/ui/icons';
-import { matchesFilterText, type SmartFilterFacet, type SmartFilterValue } from '@/Lib/smartFilterSearch';
+import type { SmartFilterValue } from '@/Lib/smartFilterSearch';
+import type { DirectoryFacet } from '@/Components/directory/useDirectory';
+import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory } from '@/Components/directory/useDirectory';
 import type { Member2026 } from './members2026';
 import { AGE_LABEL, ageGroupOf, SOCIAL_LABEL, socialGroupOf } from './ParliamentChart2026';
 
 const STATUS_LABEL: Record<string, string> = { active: 'نشط', resigned: 'مستقيل', dead: 'متوفى', inactive: 'غير نشط' };
+
+const memberSearchText = (member: Member2026) => member.name_ar;
 
 interface TableFilters {
     gov: string;
@@ -25,27 +29,35 @@ interface TableFilters {
 }
 
 export default function MemberTable2026({ members, filters }: { members: Member2026[]; filters: TableFilters }) {
-    const [q, setQ] = useState('');
     const [status, setStatus] = useState('active');
     const { gov, gender, selection, age, social, onGov, onGender, onSelection, onAge, onSocial } = filters;
 
     const govs = useMemo(() => Array.from(new Set(members.map((m) => m.governorate_ar).filter(Boolean))).sort(), [members]);
-    const facets = useMemo<SmartFilterFacet[]>(() => [
-        { key: 'gov', label: 'المحافظة', aliases: ['محافظة'], options: govs.map((g) => ({ value: g, label: g })) },
-        { key: 'gender', label: 'الجنس', options: [{ value: 'M', label: 'ذكر' }, { value: 'F', label: 'أنثى' }] },
-        { key: 'selection', label: 'طريقة التعيين', aliases: ['التعيين'], options: [{ value: 'انتخابات', label: 'انتخابات' }, { value: 'تعيين', label: 'تعيين' }] },
-        { key: 'age', label: 'الفئة العمرية', aliases: ['العمر'], options: Object.entries(AGE_LABEL).map(([value, label]) => ({ value, label })) },
-        { key: 'social', label: 'التواصل الاجتماعي', aliases: ['الحسابات'], options: Object.entries(SOCIAL_LABEL).map(([value, label]) => ({ value, label })) },
+    const facets = useMemo<DirectoryFacet<Member2026>[]>(() => [
+        { key: 'gov', label: 'المحافظة', aliases: ['محافظة'], options: govs.map((g) => ({ value: g, label: g })), valueOf: (m) => m.governorate_ar },
+        { key: 'gender', label: 'الجنس', options: [{ value: 'M', label: 'ذكر' }, { value: 'F', label: 'أنثى' }], valueOf: (m) => m.gender },
+        { key: 'selection', label: 'طريقة التعيين', aliases: ['التعيين'], options: [{ value: 'انتخابات', label: 'انتخابات' }, { value: 'تعيين', label: 'تعيين' }], valueOf: (m) => m.selection_method },
+        { key: 'age', label: 'الفئة العمرية', aliases: ['العمر'], options: Object.entries(AGE_LABEL).map(([value, label]) => ({ value, label })), valueOf: ageGroupOf },
+        { key: 'social', label: 'التواصل الاجتماعي', aliases: ['الحسابات'], options: Object.entries(SOCIAL_LABEL).map(([value, label]) => ({ value, label })), valueOf: socialGroupOf },
     ], [govs]);
-    const searchValue: SmartFilterValue = {
-        search: q,
-        filters: Object.fromEntries(Object.entries({ gov, gender, selection, age, social })
+
+    // The chart's legend clicks own these five values, so the dialog is given
+    // them instead of keeping a second copy that could disagree.
+    const selectedFilters = useMemo<Record<string, string[]>>(
+        () => Object.fromEntries(Object.entries({ gov, gender, selection, age, social })
             .filter(([, value]) => value !== 'all').map(([key, value]) => [key, [value]])),
-        sort: '',
-    };
+        [gov, gender, selection, age, social],
+    );
+
+    const directory = useDirectory<Member2026>({
+        items: members,
+        searchText: memberSearchText,
+        facets,
+        filters: selectedFilters,
+    });
 
     function changeSearch(next: SmartFilterValue) {
-        setQ(next.search);
+        directory.setQuery(next.search);
         onGov(next.filters.gov?.[0] ?? 'all');
         onGender(next.filters.gender?.[0] ?? 'all');
         onSelection(next.filters.selection?.[0] ?? 'all');
@@ -54,21 +66,9 @@ export default function MemberTable2026({ members, filters }: { members: Member2
     }
 
     const filtered = useMemo(
-        () =>
-            members.filter((m) => {
-                if ((m.status || 'active') !== status) return false;
-                if (gov !== 'all' && m.governorate_ar !== gov) return false;
-                if (gender !== 'all' && m.gender !== gender) return false;
-                if (selection !== 'all' && m.selection_method !== selection) return false;
-                if (age !== 'all' && ageGroupOf(m) !== age) return false;
-                if (social !== 'all' && socialGroupOf(m) !== social) return false;
-                if (q && !matchesFilterText(m.name_ar, q)) return false;
-                return true;
-            }),
-        [members, q, gov, gender, selection, age, social, status],
+        () => directory.results.filter((m) => (m.status || 'active') === status),
+        [directory.results, status],
     );
-
-
 
     const counts = useMemo(() => {
         const c: Record<string, number> = { active: 0, resigned: 0, dead: 0, inactive: 0 };
@@ -88,9 +88,10 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <SmartFilterSearch
-                        mobileFiltersScroll
-                        facets={facets} value={searchValue} onChange={changeSearch}
+                    <DirectorySmartSearch
+                        facets={directory.searchFacets}
+                        value={{ search: directory.query, filters: selectedFilters, sort: '' }}
+                        onChange={changeSearch}
                         placeholder="ابحث بالاسم أو اختر تصفية..." ariaLabel="ابحث في قائمة الأعضاء"
                     />
                     <div className="overflow-x-auto rounded-md border border-border">

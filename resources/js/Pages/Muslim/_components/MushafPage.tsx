@@ -4,6 +4,7 @@ import { Button } from '@/Components/ui/button';
 import AyahMark from '@/Domain/quran/AyahMark';
 import { BASMALAH_LIGATURE, ensureRtlBidi, type QuranPage } from '../../../Domain/quran/quran';
 import { splitPartTokens } from '../../../Domain/quran/quranAudio';
+import '@/Domain/quran/quran.css';
 
 interface Props {
   data: QuranPage;

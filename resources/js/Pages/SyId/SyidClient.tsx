@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { notify } from '@/Lib/notify';
+import { copyText } from '@/Lib/copy';
 import { Card, CardContent } from "@/Components/ui/card";
 import {
     Dialog,
@@ -271,11 +272,11 @@ export default function SyidClient() {
         notify.success(`تم تحميل ملف GeoJSON بنجاح`);
     };
 
-    const copyToClipboard = (text: string, key: string) => {
-        navigator.clipboard.writeText(text);
+    const copyToClipboard = async (text: string, key: string) => {
+        const copied = await copyText(text, { successMessage: `تم النسخ: ${text}` });
+        if (!copied) return;
         setCopiedKey(key);
         setTimeout(() => setCopiedKey(null), 2000);
-        notify.copy(`تم النسخ: ${text}`);
     };
 
     return (

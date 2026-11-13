@@ -276,7 +276,7 @@ Public, unauthenticated read API over published transit data (cities, routes, st
 
 - **Combined Damascus metro network**: `damascus` and `rif-dimashq` are served as one unified network because transit lines cross the boundary. Requesting either ID returns both.
 - **Unknown city ID**: Returns `404` `{ "message": "City not found." }` (never a cached empty `200`).
-- **Map Vector Tiles**: The Transit map frontend uses MapLibre GL with `/styles/styles/dark-matter-vector.json` and `/styles/styles/light-vector.json`, which load vector tiles from `https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json` (`openmaptiles` schema).
+- **Map Vector Tiles**: Every MapLibre map in the frontend resolves its basemap from `Components/map/resolveStyle.ts` to `/styles/styles/dark-matter-vector.json` (dark scheme) or `/styles/styles/light-vector.json` (light scheme), which load vector tiles from `https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json` (`openmaptiles` schema).
 
 ### Transit Endpoints Summary
 

@@ -1,75 +1,69 @@
-import React, { useEffect } from 'react';
-import { MapContainer, GeoJSON, useMap } from 'react-leaflet';
+import React, { useMemo } from 'react';
+import { MapContainer, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { Feature, FeatureCollection } from 'geojson';
 import { getGovernorateNameAr } from '@/Domain/geography/governorates';
+import { ensureLeafletDefaultIcon } from '@/Components/map/leaflet/defaultIcon';
+import { FitBounds } from '@/Components/map/leaflet/FitBounds';
+import { useInvalidateSizeOnLayout } from '@/Components/map/leaflet/useInvalidateSizeOnLayout';
+import { featureCollectionBounds, normalizeFeatureCollection } from '@/Components/map/geo';
 
-// Fix for Leaflet icons
-// @ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+ensureLeafletDefaultIcon();
+
+/**
+ * The SyId map's palette. These are the page's brand colours (the same greens
+ * its identity guide documents), not theme tokens: the panel around the map is
+ * a fixed art direction, so the drawing must keep them in every theme.
+ */
+const SYRIA_MAP_COLORS = {
+    fill: '#428177',
+    border: '#0D1117',
+    hoverBorder: '#E6EDF3',
+    background: '#24292F',
+};
 
 interface SyriaMapProps {
-    geoJsonData: any;
+    geoJsonData: unknown;
     /** Province name to focus, or null for the whole country. */
     selectedGovId?: string | null;
 }
 
-function MapUpdater({ geoJsonData, selectedGovId }: { geoJsonData: any; selectedGovId?: string | null }) {
-    const map = useMap();
-
-    useEffect(() => {
-        if (geoJsonData) {
-            let layer;
-            if (selectedGovId) {
-                const feature = geoJsonData.features.find((f: any) => f.properties.province_name === selectedGovId);
-                if (feature) {
-                    layer = L.geoJSON(feature);
-                }
-            }
-
-            if (!layer) {
-                layer = L.geoJSON(geoJsonData);
-            }
-
-            map.fitBounds(layer.getBounds(), { padding: [20, 20] });
-        }
-    }, [geoJsonData, map, selectedGovId]);
-
-    useEffect(() => {
-        setTimeout(() => {
-            map.invalidateSize();
-        }, 100);
-    }, [map]);
-
+function MapSizeSync() {
+    useInvalidateSizeOnLayout();
     return null;
 }
 
 export default function SyriaMap({ geoJsonData, selectedGovId }: SyriaMapProps) {
-    const filteredData = React.useMemo(() => {
-        if (!geoJsonData || !selectedGovId) return geoJsonData;
+    const geoJson: FeatureCollection = useMemo(() => normalizeFeatureCollection(geoJsonData), [geoJsonData]);
+
+    const filteredData = useMemo(() => {
+        if (!selectedGovId) return geoJson;
         return {
-            ...geoJsonData,
-            features: geoJsonData.features.filter((f: any) => f.properties.province_name === selectedGovId)
+            ...geoJson,
+            features: geoJson.features.filter((feature) => feature.properties?.province_name === selectedGovId),
         };
-    }, [geoJsonData, selectedGovId]);
+    }, [geoJson, selectedGovId]);
+
+    // Flag the requested province (falling back to the whole country when it is
+    // not in the data); the shared FitBounds does the map move itself.
+    const bounds = useMemo(() => {
+        const selected = selectedGovId ? featureCollectionBounds(filteredData) : null;
+        return selected ?? featureCollectionBounds(geoJson);
+    }, [filteredData, geoJson, selectedGovId]);
 
     const style = () => {
         return {
-            fillColor: '#428177',
+            fillColor: SYRIA_MAP_COLORS.fill,
             weight: 1.5,
             opacity: 1,
-            color: '#0D1117',
+            color: SYRIA_MAP_COLORS.border,
             fillOpacity: 0.6
         };
     };
 
-    const onEachFeature = (feature: any, layer: L.Layer) => {
-        const rawName = feature.properties.province_name || feature.properties.name;
+    const onEachFeature = (feature: Feature, layer: L.Layer) => {
+        const rawName = feature.properties?.province_name || feature.properties?.name;
         const name = getGovernorateNameAr(rawName);
         if (name) {
             layer.bindTooltip(() => {
@@ -90,7 +84,7 @@ export default function SyriaMap({ geoJsonData, selectedGovId }: SyriaMapProps) 
                 const l = e.target;
                 l.setStyle({
                     weight: 3,
-                    color: '#E6EDF3',
+                    color: SYRIA_MAP_COLORS.hoverBorder,
                     fillOpacity: 0.8
                 });
                 if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
@@ -104,7 +98,7 @@ export default function SyriaMap({ geoJsonData, selectedGovId }: SyriaMapProps) 
         });
     };
 
-    if (!geoJsonData) return <div className="h-full w-full flex items-center justify-center bg-[#24292F] text-white">جاري تحميل الخريطة...</div>;
+    if (!geoJsonData) return <div className="h-full w-full flex items-center justify-center text-white" style={{ background: SYRIA_MAP_COLORS.background }}>جاري تحميل الخريطة...</div>;
 
     return (
         <div className="w-full h-full relative rounded-xl overflow-hidden border-2 border-border shadow-lg">
@@ -134,13 +128,14 @@ export default function SyriaMap({ geoJsonData, selectedGovId }: SyriaMapProps) 
             <MapContainer
                 center={[35.0, 38.5]}
                 zoom={6}
-                style={{ height: '100%', width: '100%', background: '#24292F' }}
+                style={{ height: '100%', width: '100%', background: SYRIA_MAP_COLORS.background }}
                 zoomControl={true}
                 scrollWheelZoom={false}
                 doubleClickZoom={false}
                 attributionControl={true}
             >
-                <MapUpdater geoJsonData={geoJsonData} selectedGovId={selectedGovId} />
+                <MapSizeSync />
+                <FitBounds bounds={bounds} />
                 <GeoJSON
                     key={selectedGovId ?? 'full'}
                     data={filteredData}

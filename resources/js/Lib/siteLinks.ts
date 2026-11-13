@@ -1,42 +1,27 @@
 import React, { useMemo } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
-    Code2, Globe, Wheat, BarChart3, HeartHandshake, Flag, Sparkles, Gift,
+    BarChart3,
+    Code2,
+    Flag,
+    Gift,
+    Globe,
+    HeartHandshake,
+    Sparkles,
+    Wheat,
 } from 'lucide-react';
-import {
-    SyOfficialIcon,
-    RoznamaIcon,
-    PhonebookIcon,
-    SyIdIcon,
-    PartyIcon,
-    TierlistIcon,
-    HouseIcon,
-    CompassIcon,
-    PromisesIcon,
-    PrioritiesIcon,
-    SitesIcon,
-    PopulationIcon,
-    GovAppsIcon,
-    TransitIcon,
-    JusticeIcon,
-    CrossingsIcon,
-    MishwarIcon,
-    BoardIcon,
-    MuslimIcon,
-    QuranIcon,
-    QuranRadioIcon,
-    GamesIcon,
-    Game2048Icon,
-    SolitaireIcon,
-    TarneebIcon,
-    TrixIcon,
-    GuessWhoIcon,
-    RecipesIcon,
-    NewsIcon,
-    AnswersIcon,
-    CodexCommunityIcon,
-} from '@/Components/Icons/ProjectIcons';
+import { projectIcon } from './projectIcons';
+import { NAVBAR_TOP_COUNT, SITE_MODULES } from './siteModules';
 
+/**
+ * The navigation the browser renders, and the vocabulary that decorates it.
+ *
+ * The list is not written here: `resources/data/site-modules.json` holds the
+ * catalogue both languages read, `SiteSetting::defaultNavigationItems()` turns
+ * it into the defaults and the admin editor stores an override. What this
+ * module adds is the web schema (`SiteLink`: resolved icon component, `text`,
+ * `image`) and the ordering rules from the shared prop.
+ */
 export interface SiteNavigationSubCategory {
     id: string;
     title: string;
@@ -101,49 +86,55 @@ export interface SiteNavigationConfig {
     version: number;
 }
 
+/**
+ * Icon key to drawing. The project icons come from the shared data file
+ * (`Lib/projectIcons.tsx`); these few are single-colour glyphs from lucide,
+ * which the Blade side does not need because no capability group uses them.
+ */
 export const SITE_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-    roznama: RoznamaIcon,
-    muslim: MuslimIcon,
-    quran: QuranIcon,
-    quran_radio: QuranRadioIcon,
-    games: GamesIcon,
-    game_2048: Game2048Icon,
-    solitaire: SolitaireIcon,
-    tarneeb: TarneebIcon,
-    trix: TrixIcon,
-    guesswho: GuessWhoIcon,
-    transit: TransitIcon,
-    mishwar: MishwarIcon,
-    board: BoardIcon,
-    compass: CompassIcon,
-    tierlist: TierlistIcon,
-    promises: PromisesIcon,
-    priorities: PrioritiesIcon,
-    crossings: CrossingsIcon,
-    recipes: RecipesIcon,
-    answers: AnswersIcon,
-    syofficial: SyOfficialIcon,
-    phonebook: PhonebookIcon,
-    sites: SitesIcon,
+    roznama: projectIcon('roznama'),
+    muslim: projectIcon('muslim'),
+    quran: projectIcon('quran'),
+    quran_radio: projectIcon('quran_radio'),
+    games: projectIcon('games'),
+    game_2048: projectIcon('game_2048'),
+    solitaire: projectIcon('solitaire'),
+    tarneeb: projectIcon('tarneeb'),
+    trix: projectIcon('trix'),
+    guesswho: projectIcon('guesswho'),
+    transit: projectIcon('transit'),
+    mishwar: projectIcon('mishwar'),
+    board: projectIcon('board'),
+    compass: projectIcon('compass'),
+    tierlist: projectIcon('tierlist'),
+    promises: projectIcon('promises'),
+    priorities: projectIcon('priorities'),
+    crossings: projectIcon('crossings'),
+    recipes: projectIcon('recipes'),
+    answers: projectIcon('answers'),
+    syofficial: projectIcon('syofficial'),
+    phonebook: projectIcon('phonebook'),
+    sites: projectIcon('sites'),
     contributors: Code2,
-    govapps: GovAppsIcon,
-    party: PartyIcon,
-    house: HouseIcon,
-    justice: JusticeIcon,
-    syid: SyIdIcon,
-    atlas: PopulationIcon,
-    codex: CodexCommunityIcon,
-    news: NewsIcon,
+    govapps: projectIcon('govapps'),
+    party: projectIcon('party'),
+    house: projectIcon('house'),
+    justice: projectIcon('justice'),
+    syid: projectIcon('syid'),
+    atlas: projectIcon('population'),
+    codex: projectIcon('codex'),
+    news: projectIcon('news'),
     globe: Globe,
     wheat: Wheat,
     stats: BarChart3,
     donations: HeartHandshake,
     flag: Flag,
     prompts: Sparkles,
-    population: PopulationIcon,
+    population: projectIcon('population'),
     free: Gift,
 };
 
+/** The icons the admin editor offers, in display order, with their labels. */
 export const SITE_ICON_OPTIONS: Array<{ key: string; label: string }> = [
     { key: 'roznama', label: 'الروزنامة' },
     { key: 'muslim', label: 'الركن الإسلامي' },
@@ -182,73 +173,107 @@ export const SITE_ICON_OPTIONS: Array<{ key: string; label: string }> = [
     { key: 'free', label: 'أدوات مجانية' },
 ];
 
-export const SITE_LINKS: SiteLink[] = [
-    // Internal Syrian Zone Tools — Top Row (Most Important: Roznama, Muslim, Games, Transit, Mishwar, Board)
-    { id: 'roznama', href: '/roznama', text: 'الروزنامة', title: 'الروزنامة', subtitle: 'التقويم السوري والهجري والمناسبات ومواقيت الصلاة', type: 'native', target: 'roznama', icon: RoznamaIcon, iconKey: 'roznama', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'muslim', href: '/muslim', text: 'الركن الإسلامي', title: 'الركن الإسلامي', subtitle: 'مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن', type: 'native', target: 'muslim_hub', icon: MuslimIcon, iconKey: 'muslim', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'games', href: '/games', text: 'الألعاب', title: 'الألعاب', subtitle: 'ألعاب ورق وذكاء جماعية وفردية', type: 'native', target: 'games_hub', icon: GamesIcon, iconKey: 'games', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'transit', href: '/transit', text: 'ترانزيت', title: 'ترانزيت', subtitle: 'شبكة وخطوط النقل العام', type: 'native', target: 'transit_map', icon: TransitIcon, iconKey: 'transit', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'mishwar', href: '/mishwar', text: 'مشوار', title: 'مشوار', subtitle: 'دليل وخريطة الأماكن والمطاعم والمقاهي في سوريا', type: 'native', target: 'mishwar_map', icon: MishwarIcon, iconKey: 'mishwar', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'board', href: '/board', text: 'لوح', title: 'لوح', subtitle: 'لوحة أدواتك اليومية المخصصة في المساحة السورية', type: 'web', target: '/board', icon: BoardIcon, iconKey: 'board', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    // Civic & Directory Tools
-    { id: 'compass', href: '/compass', text: 'البوصلة السياسية', title: 'البوصلة السياسية', subtitle: 'اختبار البوصلة السياسية السورية وتحديد توجهاتك', type: 'web', target: '/compass', icon: CompassIcon, iconKey: 'compass', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'tierlist', href: '/tierlist', text: 'تقييم الحكومة', title: 'تقييم الحكومة', subtitle: 'تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب', type: 'native', target: 'tierlist_polls', icon: TierlistIcon, iconKey: 'tierlist', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'promises', href: '/promises', text: 'عداد الوعود', title: 'عداد الوعود', subtitle: 'وعود المسؤولين العلنية ومواعيدها وما تحقق منها', type: 'web', target: '/promises', icon: PromisesIcon, iconKey: 'promises', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'priorities', href: '/priorities', text: 'أولويات سوريا', title: 'أولويات سوريا', subtitle: 'استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا', type: 'web', target: '/priorities', icon: PrioritiesIcon, iconKey: 'priorities', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'crossings', href: '/crossings', text: 'المنافذ الحدودية', title: 'المنافذ الحدودية', subtitle: 'حالة المعابر البرية والمطارات والمرافئ السورية لحظة بلحظة', type: 'native', target: 'crossings_status', icon: CrossingsIcon, iconKey: 'crossings', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'recipes', href: 'https://food.syrian.zone', text: 'وصفاتنا', title: 'وصفاتنا', subtitle: 'موسوعة وصفات المطبخ السوري التقليدي الأصيل', type: 'external', target: 'https://food.syrian.zone', icon: RecipesIcon, iconKey: 'recipes', external: true, isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'answers', href: 'https://answers.syrian.zone', text: 'إجابات سوريا', title: 'إجابات سوريا', subtitle: 'منصة الأسئلة والأجوبة المجتمعية حول سوريا', type: 'external', target: 'https://answers.syrian.zone', icon: AnswersIcon, iconKey: 'answers', external: true, isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'syofficial', href: '/syofficial', text: 'الحسابات الرسمية', title: 'الحسابات الرسمية', subtitle: 'دليل الحسابات والصفحات الرسمية للوزارات والمؤسسات السورية', type: 'native', target: 'syofficial_directory', icon: SyOfficialIcon, iconKey: 'syofficial', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'phonebook', href: '/phonebook', text: 'دليل الهاتف', title: 'دليل الهاتف', subtitle: 'أرقام الطوارئ والاستعلامات والخدمات العامة في المحافظات', type: 'native', target: 'phonebook_directory', icon: PhonebookIcon, iconKey: 'phonebook', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'sites', href: '/sites', text: 'دليل المواقع', title: 'دليل المواقع', subtitle: 'دليل المواقع والمنصات والمبادرات الرقمية السورية', type: 'web', target: '/sites', icon: SitesIcon, iconKey: 'sites', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'contributors', href: '/syrian-contributors', text: 'المساهمون', title: 'المساهمون', subtitle: 'لوحة المساهمين والمطورين في المشاريع السورية مفتوحة المصدر', type: 'web', target: '/syrian-contributors', icon: Code2, iconKey: 'contributors', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'govapps', href: '/govapps', text: 'تطبيقات الحكومة', title: 'تطبيقات الحكومة', subtitle: 'دليل التطبيقات الحكومية والخدمية الرسمية في سوريا', type: 'native', target: 'govapps_directory', icon: GovAppsIcon, iconKey: 'govapps', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'party', href: '/party', text: 'دليل الأحزاب', title: 'دليل الأحزاب', subtitle: 'دليل الأحزاب والتيارات والكيانات السياسية السورية', type: 'web', target: '/party', icon: PartyIcon, iconKey: 'party', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'house', href: '/house', text: 'المجلس التشريعي', title: 'المجلس التشريعي', subtitle: 'مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء', type: 'web', target: '/house', icon: HouseIcon, iconKey: 'house', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'justice', href: '/justice', text: 'العدالة الانتقالية', title: 'العدالة الانتقالية', subtitle: 'العدالة الانتقالية والتوثيق والمحاسبة', type: 'web', target: '/justice', icon: JusticeIcon, iconKey: 'justice', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'syid', href: '/syid', text: 'الهوية البصرية', title: 'الهوية البصرية', subtitle: 'دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات', type: 'web', target: '/syid', icon: SyIdIcon, iconKey: 'syid', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'atlas', href: '/atlas', text: 'أطلس', title: 'أطلس', subtitle: 'أطلس السكان والخرائط الديمغرافية والتقسيمات الإدارية', type: 'web', target: '/atlas', icon: PopulationIcon, iconKey: 'atlas', isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'codex', href: 'https://discord.gg/NqE8849VzA', text: 'مجتمع كوديكس', title: 'مجتمع كوديكس', subtitle: 'مجتمع المبرمجين والمصممين السوريين على ديسكورد', type: 'external', target: 'https://discord.gg/NqE8849VzA', icon: CodexCommunityIcon, iconKey: 'codex', external: true, isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'flag_replacer', href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', text: 'مبدل العلم', title: 'مبدل العلم', subtitle: 'إضافة متصفح لاستبدال العلم القديم بالعلم السوري', type: 'external', target: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', icon: null, image: '/flag-replacer/1f1f8-1f1fe.svg', iconUrl: '/flag-replacer/1f1f8-1f1fe.svg', external: true, isInternal: true, enabled: true, showOnHome: true, showInNavbar: true },
+function iconFor(iconKey?: string | null) {
+    return iconKey && SITE_ICON_MAP[iconKey] ? SITE_ICON_MAP[iconKey] : undefined;
+}
 
-    // External Links
-    { id: 'joory', href: 'https://joory.chat', text: 'جوري AI', title: 'جوري AI', subtitle: 'مساعد ذكي باللغة العربية', type: 'external', target: 'https://joory.chat', icon: null, image: 'https://joory.chat/favicon.svg', iconUrl: 'https://joory.chat/favicon.svg', external: true, isInternal: false, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'jard', href: 'https://jard.chat', text: 'جرد', title: 'جرد', subtitle: 'منصة جرد', type: 'external', target: 'https://jard.chat', icon: null, image: 'https://jard.chat/images/logo-light.svg', iconUrl: 'https://jard.chat/images/logo-light.svg', external: true, isInternal: false, enabled: true, showOnHome: true, showInNavbar: true },
-    { id: 'news', href: 'https://news.jard.chat', text: 'أخبار سوريا', title: 'أخبار سوريا', subtitle: 'متابعة آخر أخبار سوريا من المصادر الموثوقة', type: 'external', target: 'https://news.jard.chat', icon: NewsIcon, iconKey: 'news', external: true, isInternal: false, enabled: true, showOnHome: true, showInNavbar: true },
-];
+interface SiteLinkFields {
+    id: string;
+    title: string;
+    subtitle?: string;
+    href: string;
+    type: 'native' | 'web' | 'external';
+    target: string;
+    iconKey: string | null;
+    iconUrl: string | null;
+    isFlag?: boolean;
+    external?: boolean;
+    isInternal?: boolean;
+    enabled?: boolean;
+    showOnHome?: boolean;
+    showInNavbar?: boolean;
+    surfaces?: string[];
+    subCategories?: SiteNavigationSubCategory[];
+    isCustom?: boolean;
+}
 
-function hydrateSiteLink(raw: SiteNavigationItemData): SiteLink {
-    const icon = raw.iconKey && SITE_ICON_MAP[raw.iconKey] ? SITE_ICON_MAP[raw.iconKey] : undefined;
-    const title = raw.title || raw.text;
-    const imageUrl = raw.iconUrl || raw.image || undefined;
-    const enabled = raw.enabled !== false;
+/** The web schema (`SiteLink`) for one catalog entry, from either source. */
+function toSiteLink(fields: SiteLinkFields): SiteLink {
+    const imageUrl = fields.iconUrl ?? undefined;
+    const enabled = fields.enabled !== false;
+    const title = fields.title || fields.href;
+
     return {
-        id: raw.id || raw.href,
+        id: fields.id,
         title,
-        subtitle: raw.subtitle || '',
-        href: raw.href,
+        subtitle: fields.subtitle ?? '',
+        href: fields.href,
         text: title,
-        type: raw.type || (raw.external ? 'external' : 'web'),
-        target: raw.target || raw.href,
-        icon,
-        iconKey: raw.iconKey,
-        iconUrl: imageUrl || null,
+        type: fields.type,
+        target: fields.target,
+        icon: iconFor(fields.iconKey),
+        iconKey: fields.iconKey,
+        iconUrl: imageUrl ?? null,
         image: imageUrl,
-        isFlag: Boolean(raw.isFlag),
-        external: Boolean(raw.external),
-        isInternal: Boolean(raw.isInternal),
+        isFlag: Boolean(fields.isFlag),
+        external: Boolean(fields.external),
+        isInternal: Boolean(fields.isInternal),
         enabled,
-        showOnHome: enabled && raw.showOnHome !== false,
-        showInNavbar: enabled && raw.showInNavbar !== false,
-        surfaces: Array.isArray(raw.surfaces) ? raw.surfaces : undefined,
-        subCategories: Array.isArray(raw.subCategories) ? raw.subCategories : [],
-        isCustom: Boolean(raw.isCustom),
+        showOnHome: enabled && fields.showOnHome !== false,
+        showInNavbar: enabled && fields.showInNavbar !== false,
+        surfaces: Array.isArray(fields.surfaces) ? fields.surfaces : undefined,
+        subCategories: Array.isArray(fields.subCategories) ? fields.subCategories : [],
+        isCustom: Boolean(fields.isCustom),
     };
 }
 
+function hydrateSiteLink(raw: SiteNavigationItemData): SiteLink {
+    return toSiteLink({
+        id: raw.id || raw.href,
+        title: raw.title || raw.text,
+        subtitle: raw.subtitle || '',
+        href: raw.href,
+        type: raw.type || (raw.external ? 'external' : 'web'),
+        target: raw.target || raw.href,
+        iconKey: raw.iconKey,
+        iconUrl: raw.iconUrl || raw.image || null,
+        isFlag: raw.isFlag,
+        external: raw.external,
+        isInternal: raw.isInternal,
+        enabled: raw.enabled,
+        showOnHome: raw.showOnHome,
+        showInNavbar: raw.showInNavbar,
+        surfaces: raw.surfaces,
+        subCategories: raw.subCategories,
+        isCustom: raw.isCustom,
+    });
+}
+
+/**
+ * The catalogue's default entries in the web schema. Used when the shared
+ * `siteNavigation` prop is absent (a page rendered outside Inertia, a unit
+ * test) — the server shares it on every response, so this is the same list,
+ * not a second one.
+ */
+export const SITE_LINKS: SiteLink[] = SITE_MODULES.map((module) =>
+    toSiteLink({
+        id: module.id,
+        title: module.title,
+        subtitle: module.subtitle,
+        href: module.href,
+        type: module.type,
+        target: module.target,
+        iconKey: module.iconKey,
+        iconUrl: module.iconUrl,
+        isInternal: module.isInternal,
+        external: module.type === 'external',
+        subCategories: module.subCategories,
+    }),
+);
+
 function resolveSiteNavigation(config?: SiteNavigationConfig | null) {
     if (!config || !Array.isArray(config.items) || config.items.length === 0) {
-        const navbarTopCount = 5;
+        const navbarTopCount = NAVBAR_TOP_COUNT;
         return {
             navbarTopCount,
             homeLinks: SITE_LINKS,
@@ -260,7 +285,7 @@ function resolveSiteNavigation(config?: SiteNavigationConfig | null) {
     }
 
     const hydrated = config.items.map(hydrateSiteLink).filter((item) => item.enabled !== false);
-    const navbarTopCount = Math.max(1, Math.min(10, Number(config.navbarTopCount) || 5));
+    const navbarTopCount = Math.max(1, Math.min(10, Number(config.navbarTopCount) || NAVBAR_TOP_COUNT));
 
     const homeLinks = hydrated.filter((item) => item.showOnHome !== false);
 

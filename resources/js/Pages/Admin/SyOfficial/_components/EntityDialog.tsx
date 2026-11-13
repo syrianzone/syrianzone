@@ -7,31 +7,15 @@ import { Label } from '@/Components/ui/label';
 import { Button } from '@/Components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { Switch } from '@/Components/ui/switch';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { UploadCloud, Image as ImageIcon } from 'lucide-react';
-
-export interface CategoryOption {
-    id: string;
-    label_ar: string;
-    label_en: string;
-}
-
-export interface EntityData {
-    id: string;
-    category_id: string;
-    name: string;
-    name_ar: string;
-    description?: string;
-    description_ar?: string;
-    image?: string;
-    socials?: Record<string, string>;
-    is_active: boolean;
-}
+import type { AdminOfficialEntity, OfficialCategory } from '@/Domain/syofficial/types';
 
 interface EntityDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    entity?: EntityData | null;
-    categories: CategoryOption[];
+    entity?: AdminOfficialEntity | null;
+    categories: OfficialCategory[];
 }
 
 export default function EntityDialog({ open, onOpenChange, entity, categories }: EntityDialogProps) {
@@ -145,8 +129,9 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                     value={data.id}
                                     onChange={(e) => setData('id', e.target.value)}
                                     dir="ltr" className="text-left"
+                                    {...fieldA11y('entity-id-error', errors.id)}
                                 />
-                                {errors.id && <span className="text-xs text-destructive">{errors.id}</span>}
+                                <FieldError id="entity-id-error" message={errors.id} />
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -158,7 +143,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                         <div className="space-y-2">
                             <Label htmlFor="category_id">الفئة</Label>
                             <Select value={data.category_id} onValueChange={(val) => setData('category_id', val)}>
-                                <SelectTrigger className="w-full" aria-label="اختر الفئة">
+                                <SelectTrigger className="w-full" aria-label="اختر الفئة" {...fieldA11y('entity-category-error', errors.category_id)}>
                                     <SelectValue placeholder="اختر الفئة" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -169,7 +154,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {errors.category_id && <span className="text-xs text-destructive">{errors.category_id}</span>}
+                            <FieldError id="entity-category-error" message={errors.category_id} />
                         </div>
                     </div>
 
@@ -182,8 +167,9 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                 placeholder="محافظة دمشق"
                                 value={data.name_ar}
                                 onChange={(e) => setData('name_ar', e.target.value)}
+                                {...fieldA11y('entity-name-ar-error', errors.name_ar)}
                             />
-                            {errors.name_ar && <span className="text-xs text-destructive">{errors.name_ar}</span>}
+                            <FieldError id="entity-name-ar-error" message={errors.name_ar} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="name">الاسم بالإنجليزية</Label>
@@ -193,8 +179,9 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                 value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
                                 dir="ltr" className="text-left"
+                                {...fieldA11y('entity-name-error', errors.name)}
                             />
-                            {errors.name && <span className="text-xs text-destructive">{errors.name}</span>}
+                            <FieldError id="entity-name-error" message={errors.name} />
                         </div>
                     </div>
 
@@ -247,7 +234,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                 <p className="text-xs text-muted-foreground mt-1">يدعم PNG, JPG, WEBP (حجم أقصى 5 ميغابايت)</p>
                             </div>
                         </div>
-                        {errors.image_file && <span className="text-xs text-destructive">{errors.image_file}</span>}
+                        <FieldError id="entity-image-error" message={errors.image_file} />
                     </div>
 
                     {/* Social Media Links */}

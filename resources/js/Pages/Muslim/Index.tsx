@@ -4,9 +4,12 @@ import { Bookmark, ChevronLeft, MoonStar } from 'lucide-react';
 import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
 import { formatDuration } from '../../Lib/format';
-import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from '../../Domain/prayer/methods';
 import { SURAH_NAMES_AR } from '../../Domain/quran/quran';
-import { prayerQueryParams, useMuslimPrefs } from '../../Domain/settings/prefs';
+import { hijriDateLabel } from '../../Domain/prayer/hijri';
+import { nextPrayer } from '../../Domain/prayer/nextPrayer';
+import { usePrayerTimes } from '../../Domain/prayer/times';
+import { useLocationPreference } from '../../Domain/location/preference';
+import { useMuslimPrefs } from '../../Domain/settings/prefs';
 import { TOOLS, toolHref } from '../../Domain/muslim/tools';
 import { useQuranTarget } from '@/Domain/quran/targetAyah';
 
@@ -39,34 +42,19 @@ function warmQuranData(): void {
 
 export default function Index() {
   const { prefs, isLoggedIn } = useMuslimPrefs();
+  const location = useLocationPreference();
   const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
   // Index top strip: next prayer countdown + Hijri date.
   const [now, setNow] = useState(() => new Date());
-  const [timings, setTimings] = useState<Record<string, string> | null>(null);
-  const [hijri, setHijri] = useState<string | null>(null);
   const [lastBookmark, setLastBookmark] = useState<LastBookmark | null>(null);
+  const { timings, hijri } = usePrayerTimes(location, prefs.method, { timeoutMs: null });
+  const apiHijri = hijriDateLabel(hijri);
 
   useEffect(() => {
     const t = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(t);
   }, []);
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    const params = new URLSearchParams();
-    for (const [k, v] of Object.entries(prayerQueryParams(prefs))) params.set(k, String(v));
-    fetch(`/api/prayer-times?${params.toString()}`, { signal: ctrl.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data) return;
-        setTimings(data.timings ?? null);
-        const h = data.hijri;
-        setHijri(h?.day && h?.month && h?.year ? `${h.day} ${h.month} ${h.year}` : null);
-      })
-      .catch(() => {});
-    return () => ctrl.abort();
-  }, [prefs.city, prefs.useCustomCoords, prefs.customLat, prefs.customLon, prefs.method, prefs.locMode, prefs.geo]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -82,22 +70,8 @@ export default function Index() {
     return () => { live = false; };
   }, [isLoggedIn]);
 
-  const nextPrayer = useMemo(() => {
-    if (!timings) return null;
-    const cands: { key: PrayerKey; at: Date }[] = [];
-    for (const key of PRAYER_KEYS) {
-      if (key === 'Sunrise') continue;
-      const raw = timings[key];
-      if (!raw) continue;
-      const [h, m] = raw.slice(0, 5).split(':').map(Number);
-      if (!Number.isFinite(h) || !Number.isFinite(m)) continue;
-      const at = new Date(now);
-      at.setHours(h, m, 0, 0);
-      if (at > now) cands.push({ key: key as PrayerKey, at });
-    }
-    cands.sort((a, b) => a.at.getTime() - b.at.getTime());
-    return cands[0] ?? null;
-  }, [timings, now]);
+  // The hub lists the five prayers only, but it still rolls over after Isha.
+  const upcoming = useMemo(() => nextPrayer(timings, now, { includeSunrise: false }), [timings, now]);
 
   // Warm the reader's data file as soon as the visitor aims at a link into it.
   const quranWarmProps = {
@@ -136,15 +110,15 @@ export default function Index() {
               <MoonStar className="h-5 w-5 shrink-0 text-primary" />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-bold">
-                  {nextPrayer ? `صلاة ${PRAYER_LABELS[nextPrayer.key]}` : 'مواقيت الصلاة'}
+                  {upcoming ? `صلاة ${upcoming.label}` : 'مواقيت الصلاة'}
                 </span>
                 <span className="block text-[11px] text-muted-foreground">
-                  {hijri ? `${hijri} هـ` : '…'}
+                  {apiHijri ? `${apiHijri} هـ` : '…'}
                 </span>
               </span>
             </span>
             <span dir="ltr" className="shrink-0 font-mono text-lg font-bold tabular-nums text-primary">
-              {nextPrayer ? formatDuration(nextPrayer.at.getTime() - now.getTime()) : '--:--:--'}
+              {upcoming ? formatDuration(upcoming.remainingMs) : '--:--:--'}
             </span>
           </Link>
 

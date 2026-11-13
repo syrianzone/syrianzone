@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import type maplibregl from 'maplibre-gl'
 import { useMap, useStyleVersion } from '@/Components/map/MapContext'
+import { firstSymbolLayerId } from '@/Components/map/layers'
 import { getRouteColor, buildColorMatch } from '../../_lib/mapColors'
 import type { FeatureCollection, RouteProperties } from '../../_types'
 import { useMapStore } from '../../_store/useMapStore'
@@ -13,14 +14,6 @@ interface ActiveRoute {
   props: RouteProperties
   x: number
   y: number
-}
-
-// Insert transit geometry under the basemap's first symbol layer so street
-// names, place labels, POIs and housenumbers stay readable on top of it.
-export function firstSymbolLayerId(map: maplibregl.Map): string | undefined {
-  const layers = map.getStyle()?.layers
-  if (!Array.isArray(layers)) return undefined
-  return layers.find((l: any) => l.type === 'symbol')?.id
 }
 
 export default function RouteLayer({ data }: RouteLayerProps) {
@@ -52,10 +45,8 @@ export default function RouteLayer({ data }: RouteLayerProps) {
 
     map.addSource('routes-source', {
       type: 'geojson',
-      data: data as unknown as GeoJSON.FeatureCollection,
+      data,
     })
-
-    const colorExpr = buildColorMatch()
 
     map.addLayer({
       id: 'routes-line',
@@ -63,7 +54,7 @@ export default function RouteLayer({ data }: RouteLayerProps) {
       source: 'routes-source',
       paint: {
         'line-width': 4,
-        'line-color': colorExpr as unknown as string,
+        'line-color': buildColorMatch(),
         'line-opacity': 0.85,
       },
       layout: {

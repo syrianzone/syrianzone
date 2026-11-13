@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { normalizeFeatureCollection, normalizePosition } from '@/Components/map/geo'
+import type { StudioDraftPayload } from '../_types/admin'
 
 export interface StopFeature {
   id: number
@@ -8,7 +10,7 @@ export interface StopFeature {
 
 export type WizardStep = 1 | 2 | 3 | 4 | 5
 
-interface StudioState {
+export interface StudioState {
   step: WizardStep
   cityId: string
   drawnLine: [number, number][] | null
@@ -36,12 +38,17 @@ interface StudioState {
   setColorIndex: (idx: number) => void
   setSubmittedDraftId: (id: number | null) => void
   setEditMode: (draftId: number | null, routeId?: string | null) => void
-  loadDraft: (draft: any) => void
+  loadDraft: (draft: StudioDraftPayload) => void
   reset: () => void
 }
 
-const initialState = {
-  step: 1 as WizardStep,
+/** A partial restore, e.g. the session stashed before a login redirect. */
+export type StudioPatch = Partial<Omit<StudioState, 'setStep' | 'setCity' | 'setDrawnLine' | 'addStop' | 'updateStopName' | 'updateStopCoordinates' | 'removeStop' | 'setMeta' | 'setColorIndex' | 'setSubmittedDraftId' | 'setEditMode' | 'loadDraft' | 'reset'>>
+
+type StudioStateFields = Omit<StudioState, 'setStep' | 'setCity' | 'setDrawnLine' | 'addStop' | 'updateStopName' | 'updateStopCoordinates' | 'removeStop' | 'setMeta' | 'setColorIndex' | 'setSubmittedDraftId' | 'setEditMode' | 'loadDraft' | 'reset'>
+
+const initialState: StudioStateFields = {
+  step: 1,
   cityId: '',
   drawnLine: null,
   stops: [],
@@ -82,29 +89,33 @@ export const useStudioStore = create<StudioState>((set) => ({
   setEditMode: (draftId, routeId) =>
     set({ editingDraftId: draftId, editingRouteId: routeId ?? null, isEditMode: draftId !== null || routeId !== null }),
   loadDraft: (draft) => {
-    const geojson = typeof draft.geojson === 'string' ? JSON.parse(draft.geojson) : draft.geojson
+    const geojson = normalizeFeatureCollection(draft.geojson)
     let drawnLine: [number, number][] | null = null
     const stops: StopFeature[] = []
     let extractedColorIndex = draft.color_index ?? draft.colorIndex ?? 0
-    for (const f of geojson?.features ?? []) {
-      if (f.properties?.colorIndex !== undefined) extractedColorIndex = f.properties.colorIndex
-      if (f.properties?.color_index !== undefined) extractedColorIndex = f.properties.color_index
-      if (f.geometry?.type === 'LineString') {
-        drawnLine = f.geometry.coordinates as [number, number][]
-      } else if (f.geometry?.type === 'Point') {
-        let coords = f.geometry.coordinates
-        while (Array.isArray(coords) && Array.isArray(coords[0])) {
-          coords = coords[0]
-        }
-        if (Array.isArray(coords) && coords.length >= 2 && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+
+    for (const feature of geojson.features) {
+      const properties = feature.properties
+      const fromProperties = properties?.colorIndex ?? properties?.color_index
+      if (fromProperties !== undefined) extractedColorIndex = Number(fromProperties)
+
+      if (feature.geometry.type === 'LineString') {
+        const coordinates = feature.geometry.coordinates
+          .map((position) => normalizePosition(position))
+          .filter((position): position is [number, number] => position !== null)
+        if (coordinates.length > 0) drawnLine = coordinates
+      } else if (feature.geometry.type === 'Point') {
+        const coordinates = normalizePosition(feature.geometry.coordinates)
+        if (coordinates) {
           stops.push({
             id: Date.now() + stops.length,
-            coordinates: [coords[0], coords[1]],
-            nameAr: f.properties?.nameAr ?? '',
+            coordinates,
+            nameAr: String(properties?.nameAr ?? ''),
           })
         }
       }
     }
+
     const isPublishedRoute = !!draft.is_published_route
     set({
       cityId: draft.city_id ?? '',
@@ -117,7 +128,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       colorIndex: Number(extractedColorIndex) || 0,
       step: 5,
       editingDraftId: isPublishedRoute ? null : (draft.id ?? null),
-      editingRouteId: isPublishedRoute ? draft.route_id : null,
+      editingRouteId: isPublishedRoute ? draft.route_id ?? null : null,
       isEditMode: true,
     })
   },

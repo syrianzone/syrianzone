@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
-    Settings, Sun, Link, Globe, Plus, Edit, X,
-    Cloud, CloudRain, CloudLightning, Snowflake, Wind,
+    Settings, Globe, Plus, Edit, X,
     Info, BarChart3, Shield, FileText,
     History
 } from 'lucide-react';
@@ -17,17 +16,21 @@ import AppearanceMenu from '@/Components/AppearanceMenu';
 import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_lib/links';
-import { getGeo, getLocMode, useLocSignal } from '@/Domain/location/location';
+import {
+    adoptAccountLocation,
+    readLocationPreference,
+    useLocationPreference,
+    type LocationPatch,
+} from '@/Domain/location/preference';
+import { readStoredMethod } from '@/Domain/settings/prefs';
+import { formatHijriDate } from '@/Domain/prayer/hijri';
+import { nextPrayer } from '@/Domain/prayer/nextPrayer';
+import { usePrayerTimes } from '@/Domain/prayer/times';
+import { useWeather } from '@/Domain/weather/weather';
+import { WeatherIcon } from '@/Domain/weather/WeatherIcon';
 import { getLastPage } from '@/Lib/visit';
 import { useAppShell } from '@/Lib/appShell';
 import { formatGregorianSyrian } from '@/Lib/syrian-date';
-import { GOVERNORATES_BY_ID } from '@/Domain/geography/governorates';
-
-/** The manual governorate's centre in the `{ lat, lon }` shape the fetchers use. */
-const governorateCentre = (id: string) => {
-    const governorate = GOVERNORATES_BY_ID[id] ?? GOVERNORATES_BY_ID['damascus'];
-    return { lat: governorate.lat, lon: governorate.lng };
-};
 
 const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/HomeSettingsDialog'));
 const AddLinkDialog = React.lazy(() => import('@/Pages/Home/_components/AddLinkDialog'));
@@ -47,21 +50,6 @@ const getFaviconUrl = (urlStr: string) => {
     }
 };
 
-const WEATHER_TRANSLATIONS: Record<string, string> = {
-    "clear sky": "سماء صافية",
-    "few clouds": "غيوم قليلة",
-    "scattered clouds": "غيوم متفرقة",
-    "broken clouds": "غيوم جزئية",
-    "shower rain": "مطر غزير",
-    "rain": "ممطر",
-    "thunderstorm": "عاصفة رعدية",
-    "snow": "مثلج",
-    "mist": "ضباب",
-    "overcast clouds": "غيوم ملبدة",
-    "light rain": "مطر خفيف",
-    "moderate rain": "مطر متوسط",
-};
-
 export default function Home() {
     const { props } = usePage<{ auth?: { user: { id: number; name: string; email: string; avatar_url: string; role: string; settings?: Record<string, any> | null } | null } }>();
     const user = props.auth?.user ?? null;
@@ -77,34 +65,24 @@ export default function Home() {
     // Last-visited page badge. Read after mount (localStorage) so the server
     // render and first client render agree; see the SSR note below.
     const [lastPage, setLastPage] = useState<string | null>(null);
-    // Shared device location (GPS/IP resolved in /muslim or settings):
-    // overrides the manual city while active.
-    const locSig = useLocSignal();
-    const sharedCoords = () => {
-        const mode = getLocMode();
-        const geo = getGeo();
-        if ((mode === 'gps' || mode === 'ip') && geo) {
-            return { lat: geo.lat, lon: geo.lon };
-        }
-        return null;
-    };
+    // The shared location preference (city, manual coordinates, GPS/IP point).
+    const location = useLocationPreference();
     const [mounted, setMounted] = useState(false);
 
-    // Weather state
-    const [weather, setWeather] = useState<any>(null);
-    const [governorate, setGovernorate] = useState('damascus');
+    // Weather and the upcoming prayer for that same location.
     const [eventsGovernorate, setEventsGovernorate] = useState('all');
-    const [prayerTimes, setPrayerTimes] = useState<Record<string, string> | null>(null);
 
     // Widget visibility states
     const [showWeather, setShowWeather] = useState(true);
     const [showPrayerTimes, setShowPrayerTimes] = useState(true);
     const [showEvents, setShowEvents] = useState(true);
 
-    // Custom coordinates states
-    const [useCustomCoords, setUseCustomCoords] = useState(false);
-    const [customLat, setCustomLat] = useState('');
-    const [customLon, setCustomLon] = useState('');
+    const { weather } = useWeather(location, { enabled: mounted && showWeather, sessionCache: true });
+    const { timings: prayerTimes } = usePrayerTimes(location, readStoredMethod(), {
+        enabled: mounted && showPrayerTimes,
+        timeoutMs: null,
+        sessionCache: true,
+    });
 
     // Debounced account-settings saver: per-keystroke POSTs (lat/lon, toggles)
     // previously hit /api/user/settings unthrottled. Coalesce partials over
@@ -153,15 +131,20 @@ export default function Home() {
 
         const savedTheme = accSettings.theme ?? getThemePreference();
         const savedFont = accSettings.fontFamily ?? getFontPreference();
-        const savedGovernorate = accSettings.governorate ?? (localStorage.getItem('governorate') || 'damascus');
         const savedEventsGovernorate = accSettings.eventsGovernorate ?? (localStorage.getItem('eventsGovernorate') || 'all');
         const savedShowWeather = accSettings.showWeather ?? (localStorage.getItem('sz-showWeather') !== 'false');
         const savedShowPrayerTimes = accSettings.showPrayerTimes ?? (localStorage.getItem('sz-showPrayerTimes') !== 'false');
         const savedShowEvents = accSettings.showEvents ?? (localStorage.getItem('sz-showEvents') !== 'false');
 
-        const savedUseCustomCoords = accSettings.useCustomCoords ?? (localStorage.getItem('useCustomCoords') === 'true');
-        const savedCustomLat = accSettings.customLat ?? (localStorage.getItem('customLat') || '');
-        const savedCustomLon = accSettings.customLon ?? (localStorage.getItem('customLon') || '');
+        // The location keys are conflict-tracked: fill the gaps from the account
+        // and never overwrite a device value the login sync still has to compare.
+        adoptAccountLocation({
+            city: accSettings.governorate ?? null,
+            useCustomCoords: accSettings.useCustomCoords ?? null,
+            customLat: accSettings.customLat ?? null,
+            customLon: accSettings.customLon ?? null,
+        });
+        const savedLocation = readLocationPreference();
 
         let parsedLinks: CustomLink[] = [];
         if (accSettings.customLinks) {
@@ -173,47 +156,36 @@ export default function Home() {
             }
         }
 
-        // Sync to localStorage (governorate set-if-absent only: it is a
-        // conflict-tracked key, so a logged-out change must survive until the
-        // login sync compares both sides; everything else keeps server-wins).
+        // Sync to localStorage (everything except the location keys, which the
+        // location module already seeded above).
         if (savedTheme) persistTheme(savedTheme);
         if (savedFont) applyFont(savedFont);
-        if (localStorage.getItem('governorate') === null) {
-            localStorage.setItem('governorate', savedGovernorate);
-        }
         if (localStorage.getItem('eventsGovernorate') === null) {
             localStorage.setItem('eventsGovernorate', savedEventsGovernorate);
         }
         localStorage.setItem('sz-showWeather', String(savedShowWeather));
         localStorage.setItem('sz-showPrayerTimes', String(savedShowPrayerTimes));
         localStorage.setItem('sz-showEvents', String(savedShowEvents));
-        localStorage.setItem('useCustomCoords', String(savedUseCustomCoords));
-        localStorage.setItem('customLat', savedCustomLat);
-        localStorage.setItem('customLon', savedCustomLon);
         localStorage.setItem('customLinks', JSON.stringify(parsedLinks));
 
         setTheme(savedTheme);
-        setGovernorate(savedGovernorate);
         setEventsGovernorate(savedEventsGovernorate);
         setShowWeather(savedShowWeather);
         setShowPrayerTimes(savedShowPrayerTimes);
         setShowEvents(savedShowEvents);
-        setUseCustomCoords(savedUseCustomCoords);
-        setCustomLat(savedCustomLat);
-        setCustomLon(savedCustomLon);
         setCustomLinks(parsedLinks);
 
         // If user logged in and has missing account settings, sync initial state to DB
         if (user && Object.keys(accSettings).length === 0) {
             saveAccountSettings({
                 theme: savedTheme,
-                governorate: savedGovernorate,
+                governorate: savedLocation.city,
                 showWeather: savedShowWeather,
                 showPrayerTimes: savedShowPrayerTimes,
                 showEvents: savedShowEvents,
-                useCustomCoords: savedUseCustomCoords,
-                customLat: savedCustomLat,
-                customLon: savedCustomLon,
+                useCustomCoords: savedLocation.useCustomCoords,
+                customLat: savedLocation.customLat,
+                customLon: savedLocation.customLon,
                 customLinks: parsedLinks,
             });
         }
@@ -237,133 +209,6 @@ export default function Home() {
         observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         return () => observer.disconnect();
     }, []);
-
-    const getWeatherIcon = (iconCode: string) => {
-        if (iconCode.startsWith('01')) return <Sun className="w-8 h-8 text-yellow-500" />;
-        if (iconCode.startsWith('02')) return <Sun className="w-8 h-8 text-orange-400" />;
-        if (iconCode.startsWith('03') || iconCode.startsWith('04')) return <Cloud className="w-8 h-8 text-gray-400" />;
-        if (iconCode.startsWith('09') || iconCode.startsWith('10')) return <CloudRain className="w-8 h-8 text-blue-400" />;
-        if (iconCode.startsWith('11')) return <CloudLightning className="w-8 h-8 text-purple-500" />;
-        if (iconCode.startsWith('13')) return <Snowflake className="w-8 h-8 text-white" />;
-        if (iconCode.startsWith('50')) return <Wind className="w-8 h-8 text-gray-300" />;
-        return <Sun className="w-8 h-8 text-yellow-500" />;
-    };
-
-    // Fetch weather
-    useEffect(() => {
-        const fetchWeather = async () => {
-            try {
-                const hasCustom = useCustomCoords && customLat && customLon;
-                const coords = sharedCoords() ?? (hasCustom
-                    ? { lat: parseFloat(customLat), lon: parseFloat(customLon) }
-                    : governorateCentre(governorate));
-
-                if (isNaN(coords.lat) || isNaN(coords.lon)) return;
-
-                const cacheKey = `sz_weather_${coords.lat}_${coords.lon}`;
-                const cached = sessionStorage.getItem(cacheKey);
-                if (cached) {
-                    try {
-                        const { data, timestamp } = JSON.parse(cached);
-                        if (Date.now() - timestamp < 15 * 60 * 1000) {
-                            let description = data.weather[0].description;
-                            if (WEATHER_TRANSLATIONS[description]) {
-                                description = WEATHER_TRANSLATIONS[description];
-                            }
-                            setWeather({
-                                temp: Math.round(data.main.temp),
-                                description: description,
-                                icon: getWeatherIcon(data.weather[0].icon)
-                            });
-                            return;
-                        }
-                    } catch (err) {}
-                }
-
-                const response = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
-                if (!response.ok) throw new Error('Weather fetch failed');
-                const data = await response.json();
-
-                sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
-
-                let description = data.weather[0].description;
-                if (WEATHER_TRANSLATIONS[description]) {
-                    description = WEATHER_TRANSLATIONS[description];
-                }
-
-                setWeather({
-                    temp: Math.round(data.main.temp),
-                    description: description,
-                    icon: getWeatherIcon(data.weather[0].icon)
-                });
-            } catch (e) {
-                console.error(e);
-                setWeather(null);
-            }
-        };
-
-        if (mounted && showWeather) {
-            fetchWeather();
-        }
-    }, [governorate, useCustomCoords, customLat, customLon, mounted, showWeather, locSig]);
-
-    // Fetch prayer times for the upcoming prayer widget.
-    // Unified with /muslim: calculation method + custom coords saved there
-    // drive this widget (server proxy, cached per day like Roznama/Board).
-    useEffect(() => {
-        const fetchPrayers = async () => {
-            try {
-                const muslimMethod = Number(localStorage.getItem('sz-muslim-method') || '3') || 3;
-                const muslimCustom = localStorage.getItem('sz-muslim-use-custom') === 'true';
-                const muslimLat = localStorage.getItem('sz-muslim-lat') || '';
-                const muslimLon = localStorage.getItem('sz-muslim-lon') || '';
-                const hasCustom = (useCustomCoords && customLat && customLon)
-                    || (muslimCustom && muslimLat && muslimLon);
-                const coords = sharedCoords() ?? (hasCustom
-                    ? {
-                        lat: parseFloat(useCustomCoords && customLat ? customLat : muslimLat),
-                        lon: parseFloat(useCustomCoords && customLon ? customLon : muslimLon),
-                    }
-                    : governorateCentre(governorate));
-
-                if (isNaN(coords.lat) || isNaN(coords.lon)) return;
-
-                const now = new Date();
-                const day = String(now.getDate()).padStart(2, '0');
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const year = now.getFullYear();
-                const dateStr = `${day}-${month}-${year}`;
-
-                const cacheKey = `sz_prayers_${coords.lat}_${coords.lon}_${muslimMethod}_${dateStr}`;
-                const cached = sessionStorage.getItem(cacheKey);
-                if (cached) {
-                    try {
-                        setPrayerTimes(JSON.parse(cached));
-                        return;
-                    } catch (err) {}
-                }
-
-                const params = new URLSearchParams({
-                    latitude: String(coords.lat),
-                    longitude: String(coords.lon),
-                    method: String(muslimMethod),
-                });
-                const response = await fetch(`/api/prayer-times?${params.toString()}`);
-                if (!response.ok) throw new Error('Prayer times fetch failed');
-                const data = await response.json();
-                if (data.timings) {
-                    sessionStorage.setItem(cacheKey, JSON.stringify(data.timings));
-                    setPrayerTimes(data.timings);
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        };
-
-        if (mounted && showPrayerTimes) {
-            fetchPrayers();
-        }
-    }, [governorate, useCustomCoords, customLat, customLon, mounted, showPrayerTimes, locSig]);
 
     const applyTheme = (newTheme: string) => {
         setTheme(newTheme);
@@ -396,8 +241,18 @@ export default function Home() {
     const isDark = isDarkTheme(activeTheme, systemDark);
 
     // Navbar info strip (static per render): next prayer + weather + date.
-    const prayerMini = showPrayerTimes ? getNextPrayerInfo(prayerTimes, new Date()) : null;
+    const prayerMini = showPrayerTimes ? nextPrayer(prayerTimes, new Date()) : null;
     const weatherMini = showWeather && weather ? weather : null;
+
+    /** Mirror a location edit into the account settings (device storage is the module's). */
+    const handleLocationChange = (patch: LocationPatch) => {
+        const accountPatch: Record<string, unknown> = {};
+        if (patch.city !== undefined) accountPatch.governorate = patch.city;
+        if (patch.useCustomCoords !== undefined) accountPatch.useCustomCoords = patch.useCustomCoords;
+        if (patch.customLat !== undefined) accountPatch.customLat = patch.customLat;
+        if (patch.customLon !== undefined) accountPatch.customLon = patch.customLon;
+        if (Object.keys(accountPatch).length > 0) saveAccountSettings(accountPatch);
+    };
 
     return (
         <MainLayout>
@@ -420,7 +275,7 @@ export default function Home() {
                             {prayerMini && (
                                 <span className="flex items-center gap-1.5 whitespace-nowrap">
                                     <span className="font-semibold text-foreground">{prayerMini.label}</span>
-                                    <span dir="ltr" className="tabular-nums">{prayerMini.timeStr}</span>
+                                    <span dir="ltr" className="tabular-nums">{prayerMini.time}</span>
                                 </span>
                             )}
                             {prayerMini && weatherMini && (
@@ -428,7 +283,7 @@ export default function Home() {
                             )}
                             {weatherMini && (
                                 <span className="flex items-center gap-1.5 whitespace-nowrap">
-                                    <span className="[&>svg]:w-4 [&>svg]:h-4">{weatherMini.icon}</span>
+                                    <span className="[&>svg]:w-4 [&>svg]:h-4"><WeatherIcon code={weatherMini.icon} /></span>
                                     <span className="font-semibold text-foreground">{weatherMini.temp}°C</span>
                                     <span>{weatherMini.description}</span>
                                 </span>
@@ -438,7 +293,7 @@ export default function Home() {
                             )}
                             {mounted && (
                                 <span className="whitespace-nowrap font-medium text-foreground">
-                                    {formatGregorianSyrian(new Date())} • {formatHijriArabic(new Date())}
+                                    {formatGregorianSyrian(new Date())} • {formatHijriDate(new Date())}
                                 </span>
                             )}
                         </div>
@@ -475,7 +330,7 @@ export default function Home() {
                         {mounted && (
                             <>
                                 <span className="text-base font-bold text-foreground">{formatGregorianSyrian(new Date())}</span>
-                                <span className="text-sm text-primary/80 font-medium">{formatHijriArabic(new Date())}</span>
+                                <span className="text-sm text-primary/80 font-medium">{formatHijriDate(new Date())}</span>
                             </>
                         )}
                     </div>
@@ -484,20 +339,17 @@ export default function Home() {
                     <div className="flex items-center justify-center gap-4 mb-6 text-sm lg:hidden">
                         {showWeather && weather && (
                             <span className="flex items-center gap-1.5 text-muted-foreground">
-                                <span className="[&>svg]:w-5 [&>svg]:h-5">{weather.icon}</span>
+                                <span className="[&>svg]:w-5 [&>svg]:h-5"><WeatherIcon code={weather.icon} /></span>
                                 <span className="font-semibold text-foreground">{weather.temp}°C</span>
                                 <span className="text-xs">{weather.description}</span>
                             </span>
                         )}
-                        {showPrayerTimes && (() => {
-                            const mini = getNextPrayerInfo(prayerTimes, new Date());
-                            return mini ? (
-                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                    <span className="font-semibold text-foreground">{mini.label}</span>
-                                    <span dir="ltr" className="tabular-nums text-xs">{mini.timeStr}</span>
-                                </span>
-                            ) : null;
-                        })()}
+                        {prayerMini && (
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                                <span className="font-semibold text-foreground">{prayerMini.label}</span>
+                                <span dir="ltr" className="tabular-nums text-xs">{prayerMini.time}</span>
+                            </span>
+                        )}
                     </div>
 
                     {/* Events */}
@@ -755,8 +607,6 @@ export default function Home() {
                         <HomeSettingsDialog
                             open={settingsOpen}
                             onOpenChange={setSettingsOpen}
-                            governorate={governorate}
-                            setGovernorate={setGovernorate}
                             eventsGovernorate={eventsGovernorate}
                             setEventsGovernorate={setEventsGovernorate}
                             showWeather={showWeather}
@@ -765,12 +615,7 @@ export default function Home() {
                             setShowPrayerTimes={setShowPrayerTimes}
                             showEvents={showEvents}
                             setShowEvents={setShowEvents}
-                            useCustomCoords={useCustomCoords}
-                            setUseCustomCoords={setUseCustomCoords}
-                            customLat={customLat}
-                            setCustomLat={setCustomLat}
-                            customLon={customLon}
-                            setCustomLon={setCustomLon}
+                            onLocationChange={handleLocationChange}
                             saveAccountSettings={saveAccountSettings}
                         />
                     </React.Suspense>
@@ -799,85 +644,4 @@ export default function Home() {
             </div>
         </MainLayout>
     );
-}
-
-// Hijri date (module-level so the navbar and the hero share one implementation).
-function formatHijriArabic(date: Date | null): string {
-    if (!date) return "";
-    try {
-        const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic-umalqura', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        });
-        const formatted = formatter.format(date);
-        return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-    } catch (e) {
-        try {
-            const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-            const formatted = formatter.format(date);
-            return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-        } catch (err) {
-            return "";
-        }
-    }
-}
-
-interface NextPrayerInfo {
-    key: string;
-    label: string;
-    timeStr: string;
-}
-
-// Next-prayer computation shared by the widget (ticking) and navbar minis (static).
-function getNextPrayerInfo(
-    prayerTimes: Record<string, string> | null,
-    now: Date | null
-): NextPrayerInfo | null {
-    if (!prayerTimes || !now) return null;
-
-    const events = [
-        { key: 'Fajr', label: 'الفجر' },
-        { key: 'Sunrise', label: 'الشروق' },
-        { key: 'Dhuhr', label: 'الظهر' },
-        { key: 'Asr', label: 'العصر' },
-        { key: 'Maghrib', label: 'المغرب' },
-        { key: 'Isha', label: 'العشاء' }
-    ];
-
-    const parsedEvents = events.map(ev => {
-        const timeStr = prayerTimes[ev.key];
-        if (!timeStr) return null;
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        const eventTime = new Date(now);
-        eventTime.setHours(hours, minutes, 0, 0);
-        return { ...ev, time: eventTime };
-    }).filter(Boolean) as Array<{ key: string; label: string; time: Date }>;
-
-    if (parsedEvents.length === 0) return null;
-
-    parsedEvents.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-    const nextEventIndex = parsedEvents.findIndex(ev => ev.time > now);
-
-    if (nextEventIndex === -1) {
-        const firstEvent = parsedEvents[0];
-
-        return {
-            key: firstEvent.key,
-            label: firstEvent.label,
-            timeStr: prayerTimes[firstEvent.key],
-        };
-    } else {
-        const nextEvent = parsedEvents[nextEventIndex];
-        return {
-            key: nextEvent.key,
-            label: nextEvent.label,
-            timeStr: prayerTimes[nextEvent.key],
-        };
-    }
 }

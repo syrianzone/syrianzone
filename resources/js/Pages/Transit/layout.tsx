@@ -1,6 +1,5 @@
 import React from 'react'
 import './transit.css'
-import { TransitThemeProvider } from './_components/TransitThemeContext'
 import MainLayout from '@/Layouts/MainLayout'
 import TransitSidebarLayout from './TransitSidebarLayout'
 
@@ -13,11 +12,9 @@ export default function TransitLayout({
 }) {
   return (
     <MainLayout>
-      <TransitThemeProvider>
-        <TransitSidebarLayout>
-          {children}
-        </TransitSidebarLayout>
-      </TransitThemeProvider>
+      <TransitSidebarLayout>
+        {children}
+      </TransitSidebarLayout>
     </MainLayout>
   )
 }

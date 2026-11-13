@@ -3,6 +3,12 @@ import { getGovernorateNameAr, governorateById } from '../geography/governorates
 import { PRAYER_METHODS } from '../prayer/methods';
 import { MUSLIM_LS_KEYS, prunePrayerLog } from './prefs';
 import { pushGuestBookmarks } from '../quran/guestBookmarks';
+import {
+  readDeviceCity,
+  readDeviceCustomCoords,
+  writeDeviceCity,
+  writeDeviceCustomCoords,
+} from '../location/preference';
 
 // Login settings sync for Muslim Corner + Roznama + Homepage.
 // Layers: device localStorage (guests + offline) vs users.settings (account).
@@ -94,11 +100,7 @@ interface CustomLoc {
 }
 
 function readLocalCustom(): CustomLoc | null {
-  const on = ls(MUSLIM_LS_KEYS.useCustom);
-  const lat = ls(MUSLIM_LS_KEYS.lat) ?? '';
-  const lon = ls(MUSLIM_LS_KEYS.lon) ?? '';
-  if (on === null && !lat && !lon) return null;
-  return { on, lat, lon };
+  return readDeviceCustomCoords();
 }
 
 function readServerCustom(s: ServerSettings): CustomLoc | null {
@@ -236,23 +238,20 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
 
   scalar(
     'governorate', 'المدينة (الرئيسية والروزنامة)',
-    sanitizeCity(ls('governorate') ?? ls('sz-roznama-governorate')),
+    sanitizeCity(readDeviceCity('display')),
     sanitizeCity(server.governorate ?? null),
     cityLabel,
     (v) => v,
-    (v) => {
-      lsSet('governorate', v);
-      lsSet('sz-roznama-governorate', v);
-    },
+    (v) => writeDeviceCity('display', v),
   );
 
   scalar(
     'muslimCity', 'مدينة المواقيت',
-    sanitizeCity(ls(MUSLIM_LS_KEYS.city)),
+    sanitizeCity(readDeviceCity('prayer')),
     sanitizeCity(server.muslimCity ?? null),
     cityLabel,
     (v) => v,
-    (v) => lsSet(MUSLIM_LS_KEYS.city, v),
+    (v) => writeDeviceCity('prayer', v),
   );
 
   scalar(
@@ -276,9 +275,11 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
     if (lat !== null) put('muslimLat', lat);
     if (lon !== null) put('muslimLon', lon);
   } else if (localCustom === null && serverCustom !== null) {
-    if (serverCustom.on !== null) lsSet(MUSLIM_LS_KEYS.useCustom, serverCustom.on);
-    if (serverCustom.lat !== '') lsSet(MUSLIM_LS_KEYS.lat, serverCustom.lat);
-    if (serverCustom.lon !== '') lsSet(MUSLIM_LS_KEYS.lon, serverCustom.lon);
+    writeDeviceCustomCoords({
+      ...(serverCustom.on !== null ? { on: serverCustom.on } : {}),
+      ...(serverCustom.lat !== '' ? { lat: serverCustom.lat } : {}),
+      ...(serverCustom.lon !== '' ? { lon: serverCustom.lon } : {}),
+    });
   } else if (!sameCustom(localCustom, serverCustom)) {
     conflicts.push({
       key: 'customLoc',
@@ -323,10 +324,13 @@ export async function applyConflictChoices(
     const choice = choices[c.key];
     if (!choice) continue;
     if (c.key === 'governorate' || c.key === 'muslimCity' || c.key === 'muslimMethod') {
-      const lsKey =
-        c.key === 'governorate' ? 'governorate' : c.key === 'muslimCity' ? MUSLIM_LS_KEYS.city : MUSLIM_LS_KEYS.method;
       if (choice === 'local') {
-        const v = ls(lsKey);
+        const v =
+          c.key === 'governorate'
+            ? readDeviceCity('display')
+            : c.key === 'muslimCity'
+              ? readDeviceCity('prayer')
+              : ls(MUSLIM_LS_KEYS.method);
         if (v !== null) {
           if (c.key === 'muslimMethod') {
             const n = Number(v);
@@ -334,7 +338,7 @@ export async function applyConflictChoices(
           } else {
             serverPatch[serverKeyFor(c.key)] = v;
           }
-          if (c.key === 'governorate') lsSet('sz-roznama-governorate', v);
+          if (c.key === 'governorate') writeDeviceCity('display', v);
         }
       } else {
         // server wins: pull into device storage (re-read from account below).
@@ -360,18 +364,17 @@ export function pullServerValues(rawSettings: Record<string, unknown> | null | u
   const s = (rawSettings ?? {}) as ServerSettings;
   for (const key of keys) {
     if (key === 'governorate' && s.governorate) {
-      lsSet('governorate', s.governorate);
-      lsSet('sz-roznama-governorate', s.governorate);
+      writeDeviceCity('display', s.governorate);
     } else if (key === 'muslimCity' && s.muslimCity) {
-      lsSet(MUSLIM_LS_KEYS.city, s.muslimCity);
+      writeDeviceCity('prayer', s.muslimCity);
     } else if (key === 'muslimMethod' && s.muslimMethod !== null && s.muslimMethod !== undefined) {
       lsSet(MUSLIM_LS_KEYS.method, String(s.muslimMethod));
     } else if (key === 'customLoc') {
       const cur = readServerCustom(s);
       if (!cur) continue;
-      if (cur.on !== null) lsSet(MUSLIM_LS_KEYS.useCustom, cur.on);
-      lsSet(MUSLIM_LS_KEYS.lat, cur.lat);
-      lsSet(MUSLIM_LS_KEYS.lon, cur.lon);
+      // An empty lat/lon here means the account has none: clear the device copy
+      // so the next login compares equal (same as before the move).
+      writeDeviceCustomCoords({ ...(cur.on !== null ? { on: cur.on } : {}), lat: cur.lat, lon: cur.lon });
     }
   }
 }

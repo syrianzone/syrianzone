@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useId, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
-    Calendar, Clock, MapPin, Sparkles, AlertCircle, Info,
-    Sun, Sunset, Timer, Check, ShieldAlert, Heart, CalendarDays,
-    ExternalLink, MoonStar, Sunrise, SunDim, Moon, Settings,
-    Cloud, CloudRain, CloudLightning, Snowflake, Wind
+    Calendar, Clock, MapPin, Sparkles, AlertCircle, Info, CalendarDays,
+    ExternalLink, Settings,
 } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Badge } from "@/Components/ui/badge";
 import { Switch } from "@/Components/ui/switch";
 interface EventCategory {
@@ -33,7 +30,6 @@ interface F3aliaEvent {
 }
 
 import { Label } from "@/Components/ui/label";
-import { Input } from "@/Components/ui/input";
 import MainLayout from '@/Layouts/MainLayout';
 import axios from '@/Lib/axios';
 import {
@@ -42,23 +38,30 @@ import {
 import {
     Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/Components/ui/sheet';
-import LocationModeSelector from '@/Domain/location/LocationModeSelector';
-import { LOC_CHANGED_EVENT, effectivePrayerParams, getGeo, getLocMode, setLocMode, useLocSignal, type GeoPoint, type LocMode } from '@/Domain/location/location';
-import { PRAYER_METHODS } from '@/Domain/prayer/methods';
+import {
+    adoptAccountLocation,
+    isDeviceLocation,
+    resolvePlaceLabel,
+    useLocationPreference,
+    type AccountLocation,
+    type LocationPatch,
+} from '@/Domain/location/preference';
+import { PRAYER_KEYS, PRAYER_LABELS } from '@/Domain/prayer/methods';
+import { formatHijriDate, hijriDateLabel } from '@/Domain/prayer/hijri';
+import { prayerSchedule } from '@/Domain/prayer/nextPrayer';
+import { usePrayerTimes } from '@/Domain/prayer/times';
+import { PrayerIcon } from '@/Domain/prayer/PrayerIcon';
+import PrayerSettingsFields from '@/Domain/prayer/PrayerSettingsFields';
+import { readStoredMethod, writeStoredMethod } from '@/Domain/settings/prefs';
+import { useWeather } from '@/Domain/weather/weather';
+import { WeatherIcon } from '@/Domain/weather/WeatherIcon';
+import { formatDuration } from '@/Lib/format';
 import { useIsMobile } from '@/Lib/useIsMobile';
 import { useAppShell } from '@/Lib/appShell';
 import {
-    GOVERNORATES,
     GOVERNORATES_BY_ID,
     governorateNameForF3aliaProvince,
 } from '@/Domain/geography/governorates';
-
-
-/** The manual governorate's centre in the `{ lat, lon }` shape the fetchers use. */
-const governorateCentre = (id: string) => {
-    const governorate = GOVERNORATES_BY_ID[id] ?? GOVERNORATES_BY_ID['damascus'];
-    return { lat: governorate.lat, lon: governorate.lng };
-};
 
 const VARIABLE_HOLIDAYS_MAP: Record<number, Record<string, { month: number; day: number }>> = {
     2026: {
@@ -79,29 +82,8 @@ const VARIABLE_HOLIDAYS_MAP: Record<number, Record<string, { month: number; day:
     }
 };
 
-const PRAYER_EVENTS = [
-    { key: 'Fajr', label: 'الفجر', isPrayer: true },
-    { key: 'Sunrise', label: 'الشروق', isPrayer: false },
-    { key: 'Dhuhr', label: 'الظهر', isPrayer: true },
-    { key: 'Asr', label: 'العصر', isPrayer: true },
-    { key: 'Maghrib', label: 'المغرب', isPrayer: true },
-    { key: 'Isha', label: 'العشاء', isPrayer: true }
-];
-
-const WEATHER_TRANSLATIONS: Record<string, string> = {
-    "clear sky": "سماء صافية",
-    "few clouds": "غيوم قليلة",
-    "scattered clouds": "غيوم متفرقة",
-    "broken clouds": "غيوم جزئية",
-    "shower rain": "مطر غزير",
-    "rain": "ممطر",
-    "thunderstorm": "عاصفة رعدية",
-    "snow": "مثلج",
-    "mist": "ضباب",
-    "overcast clouds": "غيوم ملبدة",
-    "light rain": "مطر خفيف",
-    "moderate rain": "مطر متوسط",
-};
+// The six rows the card lists, in clock-of-day order.
+const PRAYER_EVENTS = PRAYER_KEYS.map((key) => ({ key, label: PRAYER_LABELS[key] }));
 
 interface ActiveHoliday {
     nameAr: string;
@@ -138,161 +120,44 @@ function holidaysForYear(year: number): ActiveHoliday[] {
     return list.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
-const getPrayerIcon = (key: string, className?: string) => {
-    switch (key) {
-        case 'Fajr': return <MoonStar className={className} />;
-        case 'Sunrise': return <Sunrise className={className} />;
-        case 'Dhuhr': return <Sun className={className} />;
-        case 'Asr': return <SunDim className={className} />;
-        case 'Maghrib': return <Sunset className={className} />;
-        case 'Isha': return <Moon className={className} />;
-        default: return <Clock className={className} />;
-    }
-};
-
-const getWeatherIcon = (iconCode: string) => {
-    if (iconCode.startsWith('01')) return <Sun className="w-6 h-6 text-yellow-500" />;
-    if (iconCode.startsWith('02')) return <Sun className="w-6 h-6 text-orange-400" />;
-    if (iconCode.startsWith('03') || iconCode.startsWith('04')) return <Cloud className="w-6 h-6 text-gray-400" />;
-    if (iconCode.startsWith('09') || iconCode.startsWith('10')) return <CloudRain className="w-6 h-6 text-blue-400" />;
-    if (iconCode.startsWith('11')) return <CloudLightning className="w-6 h-6 text-purple-500" />;
-    if (iconCode.startsWith('13')) return <Snowflake className="w-6 h-6 text-white" />;
-    if (iconCode.startsWith('50')) return <Wind className="w-6 h-6 text-gray-300" />;
-    return <Sun className="w-6 h-6 text-yellow-500" />;
-};
-
-// Settings body shared by the desktop Dialog and the mobile bottom Sheet.
-function RoznamaSettingsBody({
-    governorate,
-    onGovChange,
-    method,
-    onMethodChange,
-    customLat,
-    customLon,
-    onCustom,
-    locMode,
-    onLocMode,
-    geo,
-}: {
-    governorate: string;
-    onGovChange: (v: string) => void;
-    method: number;
-    onMethodChange: (v: string) => void;
-    customLat: string;
-    customLon: string;
-    onCustom: (patch: { on?: boolean; lat?: string; lon?: string }) => void;
-    locMode: LocMode;
-    onLocMode: (m: LocMode) => void;
-    geo: GeoPoint | null;
-}) {
-    const geoActive = (locMode === 'gps' || locMode === 'ip') && !!geo;
-    const latId = useId();
-    const lonId = useId();
-    return (
-        <div className="space-y-4">
-            <LocationModeSelector mode={locMode} onChange={onLocMode} />
-
-            {geoActive && geo && (
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    الموقع الحالي: <span className="font-semibold text-foreground">{geo.label}</span>
-                    <span dir="ltr" className="tabular-nums"> ({geo.lat}، {geo.lon})</span>
-                </p>
-            )}
-
-            {locMode === 'city' && (
-                <div className="space-y-2">
-                    <Label className="flex items-center gap-2 text-sm font-semibold">
-                        <MapPin className="h-4 w-4 text-primary" /> المدينة (للمواقيت والطقس والفعاليات)
-                    </Label>
-                    <Select value={governorate} onValueChange={onGovChange}>
-                        <SelectTrigger dir="rtl" aria-label="المدينة (للمواقيت والطقس والفعاليات)"><SelectValue /></SelectTrigger>
-                        <SelectContent dir="rtl">
-                            {GOVERNORATES.map((governorate) => (
-                                <SelectItem key={governorate.id} value={governorate.id}>
-                                    {governorate.nameAr}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            )}
-
-            {locMode === 'custom' && (
-                <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-card/10 p-3">
-                    <div className="space-y-1">
-                        <Label htmlFor={latId} className="text-xs">خط العرض (Lat)</Label>
-                        <Input id={latId}
-                            dir="ltr" inputMode="decimal" placeholder="33.51"
-                            value={customLat}
-                            onChange={(e) => onCustom({ lat: e.target.value })}
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor={lonId} className="text-xs">خط الطول (Lon)</Label>
-                        <Input id={lonId}
-                            dir="ltr" inputMode="decimal" placeholder="36.27"
-                            value={customLon}
-                            onChange={(e) => onCustom({ lon: e.target.value })}
-                        />
-                    </div>
-                </div>
-            )}
-
-            <div className="space-y-2">
-                <Label className="text-sm font-semibold">طريقة الحساب</Label>
-                <Select value={String(method)} onValueChange={onMethodChange}>
-                    <SelectTrigger dir="rtl" aria-label="طريقة الحساب"><SelectValue /></SelectTrigger>
-                    <SelectContent dir="rtl">
-                        {PRAYER_METHODS.map((m) => (
-                            <SelectItem key={m.id} value={String(m.id)}>{m.nameAr}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    {PRAYER_METHODS.find((m) => m.id === method)?.detail}
-                </p>
-            </div>
-        </div>
-    );
-}
-
 export default function Index() {
     const { props } = usePage<{ auth?: { user?: { id: number; settings?: Record<string, unknown> | null } | null } }>();
     const isMobile = useIsMobile();
-    const serverGovernorate = (props.auth?.user?.settings as Record<string, string> | undefined)?.governorate;
+    const serverSettings = (props.auth?.user?.settings ?? {}) as Record<string, unknown>;
+    const accountLocation: AccountLocation = {
+        city: typeof serverSettings.governorate === 'string' ? serverSettings.governorate : null,
+        useCustomCoords:
+            typeof serverSettings.useCustomCoords === 'boolean' ? serverSettings.useCustomCoords : null,
+        customLat: typeof serverSettings.customLat === 'string' ? serverSettings.customLat : null,
+        customLon: typeof serverSettings.customLon === 'string' ? serverSettings.customLon : null,
+    };
     const isLoggedIn = Boolean(props.auth?.user?.id);
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const [governorate, setGovernorate] = useState('damascus');
-    // Manual custom coords (last resort): shared Home keys, one custom
-    // location site-wide. Initialized server-first like the governorate.
-    const [useCustomCoords, setUseCustomCoords] = useState(false);
-    const [customLat, setCustomLat] = useState('');
-    const [customLon, setCustomLon] = useState('');
-    const [method, setMethod] = useState(() => {
-        if (typeof window === 'undefined') return 3;
-        return Number(window.localStorage.getItem('sz-muslim-method') || '3') || 3;
-    });
+    // One location preference, shared with Home, /muslim and the board.
+    const location = useLocationPreference();
+    const [method, setMethod] = useState(readStoredMethod);
     const roznamaSettingsOpen = useAppShell((s) => s.roznamaSettingsOpen);
     const setRoznamaSettingsOpen = useAppShell((s) => s.setRoznamaSettingsOpen);
 
-    const handleMethodChange = (v: string) => {
-        const m = Number(v) || 3;
-        setMethod(m);
-        try {
-            window.localStorage.setItem('sz-muslim-method', String(m));
-        } catch {
-            // private mode
-        }
-        window.dispatchEvent(new Event(LOC_CHANGED_EVENT));
+    const handleMethodChange = (next: number) => {
+        setMethod(next);
+        writeStoredMethod(next);
     };
     const [currentTime, setCurrentTime] = useState<Date>(new Date());
-    const [prayerTimes, setPrayerTimes] = useState<Record<string, string> | null>(null);
-    const [hijriDateFromApi, setHijriDateFromApi] = useState<string | null>(null);
-    const [weather, setWeather] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
+    const { weather } = useWeather(location, { enabled: mounted });
+    const {
+        timings: prayerTimes,
+        hijri,
+        loading,
+        error: prayerError,
+    } = usePrayerTimes(location, method, { enabled: mounted });
+    const error = prayerError
+        ? prayerError.timedOut
+            ? 'انتهت مهلة جلب المواقيت. حاول مجدداً.'
+            : prayerError.message || 'حدث خطأ أثناء الاتصال بالخادم'
+        : null;
 
     // F3alia Events States
     const [events, setEvents] = useState<F3aliaEvent[]>([]);
@@ -311,43 +176,15 @@ export default function Index() {
         }
         return false;
     });
-    // Shared device location (GPS/IP resolved in /muslim): overrides the
-    // manual governorate while active.
-    const locSig = useLocSignal();
-
     // Save Switch preference
     useEffect(() => {
         localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
     }, [hidePassed]);
 
-    // Load governorate + manual coords: account values win when present,
-    // else the saved device values. Written back set-if-absent only, so a
-    // logged-out change is never clobbered before the login sync compares.
+    // Fill an empty device from the account (set-if-absent only: the login sync
+    // compares both sides and the conflict modal owns the overwrite).
     useEffect(() => {
-        const settings = (props.auth?.user?.settings ?? {}) as Record<string, unknown>;
-        const lsRoznama = localStorage.getItem('sz-roznama-governorate');
-        const lsHome = localStorage.getItem('governorate');
-        const savedGov = serverGovernorate || lsRoznama || lsHome || 'damascus';
-        setGovernorate(savedGov);
-        const savedCustomOn = (settings.useCustomCoords as boolean | undefined)
-            ?? (localStorage.getItem('useCustomCoords') === 'true');
-        const savedCustomLat = (settings.customLat as string | undefined)
-            ?? (localStorage.getItem('customLat') || '');
-        const savedCustomLon = (settings.customLon as string | undefined)
-            ?? (localStorage.getItem('customLon') || '');
-        setUseCustomCoords(savedCustomOn);
-        setCustomLat(savedCustomLat);
-        setCustomLon(savedCustomLon);
-        try {
-            if (localStorage.getItem('sz-roznama-governorate') === null) {
-                localStorage.setItem('sz-roznama-governorate', savedGov);
-            }
-            if (localStorage.getItem('governorate') === null) {
-                localStorage.setItem('governorate', savedGov);
-            }
-        } catch {
-            // private mode
-        }
+        adoptAccountLocation(accountLocation);
         setMounted(true);
         setCurrentTime(new Date());
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -361,101 +198,6 @@ export default function Index() {
         return () => clearInterval(timer);
     }, []);
 
-    // Fetch Weather
-    useEffect(() => {
-        if (!mounted) return;
-
-        const fetchWeather = async () => {
-            try {
-                const shared = (() => {
-                    const mode = getLocMode();
-                    const geo = getGeo();
-                    return (mode === 'gps' || mode === 'ip') && geo ? geo : null;
-                })();
-                const custom = useCustomCoords && customLat && customLon
-                    && Number.isFinite(Number(customLat)) && Number.isFinite(Number(customLon))
-                    ? { lat: Number(customLat), lon: Number(customLon) } : null;
-                const coords = shared ?? custom ?? governorateCentre(governorate);
-                const response = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
-                if (!response.ok) throw new Error('Weather fetch failed');
-                const data = await response.json();
-
-                let description = data.weather[0].description;
-                if (WEATHER_TRANSLATIONS[description]) {
-                    description = WEATHER_TRANSLATIONS[description];
-                }
-
-                setWeather({
-                    temp: Math.round(data.main.temp),
-                    description: description,
-                    icon: getWeatherIcon(data.weather[0].icon)
-                });
-            } catch (e) {
-                console.error(e);
-                setWeather(null);
-            }
-        };
-
-        fetchWeather();
-    }, [governorate, useCustomCoords, customLat, customLon, mounted, locSig]);
-
-    // Fetch Prayer Times via server proxy (no direct Aladhan call: CORS +
-    // caching + fixed governorate list live in PrayerController).
-    useEffect(() => {
-        if (!mounted) return;
-
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 10000);
-
-        const fetchPrayerTimes = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                // Unified with /muslim: the calculation method saved there
-                // drives this card (default 3 = Muslim World League), and a
-                // resolved GPS/IP location overrides the manual governorate.
-                const method = Number(localStorage.getItem('sz-muslim-method') || '3') || 3;
-                const params = new URLSearchParams();
-                for (const [k, v] of Object.entries(effectivePrayerParams({
-                    mode: getLocMode(),
-                    geo: getGeo(),
-                    manualCity: governorate,
-                    method,
-                    useCustomCoords,
-                    customLat,
-                    customLon,
-                }))) params.set(k, String(v));
-                const response = await fetch(`/api/prayer-times?${params.toString()}`, { signal: ctrl.signal });
-                if (!response.ok) throw new Error('فشل جلب مواقيت الصلاة');
-                const result = await response.json();
-
-                const timings = result.timings;
-                if (!timings || typeof timings !== 'object') {
-                    throw new Error('بيانات مواقيت غير صالحة');
-                }
-                setPrayerTimes(timings);
-
-                const hijri = result.hijri;
-                if (hijri?.day && hijri?.month && hijri?.year) {
-                    setHijriDateFromApi(`${hijri.day} ${hijri.month} ${hijri.year}`);
-                }
-            } catch (err: any) {
-                if (err?.name === 'AbortError') {
-                    setError('انتهت مهلة جلب المواقيت. حاول مجدداً.');
-                } else {
-                    console.error(err);
-                    setError(err.message || 'حدث خطأ أثناء الاتصال بالخادم');
-                }
-            } finally {
-                clearTimeout(timer);
-                setLoading(false);
-            }
-        };
-
-        fetchPrayerTimes();
-        return () => { clearTimeout(timer); ctrl.abort(); };
-    }, [governorate, useCustomCoords, customLat, customLon, mounted, locSig]);
-
     // Fetch upcoming events via server proxy (/api/events/today).
     useEffect(() => {
         if (!mounted) return;
@@ -467,7 +209,7 @@ export default function Index() {
             setLoadingEvents(true);
             setEventsError(null);
             try {
-                const params = new URLSearchParams({ governorate });
+                const params = new URLSearchParams({ governorate: location.city });
                 if (showOtherGovEvents) params.set('governorate', 'all');
                 const response = await fetch(`/api/events/today?${params.toString()}`, { signal: ctrl.signal });
 
@@ -508,10 +250,8 @@ export default function Index() {
 
         fetchF3aliaEvents();
         return () => { clearTimeout(timer); ctrl.abort(); };
-    }, [governorate, showOtherGovEvents, mounted]);
+    }, [location.city, showOtherGovEvents, mounted]);
 
-    // Handle governorate change: device keys immediately, account debounced.
-    // Manual custom coords share Home's keys (one custom location site-wide).
     const savePrefs = (patch: Record<string, unknown>) => {
         if (!isLoggedIn) return;
         if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -520,32 +260,14 @@ export default function Index() {
         }, 600);
     };
 
-    const handleGovChange = (val: string) => {
-        setGovernorate(val);
-        try {
-            localStorage.setItem('sz-roznama-governorate', val);
-            localStorage.setItem('governorate', val);
-        } catch {
-            // private mode
-        }
-        savePrefs({ governorate: val });
-    };
-
-    const setCustom = (patch: { on?: boolean; lat?: string; lon?: string }) => {
-        const nextOn = patch.on ?? useCustomCoords;
-        const nextLat = patch.lat ?? customLat;
-        const nextLon = patch.lon ?? customLon;
-        if (patch.on !== undefined) setUseCustomCoords(patch.on);
-        if (patch.lat !== undefined) setCustomLat(patch.lat);
-        if (patch.lon !== undefined) setCustomLon(patch.lon);
-        try {
-            localStorage.setItem('useCustomCoords', String(nextOn));
-            localStorage.setItem('customLat', nextLat);
-            localStorage.setItem('customLon', nextLon);
-        } catch {
-            // private mode
-        }
-        savePrefs({ useCustomCoords: nextOn, customLat: nextLat, customLon: nextLon });
+    /** Device storage belongs to Domain/location; the account mirror is ours. */
+    const handleLocationChange = (patch: LocationPatch) => {
+        const accountPatch: Record<string, unknown> = {};
+        if (patch.city !== undefined) accountPatch.governorate = patch.city;
+        if (patch.useCustomCoords !== undefined) accountPatch.useCustomCoords = patch.useCustomCoords;
+        if (patch.customLat !== undefined) accountPatch.customLat = patch.customLat;
+        if (patch.customLon !== undefined) accountPatch.customLon = patch.customLon;
+        if (Object.keys(accountPatch).length > 0) savePrefs(accountPatch);
     };
 
     useEffect(() => () => {
@@ -566,76 +288,13 @@ export default function Index() {
         });
     };
 
-    const formatHijriFallback = (date: Date) => {
-        try {
-            const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic-umalqura', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-            const formatted = formatter.format(date);
-            return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-        } catch (e) {
-            return '';
-        }
-    };
-
-    // Calculate Active & Next Prayer/Event
-    const activeAndNext = useMemo(() => {
-        if (!prayerTimes) return null;
-
-        const parsedEvents = PRAYER_EVENTS.map(ev => {
-            const timeStr = prayerTimes[ev.key];
-            if (!timeStr) return null;
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            const eventTime = new Date(currentTime);
-            eventTime.setHours(hours, minutes, 0, 0);
-            return { ...ev, time: eventTime };
-        }).filter(Boolean) as Array<{ key: string; label: string; isPrayer: boolean; time: Date }>;
-
-        if (parsedEvents.length === 0) return null;
-
-        parsedEvents.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-        let nextEventIndex = parsedEvents.findIndex(ev => ev.time > currentTime);
-        
-        if (nextEventIndex === -1) {
-            const firstEvent = parsedEvents[0];
-            const tomorrowFajr = new Date(firstEvent.time);
-            tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
-
-            return {
-                activeEvent: parsedEvents[parsedEvents.length - 1],
-                nextEvent: { ...firstEvent, time: tomorrowFajr },
-                timeDiffMs: tomorrowFajr.getTime() - currentTime.getTime()
-            };
-        } else {
-            const activeEventIndex = nextEventIndex === 0 ? parsedEvents.length - 1 : nextEventIndex - 1;
-            const activeEvent = parsedEvents[activeEventIndex];
-            const nextEvent = parsedEvents[nextEventIndex];
-
-            let adjustedActiveTime = new Date(activeEvent.time);
-            if (nextEventIndex === 0) {
-                adjustedActiveTime.setDate(adjustedActiveTime.getDate() - 1);
-            }
-
-            return {
-                activeEvent: { ...activeEvent, time: adjustedActiveTime },
-                nextEvent,
-                timeDiffMs: nextEvent.time.getTime() - currentTime.getTime()
-            };
-        }
-    }, [prayerTimes, currentTime]);
-
-    const formatDuration = (ms: number) => {
-        const totalSecs = Math.floor(ms / 1000);
-        if (totalSecs < 0) return '00:00:00';
-        const hours = Math.floor(totalSecs / 3600);
-        const minutes = Math.floor((totalSecs % 3600) / 60);
-        const seconds = totalSecs % 60;
-        const pad = (num: number) => String(num).padStart(2, '0');
-        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-    };
+    // Active and next prayer, one implementation shared with /muslim, Home and
+    // the board widget.
+    const schedule = useMemo(
+        () => prayerSchedule(prayerTimes, currentTime),
+        [prayerTimes, currentTime],
+    );
+    const apiHijri = hijriDateLabel(hijri);
 
     // Resolve Syrian Holidays for the current year
     const holidays = useMemo(() => holidaysForYear(currentTime.getFullYear()), [currentTime]);
@@ -657,19 +316,12 @@ export default function Index() {
         return holidays.filter(h => h.date >= startOfToday);
     }, [holidays, hidePassed, currentTime]);
 
-    const activeGov = GOVERNORATES_BY_ID[governorate] ?? GOVERNORATES_BY_ID['damascus'];
+    const activeGov = GOVERNORATES_BY_ID[location.city] ?? GOVERNORATES_BY_ID['damascus'];
     // Labels follow the effective location: a resolved GPS/IP point wins over
     // the manual governorate while active. Read only after mount — localStorage
     // differs between the server render and the first client render.
-    const geoActive = mounted
-        ? (() => {
-            const mode = getLocMode();
-            const geo = getGeo();
-            return (mode === 'gps' || mode === 'ip') && geo ? geo : null;
-        })()
-        : null;
-    const placeLabel = geoActive ? geoActive.label
-        : (useCustomCoords && customLat && customLon ? 'إحداثيات مخصصة' : activeGov.nameAr);
+    const geoActive = mounted && isDeviceLocation(location) ? location.geo : null;
+    const placeLabel = mounted ? resolvePlaceLabel(location) : activeGov.nameAr;
 
     return (
         <MainLayout>
@@ -725,7 +377,7 @@ export default function Index() {
                                             {formatDateGregorian(currentTime)}
                                         </div>
                                         <div className="text-xs text-primary/80 font-medium mt-1">
-                                            {hijriDateFromApi || formatHijriFallback(currentTime)}
+                                            {apiHijri || formatHijriDate(currentTime)}
                                         </div>
                                     </div>
 
@@ -734,7 +386,7 @@ export default function Index() {
                                         <div className="flex items-center gap-3">
                                             {weather ? (
                                                 <>
-                                                    <span className="text-2xl">{weather.icon}</span>
+                                                    <span className="text-2xl"><WeatherIcon code={weather.icon} className="h-6 w-6" /></span>
                                                     <div>
                                                         <div className="font-semibold text-sm text-foreground">{weather.temp}°C</div>
                                                         <div className="text-xs text-muted-foreground">{weather.description}</div>
@@ -839,9 +491,9 @@ export default function Index() {
                                                 <span className="truncate">مواقيت الصلاة في {placeLabel}</span>
                                             </h2>
                                             <div className="flex shrink-0 items-center gap-1.5">
-                                                {hijriDateFromApi && (
+                                                {apiHijri && (
                                                     <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">
-                                                        {hijriDateFromApi} هـ
+                                                        {apiHijri} هـ
                                                     </Badge>
                                                 )}
                                                 <Button aria-label="إعدادات الروزنامة"
@@ -855,22 +507,22 @@ export default function Index() {
                                         </div>
 
                                         {/* Next Prayer Countdown (Simple block with dynamic icon, next prayer label, and countdown) */}
-                                        {activeAndNext && (
+                                        {schedule?.next && (
                                             <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-4 flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                                                        {getPrayerIcon(activeAndNext.nextEvent.key, "h-5 w-5")}
+                                                        <PrayerIcon prayer={schedule.next.key} className="h-5 w-5" />
                                                     </div>
                                                     <div>
                                                         <span className="font-bold text-primary text-base">
-                                                            {activeAndNext.nextEvent.isPrayer ? `صلاة ${activeAndNext.nextEvent.label}` : activeAndNext.nextEvent.label}
+                                                            {schedule.next.isPrayer ? `صلاة ${schedule.next.label}` : schedule.next.label}
                                                         </span>
                                                     </div>
                                                 </div>
                                                 <div className="text-left font-mono">
                                                     <span className="text-xs text-foreground/70 block text-right font-medium">المتبقي</span>
                                                     <span className="text-xl font-bold text-primary tracking-wider">
-                                                        {formatDuration(activeAndNext.timeDiffMs)}
+                                                        {formatDuration(schedule.next.remainingMs)}
                                                     </span>
                                                 </div>
                                             </div>
@@ -891,8 +543,8 @@ export default function Index() {
                                         ) : prayerTimes ? (
                                             <div className="space-y-2">
                                                 {PRAYER_EVENTS.map(ev => {
-                                                    const isActive = activeAndNext?.activeEvent?.key === ev.key;
-                                                    const isNext = activeAndNext?.nextEvent?.key === ev.key;
+                                                    const isActive = schedule?.active?.key === ev.key;
+                                                    const isNext = schedule?.next?.key === ev.key;
                                                     return (
                                                         <div
                                                             key={ev.key}
@@ -905,13 +557,13 @@ export default function Index() {
                                                             }`}
                                                         >
                                                             <div className="flex items-center gap-3">
-                                                                {getPrayerIcon(ev.key, `h-4 w-4 ${
-                                                                    isActive 
-                                                                        ? 'text-primary-foreground' 
-                                                                        : ev.key === 'Sunrise' 
-                                                                            ? 'text-orange-500' 
+                                                                <PrayerIcon prayer={ev.key} className={`h-4 w-4 ${
+                                                                    isActive
+                                                                        ? 'text-primary-foreground'
+                                                                        : ev.key === 'Sunrise'
+                                                                            ? 'text-orange-500'
                                                                             : 'text-primary'
-                                                                }`)}
+                                                                }`} />
                                                                 <span className="font-semibold text-sm">{ev.label}</span>
                                                                 {isActive && (
                                                                     <Badge className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 text-[10px] font-bold h-5 px-1.5">
@@ -1217,20 +869,11 @@ export default function Index() {
                                 </SheetDescription>
                             </SheetHeader>
                             <div className="max-h-[70dvh] overflow-y-auto sz-scroll">
-                                <RoznamaSettingsBody
-                                    governorate={governorate}
-                                    onGovChange={handleGovChange}
+                                <PrayerSettingsFields
+                                    cityLabel="المدينة (للمواقيت والطقس والفعاليات)"
                                     method={method}
                                     onMethodChange={handleMethodChange}
-                                    customLat={customLat}
-                                    customLon={customLon}
-                                    onCustom={setCustom}
-                                    locMode={getLocMode()}
-                                    onLocMode={(m) => {
-                                        setLocMode(m);
-                                        setCustom({ on: m === 'custom' });
-                                    }}
-                                    geo={getGeo()}
+                                    onLocationChange={handleLocationChange}
                                 />
                             </div>
                         </SheetContent>
@@ -1244,20 +887,11 @@ export default function Index() {
                                     الموقع المستخدم لمواقيت الصلاة والطقس — GPS أو الإنترنت أو مدينة يدوية.
                                 </DialogDescription>
                             </DialogHeader>
-                            <RoznamaSettingsBody
-                                governorate={governorate}
-                                onGovChange={handleGovChange}
+                            <PrayerSettingsFields
+                                cityLabel="المدينة (للمواقيت والطقس والفعاليات)"
                                 method={method}
                                 onMethodChange={handleMethodChange}
-                                customLat={customLat}
-                                customLon={customLon}
-                                onCustom={setCustom}
-                                locMode={getLocMode()}
-                                onLocMode={(m) => {
-                                    setLocMode(m);
-                                    setCustom({ on: m === 'custom' });
-                                }}
-                                geo={getGeo()}
+                                onLocationChange={handleLocationChange}
                             />
                         </DialogContent>
                     </Dialog>

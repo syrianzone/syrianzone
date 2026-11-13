@@ -4,6 +4,7 @@ import { Button } from '@/Components/ui/button';
 import RecitationPicker from '@/Domain/quran/RecitationPicker';
 import { type Ayah } from '../../../Domain/quran/quran';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
+import './audio-player.css';
 
 interface Props {
   /** Ayahs on the visible page (only used to know the reader has content). */

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import html2canvas from 'html2canvas-pro';
 import { notify } from '@/Lib/notify';
+import { copyText } from '@/Lib/copy';
+import type { PngDeclarations } from '@/Lib/exportElementAsPng';
 import {
   RadarChart,
   Radar,
@@ -119,6 +120,85 @@ const getStoryThemeStyles = (themeKey: string) => {
 const BUDGET_LIMIT = 100;
 const MAX_SUBFILES_CHECKED = 5;
 
+/** The story card draws its own fixed palette, so the exporter's generic slate
+ *  fallback would flatten it; this is the card's own modern-colour mapping. */
+const STORY_CARD_PNG_OPTIONS = {
+  scale: 3,
+  backgroundColor: null,
+  removeSelectors: ['.story-card-bg-blur'],
+  rootStyle: { color: '#ffffff', 'border-color': 'transparent' },
+  colorPolicy: (node: HTMLElement, style: CSSStyleDeclaration): PngDeclarations => {
+    const className = typeof node.className === 'string' ? node.className : '';
+    const modern = (value: string | undefined): value is string =>
+      !!value && (value.includes('oklch') || value.includes('oklab') || value.includes('color-mix'));
+    const declarations: PngDeclarations = {};
+
+    if (modern(style.backgroundColor)) {
+      if (className.includes('bg-emerald-500/20')) declarations['background-color'] = 'rgba(16, 185, 129, 0.2)';
+      else if (className.includes('bg-slate-900/60')) declarations['background-color'] = 'rgba(15, 23, 42, 0.6)';
+      else if (className.includes('bg-emerald-500/10')) declarations['background-color'] = 'rgba(16, 185, 129, 0.1)';
+      else if (className.includes('bg-slate-900/50')) declarations['background-color'] = 'rgba(15, 23, 42, 0.5)';
+      else if (className.includes('bg-slate-950/60')) declarations['background-color'] = 'rgba(2, 6, 23, 0.6)';
+      else if (className.includes('bg-emerald-400')) declarations['background-color'] = '#34d399';
+      else if (className.includes('bg-emerald-600')) declarations['background-color'] = '#059669';
+      else declarations['background-color'] = cleanStoryColor(style.backgroundColor);
+    }
+
+    if (modern(style.backgroundImage)) {
+      declarations['background-image'] = 'none';
+      declarations['background-color'] = '#10b981'; // solid fallback for the gradient progress bars
+    }
+
+    if (modern(style.background)) {
+      declarations.background = 'none';
+      declarations['background-color'] = '#022c22';
+    }
+
+    if (modern(style.color)) {
+      if (className.includes('text-emerald-400')) declarations.color = '#34d399';
+      else if (className.includes('text-emerald-300')) declarations.color = '#6ee7b7';
+      else if (className.includes('text-amber-400')) declarations.color = '#fbbf24';
+      else declarations.color = cleanStoryColor(style.color);
+    }
+
+    if (modern(style.borderColor)) {
+      if (className.includes('border-emerald-500/30')) declarations['border-color'] = 'rgba(16, 185, 129, 0.3)';
+      else if (className.includes('border-slate-700')) declarations['border-color'] = '#334155';
+      else if (className.includes('border-emerald-500/20')) declarations['border-color'] = 'rgba(16, 185, 129, 0.2)';
+      else if (className.includes('border-slate-800/60')) declarations['border-color'] = 'rgba(30, 41, 59, 0.6)';
+      else if (className.includes('border-slate-800/80')) declarations['border-color'] = 'rgba(30, 41, 59, 0.8)';
+      else declarations['border-color'] = cleanStoryColor(style.borderColor);
+    }
+
+    return declarations;
+  },
+};
+
+/** html2canvas cannot parse oklch/oklab/color-mix; map the card palette to hex. */
+function cleanStoryColor(color: string): string {
+  if (!color) return color;
+  if (!color.includes('oklch') && !color.includes('oklab') && !color.includes('color-mix')) return color;
+
+  if (color.includes('transparent')) {
+    if (color.includes('emerald') || color.includes('16, 185, 129') || color.includes('52, 211, 153')) return 'rgba(16, 185, 129, 0.15)';
+    if (color.includes('red') || color.includes('220, 38, 38')) return 'rgba(220, 38, 38, 0.05)';
+    return 'rgba(15, 23, 42, 0.5)';
+  }
+
+  if (color.includes('emerald-400') || color.includes('34d399') || color.includes('52, 211, 153')) return '#34d399';
+  if (color.includes('emerald-500') || color.includes('10b981') || color.includes('16, 185, 129')) return '#10b981';
+  if (color.includes('emerald-600') || color.includes('059669') || color.includes('5, 150, 105')) return '#059669';
+  if (color.includes('emerald-300') || color.includes('6ee7b7') || color.includes('110, 231, 183')) return '#6ee7b7';
+  if (color.includes('amber') || color.includes('fbbf24') || color.includes('251, 191, 36')) return '#fbbf24';
+  if (color.includes('red') || color.includes('dc2626') || color.includes('220, 38, 38')) return '#dc2626';
+  if (color.includes('slate-400') || color.includes('94a3b8') || color.includes('148, 163, 184')) return '#94a3b8';
+  if (color.includes('slate-700') || color.includes('334155') || color.includes('51, 65, 85')) return '#334155';
+  if (color.includes('slate-800') || color.includes('1e293b') || color.includes('30, 41, 59')) return '#1e293b';
+  if (color.includes('slate-900') || color.includes('0f172a') || color.includes('15, 23, 42')) return '#0f172a';
+  if (color.includes('slate-950') || color.includes('020617') || color.includes('2, 6, 23')) return '#020617';
+  return '#34d399';
+}
+
 export default function PrioritiesApp() {
   const [topics, setTopics] = useState<Topic[]>(INITIAL_TOPICS.map(t => ({ ...t })));
   const [selectedSubFiles, setSelectedSubFiles] = useState<Set<string>>(new Set());
@@ -195,11 +275,6 @@ export default function PrioritiesApp() {
 
   const remainingPoints = BUDGET_LIMIT - totalAllocated;
 
-  const showToast = (message: string, isWarning = false) => {
-    if (isWarning) notify.warning(message);
-    else notify.success(message);
-  };
-
   const triggerWarning = () => {
     setShowWarning(true);
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
@@ -240,7 +315,7 @@ export default function PrioritiesApp() {
         next.delete(subId);
       } else {
         if (next.size >= MAX_SUBFILES_CHECKED) {
-          showToast("⚠️ تم بلوغ الحد الأقصى! يرجى إلغاء تفعيل أحد الملفات الفرعية النشطة أولاً لضمان التركيز الوطني.", true);
+          notify.warning("⚠️ تم بلوغ الحد الأقصى! يرجى إلغاء تفعيل أحد الملفات الفرعية النشطة أولاً لضمان التركيز الوطني.");
           return prev;
         }
         next.add(subId);
@@ -252,7 +327,7 @@ export default function PrioritiesApp() {
   const resetPoints = () => {
     setTopics(INITIAL_TOPICS.map(t => ({ ...t, points: 0 })));
     setSelectedSubFiles(new Set());
-    showToast("🔄 تم إعادة تعيين كافة النقاط والخيارات بنجاح.");
+    notify.success("🔄 تم إعادة تعيين كافة النقاط والخيارات بنجاح.");
   };
 
   const toggleTopicDetails = (id: string) => {
@@ -452,7 +527,7 @@ export default function PrioritiesApp() {
   // Export & Sharing actions
   const handleCopyText = () => {
     if (totalAllocated < 100) {
-      showToast("⚠️ يرجى إتمام موازنة الـ 100 نقطة كاملة قبل النسخ!", true);
+      notify.warning("⚠️ يرجى إتمام موازنة الـ 100 نقطة كاملة قبل النسخ!");
       return;
     }
 
@@ -479,17 +554,15 @@ export default function PrioritiesApp() {
     textToCopy += `\n📊 *مقياس تداخل وتعقيد رؤيتي التخطيطية:* ${interdependencyInfo.label}\n`;
     textToCopy += `\n🔗 قم بموازنة أولوياتك وفك شفرة تداخل الملفات السيادية والتنموية معنا!`;
 
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      showToast("✅ تم نسخ النص الإحصائي بنجاح! يمكنك الآن لصقه ومشاركته فوراً على مجموعات فيسبوك أو تيليغرام لنشر النقاش العقلاني.");
-    }).catch(err => {
-      console.error(err);
-      showToast("⚠️ فشل في نسخ النص.", true);
+    void copyText(textToCopy, {
+      successMessage: "✅ تم نسخ النص الإحصائي بنجاح! يمكنك الآن لصقه ومشاركته فوراً على مجموعات فيسبوك أو تيليغرام لنشر النقاش العقلاني.",
+      failureMessage: "⚠️ فشل في نسخ النص.",
     });
   };
 
   const handleCopyLink = () => {
     if (totalAllocated < 100) {
-      showToast("⚠️ يرجى توزيع كافة النقاط وتجاوز الـ 100 نقطة أولاً لنسخ رابطك!", true);
+      notify.warning("⚠️ يرجى توزيع كافة النقاط وتجاوز الـ 100 نقطة أولاً لنسخ رابطك!");
       return;
     }
 
@@ -498,17 +571,15 @@ export default function PrioritiesApp() {
     const encoded = btoa(unescape(encodeURIComponent(`${statePoints}|${stateSubs}`)));
     const shareUrl = `${window.location.origin}${window.location.pathname}?state=${encoded}`;
 
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      showToast("🔗 تم نسخ رابط بروفايلك الخاص المشفّر بنجاح! يمكن لزوار الرابط تصفح ومقارنة اختياراتك بدقة.");
-    }).catch(err => {
-      console.error(err);
-      showToast("⚠️ فشل في نسخ الرابط.", true);
+    void copyText(shareUrl, {
+      successMessage: "🔗 تم نسخ رابط بروفايلك الخاص المشفّر بنجاح! يمكن لزوار الرابط تصفح ومقارنة اختياراتك بدقة.",
+      failureMessage: "⚠️ فشل في نسخ الرابط.",
     });
   };
 
   const openStoryModal = () => {
     if (totalAllocated < 100) {
-      showToast("⚠️ الرجاء موازنة الـ 100 نقطة كاملة أولاً لتتمكن من إنشاء بطاقة قصة إنستغرام جميلة ومكتملة!", true);
+      notify.warning("⚠️ الرجاء موازنة الـ 100 نقطة كاملة أولاً لتتمكن من إنشاء بطاقة قصة إنستغرام جميلة ومكتملة!");
       return;
     }
     setStoryTheme(activeTheme);
@@ -516,208 +587,20 @@ export default function PrioritiesApp() {
   };
 
   const downloadStoryAsImage = async () => {
-    if (!storyCardRef.current) return;
+    const card = storyCardRef.current;
+    if (!card) return;
 
-    showToast("⏳ يجري الآن تجميع وتوليد بطاقتك التخطيطية بجودة عالية الاستثنائية... الرجاء الانتظار.");
+    notify.success("⏳ يجري الآن تجميع وتوليد بطاقتك التخطيطية بجودة عالية الاستثنائية... الرجاء الانتظار.");
 
     try {
-      if (document.fonts) {
-        await document.fonts.ready;
-      }
-    } catch (e) {
-      console.warn("Fonts ready check failed", e);
-    }
-
-    html2canvas(storyCardRef.current, {
-      scale: 3,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: null,
-      logging: false,
-      onclone: (clonedDoc: Document) => {
-        const win = clonedDoc.defaultView || window;
-        const clonedTarget = clonedDoc.getElementById('story-card-canvas') as HTMLElement | null;
-
-        if (!clonedTarget) return;
-
-        // 1. Remove all elements outside the canvas container from body to avoid style pollution
-        const bodyChildren = Array.from(clonedDoc.body.children);
-        bodyChildren.forEach(child => {
-          if (!child.contains(clonedTarget) && child !== clonedTarget) {
-            child.remove();
-          }
-        });
-
-        // 2. Hide/remove background blur elements from cloned card to avoid rendering them as ugly solid shapes
-        clonedTarget.querySelectorAll<HTMLElement>('.story-card-bg-blur').forEach(el => el.remove());
-
-        // 3. Helper to clean modern color functions (oklch, oklab, color-mix) and replace with fallback hex/rgb values
-        const cleanColor = (colorStr: string): string => {
-          if (!colorStr) return colorStr;
-
-          if (colorStr.includes('oklch') || colorStr.includes('oklab') || colorStr.includes('color-mix')) {
-            if (colorStr.includes('transparent')) {
-              if (colorStr.includes('emerald') || colorStr.includes('16, 185, 129') || colorStr.includes('52, 211, 153')) {
-                return 'rgba(16, 185, 129, 0.15)';
-              }
-              if (colorStr.includes('red') || colorStr.includes('220, 38, 38')) {
-                return 'rgba(220, 38, 38, 0.05)';
-              }
-              return 'rgba(15, 23, 42, 0.5)';
-            }
-
-            if (colorStr.includes('emerald-400') || colorStr.includes('34d399') || colorStr.includes('52, 211, 153')) {
-              return '#34d399';
-            }
-            if (colorStr.includes('emerald-500') || colorStr.includes('10b981') || colorStr.includes('16, 185, 129')) {
-              return '#10b981';
-            }
-            if (colorStr.includes('emerald-600') || colorStr.includes('059669') || colorStr.includes('5, 150, 105')) {
-              return '#059669';
-            }
-            if (colorStr.includes('emerald-300') || colorStr.includes('6ee7b7') || colorStr.includes('110, 231, 183')) {
-              return '#6ee7b7';
-            }
-            if (colorStr.includes('amber') || colorStr.includes('fbbf24') || colorStr.includes('251, 191, 36')) {
-              return '#fbbf24';
-            }
-            if (colorStr.includes('red') || colorStr.includes('dc2626') || colorStr.includes('220, 38, 38')) {
-              return '#dc2626';
-            }
-            if (colorStr.includes('slate-400') || colorStr.includes('94a3b8') || colorStr.includes('148, 163, 184')) {
-              return '#94a3b8';
-            }
-            if (colorStr.includes('slate-700') || colorStr.includes('334155') || colorStr.includes('51, 65, 85')) {
-              return '#334155';
-            }
-            if (colorStr.includes('slate-800') || colorStr.includes('1e293b') || colorStr.includes('30, 41, 59')) {
-              return '#1e293b';
-            }
-            if (colorStr.includes('slate-900') || colorStr.includes('0f172a') || colorStr.includes('15, 23, 42')) {
-              return '#0f172a';
-            }
-            if (colorStr.includes('slate-950') || colorStr.includes('020617') || colorStr.includes('2, 6, 23')) {
-              return '#020617';
-            }
-            return '#34d399';
-          }
-          return colorStr;
-        };
-
-        const cleanElement = (el: HTMLElement) => {
-          try {
-            const isRootOrBody = el.tagName === 'HTML' || el.tagName === 'BODY';
-            if (isRootOrBody) {
-              el.style.setProperty('background', '#0b0f19', 'important');
-              el.style.setProperty('background-color', '#0b0f19', 'important');
-              el.style.setProperty('background-image', 'none', 'important');
-              el.style.setProperty('color', '#ffffff', 'important');
-              el.style.setProperty('border-color', 'transparent', 'important');
-              el.style.setProperty('letter-spacing', 'normal', 'important');
-              el.style.setProperty('font-family', 'IBM Plex Sans Arabic, sans-serif', 'important');
-              return;
-            }
-
-            const style = win.getComputedStyle(el);
-
-            // Force letter-spacing & font-family to fix Arabic cursive connections & font consistency
-            el.style.setProperty('letter-spacing', 'normal', 'important');
-            el.style.setProperty('font-family', 'IBM Plex Sans Arabic, sans-serif', 'important');
-
-            const bg = style.backgroundColor;
-            if (bg && (bg.includes('oklch') || bg.includes('oklab') || bg.includes('color-mix'))) {
-              if (el.className.includes('bg-emerald-500/20')) {
-                el.style.setProperty('background-color', 'rgba(16, 185, 129, 0.2)', 'important');
-              } else if (el.className.includes('bg-slate-900/60')) {
-                el.style.setProperty('background-color', 'rgba(15, 23, 42, 0.6)', 'important');
-              } else if (el.className.includes('bg-emerald-500/10')) {
-                el.style.setProperty('background-color', 'rgba(16, 185, 129, 0.1)', 'important');
-              } else if (el.className.includes('bg-slate-900/50')) {
-                el.style.setProperty('background-color', 'rgba(15, 23, 42, 0.5)', 'important');
-              } else if (el.className.includes('bg-slate-950/60')) {
-                el.style.setProperty('background-color', 'rgba(2, 6, 23, 0.6)', 'important');
-              } else if (el.className.includes('bg-emerald-400')) {
-                el.style.setProperty('background-color', '#34d399', 'important');
-              } else if (el.className.includes('bg-emerald-600')) {
-                el.style.setProperty('background-color', '#059669', 'important');
-              } else {
-                el.style.setProperty('background-color', cleanColor(bg), 'important');
-              }
-            }
-
-            const bgImg = style.backgroundImage;
-            if (bgImg && (bgImg.includes('oklch') || bgImg.includes('oklab') || bgImg.includes('color-mix'))) {
-              el.style.setProperty('background-image', 'none', 'important');
-              el.style.setProperty('background-color', '#10b981', 'important'); // Solid green fallback for gradient progress bars
-            }
-
-            const b = style.background;
-            if (b && (b.includes('oklch') || b.includes('oklab') || b.includes('color-mix'))) {
-              el.style.setProperty('background', 'none', 'important');
-              el.style.setProperty('background-color', '#022c22', 'important');
-            }
-
-            const co = style.color;
-            if (co && (co.includes('oklch') || co.includes('oklab') || co.includes('color-mix'))) {
-              if (el.className.includes('text-emerald-400')) {
-                el.style.setProperty('color', '#34d399', 'important');
-              } else if (el.className.includes('text-emerald-300')) {
-                el.style.setProperty('color', '#6ee7b7', 'important');
-              } else if (el.className.includes('text-amber-400')) {
-                el.style.setProperty('color', '#fbbf24', 'important');
-              } else {
-                el.style.setProperty('color', cleanColor(co), 'important');
-              }
-            }
-
-            const bc = style.borderColor;
-            if (bc && (bc.includes('oklch') || bc.includes('oklab') || bc.includes('color-mix'))) {
-              if (el.className.includes('border-emerald-500/30')) {
-                el.style.setProperty('border-color', 'rgba(16, 185, 129, 0.3)', 'important');
-              } else if (el.className.includes('border-slate-700')) {
-                el.style.setProperty('border-color', '#334155', 'important');
-              } else if (el.className.includes('border-emerald-500/20')) {
-                el.style.setProperty('border-color', 'rgba(16, 185, 129, 0.2)', 'important');
-              } else if (el.className.includes('border-slate-800/60')) {
-                el.style.setProperty('border-color', 'rgba(30, 41, 59, 0.6)', 'important');
-              } else if (el.className.includes('border-slate-800/80')) {
-                el.style.setProperty('border-color', 'rgba(30, 41, 59, 0.8)', 'important');
-              } else {
-                el.style.setProperty('border-color', cleanColor(bc), 'important');
-              }
-            }
-          } catch (e) {
-            // style access error
-          }
-        };
-
-        // Clean documentElement, body, and all nested elements in cloned tree
-        cleanElement(clonedDoc.documentElement);
-        if (clonedDoc.body) cleanElement(clonedDoc.body);
-
-        const allElements = clonedDoc.querySelectorAll('*');
-        allElements.forEach(el => {
-          const htmlEl = el as HTMLElement;
-          if (htmlEl.style) {
-            cleanElement(htmlEl);
-          }
-        });
-      }
-    }).then(canvas => {
-      const dataUrl = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.download = `Syrian-Consensus-Story-${Date.now()}.png`;
-      downloadLink.href = dataUrl;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-
-      showToast("🎉 تم تحميل صورتك بنجاح! افتح قصتك في إنستغرام أو سناب شات وأضفها الآن لإشعال التوافق البنّاء.");
+      // Imported on demand: html2canvas is heavy and only this button needs it.
+      const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
+      await exportElementAsPng(card, `Syrian-Consensus-Story-${Date.now()}.png`, STORY_CARD_PNG_OPTIONS);
+      notify.success("🎉 تم تحميل صورتك بنجاح! افتح قصتك في إنستغرام أو سناب شات وأضفها الآن لإشعال التوافق البنّاء.");
       setIsStoryModalOpen(false);
-    }).catch(err => {
-      console.error("Canvas export failure: ", err);
-      showToast("⚠️ حدث خطأ ما أثناء معالجة الصورة. يرجى محاولة التنزيل مرة أخرى.", true);
-    });
+    } catch {
+      notify.warning("⚠️ حدث خطأ ما أثناء معالجة الصورة. يرجى محاولة التنزيل مرة أخرى.");
+    }
   };
 
   const sortedTopicsForCard = useMemo(() => {

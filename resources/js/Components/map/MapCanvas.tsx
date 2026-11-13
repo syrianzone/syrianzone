@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapContext } from './MapContext';
+import { createBaseMap } from './createMap';
 import { resolveBasemapStyle } from './resolveStyle';
-import './useRTLPlugin'; // side-effect: registers RTL plugin URL
+import { useMapStyle } from './useMapStyle';
 
 export interface MapCanvasProps {
   children: ReactNode;
@@ -28,60 +29,43 @@ export function MapCanvas({
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const observerRef = useRef<MutationObserver | null>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
   const [styleVersion, setStyleVersion] = useState(0);
   const styleRef = useRef('');
+  const { scheme, styleUrl } = useMapStyle();
+  const schemeRef = useRef(scheme);
+  schemeRef.current = scheme;
 
-  // Capture initial values in refs so they don't become effect deps.
-  // center/zoom/bounds are init-only: changing them after mount has no effect
-  // (use map.flyTo / map.fitBounds for programmatic moves instead).
+  // Init-only values captured in a ref so they don't become effect deps:
+  // center/zoom/bounds have no effect after mount (use map.flyTo /
+  // map.fitBounds for programmatic moves instead).
   const initRef = useRef({ center, zoom, bounds, maxBounds, minZoom, maxZoom });
 
-  // Empty deps: map is created once on mount and torn down on unmount only.
+  // Empty deps: the map is created once on mount and torn down on unmount only.
   // Never put center/zoom/bounds here — they're new object references every
-  // render and would cause the map to be destroyed and recreated each time.
+  // render and would destroy and recreate the map each time.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     const { center: initCenter, zoom: initZoom, bounds: initBounds, maxBounds: initMaxBounds, minZoom: initMinZoom, maxZoom: initMaxZoom } = initRef.current;
 
-    styleRef.current = resolveBasemapStyle();
-    const mapOptions: maplibregl.MapOptions = {
+    const mapInstance = createBaseMap({
       container: containerRef.current,
-      style: styleRef.current,
-      center: initCenter ?? [38.0, 35.0],
-      zoom: initZoom ?? 6.2,
-      attributionControl: false,
+      scheme: schemeRef.current,
+      center: initCenter,
+      zoom: initZoom,
+      bounds: initBounds,
+      maxBounds: initMaxBounds,
+      minZoom: initMinZoom,
+      maxZoom: initMaxZoom,
       fadeDuration: 0,
       maxTileCacheSize: 50,
-    };
-    if (initBounds) {
-      mapOptions.bounds = initBounds;
-      mapOptions.fitBoundsOptions = { padding: 60 };
-    }
-    if (initMaxBounds) mapOptions.maxBounds = initMaxBounds;
-    if (initMinZoom !== undefined) mapOptions.minZoom = initMinZoom;
-    if (initMaxZoom !== undefined) mapOptions.maxZoom = initMaxZoom;
-
-    const mapInstance = new maplibregl.Map(mapOptions);
-
-    mapInstance.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
-    mapInstance.addControl(new maplibregl.NavigationControl(), 'bottom-left');
+    });
+    styleRef.current = resolveBasemapStyle(schemeRef.current);
 
     mapInstance.on('load', () => {
       setMap(mapInstance);
     });
-
-    const observer = new MutationObserver(() => {
-      const url = resolveBasemapStyle();
-      if (url !== styleRef.current) {
-        styleRef.current = url;
-        mapInstance.setStyle(url);
-      }
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    observerRef.current = observer;
 
     // setStyle() drops every runtime source/layer; bump the version so layer
     // components depending on it re-add themselves once the new style is
@@ -95,13 +79,20 @@ export function MapCanvas({
     mapRef.current = mapInstance;
 
     return () => {
-      observerRef.current?.disconnect();
-      observerRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
       setMap(null);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
+
+  // One style per scheme, applied to the existing instance: switching theme must
+  // not throw away the map's camera, sources or selection.
+  useEffect(() => {
+    if (!map || !styleUrl) return;
+    if (styleRef.current === styleUrl) return;
+    styleRef.current = styleUrl;
+    map.setStyle(styleUrl);
+  }, [map, styleUrl]);
 
   return (
     <div className={className}>

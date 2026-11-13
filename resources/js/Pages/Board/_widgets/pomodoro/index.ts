@@ -1,13 +1,12 @@
-import { lazy } from 'react';
 import { Timer } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
 
 export interface PomodoroConfig {
   work: number;
   rest: number;
 }
 
-export const pomodoroWidget: WidgetDefinition<PomodoroConfig> = {
+export const pomodoroWidget: WidgetDeclaration = {
   id: 'pomodoro',
   name: 'مؤقّت بومودورو',
   description: 'جلسات عمل وراحة بمؤقّت بسيط',
@@ -27,5 +26,8 @@ export const pomodoroWidget: WidgetDefinition<PomodoroConfig> = {
   requires: [],
   refresh: { staleMs: 0, intervalMs: null },
   multiple: false,
-  Component: lazy(() => import('./View')),
+  seed: { order: 5, w: 4, h: 2 },
+  source: null,
 };
+
+export default pomodoroWidget;

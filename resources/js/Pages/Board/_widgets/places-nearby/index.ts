@@ -1,12 +1,12 @@
-import { lazy } from 'react';
 import { MapPin } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
+import { sources } from '../../_lib/sources';
 
 export interface PlacesNearbyConfig {
   radius_km: number;
 }
 
-export const placesNearbyWidget: WidgetDefinition<PlacesNearbyConfig> = {
+export const placesNearbyWidget: WidgetDeclaration = {
   id: 'places-nearby',
   name: 'أماكن قريبة',
   description: 'مشاوير قريبة من موقعك',
@@ -22,5 +22,8 @@ export const placesNearbyWidget: WidgetDefinition<PlacesNearbyConfig> = {
   requires: ['geo'],
   refresh: { staleMs: 5 * 60_000, intervalMs: null },
   multiple: false,
-  Component: lazy(() => import('./View')),
+  seed: null,
+  source: sources.nearby,
 };
+
+export default placesNearbyWidget;

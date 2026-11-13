@@ -157,10 +157,7 @@ function assertMatches(rule: string, actual: string[], allowed: string[]): void 
 const SHARED_TO_PAGES_ALLOWED: string[] = [];
 
 /** `Lib/` stays free of higher-level components; it may use `Components/ui`. */
-const LIB_TO_COMPONENTS_ALLOWED = [
-  // The fallback navigation table maps section ids to their project icons.
-  'Lib/siteLinks.ts -> Components/Icons/ProjectIcons.tsx',
-];
+const LIB_TO_COMPONENTS_ALLOWED: string[] = [];
 
 /**
  * The `Pages/<A>` → `Pages/<B>` edges that remain, one per line. Nothing new

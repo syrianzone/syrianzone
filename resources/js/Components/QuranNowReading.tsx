@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 import { useSurahWords } from '@/Domain/quran/quranText';
 import { SURAH_NAMES_AR, recitationByCode } from '@/Domain/quran/quran';
+import '@/Domain/quran/quran.css';
 
 interface Props {
   variant?: 'full' | 'compact';

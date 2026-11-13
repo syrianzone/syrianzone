@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { copyText } from '@/Lib/copy';
 import { api, extractError } from '@/Domain/places/api';
 import { CATEGORY_LABELS } from '@/Domain/places/categories';
 import type { PlaceDetail } from '@/Domain/places/types';
@@ -35,13 +36,9 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
 
   const copyCoords = async () => {
     if (!place) return;
-    try {
-      await navigator.clipboard.writeText(`${place.lat}, ${place.lng}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // clipboard unavailable, nothing to recover
-    }
+    if (!await copyText(`${place.lat}, ${place.lng}`, { successMessage: 'تم نسخ الإحداثيات' })) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

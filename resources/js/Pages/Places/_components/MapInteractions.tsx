@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useMap } from '@/Components/map/MapContext';
-import { PLACES_LAYERS } from './PlacesLayer';
-import { HOTELS_LAYERS } from './HotelsLayer';
+import { HOTEL_PIN_LAYERS, PLACE_PINS, HOTEL_PINS, PLACE_PIN_LAYERS } from './PinLayer';
 
-const ALL_PIN_LAYERS = [...PLACES_LAYERS, ...HOTELS_LAYERS];
+const ALL_PIN_LAYERS = [...PLACE_PIN_LAYERS, ...HOTEL_PIN_LAYERS];
+const CLICKABLE_LAYERS = [
+  PLACE_PINS.clusterLayerId,
+  PLACE_PINS.pinLayerId,
+  HOTEL_PINS.clusterLayerId,
+  HOTEL_PINS.pinLayerId,
+];
 
 export function MapInteractions(props: {
   addMode: boolean;
@@ -24,7 +29,7 @@ export function MapInteractions(props: {
 
     map.on('click', onMapClick);
 
-    for (const layer of ['clusters', 'place-pin', 'hotel-clusters', 'hotel-pin']) {
+    for (const layer of CLICKABLE_LAYERS) {
       map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = addModeRef.current ? 'crosshair' : 'pointer'; });
       map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = addModeRef.current ? 'crosshair' : ''; });
     }

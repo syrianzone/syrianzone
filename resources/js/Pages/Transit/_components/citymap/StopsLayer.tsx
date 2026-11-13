@@ -1,8 +1,10 @@
 import { useEffect, useRef, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import { useMap, useStyleVersion } from '@/Components/map/MapContext'
+import { useMapColors } from '@/Components/map/mapColors'
+import { firstSymbolLayerId } from '@/Components/map/layers'
 import { useMapStore } from '../../_store/useMapStore'
-import { firstSymbolLayerId } from './RouteLayer'
+import { TRANSIT_MAP_COLORS } from '../../_lib/mapColors'
 import type { FeatureCollection, StopProperties } from '../../_types'
 
 interface StopsLayerProps {
@@ -22,6 +24,7 @@ function escapeHtml(value: unknown): string {
 export default function StopsLayer({ data }: StopsLayerProps) {
   const map = useMap()
   const styleVersion = useStyleVersion()
+  const colors = useMapColors(TRANSIT_MAP_COLORS)
   const showStops = useMapStore(s => s.showStops)
   const selectedRouteId = useMapStore(s => s.selectedRouteId)
 
@@ -43,7 +46,7 @@ export default function StopsLayer({ data }: StopsLayerProps) {
 
     map.addSource('stops-source', {
       type: 'geojson',
-      data: data as unknown as GeoJSON.FeatureCollection,
+      data,
     })
 
     map.addLayer({
@@ -52,9 +55,9 @@ export default function StopsLayer({ data }: StopsLayerProps) {
       source: 'stops-source',
       paint: {
         'circle-radius': 5,
-        'circle-color': '#d4956a',
+        'circle-color': colors.stop,
         'circle-stroke-width': 1.5,
-        'circle-stroke-color': '#ffffff',
+        'circle-stroke-color': colors.markerStroke,
       },
     }, firstSymbolLayerId(map))
 
@@ -112,7 +115,7 @@ export default function StopsLayer({ data }: StopsLayerProps) {
       } catch { /* map may have been removed already */ }
     };
     // styleVersion: re-add layers after a basemap style swap (setStyle wipes them)
-  }, [map, data, styleVersion, applyStopsState])
+  }, [map, data, styleVersion, applyStopsState, colors])
 
   // Keep visibility + selected-route filtering in sync with the store
   useEffect(() => {

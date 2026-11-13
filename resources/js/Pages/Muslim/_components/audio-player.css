@@ -1,0 +1,37 @@
+/* Imported by AudioPlayer.tsx. */
+/* shadcn-style range input (volume): native element, themed track + thumb. */
+.sz-range {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--primary) / 0.2);
+    outline-offset: 4px;
+    cursor: pointer;
+}
+
+.sz-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 14px;
+    width: 14px;
+    border-radius: 9999px;
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--primary) / 0.5);
+    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.2);
+}
+
+.sz-range::-moz-range-thumb {
+    height: 14px;
+    width: 14px;
+    border-radius: 9999px;
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--primary) / 0.5);
+    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.2);
+}
+
+.sz-range::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--primary) / 0.2);
+}

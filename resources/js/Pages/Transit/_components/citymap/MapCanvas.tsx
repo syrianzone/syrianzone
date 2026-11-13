@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState, createContext, useContext } f
 import type maplibregl from 'maplibre-gl'
 import { MapCanvas as SharedMapCanvas } from '@/Components/map/MapCanvas'
 import { useMap } from '@/Components/map/MapContext'
-import { useTransitTheme } from '../TransitThemeContext'
-import { THEME_REGISTRY } from '@/Lib/theme'
+import type { Bounds } from '@/Components/map/geo'
 import { notify } from '@/Lib/notify'
 
 export type LocationStatus = 'idle' | 'loading' | 'available' | 'denied'
@@ -22,7 +21,7 @@ export function useRequestUserLocation() {
 }
 
 interface MapCanvasProps {
-  bounds: [[number, number], [number, number]]
+  bounds: Bounds
   children?: React.ReactNode
 }
 
@@ -100,9 +99,6 @@ function Geolocator({ children }: { children: React.ReactNode }) {
 }
 
 export default function MapCanvas({ bounds, children }: MapCanvasProps) {
-  const { theme } = useTransitTheme()
-  const dark = THEME_REGISTRY.find((t) => t.id === theme)?.isDark ?? true
-
   const lngPad = (bounds[1][0] - bounds[0][0]) * 0.6
   const latPad = (bounds[1][1] - bounds[0][1]) * 0.6
   const maxBounds: maplibregl.LngLatBoundsLike = [

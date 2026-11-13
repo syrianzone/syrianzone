@@ -1,0 +1,295 @@
+/* Imported by both table boards (Tarneeb.tsx and Trix.tsx), which render it. */
+/* ---------------------------------------------------------------------------
+   Game table (tarneeb and trix).
+
+   The table is an invisible boundary that keeps a deal inside the viewport — the
+   game fills a fixed-height page and nothing scrolls. It is horizontal when the
+   screen is wide and vertical when it is narrow. The centre is a reserved play
+   area a game styles for its own cards; the seats hang on its edges and the
+   player's hand runs along the bottom. The box is also where a table background
+   will be painted later.
+
+   The cards are the shared `.sz-card` kit; an opponent's hand is a tight stack
+   of backs, and the player's is a face-up fan. The board is `dir="ltr"` (a trick
+   reads clockwise, left to right) while the page is RTL. */
+.sz-tbl {
+    --sz-card-radius: 0.5rem;
+    --sz-card-h-ratio: 1.4286;
+    --sz-tbl-card-w: 6rem; /* the player's hand; the seats keep their own size */
+    --sz-tbl-seat-w: 3.2rem;
+    --sz-tbl-step: 0.22rem; /* how much of each held back stays showing */
+    --sz-tbl-run-step: 0.7rem; /* slot spacing down a التركس column */
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    max-width: 60rem;
+    margin-inline: auto;
+    overflow: hidden;
+}
+
+/* The reserved play area — the space a game fills with its own cards, the
+   "space where cards are played" that each contract styles. */
+.sz-tbl__centre {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 62%;
+    height: 60%;
+}
+
+.sz-tbl__seat {
+    --sz-card-w: var(--sz-tbl-seat-w);
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid hsl(var(--border) / 0.5);
+    background: hsl(var(--muted) / 0.25);
+    padding: 0.4rem;
+}
+
+.sz-tbl__seat--north {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.sz-tbl__seat--west {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.sz-tbl__seat--east {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.sz-tbl__seat-name {
+    font-size: 11px;
+    font-weight: 800;
+    color: hsl(var(--muted-foreground));
+}
+
+/* The bid is reserved a line, so a seat does not grow when it appears. */
+.sz-tbl__seat-bid {
+    min-height: 1rem;
+    font-size: 12px;
+    font-weight: 800;
+    color: hsl(var(--primary));
+}
+
+/* An opponent's hand: a stack of backs, oriented to its seat. */
+.sz-tbl__seat-hand {
+    display: flex;
+}
+
+.sz-tbl__seat-hand .sz-card {
+    width: var(--sz-tbl-seat-w);
+    flex: 0 0 auto;
+}
+
+.sz-tbl__seat-hand--h {
+    flex-direction: row;
+}
+
+.sz-tbl__seat-hand--h .sz-card + .sz-card {
+    margin-left: calc(var(--sz-tbl-step) - var(--sz-tbl-seat-w));
+}
+
+.sz-tbl__seat-hand--v {
+    flex-direction: column;
+}
+
+.sz-tbl__seat-hand--v .sz-card + .sz-card {
+    margin-top: calc(var(--sz-tbl-step) - var(--sz-tbl-seat-w) * var(--sz-card-h-ratio));
+}
+
+/* The trick: the four played cards in a plus, with the trump in the middle. It
+   sits inside `.sz-tbl__centre`, sized to its own cards. */
+.sz-tbl__trick {
+    --sz-card-w: var(--sz-tbl-seat-w);
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    grid-template-rows: repeat(3, auto);
+    place-items: center;
+}
+
+.sz-tbl__slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--sz-tbl-seat-w);
+    min-height: calc(var(--sz-tbl-seat-w) * var(--sz-card-h-ratio));
+}
+
+.sz-tbl__slot--n {
+    grid-area: 1 / 2;
+}
+.sz-tbl__slot--w {
+    grid-area: 2 / 1;
+}
+.sz-tbl__slot--c {
+    grid-area: 2 / 2;
+}
+.sz-tbl__slot--e {
+    grid-area: 2 / 3;
+}
+.sz-tbl__slot--s {
+    grid-area: 3 / 2;
+}
+
+/* A played card drops in. */
+.sz-tbl__slot .sz-card {
+    animation: sz-tbl-deal 160ms ease-out;
+}
+
+@keyframes sz-tbl-deal {
+    from {
+        opacity: 0;
+        transform: translateY(-0.4rem) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* The trick winner, held on the table until the player continues. */
+.sz-tbl__slot--win .sz-card {
+    box-shadow:
+        0 0 0 3px hsl(var(--primary) / 0.6),
+        0 8px 16px hsl(0 0 0 / 0.35);
+}
+
+.sz-tbl__trump {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: hsl(var(--primary));
+}
+
+/* The player's hand: a fan along the bottom edge of the table, where each card
+   leaves a readable strip. */
+.sz-tbl__hand {
+    --sz-card-w: var(--sz-tbl-card-w);
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    min-height: calc(var(--sz-tbl-card-w) * var(--sz-card-h-ratio));
+}
+
+.sz-tbl__hand .sz-card {
+    width: var(--sz-tbl-card-w);
+    flex: 0 0 auto;
+}
+
+.sz-tbl__hand .sz-card + .sz-card {
+    margin-left: calc(var(--sz-tbl-card-w) * -0.52);
+}
+
+/* A card the player may legally play right now. */
+.sz-tbl__playable {
+    cursor: grab;
+    transition: transform 120ms, box-shadow 120ms;
+}
+
+.sz-tbl__playable:active {
+    cursor: grabbing;
+}
+
+/* A tapped card, before the second tap plays it (touch): raised and ringed, so
+   the pick reads even though there is no hover on a phone. */
+.sz-tbl__hand .sz-card--picked {
+    transform: translateY(-0.7rem);
+    box-shadow:
+        0 0 0 3px hsl(var(--primary) / 0.55),
+        0 10px 18px hsl(0 0 0 / 0.35);
+}
+
+@media (hover: hover) {
+    .sz-tbl__playable:hover {
+        transform: translateY(-0.7rem);
+        box-shadow:
+            0 0 0 3px hsl(var(--primary) / 0.5),
+            0 10px 18px hsl(0 0 0 / 0.35);
+    }
+}
+
+/* The action strip below the board, reserved so the board above never moves. */
+.sz-tbl__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 5.5rem;
+}
+
+.sz-tbl__bid,
+.sz-tbl__suit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding-inline: 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid hsl(var(--input));
+    background: hsl(var(--background));
+    font-size: 0.9rem;
+    font-weight: 800;
+    transition: background-color 120ms, border-color 120ms;
+}
+
+.sz-tbl__suit {
+    font-size: 1.25rem;
+}
+
+.sz-tbl__bid:hover,
+.sz-tbl__suit:hover {
+    background: hsl(var(--accent));
+    border-color: hsl(var(--primary) / 0.5);
+}
+
+/* The card following the finger while it is dragged out to play. */
+.sz-tbl__ghost {
+    position: fixed;
+    z-index: 60;
+    pointer-events: none;
+    filter: drop-shadow(0 8px 14px hsl(0 0 0 / 0.45));
+}
+
+.sz-tbl__ghost .sz-card {
+    width: 100%;
+}
+
+@media (max-width: 640px) {
+    .sz-tbl {
+        --sz-tbl-card-w: 4.2rem; /* the player's hand; the seats keep their own size */
+        --sz-tbl-seat-w: 2.2rem;
+        --sz-tbl-step: 0.18rem;
+        max-width: 100%;
+    }
+
+    /* Narrow screen: the table turns tall, so the play area does too. */
+    .sz-tbl__centre {
+        width: 86%;
+        height: 54%;
+    }
+
+    .sz-tbl__hand .sz-card + .sz-card {
+        margin-left: calc(var(--sz-tbl-card-w) * -0.68);
+    }
+
+    .sz-tbl__actions {
+        min-height: 4.5rem;
+    }
+}

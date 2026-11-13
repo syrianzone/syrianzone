@@ -37,9 +37,9 @@ import {
   GovAppsIcon,
   PhonebookIcon,
 } from '@/Components/Icons/ProjectIcons';
+import { ADMIN_SECTIONS, adminSectionAllowed } from '@/Lib/siteModules';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
-import { CAPABILITIES } from '@/Lib/capabilities';
 import { useCan, useCanModule } from '@/Lib/useCan';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
@@ -232,6 +232,26 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
   );
 }
 
+/**
+ * The drawing on each admin card. The catalogue owns the card's label, route
+ * and gate; which picture sits on it is a React concern, so keys are mapped
+ * here and fall back to the grid glyph rather than rendering nothing.
+ */
+const ADMIN_SECTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  transit: TransitIcon,
+  places: MishwarIcon,
+  syofficial: SyOfficialIcon,
+  govapps: GovAppsIcon,
+  guesswho: Gamepad2,
+  phonebook: PhonebookIcon,
+  compass: Compass,
+  promises: PromisesIcon,
+  assets: CloudUpload,
+  site_popup: Megaphone,
+  site_navigation: LayoutGrid,
+  api_tokens: KeyRound,
+};
+
 const statusBadge = (status: Draft['status']) => {
   if (status === 'approved')
     return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">تم القبول والنشر</Badge>;
@@ -253,11 +273,12 @@ export default function Dashboard({
   // file never re-derives which role implies what.
   const can = useCan();
   const canModule = useCanModule();
-  // The token page is open to any capability holder; a superadmin resolves the
-  // whole catalogue, so this also covers the superadmin case.
-  const hasAnyCapability = CAPABILITIES.some((capability) => can(capability));
   const canManagePolls = canModule('polls');
-  const canTransitReview = can('transit.review_drafts');
+  // The admin cards, in catalogue order, filtered by the gate each one carries.
+  // A module gate is satisfied by any capability in that module; a `user`
+  // holding an explicit grant and a staff account holding the whole module are
+  // served by the same check.
+  const adminSections = ADMIN_SECTIONS.filter((section) => adminSectionAllowed(section, can, canModule));
 
   // Declared above the tab state because the default tab is chosen with the
   // same gates the sidebar renders with, so the landing tab is always one whose
@@ -276,12 +297,6 @@ export default function Dashboard({
     return 'profile';
   });
 
-  // Module access is decided by capability, not by role string. Every panel
-  // below is gated on a capability, so a `user` holding an explicit grant and a
-  // staff account holding a whole module are served by the same check.
-  const canManagePlaces = canModule('places');
-  const canManageSyOfficial = canModule('syofficial');
-  const canManageGovApps = canModule('govapps');
   // Per-action poll capabilities. The tab itself opens for any polls.* holder,
   // so without these a polls.delete-only account is offered create and edit
   // buttons whose routes are tagged polls.create / polls.edit.
@@ -629,139 +644,19 @@ export default function Dashboard({
                   </button>
                 )}
 
-                {/* Transit review Tab (role admins or any explicit transit.* grant) */}
-                {canTransitReview && (
-                  <Link
-                    href="/transit/admin"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <TransitIcon className="h-5 w-5" />
-                    ترانزيت
-                  </Link>
-                )}
-
-                {/* Places moderation Tab */}
-                {canManagePlaces && (
-                  <Link
-                    href="/admin/places"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <MishwarIcon className="h-5 w-5" />
-                    مشوار
-                  </Link>
-                )}
-
-                {/* SyOfficial Admin Tab */}
-                {canManageSyOfficial && (
-                  <Link
-                    href="/admin/syofficial"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <SyOfficialIcon className="h-5 w-5" />
-                    الحسابات الرسمية
-                  </Link>
-                )}
-
-                {/* GovApps Admin Tab */}
-                {canManageGovApps && (
-                  <Link
-                    href="/admin/govapps"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <GovAppsIcon className="h-5 w-5" />
-                    التطبيقات الحكومية
-                  </Link>
-                )}
-
-                {/* GuessWho Admin Tab — guesswho.manage (routes/web.php). */}
-                {can('guesswho.manage') && (
-                  <Link
-                    href="/admin/guesswho"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Gamepad2 className="h-5 w-5" />
-                    من هو
-                  </Link>
-                )}
-
-                {/* Phonebook Admin Tab */}
-                {canModule('phonebook') && (
-                  <Link
-                    href="/admin/phonebook"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <PhonebookIcon className="h-5 w-5" />
-                    دليل الهاتف
-                  </Link>
-                )}
-
-                {/* Compass Admin Tab — anonymous statistics, gated on compass.stats. */}
-                {canModule('compass') && (
-                  <Link
-                    href="/admin/compass"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Compass className="h-5 w-5" />
-                    بوصلة سوريا
-                  </Link>
-                )}
-
-                {/* Promises Tracker Admin Tab */}
-                {canModule('promises') && (
-                  <Link
-                    href="/admin/promises"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <PromisesIcon className="h-5 w-5" />
-                    عداد الوعود
-                  </Link>
-                )}
-
-                {/* Hosted-file manager — assets.manage (routes/web.php). */}
-                {can('assets.manage') && (
-                  <Link
-                    href="/admin/assets"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <CloudUpload className="h-5 w-5" />
-                    الملفات
-                  </Link>
-                )}
-
-                {/* Site Popup Tab — site.popup (routes/web.php). */}
-                {can('site.popup') && (
-                  <Link
-                    href="/admin/site-popup"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Megaphone className="h-5 w-5" />
-                    النافذة المنبثقة
-                  </Link>
-                )}
-
-                {/* Site Navigation & Icons Catalog Tab — site.navigation (routes/web.php). */}
-                {can('site.navigation') && (
-                  <Link
-                    href="/admin/navigation"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <LayoutGrid className="h-5 w-5" />
-                    الأيقونات والقوائم
-                  </Link>
-                )}
-
-                {/* Agent API tokens. Any account holding a capability can mint
-                    tokens for itself, clamped to what it holds (a token is a
-                    ceiling, never a grant); superadmins manage everyone's. */}
-                {hasAnyCapability && (
-                  <Link
-                    href="/admin/api-tokens"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <KeyRound className="h-5 w-5" />
-                    رموز الوكلاء
-                  </Link>
-                )}
+                {adminSections.map((section) => {
+                  const Icon = ADMIN_SECTION_ICONS[section.id] ?? LayoutGrid;
+                  return (
+                    <Link
+                      key={section.id}
+                      href={section.href}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <Icon className="h-5 w-5" />
+                      {section.label}
+                    </Link>
+                  );
+                })}
 
                 {/* Profile/Settings Tab (All users) */}
                 <button type="button" aria-pressed={activeTab === 'profile'} onClick={() => setActiveTab('profile')} className={navItemClass(activeTab === 'profile')}>

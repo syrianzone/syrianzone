@@ -1,17 +1,18 @@
 <?php
 
 use App\Support\Seo\Og\StaticCards;
+use App\Support\Seo\Pages;
 use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 use Illuminate\Routing\RedirectController;
 use Illuminate\Support\Facades\Route;
 
 /**
- * Routes that answer GET without being a page: endpoints, and shims that only
- * redirect. A new public page does not belong here; give it an entry instead.
+ * The GET routes that answer without being a page: endpoints and redirect shims.
+ * The list itself is data (`non_pages` in resources/data/seo.json) so the route
+ * inventory lives in one place; a new public page does not belong there, give it
+ * a record instead.
  */
-const NOT_PAGES = ['healthcheck', 'sitemap.xml', 'llms.txt', 'broadcasting/auth', 'sanctum/csrf-cookie', 'places'];
-
 test('every public page declares its own title, description and share card', function () {
     $missing = [];
 
@@ -22,7 +23,7 @@ test('every public page declares its own title, description and share card', fun
             || str_contains($uri, '{')
             || ! in_array('web', $route->gatherMiddleware(), true)
             || str_starts_with($uri, 'api/')
-            || in_array($uri, NOT_PAGES, true)
+            || in_array($uri, Pages::nonPages(), true)
             || ltrim((string) $route->getControllerClass(), '\\') === RedirectController::class) {
             continue;
         }
@@ -42,7 +43,18 @@ test('every public page declares its own title, description and share card', fun
 
     expect($missing)->toBe(
         [],
-        'These public pages would be shared with the generic site preview. Add each one to SeoMeta::PAGES and '
-        .'resources/og/cards.json, then run `npm run og:build` (see docs/guidelines/seo.md): '.implode(', ', $missing),
+        'These public pages would be shared with the generic site preview. Add one record each to '
+        .'resources/data/seo.json, then run `npm run og:build` (see docs/guidelines/seo.md): '.implode(', ', $missing),
     );
+});
+
+test('the non-page list names routes that still exist', function () {
+    $routes = collect(Route::getRoutes())
+        ->filter(fn ($route) => in_array('GET', $route->methods(), true))
+        ->map(fn ($route) => $route->uri())
+        ->all();
+
+    foreach (Pages::nonPages() as $uri) {
+        expect($routes)->toContain($uri);
+    }
 });

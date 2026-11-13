@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\SiteSetting;
 use App\Models\User;
+use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -86,6 +87,9 @@ class HandleInertiaRequests extends Middleware
                     : null,
             ],
             'sitePopup' => $site['popup'],
+            // The site-module catalogue merged with the admin's stored override
+            // row: `resources/data/site-modules.json` is the default, so the
+            // browser never falls back to a second, hand-written list.
             'siteNavigation' => $site['navigation'],
             // One resolved SEO object per request, rendered by the single
             // <SeoHead> component. The root view renders the same values
@@ -93,7 +97,7 @@ class HandleInertiaRequests extends Middleware
             // Lazy, so it runs after the controller: a page that already loaded its
             // record (SeoMeta::remember) is not queried for it a second time, and
             // JSON responses on the web stack never resolve it at all.
-            'seo' => fn () => \App\Support\Seo\SeoMeta::resolve($request),
+            'seo' => fn () => SeoMeta::resolve($request),
         ];
     }
 

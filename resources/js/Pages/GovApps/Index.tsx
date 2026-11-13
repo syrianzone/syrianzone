@@ -1,7 +1,7 @@
 import React from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 import GovAppsClient from './GovAppsClient';
-import { GovApp } from './types';
+import type { GovApp } from '@/Domain/govapps/types';
 
 interface GovAppsPageProps {
     initialData: GovApp[];

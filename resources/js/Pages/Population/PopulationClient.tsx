@@ -30,7 +30,7 @@ const getWindDirection = (degrees: number) => {
 };
 
 export default function PopulationClient() {
-    const [geoJsonData, setGeoJsonData] = useState<any>(null);
+    const [geoJsonData, setGeoJsonData] = useState<unknown>(null);
     const [currentDataType, setCurrentDataType] = useState<DataType>(DATA_TYPES.POPULATION);
     const [currentSourceId, setCurrentSourceId] = useState<number | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -350,10 +350,8 @@ export default function PopulationClient() {
                         {config.labelAr}
                     </h2>
                     <div className="space-y-1.5">
-                        {(currentDataType === DATA_TYPES.ENVIRONMENTAL
-                            ? config.legend
-                            : buildLegend(currentDataType, dynamicThresholds)
-                        ).map((item: { label: string; color: string }, idx: number) => (
+                        {buildLegend(currentDataType, dynamicThresholds)
+                            .map((item: { label: string; color: string }, idx: number) => (
                             <div key={idx} className="flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
                                 <span className="text-muted-foreground text-xs">{item.label}</span>

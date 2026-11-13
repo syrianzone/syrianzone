@@ -8,17 +8,18 @@ import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Plus, Search, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Eye, EyeOff } from 'lucide-react';
-import CategoryDialog, { CategoryData } from './_components/CategoryDialog';
-import EntityDialog, { EntityData } from './_components/EntityDialog';
-import SortableList from './_components/SortableList';
+import CategoryDialog from '@/Components/directory/CategoryDialog';
+import SortableList from '@/Components/directory/SortableList';
+import EntityDialog from './_components/EntityDialog';
+import type { AdminOfficialEntity, OfficialCategory } from '@/Domain/syofficial/types';
 import { formatEntityImage } from '@/Lib/entityImage';
 import { useCan } from '@/Lib/useCan';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 
 interface AdminSyOfficialProps {
-    categories: CategoryData[];
-    entities: (EntityData & { category?: CategoryData })[];
+    categories: OfficialCategory[];
+    entities: AdminOfficialEntity[];
 }
 
 export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOfficialProps) {
@@ -36,10 +37,10 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
 
     // Dialog States
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<OfficialCategory | null>(null);
 
     const [entityDialogOpen, setEntityDialogOpen] = useState(false);
-    const [selectedEntity, setSelectedEntity] = useState<EntityData | null>(null);
+    const [selectedEntity, setSelectedEntity] = useState<AdminOfficialEntity | null>(null);
 
     // Auto open edit dialog if URL contains ?edit={entityId}
     useEffect(() => {
@@ -68,18 +69,22 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
 
     const handleDeleteCategory = async (catId: string) => {
         const ok = await confirmDialog({ title: 'حذف هذه الفئة؟', description: 'سيتم حذف جميع الحسابات التابعة لها.', destructive: true, confirmText: 'حذف' });
-        if (ok) {
-            router.delete(`/api/v1/admin/syofficial/categories/${catId}`);
-            notify.success('تم حذف الفئة');
-        }
+        if (!ok) return;
+        router.delete(`/api/v1/admin/syofficial/categories/${catId}`, {
+            preserveScroll: true,
+            onSuccess: () => notify.success('تم حذف الفئة'),
+            onError: () => notify.error('تعذر حذف الفئة'),
+        });
     };
 
     const handleDeleteEntity = async (entId: string) => {
         const ok = await confirmDialog({ title: 'حذف هذه الجهة الرسمية؟', destructive: true, confirmText: 'حذف' });
-        if (ok) {
-            router.delete(`/api/v1/admin/syofficial/entities/${entId}`);
-            notify.success('تم حذف الجهة');
-        }
+        if (!ok) return;
+        router.delete(`/api/v1/admin/syofficial/entities/${entId}`, {
+            preserveScroll: true,
+            onSuccess: () => notify.success('تم حذف الجهة'),
+            onError: () => notify.error('تعذر حذف الجهة'),
+        });
     };
 
     return (
@@ -383,8 +388,9 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                         <SortableList
                                             items={categories.map((c) => ({ id: c.id, label: c.label_ar, subtitle: c.label_en }))}
                                             endpoint="/api/v1/admin/syofficial/reorder/categories"
+                                            capability="syofficial.reorder"
                                             canReorder={canReorder}
-                                            onSaveSuccess={() => router.reload()}
+                                            onSaved={() => router.reload()}
                                         />
                                     </CardContent>
                                 </Card>
@@ -412,10 +418,11 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                             key={selectedCategoryFilter}
                                             items={entities
                                                 .filter((e) => selectedCategoryFilter === 'all' || e.category_id === selectedCategoryFilter)
-                                                .map((e) => ({ id: e.id, label: e.name_ar, subtitle: e.name, image: e.image }))}
+                                                .map((e) => ({ id: e.id, label: e.name_ar, subtitle: e.name, image: formatEntityImage(e.image) }))}
                                             endpoint="/api/v1/admin/syofficial/reorder/entities"
+                                            capability="syofficial.reorder"
                                             canReorder={canReorder}
-                                            onSaveSuccess={() => router.reload()}
+                                            onSaved={() => router.reload()}
                                         />
                                     </CardContent>
                                 </Card>
@@ -430,6 +437,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                 open={categoryDialogOpen}
                 onOpenChange={setCategoryDialogOpen}
                 category={selectedCategory}
+                endpoint="/api/v1/admin/syofficial/categories"
             />
 
             <EntityDialog

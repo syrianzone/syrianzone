@@ -1,7 +1,13 @@
 import axios from '@/Lib/axios';
+import { api } from '@/Domain/places/api';
+import { discovery, type Guide, type GuidesSort } from '@/Domain/places/discovery';
+import type { NearbyPlace } from '@/Domain/places/types';
+import { fetchPrayerTimes, type PrayerTimesResponse } from '@/Domain/prayer/times';
 
-// Board-specific read clients. Places-backed widgets reuse the typed clients
-// that already live in Domain/places rather than restating them here.
+// The board's read clients: every widget names the fetcher it uses in its own
+// declaration (`source`), and the registry publishes that mapping as
+// WIDGET_SOURCES. Places-backed widgets reuse the typed clients that already
+// live in Domain/places rather than restating them here.
 
 // The endpoint returns camelCase keys, not the underlying column names.
 export interface TransitCity {
@@ -28,12 +34,6 @@ export interface ForecastDay {
   max: number;
   // raw WMO code; the widget owns the arabic labels, as it does for description
   code: number;
-}
-
-export interface PrayerTimes {
-  governorate: string;
-  timings: Record<string, string>;
-  hijri: { day: string; month: string; year: string } | null;
 }
 
 // Normalized server-side from the Apache Answer instance. `url` is an absolute
@@ -95,12 +95,6 @@ export interface Feed {
   items: FeedItem[];
 }
 
-export interface PrayerTimes {
-  governorate: string;
-  timings: Record<string, string>;
-  hijri: { day: string; month: string; year: string } | null;
-}
-
 export const sources = {
   async transitCities(): Promise<TransitCity[]> {
     const { data } = await axios.get('/api/v1/cities');
@@ -137,8 +131,18 @@ export const sources = {
     return data;
   },
 
-  async prayerTimes(params: Record<string, string | number>): Promise<PrayerTimes> {
-    const { data } = await axios.get('/api/prayer-times', { params });
-    return data;
+  // The one client for the endpoint; the widget's react-query supplies caching.
+  prayerTimes(params: Record<string, string | number>): Promise<PrayerTimesResponse> {
+    return fetchPrayerTimes(params);
+  },
+
+  // The two Places reads a board widget needs; the widget folder declares which
+  // of these it uses, and the client itself stays with the Places domain.
+  async guides(sort: GuidesSort): Promise<{ sort: GuidesSort; guides: Guide[] }> {
+    return discovery.guides(sort);
+  },
+
+  async nearby(params: { lat: number; lng: number; radius_km?: number }): Promise<{ places: NearbyPlace[] }> {
+    return api.nearby(params);
   },
 };

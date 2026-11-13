@@ -91,7 +91,7 @@ One module owns each fact, so `/muslim/prayer`, `/roznama`, Home and the board's
 - **Floating mini player**: `Domain/quran/RadioMiniPlayer` (mounted once in `MainLayout`) keeps the recitation controllable away from the radio page — a bottom-right card on desktop, and a floating button that opens a controls sheet on mobile. It hides on `/muslim/radio` and `/muslim/quran`, and shows the rolling five-word window (`QuranWordWindow`, compact) rather than a progress bar.
 - **Text**: `QuranNowReading` renders the current ayah in the recitation's riwayah (v4 `/v4/surahs/{n}/text`) with the word/letter highlight.
 - **Continue in the reader**: maps the current `surah:ayah` to a page (`findPageForAyah`) and opens the reader there.
-- **Sleep timer + data usage**: the timer lives in the Muslim nav store (`_lib/nav.ts`); usage accrues globally (`Domain/quran/usageStore.ts`) and is shown in both the radio tab and the reader.
+- **Sleep timer + data usage**: the deadline lives in the player store (`sleepUntil` in `Domain/quran/quranPlayer.ts`), so it survives leaving `/muslim/radio`; usage accrues globally (`Domain/quran/usageStore.ts`) and is shown in both the radio tab and the reader.
 
 ---
 

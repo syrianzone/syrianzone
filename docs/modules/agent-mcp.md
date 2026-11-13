@@ -27,7 +27,7 @@ Currently covers six modules:
 | Government apps | 1 | 6 | no |
 | Transit | 4 | 6 | **yes**, by governorate |
 | Users | 0 | 1 | no |
-| Promises | 7 | 22 | no |
+| Promises | 7 | 23 | no |
 
 Other modules are added by dropping tools into
 `app/Mcp/Servers/AdminServer.php`; nothing outside that file is reachable by an
@@ -63,7 +63,7 @@ Implementation:
 
 | Class | Role |
 |---|---|
-| `app/Support/Permissions/PermissionCatalogue.php` | The 32 capability ids and their Arabic labels. Single source of truth — `UserResource` delegates to it, so the panel form and the token issuer cannot drift |
+| `app/Support/Permissions/PermissionCatalogue.php` | The capability ids and their Arabic labels. Single source of truth — `UserResource` delegates to it, so the panel form and the token issuer cannot drift |
 | `app/Support/Agents/AgentAuthorizer.php` | Answers "may this agent do X". All methods fail closed |
 | `app/Support/Agents/TokenIssuer.php` | Mints tokens: clamps abilities to the owner's live grants, refuses `*`, drops unknown ids, sets an expiry |
 | `app/Support/Agents/AgentContext.php` | The per-request identity every tool authorises through |
@@ -80,7 +80,7 @@ registered with an empty middleware group, so it sits outside both `web` and
 
 ```php
 Mcp::web('/mcp/admin', AdminServer::class)
-    ->middleware(['auth:sanctum', RequireApiToken::class, 'throttle:mcp']);
+    ->middleware(['auth:sanctum', RequireApiToken::class, 'throttle:'.config('mcp.rate_limiter', 'mcp')]);
 ```
 
 No session, no CSRF, no cookie authentication. A caller must present a real
@@ -317,7 +317,7 @@ single capability as its dashboard route:
 | `promises.create` | `create-promise` (always lands unpublished) |
 | `promises.edit` | `update-promise`, `add-promise-update`, `remove-promise-update` |
 | `promises.review` | `get-promise-review-queue`, `publish-promise`, `unpublish-promise`, `reject-promise`, `approve-promise-speaker`, `reject-promise-speaker`, `accept-promise-report`, `dismiss-promise-report` |
-| `promises.rule` | `set-promise-status`, `undo-promise-status` |
+| `promises.rule` | `set-promise-status`, `undo-promise-status`, `reschedule-promise` |
 | `promises.delete` | `delete-promise` |
 | `promises.speakers` | `list-promise-speakers`, `create-promise-speaker`, `update-promise-speaker`, `delete-promise-speaker`, `list-promise-sectors`, `create-promise-sector`, `update-promise-sector`, `toggle-promise-sector`, `delete-promise-sector`, `reorder-promise-sectors` |
 

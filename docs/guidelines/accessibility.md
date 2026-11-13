@@ -96,7 +96,8 @@ role (`role="region"` + `aria-label`) or it counts as "content outside landmarks
 
 ## Theming & contrast
 
-- Nine themes are attributes (`data-theme`), not classes. Tokens are HSL CSS
+- Nine themes are attributes (`data-theme` for which theme, `data-scheme` for
+  `light`/`dark`), not classes. Tokens are HSL CSS
   variables (`--background`, `--primary`, `--primary-foreground`, …).
 - **`--primary-foreground` must contrast with `--primary` in every theme.** The
   `damascus-rose` theme shipped white-on-rose at 3.9:1 (fails AA); the fix was a
@@ -125,7 +126,7 @@ python3 scripts/a11y_axe_audit.py --base http://localhost:8000        # public r
 python3 scripts/a11y_axe_audit.py --base http://localhost:8000 --admin # + admin panels
 ```
 
-- Runs axe-core (WCAG 2.0/2.1 A+AA **and** best-practice) over ~35 routes.
+- Runs axe-core (WCAG 2.0/2.1 A+AA **and** best-practice) over every page the app renders: 40 public routes, plus 19 admin routes with `--admin`.
 - **Blocks on WCAG serious/critical findings that reproduce across two passes**
   (a live clock can otherwise cause a one-off contrast hit). Best-practice rules
   (`region`, `heading-order`) are reported but advisory.

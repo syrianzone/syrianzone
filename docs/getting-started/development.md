@@ -8,8 +8,8 @@ Welcome to the Syrian Zone development guide! This document outlines how to set 
 
 - **PHP**: 8.3 or higher (with `pdo_sqlite` or `pdo_mysql`, `gd`, `zip`, `mbstring`, `intl`, `exif` extensions)
 - **Composer**: 2.x
-- **Node.js & Bun / NPM**: Node 18+ and `bun` (recommended) or `npm`
-- **Database**: SQLite (default for dev) or MySQL/PostgreSQL
+- **Node.js & Bun / NPM**: Node 20.19+ or 22.12+ (Vite 8's engine floor) and `bun` (recommended) or `npm`
+- **Database**: SQLite (default for dev) or MySQL/MariaDB (production; spatial columns need it)
 
 ---
 
@@ -36,7 +36,6 @@ Welcome to the Syrian Zone development guide! This document outlines how to set 
    ```bash
    php artisan migrate
    ```
-
 5. **Seed Initial / Staging Data**:
    ```bash
    # Seed essential tierlists, maps, and official entities with R2 CDN links:
@@ -50,17 +49,15 @@ Welcome to the Syrian Zone development guide! This document outlines how to set 
    php artisan db:seed --class=PopulationAtlasSeeder
    ```
 
-6. **Install & Start Frontend Dev Server**:
+6. **Install & Start the Dev Stack**:
    ```bash
    bun install
    bun run dev
    ```
-
-7. **Start Laravel Backend Server**:
-   ```bash
-   php artisan serve
-   ```
-   Open `http://localhost:8000` in your browser.
+   `bun run dev` is the whole stack: it builds the SSR bundle once, then runs
+   `php artisan serve`, `php artisan reverb:start`, Vite (with an SSR rebuild
+   watcher) and the SSR server together. Open `http://localhost:8000` in your
+   browser. Do not also start `php artisan serve` by hand: the port is taken.
 
 ---
 

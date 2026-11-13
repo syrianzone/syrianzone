@@ -241,9 +241,10 @@ log.
 Routes under `SeoMeta::NOINDEX_PREFIXES` (`admin`, `superadmin`,
 `transit/admin`, `dashboard`, `auth`, `user`, `dev`, `mcp/admin`,
 `guesswho/room`, `compass/s`), inactive polls, and 404 responses emit
-`<meta name="robots" content="noindex, follow">`. They are also disallowed in
-`public/robots.txt` and left out of the sitemap. A non-indexed page can still
-have a card: a game room link is meant to be shared.
+`<meta name="robots" content="noindex, follow">`. `public/robots.txt` disallows
+`admin`, `superadmin`, `transit/admin`, `dashboard`, `auth`, `user`, `dev`,
+`mcp` and `guesswho/room`, and none of these routes is in the sitemap. A
+non-indexed page can still have a card: a game room link is meant to be shared.
 
 ## Structured data (JSON-LD)
 

@@ -13,33 +13,33 @@ This document is the single contract for the feature as implemented. Every name,
 - Page skeleton:
 
 ```tsx
-import { Head } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 
 export default function Index() {
   return (
     <MainLayout>
-      <Head>
-        <title>مشوار</title>
-        <meta name="description" content="خريطة تفاعلية لأماكن تستحق المشوار في سوريا" />
-      </Head>
-      <main dir="rtl">...</main>
+      <h1 className="sr-only">مشوار</h1>
+      <div dir="rtl">...</div>
     </MainLayout>
   );
 }
 ```
 
+The `<title>`/meta tags are not a page's job: `SeoMeta` prints them from
+`resources/data/seo.json`, so a page renders neither `<Head>` for them nor a
+second `<main>` (the one landmark comes from `ConditionalLayout`).
+
 - Auth in React: `const { user, isAdmin } = useAuth()` from `@/Contexts/AuthContext` (available under MainLayout). Login prompt is a plain link: `<a href="/auth/google">تسجيل الدخول عبر جوجل</a>`. No login page exists.
 - HTTP client: `import { api } from '@/Lib/api'` (CSRF, cookies, JSON and one timeout already configured), and its `apiErrorMessage`/`apiFieldErrors` helpers for failures. Never use raw `fetch` or `axios` for API calls. All Places components call the typed client in `resources/js/Domain/places/api.ts`, never `Lib/api` directly (exception: the Lightbox photo downloads, which fetch static `/storage/...` files, not API endpoints).
-- UI components: import from `@/Components/ui/*` (button, card, dialog, sheet, input, textarea, select, badge, avatar, alert, separator, scroll-area, label). Do NOT import from `Components/sycn`. No toast library: feedback uses `<Alert variant="default|destructive">` inline or a transient icon/label swap.
-- Icons: lucide-react. Theme: rely on tokens (`bg-background`, `text-foreground`, `text-primary`, `bg-card`, `text-muted-foreground`, `border-border`, `bg-accent/50`, `destructive`). Never hardcode colors; dark mode is automatic via `data-theme`.
+- UI components: import from `@/Components/ui/*` (button, card, dialog, sheet, input, textarea, select, badge, avatar, alert, separator, scroll-area, label). Transient feedback (submission accepted, a failed request, a point outside Syria) goes through `Lib/notify`; field errors stay next to their field.
+- Icons: lucide-react. Theme: rely on tokens (`bg-background`, `text-foreground`, `text-primary`, `bg-card`, `text-muted-foreground`, `border-border`, `bg-accent/50`, `destructive`). Never hardcode colors; the scheme is automatic via `data-scheme` (`data-theme` picks the theme).
 - Map style: resolved by `Components/map/resolveStyle.ts` (`light-vector.json` / `dark-matter-vector.json` under `public/styles/styles/`, local, no API key) and applied by the shared `Components/map/MapCanvas`, which also restyles on a theme switch. MapLibre v5 is already a dependency.
 - Backend validation: inline `$request->validate(['field' => 'required|string|max:255'])` pipe-string rules in controllers. No FormRequest classes, no Policies, no API Resources: match the codebase. Guard checks return early JSON: `return response()->json(['message' => '...'], 403);`.
 - Response codes: 201 create, 204 delete (`response()->json(null, 204)`), 400 invalid transition, 403 forbidden, 404 missing, 422 validation (automatic), 429 throttled. Error key is `message`.
 - Models: explicit `$fillable`, sparse `$casts`, one-line relation methods, `HasFactory`.
 - Migrations: anonymous class, `up()`/`down()`, `foreignId(...)->constrained()->cascadeOnDelete()`, `enum` for status columns, `timestamps()`. SQLite AND MySQL portable: no spatial functions, no SQLite-only SQL, no generated columns. Shipped migrations are never edited; schema removals happen through new drop migrations.
 - Tests: Pest closures in `tests/Feature/`, `RefreshDatabase` is global via `tests/Pest.php`. Style: `test('can list approved places', function () { ... });`, `$this->getJson()/postJson()`, `assertOk/assertCreated/assertJsonPath/assertJsonCount/assertDatabaseHas`, `actingAs(User::factory()->create())`. NOTE: `UserFactory` defaults `role` to `'user'` and a plain account holds **no** capabilities (only `superadmin` bypasses), so capability-gated tests must grant `permissions` explicitly. Rate-limit tests loop N+1 requests and assert 429.
-- Routing split: public reads live in `routes/api.php` (no session needed, but `statefulApi()` means `$request->user()` still resolves when a session cookie is present). All writes (user and admin) live in `routes/web.php` under the existing `Route::middleware('auth')->group()` so they get session + CSRF.
+- Routing split: public reads live in `routes/api.php` under `api_user` + `throttle:60,1` (no session needed, but `statefulApi()` and `api_user` mean `$request->user()` still resolves when a session cookie or bearer token is present). User writes live in the same file under `Route::middleware('auth:sanctum')`, so a browser gets session + CSRF through `statefulApi()` and mobile gets Bearer; admin writes live in `routes/web.php` under the `places_admin` group.
 - GeoJSON coordinates are `[lng, lat]`. Database columns and all non-GeoJSON API JSON use explicit `lat` and `lng` keys.
 
 ## 3. DATA MODEL
@@ -172,7 +172,7 @@ Register `/places/map` and `/places/nearby` BEFORE `/places/{id}`, and constrain
 
 `thumb_url` is the first photo's thumb or `null`. Coordinates are `[lng, lat]`.
 
-**`GET /api/v1/places`** -> `PlaceController@index`. Validate: `'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other'`, `'q' => 'sometimes|string|max:100'` (matches `name LIKE %q% OR description LIKE %q%`), `'sort' => 'sometimes|in:newest,popular'` (`newest` default, `popular` = saves_count desc, newest as tiebreaker), plus `page`. Approved only, `->paginate(20)`, standard Laravel paginator JSON (`data`, `current_page`, `last_page`, `total`, ...), each `data` item is `PLACE_LIST_ITEM`.
+**`GET /api/v1/places`** -> `PlaceController@index`. Validate: `'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other'`, `'q' => 'sometimes|string|max:100'` (folded match on `name_fold`/`description_fold`), `'sort' => 'sometimes|in:newest,popular'` (`newest` default, `popular` = saves_count desc, newest as tiebreaker), `'user_id' => 'sometimes|integer|min:1'` (one contributor's approved places), plus `page`. Approved only, `->paginate(20)`, standard Laravel paginator JSON (`data`, `current_page`, `last_page`, `total`, ...), each `data` item is `PLACE_LIST_ITEM`.
 
 **`GET /api/v1/places/nearby`** -> `PlaceController@nearby`. Params: `lat` required numeric -90..90, `lng` required numeric -180..180, `radius_km` optional numeric 0.05..25 default 2, `include_pending` optional boolean default false (when true, the requester's OWN pending places are included: used by the duplicate check so users see their own not-yet-approved submissions). `include_pending` is honored ONLY when `$request->user()` is non-null and never exposes other users' pending places; for guests it is silently ignored (approved only). Without this scoping, any self-registered account could enumerate unmoderated submissions that `show` deliberately 404s. Implementation is portable: bounding-box SQL prefilter then haversine in PHP:
 
@@ -184,17 +184,17 @@ $lngDelta = $radiusKm / (111.045 * max(cos(deg2rad($lat)), 0.01));
 
 Haversine (meters): `6371000 * 2 * asin(sqrt(sin²(Δlat/2) + cos(lat1)cos(lat2)sin²(Δlng/2)))`. Response 200: `{ "places": [ PLACE_LIST_ITEM + "distance_m": 154 ] }`, sorted nearest first, max 20.
 
-**`GET /api/v1/places/{id}`** -> `PlaceController@show`. `id` numeric. 200 with `PLACE_DETAIL` if approved; the owner gets their own pending/rejected place, superadmins get any place regardless of status; everyone else gets 404. `saved_by_me` computed from `$request->user()` (false when guest).
+**`GET /api/v1/places/{id}`** -> `PlaceController@show`. `id` numeric. 200 with `PLACE_DETAIL` if approved; the owner, or any account holding a `places.*` capability, also sees a pending/rejected place; everyone else gets 404. `saved_by_me` computed from `$request->user()` (false when guest).
 
 **`GET /api/v1/places/photos`** -> `PlaceDiscoveryController@photos`. Photo grid feed: photos of approved places only, newest photo first, `paginate(24)`. Each entry: `{ "id", "thumb_url", "display_url", "place": { "id", "name", "category", "lat", "lng" } }` (lat/lng included so the grid can fly to the place without a second fetch). `Cache-Control: public, max-age=60`. Registered before `/places/{id}`.
 
-**`GET /api/v1/guides`** -> `PlaceDiscoveryController@guides`. Local guides leaderboard. `'sort' => 'sometimes|in:points,submissions,saves,recent'` (default `points`). Single aggregate over approved places joined to non-banned, non-deleted users; top 20; cached per sort with `Cache::remember("places:guides:{$sort}", 300, ...)` (no forget hooks, 5-minute staleness is accepted). Response: `{ "sort", "guides": [ { "rank", "user_id", "name", "avatar_url", "approved_count", "saves_total", "recent_count" } ] }` (rank 1-based). `Cache-Control: public, max-age=60`.
+**`GET /api/v1/guides`** -> `PlaceDiscoveryController@guides`. Local guides leaderboard. `'sort' => 'sometimes|in:points,submissions,saves,recent'` (default `points`). Single aggregate over approved places joined to non-banned, non-deleted users; top 20; cached per sort with `Cache::remember("places:guides:{$sort}", 300, ...)` (no forget hooks, 5-minute staleness is accepted). Response: `{ "sort", "guides": [ { "rank", "user_id", "name", "avatar_url", "approved_count", "saves_total", "recent_count", "points", "level" } ] }` (rank 1-based; `points`/`level` come from `GuideLevelService` and are the default sort's metric). `Cache-Control: public, max-age=60`.
 
 Future guide-ranking criteria (documented only, deliberately NOT built): category specialists (top contributor per category), governorate coverage (distinct governorates contributed to, needs a governorate resolver), streaks (consecutive weeks with an approved place).
 
-### 5.2 Authenticated writes (routes/web.php, inside the existing `Route::middleware('auth')->group()`)
+### 5.2 Authenticated writes (routes/api.php, inside `Route::middleware('auth:sanctum')`)
 
-**`POST /api/v1/places`** -> `PlaceController@store`. Middleware `throttle:20,60` (coarse abuse shield only; the real quota is 5 created places per hour counted in the controller, so failed validation attempts don't lock users out). Multipart form. Guard: `if ($request->user()->is_banned) return response()->json(['message' => 'تم حظر حسابك من المساهمة'], 403);`. Validation:
+**`POST /api/v1/places`** -> `PlaceController@store`. Middleware `throttle:60,1` (a coarse flood backstop; there is no per-user submission cap, because moderation gates everything to the public map). Multipart form. Guard: `if ($request->user()->is_banned) return response()->json(['message' => 'تم حظر حسابك من المساهمة'], 403);`. Validation:
 
 ```php
 $request->validate([
@@ -316,7 +316,7 @@ export const CATEGORIES: { key: PlaceCategory; label: string }[] = [ /* section 
 export const CATEGORY_LABELS: Record<PlaceCategory, string>; // derived map
 ```
 
-**`resources/js/Domain/places/api.ts`** (uses `@/lib/axios`) exports exactly:
+**`resources/js/Domain/places/api.ts`** (built on `Lib/api`, so it carries no URL spelling of its own beyond `API_V1`) exports one typed function per endpoint; the core set is:
 
 ```ts
 export const api = {
@@ -334,8 +334,11 @@ export const api = {
   adminReject(id: number, reason: string | null): Promise<{ id: number; status: string }>,
   adminDeletePlace(id: number): Promise<void>,
 };
-export function extractError(e: unknown): string; // error.response?.data.message ?? error.response?.data.error ?? 'حدث خطأ، حاول مجدداً'
 ```
+
+Failures never surface as a raw axios error: components pass the caught error to
+`apiErrorMessage(err, fallback)` (`Lib/api`) and report it through `Lib/notify`
+or an inline `<Alert>`; field errors use `apiFieldErrors`.
 
 ### 6.2 Component tree and prop contracts
 
@@ -360,9 +363,11 @@ Pages/Admin/Places/Index.tsx                          route GET /admin/places
 
 All `_components/` files live in `resources/js/Pages/Places/_components/`. Every component below is a NAMED export matching its file name (e.g. `export function PlacesMap(...)`), except the two page `Index.tsx` files which are default exports.
 
-**Layout (Index.tsx)**: full-viewport map (`h-[calc(100dvh-4rem)]` under the Navbar, `relative`), FilterBar floating at top center (`absolute top-3 inset-x-3 z-10 max-w-xl mx-auto`), PlacesPanel as a side panel on desktop (`absolute top-0 right-0 h-full w-96` since RTL puts the panel on the right) and a bottom sheet on mobile (fixed bottom, drag-free, two snap states via a `expanded` boolean).
+Beyond that tree, `Index.tsx` mounts `ViewToggle` and `PhotoGrid`, and feeds a `HotelFeatureCollection` from `api.hotelMapData()` into `PlacesMap`, which draws it through the same `PinLayer` (`HOTEL_PINS`).
 
-**Index.tsx state ownership**: `features: PlaceFeatureCollection | null` (from `api.mapData()` on mount), `category: PlaceCategory | null`, `query: string`, `selectedId: number | null`, `addMode: boolean`, `focus: { lng: number; lat: number; zoom?: number; key: number } | null`, `highlight: LatLng | null`, `submitPoint: LatLng | null`, `submitOpen: boolean`, `listPlaces: Paginated<PlaceListItem> | null` (from `api.listPlaces`, refetched on filter change with 300ms debounce). Filtered features (category + query on `properties.name`) are computed client-side and passed to PlacesMap. After a successful submission (`onSubmitted`), show an inline `<Alert>` "تم إرسال المكان وسيظهر بعد الموافقة".
+**Layout (Index.tsx)**: full-viewport map (`h-[calc(100dvh-var(--sz-navbar-h))]` under the Navbar, `relative`), FilterBar floating at top center (`absolute top-3 inset-x-3 z-10 max-w-xl mx-auto`), PlacesPanel as a side panel on desktop (`absolute top-0 right-0 h-full w-96` since RTL puts the panel on the right) and a bottom sheet on mobile (`BottomSheet`, drag-free, two snap states via an `expanded` boolean).
+
+**Index.tsx state ownership**: `features: PlaceFeatureCollection | null` (from `api.mapData()` on mount), `hotelFeatures` (from `api.hotelMapData()`), `category: PlaceCategory | null`, `viewFilter` (`all` / `places` / `hotels`), `view` (`map` / `grid`), `query: string`, `selectedId: number | null`, `selectedType: 'place' | 'hotel' | null`, `addMode: boolean`, `focus: { lng: number; lat: number; zoom?: number; key: number } | null`, `highlight: LatLng | null`, `submitPoint: LatLng | null`, `submitOpen: boolean`, `listPlaces: Paginated<PlaceListItem> | null` (from `api.listPlaces`, refetched on filter change with 300ms debounce). Filtered features (category + query on `properties.name`) are computed client-side and passed to PlacesMap. After a successful submission (`onSubmitted`), show an inline `<Alert>` "تم إرسال المكان وسيظهر بعد الموافقة".
 
 **Add-mode (explicit submission entry, replaces bare-click submit)**:
 - A FAB floats over the map (primary Button, `absolute z-10`, clear of the panel, the bottom-left map controls, and the collapsed mobile sheet). Idle label: أضف مكاناً with a Plus icon. While active: إلغاء الإضافة with an X icon; pressing again cancels.
@@ -370,7 +375,7 @@ All `_components/` files live in `resources/js/Pages/Places/_components/`. Every
 - Map clicks while addMode is false only close an open detail (`setSelectedId(null)`); they NEVER open the submit sheet. While addMode is true, a click is checked against the Syria bounds (notice النقطة خارج حدود سوريا on failure, staying in add-mode); on success `setSubmitPoint(point)`, `setSubmitOpen(true)`, `setAddMode(false)`. Pin clicks keep opening the detail and drop add-mode when it was active.
 - PlacesMap shows a crosshair cursor while addMode is true, including while hovering pins.
 
-**Deep link (`?place={id}`)**: on mount, Index parses `new URLSearchParams(window.location.search).get('place')`; if it is a positive integer: `setSelectedId(id)`, `setExpanded(true)` (opens PlaceDetailView, which does its own fetch), AND calls `api.getPlace(id)` for lat/lng, then flies the map to that point at zoom 15 once the map is ready. On 404/error: show the extractError notice and clear the selection. No URL rewriting or history syncing while users browse; the param is read once on load. The canonical producer of these URLs is the share button (EngagementBar).
+**Deep link (`?place={id}`)**: on mount, Index parses `new URLSearchParams(window.location.search).get('place')`; if it is a positive integer: `setSelectedId(id)`, `setExpanded(true)` (opens PlaceDetailView, which does its own fetch), AND calls `api.getPlace(id)` for lat/lng, then flies the map to that point at zoom 15 once the map is ready. On 404/error: show the `apiErrorMessage` notice and clear the selection. No URL rewriting or history syncing while users browse; the param is read once on load. The canonical producer of these URLs is the share button (EngagementBar).
 
 **`PlacesMap`**:
 
@@ -448,7 +453,7 @@ For logged-in users (`useAuth()`), the panel header shows `Tabs`: الأماكن
 **`Lightbox`**:
 
 ```ts
-import type { PlacePhoto } from '../_lib/types';
+import type { PlacePhoto } from '@/Domain/places/types';
 
 export function Lightbox(props: {
   photos: PlacePhoto[];      // ordered as in PlaceDetail.photos
@@ -497,7 +502,7 @@ export function SubmitSheet(props: {
 }): JSX.Element;
 ```
 
-Uses `Sheet` with `side="bottom"` on mobile and `side="left"` on desktop (panel is on the right), `dir="rtl"`. Internal step state: `'auth' | 'duplicates' | 'form' | 'done'`. Step auth: if `!user` (from `useAuth()`), show the Google login link and stop. Step duplicates: on open, call `api.nearby({ lat, lng, radius_km: 0.25, include_pending: true })`; if any results render `DuplicateSuggestions`, else skip to form. Step form: name Input, category Select from `CATEGORIES`, description Textarea (counter, min 20 max 1000), read-only coordinates line (`dir="ltr"`), `PhotoPicker`. Client validation before `api.submitPlace`; errors via `extractError` in a destructive `Alert`. Step done: success message + close button. Calls `onSubmitted()` then `onOpenChange(false)` on close.
+Uses `Sheet` with `side="bottom"` on mobile and `side="left"` on desktop (panel is on the right), `dir="rtl"`. Internal step state: `'auth' | 'duplicates' | 'form' | 'done'`. Step auth: if `!user` (from `useAuth()`), show the Google login link and stop. Step duplicates: on open, call `api.nearby({ lat, lng, radius_km: 0.25, include_pending: true })`; if any results render `DuplicateSuggestions`, else skip to form. Step form: name Input, category Select from `CATEGORIES`, description Textarea (counter, min 20 max 1000), read-only coordinates line (`dir="ltr"`), `PhotoPicker`. Client validation before `api.submitPlace`; failures go through `apiErrorMessage` in a destructive `Alert` (and an unsaved-draft loss through `notify`). Step done: success message + close button. Calls `onSubmitted()` then `onOpenChange(false)` on close.
 
 **`DuplicateSuggestions`**:
 
@@ -525,7 +530,7 @@ Hidden `<input type="file" accept="image/jpeg,image/png,image/webp" multiple>`, 
 
 ### 6.3 Admin page
 
-`Pages/Admin/Places/Index.tsx` (default export): MainLayout, status filter `Select`, paginated review list via `api.adminListPlaces` as the page body (no tabs). Renders `PlaceReviewCard` per place. Follows the Transit admin pattern: refetch after each action, counts row at top (client-side from `total`).
+`Pages/Admin/Places/Index.tsx` (default export): MainLayout, status filter `Select`, paginated review list via `api.adminListPlaces`, with a "البلاغات" tab (`ReportsTab`, the visitor-report queue) beside it. Renders `PlaceReviewCard` per place, and `EditPlaceDialog` for a moderation edit. Follows the Transit admin pattern: refetch after each action, counts row at top (client-side from `total`).
 
 ```ts
 // Pages/Admin/Places/PlaceReviewCard.tsx
@@ -550,7 +555,7 @@ export function RejectDialog(props: {
 
 ## 7. MODERATION
 
-Imitates the Transit RouteDraft lifecycle exactly: statuses are plain strings, only creatable state is `pending`, transitions `pending -> approved` and `pending -> rejected` are terminal, both guarded with a 400 "Place is already {status}". Rejection reason is nullable text shown to admins AND to the submitter via `GET /api/v1/my/places`. Approve/delete bust the `places:map` cache. Spam defenses: throttles per section 5, `is_banned` guard on submit, server-side validation on everything, the unique constraint makes save idempotent. `POST /api/v1/admin/users/{id}/toggle-ban` covers banning abusers; do not rebuild it. It lives in its own `users_admin` group gated by the `users.ban` capability (superadmin, or anyone granted it) — place moderators no longer reach it just by holding a transit capability.
+Imitates the Transit RouteDraft lifecycle exactly: statuses are plain strings, only creatable state is `pending`, transitions `pending -> approved` and `pending -> rejected` are terminal, both guarded with a 400 "Place is already {status}". Rejection reason is nullable text shown to admins AND to the submitter via `GET /api/v1/my/places`. Approve/delete bust the `places:map` cache. Spam defenses: throttles per section 5, `is_banned` guard on submit, server-side validation on everything, the unique constraint makes save idempotent. `PATCH /api/v1/admin/users/{id}/ban` (legacy `POST /api/v1/admin/users/{id}/toggle-ban`) covers banning abusers; do not rebuild it. It lives in its own `users_admin` group gated by the `users.ban` capability (superadmin, or anyone granted it) — place moderators no longer reach it just by holding a transit capability.
 
 ## 8. FILE MANIFEST
 
@@ -559,19 +564,21 @@ Backend:
 - `app/Models/Place.php`, `app/Models/PlacePhoto.php`, `app/Models/PlaceSave.php`
 - `database/factories/PlaceFactory.php`, `database/factories/PlacePhotoFactory.php`
 - `app/Services/PlaceImageService.php`
-- `app/Http/Controllers/PlaceController.php` (renderIndex, mapData, index, nearby, show, store, mine)
+- `app/Http/Controllers/PlaceController.php` (renderIndex, mapData, index, geocode, nearby, show, store, mine, updateDetails, updateLocation, addPhoto, deletePhoto, rotatePhoto, destroy, resubmit)
+- `app/Http/Controllers/PlaceDiscoveryController.php` (photos, guides)
 - `app/Http/Controllers/PlaceEngagementController.php` (save, unsave, mySaves)
-- `app/Http/Controllers/PlaceAdminController.php` (renderIndex, index, approve, reject, destroy) — thin HTTP adapter; domain rules live in `app/Services/Places/PlaceModerationService.php`, shared with the agent MCP tools
-- Routes: the places block in `routes/api.php` (public reads) and `routes/web.php` (page routes, authed writes, admin moderation)
+- `app/Http/Controllers/PlaceReportController.php` (visitor reports + the admin report queue)
+- `app/Http/Controllers/PlaceAdminController.php` (renderIndex, index, approve, reject, update, destroy, photos) — thin HTTP adapter; domain rules live in `app/Services/Places/PlaceModerationService.php`, shared with the agent MCP tools
+- Routes: the places block in `routes/api.php` (public reads, `auth:sanctum` user writes) and `routes/web.php` (page routes, admin moderation)
 
 Frontend:
 - `resources/js/Domain/places/types.ts`, `categories.ts`, `api.ts`, `reports.ts`
 - `resources/js/Pages/Places/Index.tsx`
 - `resources/js/Pages/Places/_components/`: PlacesMap, FilterBar, PlacesPanel, PlaceCard, PlaceDetailView, PhotoGallery, Lightbox, EngagementBar, SubmitSheet, DuplicateSuggestions, PhotoPicker
-- `resources/js/Pages/Admin/Places/`: Index.tsx, PlaceReviewCard.tsx, RejectDialog.tsx
+- `resources/js/Pages/Admin/Places/`: Index.tsx, PlaceReviewCard.tsx, RejectDialog.tsx, EditPlaceDialog.tsx, ReportsTab.tsx
 
 Tests:
-- `tests/Feature/PlacesTest.php` (map geojson shape, list + filters + search + popular-by-saves sort + pagination, removed-counter leak guards, nearby distance ordering + include_pending, show visibility rules, submit happy path + validation + quota, my/places, `/mishwar?place=` page renders)
+- `tests/Feature/PlacesTest.php` (map geojson shape, list + filters + search + popular-by-saves sort + pagination, removed-counter leak guards, nearby distance ordering + include_pending, show visibility rules, submit happy path + validation, my/places, `/mishwar?place=` page renders)
 - `tests/Feature/PlacesEngagementTest.php` (save/unsave idempotency + counts, approved-only targets, guest 401s, my saves content + save-time ordering, removed endpoints 404)
 - `tests/Feature/PlacesAdminTest.php` (non-admin 403, pending list, approve, reject with reason, double-approve 400, delete removes files and rows, cache bust assertions)
 

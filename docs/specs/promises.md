@@ -237,8 +237,8 @@ verdicts/status), `promises.review` (moderation queue), `promises.delete`,
 - **Moderation** follows Mishwar places: transport-free services in
   `app/Services/Promises/` throw `App\Exceptions\Promises\PromiseActionException`
   (a `DomainActionException`), and thin controllers adapt them.
-- **Admin** is guarded by `PromisesAdmin` (`ModuleCapabilityGuard`, alias
-  `promises_admin`), whose capabilities come from `PermissionCatalogue::forModule('promises')`.
+- **Admin** is guarded by the `promises_admin` alias (`ModuleCapabilityGuard`),
+  whose capabilities come from `PermissionCatalogue::forModule('promises')`.
   Every admin route names its capability. The dashboard sidebar link is gated by
   `canModule(perms, 'promises')`.
 - **Governorates:** the one table is `resources/data/governorates.json`

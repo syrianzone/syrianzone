@@ -79,19 +79,21 @@ Used by native mobile clients (Flutter iOS/Android):
     "id": 42,
     "name": "Hadi",
     "email": "user@syrian.zone",
-    "avatar_url": "https://cdn.syrian.zone/avatars/42/avatar.webp",
     "role": "user",
+    "is_banned": false,
+    "avatar_url": "https://cdn.syrian.zone/avatars/42/avatar.webp",
+    "permissions": [],
+    "effective_permissions": [],
+    "permission_scopes": [],
+    "transit_scope": null,
     "settings": {
       "theme": "dark",
       "governorate": "damascus"
-    },
-    "radio_bytes_total": 0,
-    "radio_seconds_total": 0,
-    "effective_permissions": [],
-    "transit_governorates": null
+    }
   }
 }
 ```
+- `user` is `User::toAuthPayload()`, the same shape `GET /api/v1/auth/user` and the Inertia `auth.user` prop carry, so the two can never disagree.
 - **Errors**:
   - `401 Unauthorized`: Invalid/expired Google token, unverified Google email, or `aud` not in `GOOGLE_ALLOWED_CLIENT_IDS`.
   - `403 Forbidden`: `{ "message": "تم حظر حسابك." }`.
@@ -139,9 +141,9 @@ Single-source-of-truth catalog for all Syrian Zone modules, icons, titles, subti
 
 | Method & Canonical Path | Route Name | Auth | Rate Limit | Description |
 |---|---|---|---|---|
-| `GET /api/v1/navigation` | `api.v1.navigation.index` | Public | `60/min` | Fetch the unified navigation & icon catalog |
-| `GET /api/v1/admin/navigation` | `api.v1.admin.navigation.show` | `superadmin` | `60/min` | Fetch navigation catalog for superadmin editor |
-| `PUT /api/v1/admin/navigation` | `api.v1.admin.navigation.update` | `superadmin` | `60/min` | Update order, visibility, icons, custom items, and `subCategories` (or reset) |
+| `GET /api/v1/navigation` | `api.v1.navigation.show` | Public | `60/min` | Fetch the unified navigation & icon catalog |
+| `GET /api/v1/admin/navigation` | `api.v1.admin.navigation.show` | `site_admin:site.navigation` | `60/min` | Fetch navigation catalog for the superadmin editor |
+| `PUT /api/v1/admin/navigation` | `api.v1.admin.navigation.update` | `site_admin:site.navigation` | `60/min` | Update order, visibility, icons, custom items, and `subCategories` (or reset) |
 
 ### `GET /api/v1/navigation`
 **Query Parameters**:
@@ -203,7 +205,7 @@ Single-source-of-truth catalog for all Syrian Zone modules, icons, titles, subti
 - `surfaces`: Array of surfaces where the item is active (`"home"`, `"navbar"`, `"mobile_menubar"`).
 - `subCategories`: Optional array of child items (e.g. `/muslim/prayer`, `/muslim/quran`, `/muslim/radio` under `muslim`, or individual games under `games`).
 
-### `PUT /api/v1/admin/navigation` (`superadmin` only)
+### `PUT /api/v1/admin/navigation` (`site.navigation` only)
 Managed visually from the dashboard at `/admin/navigation`.
 - To **reset** to code defaults, send `{ "reset": true }` or `{ "items": [] }`.
 - To **save** custom ordering, visibility (`enabled: false` hides an item globally; `surfaces` controls per-surface placement), custom icons, or `subCategories`, send:
@@ -257,8 +259,8 @@ literal wildcard stays literal. The browser folds with the same rules
 | **Global Search** (Cross-Module) | `GET /api/v1/search/global` | `api.v1.search.global` | `GET /api/v1/global-search` | `q` (`2..80` chars, required) | `60/min` |
 | **Transit Search** (Routes & Stops) | `GET /api/v1/transit/search` | `api.v1.transit.search` | `GET /api/v1/search` | `q` (string), `city_id` (optional) | `60/min` |
 | **Transit POI Search** (Map POIs) | `GET /api/v1/transit/pois` | `api.v1.transit.pois.index` | `GET /api/v1/geo/poi` | `q` (`3..100` chars, required), `city_id` (optional) | `60/min` |
-| **Places Search** (Mishwar) | `GET /api/v1/places` | `api.v1.places.index` | — | `q`, `gov`, `category`, `subcategory`, `tags`, `sort`, `page` | `60/min` |
-| **Places Geocode** (Nominatim Proxy) | `GET /api/v1/places/geocode` | `api.v1.places.geocode` | — | `q` (`2..120` chars, required) | `60/min` |
+| **Places Search** (Mishwar) | `GET /api/v1/places` | `api.v1.places.index` | — | `q`, `category`, `sort` (`newest\|popular`), `user_id`, `page` | `60/min` |
+| **Places Geocode** (Google Places proxy) | `GET /api/v1/places/geocode` | `api.v1.places.geocode` | — | `q` (`2..100` chars, required) | `60/min` |
 
 ### `GET /api/v1/search/global`
 Cross-module search returning up to 5 matches per module across Transit routes, Mishwar places, Phonebook entries, SyOfficial entities, and GovApps. Arabic columns (route/place/entity/app names and the place/entity/app descriptions) are matched folded; `name_en`, `name` and `number` are matched raw.
@@ -304,7 +306,7 @@ Public, unauthenticated read API over published transit data (cities, routes, st
 | `GET /api/v1/transit/search` | `api.v1.transit.search` | `GET /api/v1/search` | Public | `60/min` | Search routes and stops by `q` and optional `city_id` |
 | `GET /api/v1/transit/pois` | `api.v1.transit.pois.index` | `GET /api/v1/geo/poi` | Public | `60/min` | Nearby points of interest (Photon OSM + Google Places fallback, 24h cache) |
 | `GET /api/v1/transit/studio/routes` | `api.v1.transit.studio.routes.index` | `GET /api/v1/studio/routes` | Auth (`sanctum` / `web`) | `60/min` | List the authenticated user's own route drafts (newest first, optional `?status=`) |
-| `POST /api/v1/transit/studio/routes` | `api.v1.transit.studio.routes.store` | `POST /api/v1/studio/routes` | Public or Auth (`sanctum` / `web`) | `studio-submit` (`5/min` guest, `60/min` auth) | Submit a new Transit Studio route draft (or edit suggestion when `route_id` is passed) |
+| `POST /api/v1/transit/studio/routes` | `api.v1.transit.studio.routes.store` | `POST /api/v1/studio/routes` | Public or Auth (`sanctum` / `web`) | `studio-submit` (`5/min` guest, `30/min` auth) | Submit a new Transit Studio route draft (or edit suggestion when `route_id` is passed) |
 | `GET /api/v1/transit/studio/routes/{id}` | `api.v1.transit.studio.routes.show` | `GET /api/v1/studio/routes/{id}` | Auth (`sanctum` / `web`) | `60/min` | Load an existing route draft for editing |
 | `PUT\|PATCH /api/v1/transit/studio/routes/{id}` | `api.v1.transit.studio.routes.update` | `PUT /api/v1/studio/routes/{id}` | Auth (`sanctum` / `web`) | `60/min` | Update an existing route draft and return it to `pending` review |
 | `DELETE /api/v1/transit/studio/routes/{id}` | `api.v1.transit.studio.routes.destroy` | `DELETE /api/v1/studio/routes/{id}` | Auth (`sanctum` / `web`) | `10/min` | Withdraw (delete) a `pending` route draft |
@@ -447,7 +449,7 @@ Transit Studio allows community members and transit moderators to draw new bus/m
 #### How Authentication & Permissions Interact with Transit Studio
 1. **Authentication Support**: Every Transit Studio endpoint resolves the caller from **either** a web session cookie (`web` guard) **or** an `Authorization: Bearer <token>` header (`sanctum` guard). Both `/api/v1/transit/studio/routes` and legacy `/api/v1/studio/routes` are exempt from CSRF token requirements for public/API submissions.
 2. **New Route Draft (`POST /api/v1/transit/studio/routes` without `route_id`)**:
-   - Can be submitted by a **guest** (`user_id = null`, rate-limited to `5/min` per IP) or an **authenticated user** (`user_id = $user->id`, rate-limited to `60/min` per user ID).
+   - Can be submitted by a **guest** (`user_id = null`, rate-limited to `5/min` per IP) or an **authenticated user** (`user_id = $user->id`, rate-limited to `30/min` per user ID).
    - Banned users receive `403 Forbidden`.
 3. **Live Route Edit Suggestion (`POST /api/v1/transit/studio/routes` with `route_id`)**:
    - **Requires authentication** (`401 Unauthorized` if guest).
@@ -620,12 +622,12 @@ Voter-identifying data is **never** returned by any endpoint:
 
 | Method & Canonical Path | Route Name | Legacy Alias | Rate Limit | Description |
 |---|---|---|---|---|
-| `GET /api/v1/polls` | `api.v1.polls.index` | `GET /api/polls` | `public-api` (`120/min`) | List active polls (`id`, `title`, `slug`, `timezone`, `is_active`, `created_at`) |
-| `GET /api/v1/polls/{idOrSlug}` | `api.v1.polls.show` | `GET /api/polls/{idOrSlug}` | `public-api` (`120/min`) | Poll metadata + `groups` + `candidates` |
-| `GET /api/v1/polls/{idOrSlug}/candidates` | `api.v1.polls.candidates.index` | — | `public-api` (`120/min`) | Candidates filtered by `?status=active\|archived\|all` (default `all`) |
-| `GET /api/v1/polls/{idOrSlug}/scores` | `api.v1.polls.scores.index` | — | `public-api` (`120/min`) | Paginated daily score rows (`?from=YYYY-MM-DD&to=YYYY-MM-DD&candidate_id=&per_page=100..1000`) |
-| `GET /api/v1/polls/{idOrSlug}/ballots` | `api.v1.polls.ballots.index` | — | `public-api` (`120/min`) | Paginated anonymized ballots + tier items (`?from=YYYY-MM-DD&to=YYYY-MM-DD&per_page=100..1000`) |
-| `GET /api/v1/polls/{idOrSlug}/leaderboard` | `api.v1.polls.leaderboard` | `GET /api/polls/{idOrSlug}/leaderboard` | `public-api` (`120/min`) | Cached (60s + ETag) leaderboard rankings + daily history (`?status=active\|former\|all`) |
+| `GET /api/v1/polls` | `api.v1.polls.index` | `GET /api/polls` | `public-api` (`60/min`) | List active polls (`id`, `title`, `slug`, `timezone`, `is_active`, `created_at`) |
+| `GET /api/v1/polls/{idOrSlug}` | `api.v1.polls.show` | `GET /api/polls/{idOrSlug}` | `public-api` (`60/min`) | Poll metadata + `groups` + `candidates` |
+| `GET /api/v1/polls/{idOrSlug}/candidates` | `api.v1.polls.candidates.index` | — | `public-api` (`60/min`) | Candidates filtered by `?status=active\|archived\|all` (default `all`) |
+| `GET /api/v1/polls/{idOrSlug}/scores` | `api.v1.polls.scores.index` | — | `public-api` (`60/min`) | Paginated daily score rows (`?from=YYYY-MM-DD&to=YYYY-MM-DD&candidate_id=&per_page=100..1000`) |
+| `GET /api/v1/polls/{idOrSlug}/ballots` | `api.v1.polls.ballots.index` | — | `public-api` (`60/min`) | Paginated anonymized ballots + tier items (`?from=YYYY-MM-DD&to=YYYY-MM-DD&per_page=100..1000`) |
+| `GET /api/v1/polls/{idOrSlug}/leaderboard` | `api.v1.polls.leaderboard` | `GET /api/polls/{idOrSlug}/leaderboard` | `public-api` (`60/min`) | Cached (60s + ETag) leaderboard rankings + daily history (`?status=active\|former\|all`) |
 | `POST /api/v1/polls/{idOrSlug}/ballots` | `api.v1.polls.ballots.store` | `POST /api/submit` | `voting` (`10/min`) | Submit a tier-list ballot for a poll (minimum 3 candidates ranked) |
 
 The leaderboard payload carries `groups` as `{ id, name, key, rankingKey,
@@ -661,18 +663,18 @@ rather than after the 60s TTL.
 
 | Method & Canonical Path | Route Name | Query / Path Parameters | Description |
 |---|---|---|---|
-| `GET /api/v1/places` | `api.v1.places.index` | `q`, `gov`, `category`, `subcategory`, `tags`, `sort` (`featured\|newest\|saves`), `page` | Paginated approved places directory (`q` matches name and description folded, so «صلاه» finds «صلاة») |
-| `GET /api/v1/places/map` | `api.v1.places.map` | `gov`, `category`, `subcategory`, `tags` | Lightweight pin coordinates & summary properties for the map |
-| `GET /api/v1/places/nearby` | `api.v1.places.nearby` | `lat`, `lng`, `radius_km` (`0.5..100`, default `25`), `exclude`, `limit` | Approved places near a coordinate |
-| `GET /api/v1/places/geocode` | `api.v1.places.geocode` | `q` (`2..120` chars, required) | Syria-bounded Nominatim geocoding proxy (24h cache) |
-| `GET /api/v1/places/photos` | `api.v1.places.photos` | `gov`, `category`, `page` | Approved community photo stream |
+| `GET /api/v1/places` | `api.v1.places.index` | `q`, `category`, `sort` (`newest\|popular`), `user_id`, `page` | Paginated approved places directory (`q` matches name and description folded, so «صلاه» finds «صلاة») |
+| `GET /api/v1/places/map` | `api.v1.places.map` | none | Lightweight pin coordinates & summary properties for the map (all approved places; the client filters) |
+| `GET /api/v1/places/nearby` | `api.v1.places.nearby` | `lat`, `lng`, `radius_km` (`0.05..25`, default `2`), `include_pending` | Approved places near a coordinate (max 20, nearest first) |
+| `GET /api/v1/places/geocode` | `api.v1.places.geocode` | `q` (`2..100` chars, required) | Syria-bounded Google Places text search (`{ suggestions }`; empty without a key, cached) |
+| `GET /api/v1/places/photos` | `api.v1.places.photos` | `user_id`, `page` | Approved community photo stream |
 | `GET /api/v1/places/{id}` | `api.v1.places.show` | `{id}` (numeric) | Single place details, photos, and save count |
-| `GET /api/v1/guides` | `api.v1.guides.index` | `gov` | Curated governorate & thematic guides |
-| `GET /api/v1/hotels` | `api.v1.hotels.index` | `city`, `stars`, `q`, `sort` | HalaSyria hotels directory (synced every 2 days) |
-| `GET /api/v1/hotels/map` | `api.v1.hotels.map` | `city`, `stars` | Lightweight hotel markers for map view |
+| `GET /api/v1/guides` | `api.v1.guides.index` | `sort` (`points\|submissions\|saves\|recent`) | Curated governorate & thematic guides |
+| `GET /api/v1/hotels` | `api.v1.hotels.index` | `city`, `q`, `min_stars`, `max_price`, `page` | HalaSyria hotels directory (synced every 2 days) |
+| `GET /api/v1/hotels/map` | `api.v1.hotels.map` | none | Lightweight hotel markers for map view |
 | `GET /api/v1/hotels/{id}` | `api.v1.hotels.show` | `{id}` (numeric) | Single hotel details, amenities, and room photos |
 
-### Authenticated Place Owner & Save Endpoints (`auth:web,sanctum`, Session+CSRF or Bearer Token)
+### Authenticated Place Owner & Save Endpoints (`auth:sanctum`, Session+CSRF or Bearer Token)
 
 | Method & Canonical Path | Route Name | Rate Limit | Description |
 |---|---|---|---|
@@ -688,6 +690,7 @@ rather than after the 60s TTL.
 | `GET /api/v1/my/saves` | `api.v1.my.saves.index` | `60/min` | List current user's saved places |
 | `POST /api/v1/places/{id}/save` | `api.v1.places.save.store` | `60/min` | Save/bookmark a place |
 | `DELETE /api/v1/places/{id}/save` | `api.v1.places.save.destroy` | `60/min` | Remove place from saved list |
+| `POST /api/v1/places/{id}/report` | `api.v1.places.report.store` | `10/60min` | Flag an approved place (`{reason, details?}`; one report per user per place) |
 
 ---
 
@@ -735,7 +738,7 @@ These endpoints accept either a stateful Web session cookie + CSRF token (`web` 
 
 | Method & Canonical Path | Route Name | Legacy Alias | Auth | Rate Limit | Description |
 |---|---|---|---|---|---|
-| `GET /api/v1/user` | `api.v1.user.show` | `GET /api/v1/auth/user`, `GET /api/user`, `GET /user` | Session or Bearer | — | Current user profile + `effective_permissions` + `transit_governorates` |
+| `GET /api/v1/user` | `api.v1.user.show` | `GET /api/v1/auth/user`, `GET /api/user`, `GET /user` | Session or Bearer | — | Current user profile + `effective_permissions` + `transit_scope` |
 | `PATCH\|PUT /api/v1/account` | `api.v1.account.update` | `POST /api/account/update` | Session or Bearer | — | Update account `name` and `email` (returns JSON for Bearer requests, Inertia redirect for Web) |
 | `POST /api/v1/account/avatar` | `api.v1.account.avatar.store` | `POST /api/account/avatar` | Session or Bearer | `10/min` | Upload profile avatar (`max 2MB`; returns `{ ok, avatar_url, user }` for Bearer requests) |
 | `DELETE /api/v1/account` | `api.v1.account.destroy` | `POST /api/account/delete` | Session or Bearer | — | Soft-delete user account & revoke tokens |
@@ -811,6 +814,8 @@ group and candidate, including disabled and archived ones.
 | `POST /api/v1/admin/place-photos/{id}/rotate` | `places.moderate_photos` |
 | `POST /api/v1/admin/place-photos/{id}/replace` | `places.moderate_photos` |
 | `DELETE /api/v1/admin/place-photos/{id}` | `places.moderate_photos` |
+| `GET /api/v1/admin/place-reports` | `places.review` |
+| `POST /api/v1/admin/place-reports/{id}/resolve` | `places.approve` |
 
 ### 10.3 Transit Admin (`transit_admin`, Governorate-Scoped)
 The dashboard and the studio call these paths; the `/api/v1/admin/transit/*`
@@ -851,14 +856,19 @@ They are not JSON endpoints — an over-long field comes back as the standard
 - **Compass (`compass_admin`, `/api/v1/admin/compass/*`)**:
   - Figures (`compass.figures`): `GET /figures`, `POST /figures`, `POST /figures/upload-image`, `PUT /figures/{id}`, `DELETE /figures/{id}`, `PATCH|POST /figures/{id}/toggle`.
   - Personas (`compass.personas`): `GET /personas`, `POST /personas`, `PUT /personas/{id}`, `DELETE /personas/{id}`, `PATCH|POST /personas/{id}/toggle`.
+- **Promises (`promises_admin`, `/api/v1/admin/promises/*`)**:
+  - Promise CRUD and the review queue: `POST /promises` (`promises.create`), `PUT /promises/{id}` (`promises.edit`), `DELETE /promises/{id}` (`promises.delete`), `POST /promises/{id}/publish|unpublish|reject` (`promises.review`), `POST /promises/{id}/status` + `DELETE /promises/{id}/status/{updateId}` (`promises.rule`), `POST /promises/{promise}/reschedule` (`promises.rule`), `POST /promises/{id}/updates` + `DELETE /promises/{id}/updates/{updateId}` (`promises.edit`), `POST /promises/{id}/upload-image` (`promises.edit`).
+  - Sub-resources (`promises.speakers` unless noted): `/promises/sectors[/{id}]` incl. `reorder` and `toggle`, `/promises/speakers[/{id}]` incl. `upload-image` and `search`; the review verdicts `POST /promises/speakers/{id}/approve|reject` and `POST /promises/reports/{id}/accept|dismiss` take `promises.review`.
 - **User Moderation (`users_admin`)**:
   - `PATCH /api/v1/admin/users/{id}/ban` (legacy alias `POST /api/v1/admin/users/{id}/toggle-ban`) — requires `users.ban`.
-- **Superadmin (`superadmin`)**:
-  - Asset Storage (Cloudflare R2): `GET /api/v1/admin/assets/list`, `POST /api/v1/admin/assets/upload`, `DELETE /api/v1/admin/assets/delete` (the paths the asset page and the poll editor's image upload call).
-  - Site Navigation & Icon Catalog: `GET /admin/navigation`, `GET|PUT /api/v1/admin/navigation`.
-  - Site Popup: `GET /admin/site-popup`, `GET|PUT /api/v1/admin/site-popup`.
-  - Guess Who Roster: `POST|PUT|DELETE /api/v1/admin/guesswho/categories[/{id}]`, `POST|PUT|DELETE /api/v1/admin/guesswho/characters[/{id}]`.
-  - Agent API Tokens, revoke all for a user: `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`). Minting (`POST /api/v1/admin/api-tokens`) and single revocation (`DELETE /api/v1/admin/api-tokens/{id}`) are open to any capability holder for their own tokens; see [agent-mcp.md §7](../modules/agent-mcp.md).
+- **Site-wide settings (`site_admin`, one capability per route)**:
+  - Asset Storage (Cloudflare R2): `GET /api/v1/admin/assets/list`, `POST /api/v1/admin/assets/upload`, `DELETE /api/v1/admin/assets/delete` (`assets.manage`; the paths the asset page and the poll editor's image upload call).
+  - Site Navigation & Icon Catalog (`site.navigation`): `GET /admin/navigation`, `GET|PUT /api/v1/admin/navigation`.
+  - Site Popup (`site.popup`): `GET /admin/site-popup`, `GET|PUT /api/v1/admin/site-popup`.
+- **Superadmin-only (`superadmin`)**:
+  - Agent API Tokens, revoke all for a user: `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`). Minting (`POST /api/v1/admin/api-tokens`) and single revocation (`DELETE /api/v1/admin/api-tokens/{id}`) sit behind `agent_tokens` and are open to any capability holder for their own tokens; see [agent-mcp.md §7](../modules/agent-mcp.md).
+- **Guess Who content (`guesswho_admin:guesswho.manage`)**:
+  - Roster: `POST|PUT|DELETE /api/v1/admin/guesswho/categories[/{id}]`, `POST|PUT|DELETE /api/v1/admin/guesswho/characters[/{id}]`.
 
 ---
 
@@ -911,3 +921,20 @@ Where both rows describe the same module (auth token, global search, transit rea
 | `POST /api/user/radio-usage/clear` | `DELETE /api/v1/user/radio-usage` |
 | `POST /api/v1/admin/api-tokens/revoke-all/{userId}` | `DELETE /api/v1/admin/users/{userId}/api-tokens` |
 | `POST /api/v1/admin/users/{id}/toggle-ban` | `PATCH /api/v1/admin/users/{id}/ban` |
+
+---
+
+## 12. Promises Tracker API (`/api/v1/promises/*`)
+
+The public surface of the promises tracker (عداد الوعود). Pages and the admin
+capability map are described in [specs/promises.md](../specs/promises.md); the
+admin write endpoints are listed in §10.4 style under `/api/v1/admin/promises*`.
+
+| Method & Canonical Path | Route Name | Auth | Rate Limit | Description |
+|---|---|---|---|---|
+| `GET /api/v1/promises/speakers` | `api.v1.promises.speakers` | Public | `public-api` (`60/min`) | Speaker search for the suggestion form (`?q=`, approved people only) |
+| `POST /api/v1/promises` | `api.v1.promises.store` | Session or Bearer | `10/60min` | Suggest a promise (`speaker_ref` or `speaker_name`, `title`, `quote`, `statement_date`, `source_urls[]`; lands as `review_status = pending`, `origin = public`) |
+| `POST /api/v1/promises/{number}/reports` | `api.v1.promises.reports.store` | Session or Bearer | `20/60min` | Report progress or an error on a published promise (`kind`, `body`, `source_url` required for `progress`) |
+| `POST /api/v1/promises/{number}/vote` | `api.v1.promises.vote` | Public | `promise-voting` | "Will it be kept?" vote (`believes`, optional `device_id`; returns the updated tally) |
+
+Unpublished or unknown numbers answer `404`.

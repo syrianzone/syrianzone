@@ -9,7 +9,7 @@ civic portal (Arabic, RTL). Stack and commands:
 ```bash
 bun install && bun run dev        # dev: artisan serve + reverb + vite
 npm run build                     # vite build + ssr build
-bash scripts/gate.sh              # THE GATE: tsc + lint + vitest + build + pest (+ advisory Pint); CI runs this
+bash scripts/gate.sh              # THE GATE: tsc + lint + vitest + build + answer-card node tests + pest (+ advisory Pint); CI runs this
 npm run lint                      # eslint: rules of hooks only
 npm run test:js                   # vitest only
 vendor/bin/pest                   # PHP tests only

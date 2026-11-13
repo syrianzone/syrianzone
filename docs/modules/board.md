@@ -12,11 +12,11 @@ This document is the single contract for the feature as implemented. Every name,
 
 Follows [mishwar-places.md](mishwar-places.md) §2 exactly. Additions specific to this feature:
 
-- Widgets never call `axios` directly. They call a typed client in `_lib/`, or reuse an existing one (`Domain/places/api.ts`, `Domain/weather/weather.ts`, `Domain/transit/api.ts`).
-- Cross-origin, non-app APIs (the weather worker, `api.aladhan.com`) are the one exception and use plain `fetch`.
+- Widgets never call `axios` directly. They call a typed client in `_lib/` (`sources.ts` is the one table), or reuse an existing one (`Domain/places/api.ts`, `Domain/weather/weather.ts`, `Domain/transit/api.ts`).
+- No widget talks to a third-party origin: the weather worker and Aladhan are proxied by the app (`/api/weather`, `/api/prayer-times`), and every read goes through `Lib/api`'s client.
 - Widgets never handle auth or geolocation permission themselves. `BoardTile` enforces `requires` and only mounts a widget once its capabilities are satisfied.
 - Widgets never render their own spinner, error, or empty state. `WidgetShell` owns all of them.
-- UI imports must match the casing already used elsewhere in the repo for that component (both `@/components/ui/*` and `@/Components/ui/*` exist in tree, and tsc rejects mixing casings for one file).
+- UI imports come from `@/Components/ui/*` (the lowercase `@/components/*` tree is gone; the path casing is part of the module specifier, so match it exactly).
 
 ## 3. LAYOUT FORMAT (the part that cannot be taken back)
 
@@ -132,14 +132,14 @@ Frontend, `resources/js/Pages/Board/`:
 - `_components/`: `BoardGrid`, `BoardTile`, `BoardToolbar`, `DashboardTabs`, `WidgetShell`, `TileChrome`, `SizeMenu`, `MissingWidget`, `WidgetGallery`, `WidgetConfigDialog`, `GeoProvider`
 - `_widgets/<id>/{index.ts,View.tsx}`: `clock`, `weather`, `prayer`, `quran`, `pomodoro`, `todo`, `notes`, `rss`, `answers`, `events-today`, `guides`, `places-nearby`, `transit-cities`, `recipe`
 
-Shared: `resources/js/Providers/QueryProvider.tsx` (moved out of `Pages/Transit/_providers/`, it was always app-global).
+Shared: `resources/js/Providers/QueryProvider.tsx`.
 
 ## 9. WIDGETS AS SHIPPED
 
 | id | category | source | requires | multiple |
 |---|---|---|---|---|
 | `clock` | time | local | | yes |
-| `weather` | time | Cloudflare worker (cross-origin) | | yes |
+| `weather` | time | `GET /api/weather` via `Domain/weather/weather.ts` (the server proxies the worker) | | yes |
 | `prayer` | time | `GET /api/prayer-times`, method 3 (Muslim World League) by default; follows the shared location preference (`Domain/location`) and `Domain/prayer/times` | | no |
 | `quran` | time | the global player (`Domain/quran/quranPlayer`); follows the recitation | | yes |
 | `pomodoro` | personal | local timer | | no |
@@ -154,7 +154,7 @@ Shared: `resources/js/Providers/QueryProvider.tsx` (moved out of `Pages/Transit/
 | `recipe` | food | `GET /api/recipe-of-the-day` (food.syrian.zone) | | no |
 
 Notes on environment:
-- `weather` calls a worker that only allows the `https://syrian.zone` origin, so it always renders its error tile from localhost. This is correct degradation, not a bug.
+- `weather` reads the app's `/api/weather` proxy, so it works from localhost; it needs the server's upstream (Open-Meteo) to answer, and degrades to its error tile when it does not.
 - `transit-cities` needs PostGIS (`ST_AsGeoJSON`). On a sqlite dev database it renders its error tile; its happy path is only verifiable against PostGIS.
 - `notes` is user text we render back. Plain text in a `<textarea>`, capped at 4000 chars. Never markdown, never `dangerouslySetInnerHTML`.
 

@@ -70,7 +70,7 @@ resources/js/Pages/Games/
     └── scores.ts                # localStorage records
 ```
 
-The `GAMES` registry is **not** in the page folder: `resources/js/Domain/games/games.ts` reads `resources/data/games.json` (PHP reads the same file for the sitemap) and attaches the icons, so the hub, the 404 page and a game's own chrome all agree.
+The `GAMES` registry is **not** in the page folder: `resources/js/Domain/games/games.ts` reads `resources/data/games.json` and attaches the icons, so the hub, the 404 page and a game's own chrome all agree. No PHP reader exists: the sitemap lists `/games/*` from the records in `resources/data/seo.json`.
 
 `GameShell` is what keeps sub-games consistent: it renders the back link to
 `/games`, the title block and the icon (the last two read from `GAMES` by the

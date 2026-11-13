@@ -44,7 +44,7 @@ graph TD
 | Database | MySQL/MariaDB with spatial geometry columns (production); sqlite in tests (no spatial) |
 | Search | Laravel Scout, `collection` driver by default (`SCOUT_DRIVER`) |
 | Storage | Cloudflare R2 via Flysystem S3 driver (media, transit geojson, tierlist assets, spatie backups) |
-| Auth | Google OAuth via Socialite; Sanctum bearer tokens (agent/MCP surface); role middleware aliases |
+| Auth | Google OAuth via Socialite; Sanctum bearer tokens (agent/MCP surface); capability middleware aliases (`transit_admin`, `places_admin`, …, `superadmin`) |
 | Monitoring | Sentry (Laravel + @sentry/react, CI sourcemap upload), Prometheus `/api/v1/metrics` (`/api/metrics`) |
 | Backups | spatie/laravel-backup every 6h → local + R2 |
 | Bundler | Vite 8 (`laravel-vite-plugin`, SSR build, Bun in Docker stage 1) |
@@ -101,7 +101,7 @@ syrianzone/
 Browser → Nginx → Laravel controller → returns `Inertia::render('Page/Name', props)` → React 19 page component hydrates. Subsequent navigation is XHR-based SPA navigation.
 
 ### API data flow
-React pages fetch JSON from `/api/v1/*` (and legacy `/api/*` aliases) through the typed per-resource clients in `Domain/<module>/api.ts`, which sit on the one client in `Lib/api.ts` (CSRF, JSON, one timeout) and are wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 120/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min. See [reference/api.md](../reference/api.md).
+React pages fetch JSON from `/api/v1/*` (and legacy `/api/*` aliases) through the typed per-resource clients in `Domain/<module>/api.ts`, which sit on the one client in `Lib/api.ts` (CSRF, JSON, one timeout) and are wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `promise-voting` 30/min per guest IP or 60/min per account, `public-api` 60/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min. See [reference/api.md](../reference/api.md).
 
 ### Spatial query flow (transit/places)
 Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against MySQL/MariaDB geometry columns; results cached (e.g. city geojson 1h) and large static datasets served from R2 CDN.
@@ -113,17 +113,17 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Module | Routes | Controllers | Pages (`resources/js/Pages/`) | Doc |
 |---|---|---|---|---|
 | Home portal | `/` | HomeController | Home.tsx | — |
-| Polls / Tier list | `/polls/*`, `/tierlist*`, `/api/v1/polls*` | PollController, CandidateController, CandidateGroupController, Api\V1\VotingDataController | Polls/, TierList/ | [reference/api.md](../reference/api.md#4-polls--tier-list-voting-api-apiv1polls) |
-| Transit | `/transit*`, `/api/v1/transit/*` | TransitAdminController, TransitStudioController, Api\V1\TransitController | Transit/ | [modules/transit.md](../modules/transit.md), [reference/api.md](../reference/api.md#3-transit-api-apiv1transit) |
+| Polls / Tier list | `/polls/*`, `/tierlist*`, `/api/v1/polls*` | PollController, CandidateController, CandidateGroupController, Api\V1\VotingDataController | Polls/, TierList/ | [reference/api.md](../reference/api.md#5-polls--tier-list-voting-api-apiv1polls) |
+| Transit | `/transit*`, `/api/v1/transit/*` | TransitAdminController, TransitStudioController, Api\V1\TransitController | Transit/ | [modules/transit.md](../modules/transit.md), [reference/api.md](../reference/api.md#4-transit--transit-studio-api-apiv1transit) |
 | Mishwar (hidden places) | `/mishwar`, `/api/v1/places…`, `/my/places…` | Place*, PlaceDiscovery, PlaceEngagement controllers | Places/ | [modules/mishwar-places.md](../modules/mishwar-places.md) |
 | Board ("لوحتي") | `/board`, `/api/v1/board` | BoardController | Board/ (14 widgets) | [modules/board.md](../modules/board.md) |
-| Guess Who | `/guesswho*`, `/api/v1/guesswho/*`; admin (superadmin) at `/admin/guesswho` + `/api/v1/admin/guesswho/*` | GuessWhoController, GuessWhoAdminController | GuessWho/, Admin/GuessWho/ | [modules/guess-who.md](../modules/guess-who.md) |
+| Guess Who | `/guesswho*`, `/api/v1/guesswho/*`; admin (`guesswho.manage`) at `/admin/guesswho` + `/api/v1/admin/guesswho/*` | GuessWhoController, GuessWhoAdminController | GuessWho/, Admin/GuessWho/ | [modules/guess-who.md](../modules/guess-who.md) |
 | Officials directory | `/syofficial`, `/api/v1/admin/syofficial/*` | SyOfficial*, SyOfficialAdminController | SyOfficial/ | [modules/directories.md](../modules/directories.md) |
 | Phonebook | `/phonebook`, `/api/v1/admin/phonebook/*` | Phonebook*, PhonebookAdminController | Phonebook/ | [modules/directories.md](../modules/directories.md) |
 | Gov apps | `/govapps`, `/api/v1/admin/govapps` | GovAppController, GovAppsAdminController | GovApps/ | [modules/directories.md](../modules/directories.md) |
 | Hotels (HalaSyria) | `/api/v1/hotels*` | HotelController, HalaSyriaService | Places/ hotel layer | [modules/directories.md](../modules/directories.md) |
 | Population atlas | `/atlas` (canonical; `/population` 301-redirects), `/api/v1/atlas*` | Api\PopulationAtlasController | Population/ | [modules/population-atlas.md](../modules/population-atlas.md) |
-| Widgets APIs | `/api/v1/weather`, `/answers`, `/recipes/today`, `/events/today`, `/feed`, `/prayer-times` | Weather/Answers/Recipe/Events/Feed/Prayer controllers | Board widgets consume these | [modules/board.md](../modules/board.md), [reference/api.md](../reference/api.md#7-atlas-contributors-widgets--utility-endpoints-apiv1) |
+| Widgets APIs | `/api/v1/weather`, `/answers`, `/recipes/today`, `/events/today`, `/feed`, `/prayer-times` | Weather/Answers/Recipe/Events/Feed/Prayer controllers | Board widgets consume these | [modules/board.md](../modules/board.md), [reference/api.md](../reference/api.md#8-atlas-contributors-widgets--utility-endpoints-apiv1) |
 | External data | `/syid`, `/sites`, `/party`, `/house`, `/alignment`, `/syrian-contributors` | ExternalDataController, ContributorController | SyId/, Sites/, Party/, House/, Alignment/, SyrianContributors/ | — |
 | Muslim Corner | `/muslim`, `/muslim/prayer`, `/muslim/quran`, `/muslim/radio`, `/roznama` | (Inertia closures) | Muslim/ (Index, Prayer, Quran, Radio), Roznama/ | [modules/muslim-corner.md](../modules/muslim-corner.md) |
 | Games | `/games`, `/games/{2048,solitare,tarneeb,trix}` | (Inertia closures) | Games/ | [modules/games.md](../modules/games.md) |
@@ -134,5 +134,5 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/api/v1/user` | AuthController, DashboardController | Dashboard/ | — |
 | Assets admin | `/admin/assets`, `/api/v1/admin/assets*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
 | Agent / MCP | `/mcp/admin` (bearer token; `MCP_ENABLED` flag), `/admin/api-tokens` | MCP tools in `app/Mcp/`, `ApiTokenAdminController`, `RequireApiToken` | Admin/ApiTokens/ | [modules/agent-mcp.md](../modules/agent-mcp.md) |
-| Site popup | `/admin/site-popup`, `/api/v1/admin/site-popup` (superadmin; shared as `sitePopup` prop, versioned dismiss) | SitePopupAdminController | Admin/SitePopup | — |
+| Site popup | `/admin/site-popup`, `/api/v1/admin/site-popup` (`site.popup`; shared as `sitePopup` prop, versioned dismiss) | SitePopupAdminController | Admin/SitePopup | — |
 | Meta | `/sitemap.xml`, `/healthcheck`, `/api/v1/metrics`, `/api/v1/app-icon` | Sitemap/Metrics/AppIcon controllers | — | — |

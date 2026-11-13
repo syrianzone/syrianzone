@@ -1,6 +1,6 @@
 # Database Schema Chart
 
-Derived from `database/migrations/`. All feature tables use UUID primary keys unless noted. Production DB is MySQL/MariaDB with spatial geometry columns; tests run on sqlite (spatial features unavailable — see board-spec caveats).
+Derived from `database/migrations/`. Polls, Guess Who games and the promises tracker use UUID primary keys; most other feature tables (places, boards, the directories) use auto-increment ids. Production DB is MySQL/MariaDB with spatial geometry columns; tests run on sqlite (spatial features unavailable — see board-spec caveats).
 
 ## Module ER overview
 
@@ -81,13 +81,13 @@ Spatial (geometry point/linestring columns):
 - **places** — user_id, name, category (indexed, fixed enum), description, lat/lng decimal, status pending|approved|rejected, rejection_reason, approved_at, `name_fold`/`description_fold`
 - **place_photos** — place_id, original/display/thumb paths, sort
 - **place_saves** — unique (place_id, user_id)
-- Likes/comments/reports tables and denormalized counters were created and later **dropped** (2026_07_16) — only saves remain
+- Likes/comments tables and their denormalized counters were created and later **dropped** (2026_07_16); `place_reports` was dropped with them and **recreated on 2026_11_11** (Play's UGC policy needs an in-app report path), so saves and reports are the two live side tables.
 
 Full contract: [modules/mishwar-places.md](../modules/mishwar-places.md).
 
 ## Board ("لوحتي")
 
-- **boards** — unique user_id, version int, document JSON (full `sz-board:v1` widget layout doc). Last-write-wins sync via version comparison. Schema defined in [modules/board.md](../modules/board.md).
+- **boards** — unique user_id, `version` int (always 1 today: it is storage metadata, not a sync clock), document JSON (full `sz-board:v1` widget layout doc). The server validates shape and size and never interprets it; the client merges last-write-wins on the document's `updatedAt`. Schema and merge rules in [modules/board.md](../modules/board.md).
 
 ## Guess Who
 

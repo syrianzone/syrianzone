@@ -91,7 +91,7 @@ The backend performs advanced PostGIS spatial queries to handle search, geo-deco
 
 ### A. Distance Calculation (Nearby Stops)
 Finds all bus stops within $R$ meters (default: 500m) of the user's location coordinates.
-*   **API**: `GET /v1/stops/nearby?lat=33.513&lng=36.291`
+*   **API**: `GET /api/v1/stops/nearby?lat=33.513&lng=36.291`
 *   **SQL Logic** (`TransitController@getNearbyStops`):
     ```sql
     SELECT id, name_ar, city_id, ST_AsGeoJSON(geometry) as geojson 
@@ -101,7 +101,7 @@ Finds all bus stops within $R$ meters (default: 500m) of the user's location coo
 
 ### B. GeoJSON Rendering (Map Data Load)
 Instead of retrieving raw columns, Laravel converts database geometric fields into GeoJSON-compliant strings at query time, and `TransitPresenter` turns each row into its Feature.
-*   **API**: `GET /v1/cities/{id}/map-data`
+*   **API**: `GET /api/v1/cities/{id}/map-data`
 *   **SQL Logic** (`TransitController@getMapData`):
     ```sql
     -- Load route paths
@@ -185,7 +185,7 @@ sequenceDiagram
     Contributor->>Store: Save Stop names & coordinates
     Contributor->>Store: 4. Fill details (Step 4 - Name, Price, Notes)
     Contributor->>Store: 5. Submit contribution (Step 5)
-    Store->>BE: POST /v1/studio/routes (Send combined GeoJSON)
+    Store->>BE: POST /api/v1/transit/studio/routes (Send combined GeoJSON)
     BE->>BE: Create RouteDraft record (status: pending)
     BE-->>Contributor: Response OK with Draft ID
     BE->>Admin: Sync new draft in list
@@ -305,7 +305,7 @@ action `imported`). Draft mode is the default and should stay so.
   are merged; multi-LineString maps split into one candidate per line with
   stops assigned to the nearest line.
 * `app/Http/Controllers/TransitImportController.php` — `preview`
-  (`transit.review_drafts`, throttle 10/min), `publish`
+  (`transit.review_drafts`, throttle 30/min), `publish`
   (`transit.edit_routes`, throttle 30/min). Publish re-validates the full
   studio GeoJSON contract plus deep `[lng, lat]` range checks, then either
   creates a pending `RouteDraft` (with `mid` provenance appended to notes)

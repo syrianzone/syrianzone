@@ -17,6 +17,7 @@ The docs folder mirrors the project structure: `getting-started/` for running th
 | [adr/0001-architecture-decision-records.md](adr/0001-architecture-decision-records.md) | Architecture decision record policy |
 | [adr/0002-durable-tierlist-social-outbox.md](adr/0002-durable-tierlist-social-outbox.md) | Tierlist X delivery architecture |
 | [specs/tierlist-x-automation.md](specs/tierlist-x-automation.md) | Requirements and acceptance criteria for tierlist announcements |
+| [specs/promises.md](specs/promises.md) | The promises tracker (`/promises`) design spec: data model, pages, admin, wiring |
 | [threat-models/tierlist-x-automation.md](threat-models/tierlist-x-automation.md) | Security analysis for tierlist announcements |
 | [security/tierlist-x-automation-assessment.md](security/tierlist-x-automation-assessment.md) | Security assessment and verification evidence for tierlist announcements |
 | **Modules** (one doc per feature area) | |
@@ -29,8 +30,9 @@ The docs folder mirrors the project structure: `getting-started/` for running th
 | [modules/muslim-corner.md](modules/muslim-corner.md) | Muslim Corner: prayer times, Quran reader, followed-recitation radio |
 | [modules/games.md](modules/games.md) | Games hub at `/games`: 2048, solitaire, tarneeb, trix (plus Guess Who / president), one real route per game |
 | [modules/population-atlas.md](modules/population-atlas.md) | Population & climate atlas at `/atlas` (legacy `/population` redirects) |
+| [modules/settings-sync.md](modules/settings-sync.md) | Device ↔ account preference sync: the conflict modal, the location key families, the one account writer |
 | **Reference** | |
-| [reference/api.md](reference/api.md) | **Central API Reference (`/api/v1`)** — all public, search, transit, polls, places, user, and admin JSON endpoints + error contract + legacy aliases |
+| [reference/api.md](reference/api.md) | **Central API Reference (`/api/v1`)** — all public, search, transit, polls, places, promises, user, and admin JSON endpoints + error contract + legacy aliases |
 | [reference/routes-api-map.md](reference/routes-api-map.md) | Full web + API route map grouped by feature |
 | [reference/database-schema.md](reference/database-schema.md) | ER-style schema chart of every table (from migrations) |
 | [reference/asset-storage.md](reference/asset-storage.md) | Cloudflare R2 bucket layout, asset manager, local dev fallback |
@@ -46,5 +48,5 @@ The docs folder mirrors the project structure: `getting-started/` for running th
 
 - **Stack**: Laravel 13 (PHP 8.3+), Filament v5, Inertia v3, React 19, TypeScript, Vite 8, Tailwind CSS v4, MySQL/MariaDB (+ spatial), Reverb websockets, Cloudflare R2 storage
 - **Dev**: `bun install && bun run dev` (or `composer dev` / `npm run dev`)
-- **Tests**: `vendor/bin/pest` · **Lint**: `vendor/bin/pint`
+- **Tests**: `bash scripts/gate.sh` (tsc, lint, vitest, build, Pest) · **Lint**: `vendor/bin/pint`
 - **License**: MIT — see root `README.md` (Arabic) for project mission and contributors

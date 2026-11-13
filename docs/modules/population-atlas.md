@@ -9,8 +9,8 @@ Interactive choropleth atlas of Syria combining population data and environmenta
 | Endpoint | Purpose |
 |---|---|
 | `GET /atlas` | Renders the Inertia page (canonical; `GET /population` 301-redirects here) |
-| `GET /population/master` | Master dataset for the map client |
-| `GET /population/env-report` | Environmental report data |
+| `GET /api/v1/atlas` | Master dataset for the map client (legacy `GET /api/population/master`) |
+| `GET /api/v1/atlas/environment` | Environmental report data (legacy `GET /api/population/env-report`) |
 
 ## Data model
 

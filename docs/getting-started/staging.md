@@ -66,7 +66,9 @@ takes two mistakes rather than one.
 
 Staging has no Google OAuth client, so `AUTO_LOGIN_DEV=true` is on. **Every
 visitor is silently logged in as a superadmin**, and `/dev/impersonate/{role}`
-switches between `user`, `transit_admin`, `admin` and `superadmin`.
+switches between the presets in `AutoLoginDevUser::DEV_USERS`: `user`, the
+per-module admins (`transit_admin`, `syofficial_admin`, `govapps_admin`,
+`phonebook_admin`, `places_admin`, `users_admin`), `admin` and `superadmin`.
 
 That is only acceptable because Caddy basic auth sits in front of the entire
 host. If you ever remove the basic auth block, turn `AUTO_LOGIN_DEV` off in the

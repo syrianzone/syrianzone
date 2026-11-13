@@ -21,6 +21,10 @@ Modules served under more than one prefix (transit admin, polls admin, asset man
 - `GET /polls`, `GET /polls/{slug}`, `GET /polls/{slug}/leaderboard`
 - `GET /tierlist`, `GET /tierlist/leaderboard`
 
+### Promises tracker (عداد الوعود)
+- `GET /promises` (list) · `GET /promises/{number}` (detail, numeric) · `GET /promises/suggest`
+- Canonical JSON API (`/api/v1/promises/*`, in `api.php`): `POST /promises` (suggest, signed in), `GET /promises/speakers`, `POST /promises/{number}/reports`, `POST /promises/{number}/vote`
+
 ### Directories & data pages
 - `GET /syofficial`, `/phonebook`, `/govapps`, `/atlas` (canonical; `/population` 301-redirects to `/atlas`)
 - Inertia closures: `/priorities`, `/roznama`, `/shawarma`, `/justice`, `/crossings`, `/stats`, `/privacy`, `/terms`
@@ -61,10 +65,11 @@ Modules served under more than one prefix (transit admin, polls admin, asset man
 - Dashboard (`web.php`): `GET /dashboard`
 - Legacy account aliases (`web.php`): `/api/user`, `POST /api/account/update|avatar|delete`, `POST /api/user/settings`, `POST /api/user/radio-usage(/clear)`
 - Superadmin (`web.php`):
-  - Asset explorer: `/admin/assets` + `GET /api/v1/admin/assets/list`, `POST /api/v1/admin/assets/upload`, `DELETE /api/v1/admin/assets/delete`
-  - Site navigation & icon catalog: `/admin/navigation` + `GET|PUT /api/v1/admin/navigation`
-  - Homepage popup: `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup`
-  - Agent API tokens, revoke all for a user: `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`)
+  - Revoke every agent token of a user: `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`) — the only route in the `superadmin` group.
+- Site-wide settings (`web.php`, `site_admin` group, capability per route):
+  - Asset explorer (`assets_admin:assets.manage`): `/admin/assets` + `GET /api/v1/admin/assets/list`, `POST /api/v1/admin/assets/upload`, `DELETE /api/v1/admin/assets/delete`
+  - Site navigation & icon catalog (`site.navigation`): `/admin/navigation` + `GET|PUT /api/v1/admin/navigation`
+  - Homepage popup (`site.popup`): `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup`
 - Agent API tokens (`web.php`, `agent_tokens` middleware: any capability holder, own tokens only; superadmins manage all; bearer-token callers refused): `/admin/api-tokens` + `POST /api/v1/admin/api-tokens`, `DELETE /api/v1/admin/api-tokens/{id}`
 
 ### Admin moderation panels (capability-gated)
@@ -76,14 +81,15 @@ Every panel below is gated by a single per-route capability, not by module membe
 | Polls | `/dashboard` polls tab (legacy `/admin/polls*` 301-redirects) | `/api/polls*`, `/api/candidate-groups*`, `/api/candidates*` |
 | Places | `/admin/places` (`places_admin:any`) | `/api/v1/admin/places*` and `/api/v1/admin/place-photos*` |
 | Transit | `/transit/admin` (`transit_admin:any`) | `/api/v1/admin/route-drafts*`, `/api/v1/admin/routes*` |
-| Guess Who | `/admin/guesswho` (`superadmin`) | `/api/v1/admin/guesswho/categories*`, `/api/v1/admin/guesswho/characters*` |
-| Site navigation | `/admin/navigation` (`superadmin`) | `GET\|PUT /api/v1/admin/navigation` |
-| Site popup | `/admin/site-popup` (`superadmin`) | `GET\|PUT /api/v1/admin/site-popup` |
+| Guess Who | `/admin/guesswho` (`guesswho_admin:guesswho.manage`) | `/api/v1/admin/guesswho/categories*`, `/api/v1/admin/guesswho/characters*` |
+| Site navigation | `/admin/navigation` (`site_admin:site.navigation`) | `GET\|PUT /api/v1/admin/navigation` |
+| Site popup | `/admin/site-popup` (`site_admin:site.popup`) | `GET\|PUT /api/v1/admin/site-popup` |
 | SyOfficial | `/admin/syofficial` (`syofficial_admin:any`) | `/api/v1/admin/syofficial/categories*`, `/api/v1/admin/syofficial/entities*` |
 | Gov apps | `/admin/govapps` (`govapps_admin:any`) | `/api/v1/admin/govapps*` |
 | Phonebook | `/admin/phonebook` (`phonebook_admin:any`) | `/api/v1/admin/phonebook/categories*`, `/api/v1/admin/phonebook/entries*` |
 | Compass | `/admin/compass*` (`compass_admin:compass.*`) | `/api/v1/admin/compass/figures*`, `/api/v1/admin/compass/personas*` |
 | User ban | dashboard user list | `PATCH /api/v1/admin/users/{id}/ban` (legacy `POST /api/v1/admin/users/{id}/toggle-ban`) — `users_admin:users.ban` |
+| Promises | `/admin/promises`, `/admin/promises/{id}/edit`, `/admin/promises/review`, `/admin/promises/speakers`, `/admin/promises/sectors` (`promises_admin:<capability>`) | `/api/v1/admin/promises*` |
 
 ### Agent / MCP surface (`routes/ai.php`, bearer token — no session, no CSRF)
 
@@ -127,6 +133,9 @@ See **[docs/reference/api.md](api.md)** for full payload schemas and parameter t
   - Hotels: `GET /api/v1/hotels`, `/hotels/map`, `/hotels/{id}`
 - **Compass (`/api/v1/compass/*`)**:
   - `GET|POST|DELETE /api/v1/compass/results[/{id}]`, `POST|GET /api/v1/compass/shares[/{shareId}]` (legacy `/share`), `POST|DELETE /api/v1/compass/stats`
+- **Promises tracker (`/api/v1/promises/*`)**:
+  - `POST /api/v1/promises` (suggest a promise, `auth:sanctum`, `10/60min`), `GET /api/v1/promises/speakers` (`public-api`), `POST /api/v1/promises/{number}/reports` (`auth:sanctum`, `20/60min`), `POST /api/v1/promises/{number}/vote` (`promise-voting`)
+  - Admin: `/api/v1/admin/promises*`, `/api/v1/admin/promises/sectors*`, `/api/v1/admin/promises/speakers*`, `/api/v1/admin/promises/reports/*` (one capability per route)
 - **Atlas, Contributors, Widgets & Utilities (`/api/v1/*` + legacy `/api/*`)**:
   - `GET /api/v1/atlas`, `GET /api/v1/atlas/environment` (legacy `/api/population/master`, `/api/population/env-report`)
   - `GET /api/v1/contributors[/{contributor}]` (legacy `/api/contributors*`)

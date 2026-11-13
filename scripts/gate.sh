@@ -17,8 +17,14 @@ step() {
 step 'typecheck — npx tsc --noEmit'
 npx tsc --noEmit
 
+step 'lint — npm run lint (rules of hooks)'
+npm run lint
+
 step 'frontend tests — npm run test:js'
 npm run test:js
+
+step 'build — npm run build (client + SSR)'
+npm run build
 
 step 'PHP tests — vendor/bin/pest --parallel'
 vendor/bin/pest --parallel

@@ -6,6 +6,7 @@
     "build": "vite build && vite build --ssr",
     "build:ssr": "vite build --ssr",
     "test:js": "vitest run",
+    "lint": "eslint resources/js",
     "test:js:watch": "vitest",
     "og:build": "node scripts/og/build.mjs",
     "og:check": "node scripts/og/build.mjs --check",
@@ -68,17 +69,19 @@
     "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.5.4",
     "concurrently": "^9.2.4",
+    "eslint": "^10.14.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "fontnik": "^0.7.7",
     "laravel-vite-plugin": "^3.2.0",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
     "vite": "^8.2.2",
     "vitest": "^5.0.3"
   },
   "overrides": {
     "axios": "1.20.0",
-    "brace-expansion": "1.1.18",
     "form-data": "4.0.6"
   },
   "trustedDependencies": [

@@ -850,6 +850,8 @@ They are not JSON endpoints — an over-long field comes back as the standard
 
 ## 11. Legacy & Deprecated Endpoint Aliases
 
+> **To be replaced.** Every pair below is two URLs for one endpoint. They are kept for now only because released mobile builds and external integrators may call either spelling; nothing else needs both. The plan: pick one path per endpoint, move the web client and the next mobile release onto it, watch the access logs until the other spelling has no traffic, then delete the alias route and its row here. Do not add new aliases.
+
 All legacy endpoints below remain **100% functional** and invoke the exact same controller logic as their canonical `/api/v1/*` counterparts. New features, mobile clients, and documentation should use the canonical paths.
 
 Where both rows describe the same module (auth token, global search, transit reads and studio, Compass shares, poll ballots/leaderboard, and the public widgets), the route is defined **once** in `routes/*.php` and mounted under both paths, so an alias cannot drift from its canonical URL. The remaining alias pairs are older controller entry points that still exist on purpose.

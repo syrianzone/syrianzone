@@ -36,10 +36,8 @@ jobs:
       - name: install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: build frontend assets
-        run: |
-          bun install --frozen-lockfile
-          bun run build
+      - name: install frontend dependencies
+        run: bun install --frozen-lockfile
 
       - name: run the gate
         run: bash scripts/gate.sh

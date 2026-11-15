@@ -97,7 +97,7 @@ it('still lets a phonebook.reorder holder reorder', function () {
                 ['id' => $category->id, 'order_column' => 2],
             ],
         ])
-        ->assertRedirect();
+        ->assertOk()->assertJsonPath('success', true);
 
     expect($category->fresh()->order_column)->toBe(2);
 });
@@ -244,10 +244,10 @@ it('lets a module-scoped account work across its whole module', function () {
     $this->actingAs($staff)->get('/admin/phonebook')->assertOk();
     $this->actingAs($staff)
         ->deleteJson("/api/v1/admin/phonebook/entries/{$entry->id}")
-        ->assertRedirect();
+        ->assertOk()->assertJsonPath('success', true);
     $this->actingAs($staff)
         ->deleteJson("/api/v1/admin/phonebook/categories/{$category->id}")
-        ->assertRedirect();
+        ->assertOk()->assertJsonPath('success', true);
 });
 
 it('keeps a full-catalogue account and superadmin unaffected', function () {

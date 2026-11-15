@@ -5,6 +5,7 @@ use App\Models\PhonebookCategory;
 use App\Models\Place;
 use App\Models\User;
 use App\Support\Permissions\PermissionCatalogue;
+use Inertia\Testing\AssertableInertia;
 
 /*
 |--------------------------------------------------------------------------
@@ -166,7 +167,7 @@ test('a phonebook-scoped account passes the phonebook admin middleware', functio
             'label_ar' => 'اختبار',
             'label_en' => 'Test',
         ])
-        ->assertRedirect();
+        ->assertOk()->assertJsonPath('success', true);
 
     expect(PhonebookCategory::where('id', 'test-cat')->exists())->toBeTrue();
 });
@@ -194,7 +195,7 @@ test('the shared auth payload carries resolved capabilities', function () {
 test('the page props carry no user for a guest', function () {
     $this->get('/')
         ->assertOk()
-        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('auth.user', null));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('auth.user', null));
 });
 
 test('the /user endpoint returns the same payload shape as the page props', function () {

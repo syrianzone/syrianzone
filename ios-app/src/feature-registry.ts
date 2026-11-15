@@ -2,6 +2,7 @@ import { lazy, type ComponentType } from 'react';
 import type { FeatureScreenProps } from './platform/features';
 
 export const featureScreens: Record<string, { title: string; component: ComponentType<FeatureScreenProps> }> = {
+  crossings: { title: 'المعابر', component: lazy(() => import('./features/Crossings/Index').then(module => ({ default: module.CrossingsScreen }))) },
   muslim: { title: 'الركن الإسلامي', component: lazy(() => import('./features/Muslim/Index').then(module => ({ default: module.MuslimScreen }))) },
   muslim_prayer: { title: 'مواقيت الصلاة', component: lazy(() => import('./features/Muslim/Prayer/Index').then(module => ({ default: module.PrayerScreen }))) },
   muslim_quran: { title: 'قارئ القرآن', component: lazy(() => import('./features/Muslim/Quran/Index').then(module => ({ default: module.QuranScreen }))) },

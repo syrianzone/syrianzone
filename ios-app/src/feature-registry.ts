@@ -13,6 +13,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   hotels: { title: 'الفنادق', component: lazy(() => import('./features/Hotels/Index').then(module => ({ default: module.HotelsScreen }))) },
   hotel: { title: 'تفاصيل الفندق', component: lazy(() => import('./features/Hotels/Index').then(module => ({ default: module.HotelScreen }))) },
   guides: { title: 'المرشدون المحليون', component: lazy(() => import('./features/Guides/Index').then(module => ({ default: module.GuidesScreen }))) },
+  promises: { title: 'عداد الوعود', component: lazy(() => import('./features/Promises/Index').then(module => ({ default: module.PromisesScreen }))) },
   board: { title: 'لوح', component: lazy(() => import('./features/Board/Index').then(module => ({ default: module.BoardScreen }))) },
   atlas: { title: 'أطلس سوريا', component: lazy(() => import('./features/Population/Index').then(module => ({ default: module.PopulationScreen }))) },
   transit_studio: { title: 'استوديو النقل', component: lazy(() => import('./features/TransitStudio/Index').then(module => ({ default: module.TransitStudioScreen }))) },

@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Route;
 
 return function (bool $canonical): Closure {
     return function () use ($canonical): void {
+        if ($canonical) {
+            Route::get('/polls', [PollController::class, 'adminIndex'])->middleware('polls_admin:any');
+            Route::get('/polls/{id}', [PollController::class, 'adminShow'])->middleware('polls_admin:any');
+        }
+
         Route::post('/polls', [PollController::class, 'store'])
             ->middleware('polls_admin:polls.create');
         Route::put('/polls/{id}', [PollController::class, 'update'])

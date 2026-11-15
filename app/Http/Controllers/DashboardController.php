@@ -7,6 +7,7 @@ use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\User;
 use App\Services\AvatarService;
+use App\Services\Users\UserAdministrationService;
 use App\Services\Users\UserModerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,7 @@ class DashboardController extends Controller
         $user = $request->user();
         $data = [
             'role' => $user->role,
+            'canManageUsers' => UserAdministrationService::allows($user),
             // Studio submissions are open to every account (the endpoint takes
             // anonymous drafts too), so the rule is "not banned", not a role.
             // The dashboard's submissions tab follows this flag instead of

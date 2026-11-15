@@ -156,6 +156,33 @@ class PollController extends Controller
         return $this->canViewInactive($request) ? Poll::all() : Poll::where('is_active', true)->get();
     }
 
+    /** Canonical staff list, matching the dashboard for any polls capability holder. */
+    public function adminIndex()
+    {
+        return response()->json(Poll::withCount('candidates')->get());
+    }
+
+    /** Staff inspect disabled groups and archived candidates without publishing them. */
+    public function adminShow(Request $request, string $id)
+    {
+        $poll = Poll::idOrSlug($id)->firstOrFail();
+        $today = Carbon::now($poll->safeTimezone())->startOfDay();
+        $candidates = $poll->candidates()->orderBy('sort');
+        if (! $request->boolean('include_archived')) {
+            $candidates->where('status', 'active');
+        }
+
+        return response()->json([
+            'poll' => $poll,
+            'groups' => $poll->groups()->get(),
+            'candidates' => $candidates->get(),
+            'todayScores' => DailyScore::where('poll_id', $poll->id)
+                ->where('day', '>=', $today->toDateString())
+                ->where('day', '<', $today->copy()->addDay()->toDateString())->get(),
+            'voteDay' => $today->toIso8601String(),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -232,7 +259,9 @@ class PollController extends Controller
             'poll' => $poll,
             'groups' => $isEditor ? $groups : $groups->where('is_active', true)->values(),
             'candidates' => $candidatesQuery->get(),
-            'todayScores' => DailyScore::where('poll_id', $poll->id)->where('day', $today)->get(),
+            'todayScores' => DailyScore::where('poll_id', $poll->id)
+                ->where('day', '>=', $today->toDateString())
+                ->where('day', '<', $today->copy()->addDay()->toDateString())->get(),
             'voteDay' => $today->toIso8601String(),
         ]);
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondsToAdminMutations;
 use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
@@ -9,9 +10,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use JsonException;
 
 class GuessWhoAdminController extends Controller
 {
+    use RespondsToAdminMutations;
+
     public function renderIndex()
     {
         $categories = GuessWhoCategory::withCount('characters')->orderBy('id')->get();
@@ -39,7 +44,7 @@ class GuessWhoAdminController extends Controller
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
-        return redirect()->back()->with('success', 'تم إضافة الفئة بنجاح');
+        return $this->adminMutationResponse('تم إضافة الفئة بنجاح');
     }
 
     public function updateCategory(Request $request, int $id)
@@ -49,7 +54,7 @@ class GuessWhoAdminController extends Controller
         $validated = $request->validate([
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|alpha_dash|unique:guess_who_categories,slug,' . $category->id,
+            'slug' => 'required|string|max:255|alpha_dash|unique:guess_who_categories,slug,'.$category->id,
             'is_active' => 'boolean',
         ]);
 
@@ -60,7 +65,7 @@ class GuessWhoAdminController extends Controller
             'is_active' => $validated['is_active'] ?? $category->is_active,
         ]);
 
-        return redirect()->back()->with('success', 'تم تحديث الفئة بنجاح');
+        return $this->adminMutationResponse('تم تحديث الفئة بنجاح');
     }
 
     public function destroyCategory(int $id)
@@ -72,7 +77,7 @@ class GuessWhoAdminController extends Controller
         $imagePaths = $characters->pluck('image_path')->filter()->unique()->values()->all();
 
         DB::transaction(function () use ($category, $characterIds) {
-            if (!empty($characterIds)) {
+            if (! empty($characterIds)) {
                 GuessWhoGame::whereIn('player_1_character_id', $characterIds)
                     ->update(['player_1_character_id' => null]);
                 GuessWhoGame::whereIn('player_2_character_id', $characterIds)
@@ -88,11 +93,13 @@ class GuessWhoAdminController extends Controller
             $this->deleteImageIfUnused($imagePath);
         }
 
-        return redirect()->back()->with('success', 'تم حذف الفئة وشخصياتها بنجاح');
+        return $this->adminMutationResponse('تم حذف الفئة وشخصياتها بنجاح');
     }
 
     public function storeCharacter(Request $request)
     {
+        $this->decodeNativeAttributes($request);
+
         $validated = $request->validate([
             'category_id' => 'required|exists:guess_who_categories,id',
             'name_ar' => 'required|string|max:255',
@@ -111,12 +118,13 @@ class GuessWhoAdminController extends Controller
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
-        return redirect()->back()->with('success', 'تم إضافة الشخصية بنجاح');
+        return $this->adminMutationResponse('تم إضافة الشخصية بنجاح');
     }
 
     public function updateCharacter(Request $request, int $id)
     {
         $character = GuessWhoCharacter::findOrFail($id);
+        $this->decodeNativeAttributes($request);
 
         $validated = $request->validate([
             'category_id' => 'required|exists:guess_who_categories,id',
@@ -146,7 +154,7 @@ class GuessWhoAdminController extends Controller
             $this->deleteImageIfUnused($oldImagePath);
         }
 
-        return redirect()->back()->with('success', 'تم تحديث الشخصية بنجاح');
+        return $this->adminMutationResponse('تم تحديث الشخصية بنجاح');
     }
 
     public function destroyCharacter(int $id)
@@ -164,7 +172,32 @@ class GuessWhoAdminController extends Controller
 
         $this->deleteImageIfUnused($imagePath);
 
-        return redirect()->back()->with('success', 'تم حذف الشخصية بنجاح');
+        return $this->adminMutationResponse('تم حذف الشخصية بنجاح');
+    }
+
+    private function decodeNativeAttributes(Request $request): void
+    {
+        if (! $request->wantsJson() || $request->header('X-Inertia') || ! $request->exists('attributes_json')) {
+            return;
+        }
+
+        $raw = $request->input('attributes_json');
+        if (! is_string($raw) || strlen($raw) > 65536 || $request->exists('attributes')) {
+            throw ValidationException::withMessages(['attributes' => 'صيغة الخصائص غير صالحة أو تتجاوز الحجم المسموح.']);
+        }
+
+        try {
+            $attributes = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            throw ValidationException::withMessages(['attributes' => 'يجب أن تكون الخصائص قائمة أو كائناً بصيغة JSON صالحة.']);
+        }
+
+        if (! is_array($attributes)) {
+            throw ValidationException::withMessages(['attributes' => 'يجب أن تكون الخصائص قائمة أو كائناً بصيغة JSON صالحة.']);
+        }
+
+        // Multipart has no field representation for an empty array.
+        $request->merge(['attributes' => $attributes]);
     }
 
     /**
@@ -173,14 +206,14 @@ class GuessWhoAdminController extends Controller
      */
     private function storeImage($file): string
     {
-        $name = Str::random(16) . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $name = Str::random(16).'_'.time().'.'.$file->getClientOriginalExtension();
 
         return $file->storeAs('guesswho/characters', $name, 'public');
     }
 
     private function deleteImage(?string $path): void
     {
-        if (!$path) {
+        if (! $path) {
             return;
         }
 
@@ -195,7 +228,7 @@ class GuessWhoAdminController extends Controller
 
     private function deleteImageIfUnused(?string $path): void
     {
-        if (!$path) {
+        if (! $path) {
             return;
         }
 

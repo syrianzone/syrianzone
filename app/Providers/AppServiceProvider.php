@@ -10,6 +10,7 @@ use App\Models\PromiseUpdate;
 use App\Services\Promises\PromiseIndexCache;
 use App\Support\Agents\AgentAuthorizer;
 use App\Support\Agents\AgentContext;
+use App\Support\Agents\TokenAbilities;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -44,11 +45,10 @@ class AppServiceProvider extends ServiceProvider
             $view->with('meta', \App\Support\Seo\SeoMeta::resolve(request()));
         });
 
-        // A banned owner's token does not authenticate, on any route. Banning
-        // also deletes the user's tokens; this covers a token issued in the
-        // window around the ban and any path that sets is_banned directly.
+        // Which tokens may authenticate which requests: a banned owner's token
+        // nowhere, an agent token only on the MCP endpoint. See TokenAbilities.
         Sanctum::authenticateAccessTokensUsing(
-            fn (PersonalAccessToken $token, bool $isValid): bool => $isValid && ! (bool) $token->tokenable?->is_banned
+            fn (PersonalAccessToken $token, bool $isValid): bool => $isValid && TokenAbilities::authenticates($token, request())
         );
 
         // Any write to the tracker drops the cached /promises payload.

@@ -102,7 +102,7 @@ test('the six vestigial preference keys are no longer part of the contract', fun
 
 test('a bearer token is enough on the legacy session-or-token mount', function () {
   $user = User::factory()->create();
-  $token = $user->createToken('mobile')->plainTextToken;
+  $token = $user->createToken('mobile', ['mobile'])->plainTextToken;
 
   $this->withHeader('Authorization', 'Bearer '.$token)
     ->postJson('/api/user/settings', ['settings' => ['governorate' => 'hama']])

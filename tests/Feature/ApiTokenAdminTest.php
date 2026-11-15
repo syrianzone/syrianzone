@@ -283,6 +283,7 @@ test('revoking every token of a user stays superadmin-only', function () {
 test('an API token cannot be used to mint another token', function () {
     // Otherwise a narrow agent token could mint itself one carrying everything
     // its owner holds, escaping its own ceiling. Holds for superadmins too.
+    // An agent token does not authenticate outside /mcp at all.
     foreach ([moduleStaff('places'), User::factory()->superadmin()->create()] as $owner) {
         $plain = app(TokenIssuer::class)->issue($owner, 'narrow', ['places.review'])['token']->plainTextToken;
 
@@ -295,7 +296,7 @@ test('an API token cannot be used to mint another token', function () {
                 'ttl' => '30d',
                 'permissions' => ['places.review', 'places.delete'],
             ])
-            ->assertForbidden();
+            ->assertUnauthorized();
 
         expect($owner->tokens()->count())->toBe(1);
     }

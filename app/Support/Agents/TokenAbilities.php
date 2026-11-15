@@ -2,6 +2,7 @@
 
 namespace App\Support\Agents;
 
+use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /**
@@ -21,5 +22,25 @@ final class TokenAbilities
     {
         return $token instanceof PersonalAccessToken
             && in_array(self::MOBILE, $token->abilities ?? [], true);
+    }
+
+    /**
+     * Whether a token may authenticate this request at all.
+     *
+     * Only two kinds of token are minted: phone sessions (`mobile`) and agent
+     * credentials (TokenIssuer, abilities = capability ids). An agent token's
+     * ceiling is enforced by the MCP gate and nowhere else; on any other route
+     * Sanctum would hand back the owner with their full rights, so a token
+     * scoped to one capability could read every admin page, edit the owner's
+     * account or delete it. Agent tokens therefore authenticate only on the
+     * MCP endpoint. A banned owner's token authenticates nowhere.
+     */
+    public static function authenticates(PersonalAccessToken $token, Request $request): bool
+    {
+        if ((bool) $token->tokenable?->is_banned) {
+            return false;
+        }
+
+        return self::isMobileToken($token) || $request->is('mcp', 'mcp/*');
     }
 }

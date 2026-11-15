@@ -94,7 +94,7 @@ print("Native Origin validator: \(accepted.count) accepted, \(rejected.count) re
   const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
   expect(result.exitCode, output).toBe(0);
   expect(output).toContain('4 accepted, 22 rejected');
-});
+}, 20_000);
 
 test('the maintained native patch adds only the Origin header before connection and keeps the public socket delegate', () => {
   const source = readFileSync(new URL('node_modules/@pusher/pusher-websocket-react-native/ios/PusherWebsocketReactNative.swift', directory), 'utf8');

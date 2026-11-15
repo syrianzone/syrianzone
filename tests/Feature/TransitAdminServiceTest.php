@@ -105,6 +105,8 @@ it('republishes a linked route when its edit is rejected', function () {
     seedCity('homs');
     transitRoute('route-homs-1', 'homs', ['status' => 'disapproved']);
     $draft = transitDraft('homs', ['route_id' => 'route-homs-1']);
+    // The route was taken offline for this edit's review.
+    TransitRouteLog::create(['route_id' => 'route-homs-1', 'action' => 'unpublished_for_edit', 'description' => 'x']);
 
     $this->service->rejectDraft($draft, 'لا', $this->actor->id);
 

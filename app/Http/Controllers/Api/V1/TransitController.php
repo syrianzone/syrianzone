@@ -198,7 +198,10 @@ class TransitController extends Controller
         $folded = ArabicSearch::fold($raw);
         $foldLike = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $folded === '' ? $raw : $folded).'%';
 
+        // Public search sees what the public map sees: published routes, and
+        // stops served by at least one. Hidden and withdrawn routes stay out.
         $routes = Route::query()
+            ->where('status', 'published')
             ->where(function ($q) use ($like, $foldLike) {
                 $q->where('id', 'like', $like)
                     ->orWhere('name_ar_fold', 'like', $foldLike)
@@ -220,6 +223,13 @@ class TransitController extends Controller
             });
 
         $stopResults = Stop::query()
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('route_stop')
+                    ->join('routes', 'route_stop.route_id', '=', 'routes.id')
+                    ->whereColumn('route_stop.stop_id', 'stops.id')
+                    ->where('routes.status', 'published');
+            })
             ->where(function ($q) use ($like, $foldLike) {
                 $q->where('id', 'like', $like)
                     ->orWhere('name_ar_fold', 'like', $foldLike)

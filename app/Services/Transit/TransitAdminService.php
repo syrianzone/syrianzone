@@ -237,13 +237,27 @@ class TransitAdminService
     }
 
     /**
-     * Put a withdrawn route back on the map after its edit was rejected.
+     * Put a route back on the map when the edit that took it offline is
+     * rejected or withdrawn.
+     *
+     * Only a route this draft's review actually withdrew is restored. A route
+     * an admin had disapproved for its own reasons stays off the map, or
+     * anyone could republish it by filing an edit that then gets rejected.
      */
-    protected function restoreLinkedRoute(RouteDraft $draft, ?int $actorId): void
+    public function restoreLinkedRoute(RouteDraft $draft, ?int $actorId): void
     {
         $route = Route::find($draft->route_id);
 
         if ($route === null || $route->status !== 'disapproved') {
+            return;
+        }
+
+        $withdrawnForThisReview = TransitRouteLog::where('route_id', $route->id)
+            ->where('action', 'unpublished_for_edit')
+            ->where('created_at', '>=', $draft->created_at)
+            ->exists();
+
+        if (! $withdrawnForThisReview) {
             return;
         }
 

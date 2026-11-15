@@ -39,6 +39,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   stats: { title: 'الإحصاءات', component: lazy(() => import('./features/Stats/Index').then(module => ({ default: module.StatsScreen }))) },
   account: { title: 'الحساب', component: lazy(() => import('./features/Account/Index').then(module => ({ default: module.AccountScreen }))) },
   dashboard: { title: 'لوحة التحكم', component: lazy(() => import('./features/Dashboard/Index').then(module => ({ default: module.DashboardScreen }))) },
+  users_admin: { title: 'إدارة المستخدمين', component: lazy(() => import('./features/UsersAdmin/Index').then(module => ({ default: module.UsersAdminScreen }))) },
   places_admin: { title: 'إدارة أماكن مشوار', component: lazy(() => import('./features/Places/Admin').then(module => ({ default: module.PlacesAdminScreen }))) },
   phonebook_admin: { title: 'إدارة دليل الهاتف', component: lazy(() => import('./features/Phonebook/Admin').then(module => ({ default: module.PhonebookAdminScreen }))) },
   govapps_admin: { title: 'إدارة التطبيقات', component: lazy(() => import('./features/GovApps/Admin').then(module => ({ default: module.GovAppsAdminScreen }))) },

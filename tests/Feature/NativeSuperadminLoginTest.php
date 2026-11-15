@@ -202,6 +202,25 @@ test('native login cannot bypass an enabled or required Filament multi-factor ch
     Notification::assertNothingSent();
 })->with([false, true]);
 
+test('password mobile sessions obey current-device all-device ban and agent-token policies', function () {
+    $admin = User::factory()->superadmin()->create(['password' => Hash::make('local-password')]);
+    $first = $this->postJson(NATIVE_ADMIN_LOGIN, ['email' => $admin->email, 'password' => 'local-password'])->assertOk()->json('token');
+    $second = $this->postJson(NATIVE_ADMIN_LOGIN, ['email' => $admin->email, 'password' => 'local-password'])->assertOk()->json('token');
+    $agent = $admin->createToken('Agent fixture', ['users.ban'])->accessToken;
+    Auth::forgetGuards();
+    $this->withHeader('Authorization', 'Bearer '.$first)->getJson('/api/v1/admin/users/options')->assertOk();
+    $this->postJson('/mcp/admin', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'])->assertForbidden();
+    $this->postJson('/api/v1/auth/logout')->assertOk();
+    expect(PersonalAccessToken::findToken($first))->toBeNull();
+    Auth::forgetGuards();
+    $admin->update(['is_banned' => true]);
+    $this->withHeader('Authorization', 'Bearer '.$second)->getJson('/api/v1/admin/users/options')->assertForbidden();
+    Auth::forgetGuards();
+    $admin->update(['is_banned' => false]);
+    $this->postJson('/api/v1/auth/logout-devices')->assertOk();
+    expect(PersonalAccessToken::findToken($second))->toBeNull()->and($agent->fresh())->not->toBeNull();
+});
+
 test('denied native credentials emit source authentication events without exposing their details', function () {
     Event::fake([Attempting::class, Failed::class]);
     $admin = User::factory()->superadmin()->create(['password' => Hash::make('local-password')]);

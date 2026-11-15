@@ -21,7 +21,7 @@ import type { NativeAudioPort, NativeAudioStatus } from '../src/platform/quran/e
 import { zipEntryPaths } from './zip-directory';
 import { NativePicker, NativeSlider, NativeToggle } from '../src/ui/native';
 import { ArabicInputFixture } from './arabic-input-fixture';
-
+import { UsersEditorInputFixture } from './users-editor-input-fixture';
 import { AvatarPickerProbe } from './avatar-picker-probe';
 import { SearchFieldFixture } from './search-field-fixture';
 import { IconActionHitFixture } from './icon-action-hit-fixture';
@@ -452,11 +452,11 @@ export function AdapterFixture(): React.JSX.Element {
         <Button testID="adapter.tab.audio" title="Audio" onPress={() => setTab('audio')} />
         <Button testID="adapter.tab.inputs" title="Inputs" onPress={() => setTab('inputs')} />
         <Button testID="adapter.tab.avatar" title="Avatar" onPress={() => setTab('avatar')} />
-        
+        <Button testID="adapter.tab.users-input" title="Users" onPress={() => setTab('users-input')} />
         <Button testID="adapter.tab.search" title="Find" onPress={() => setTab('search')} />
         <Button testID="adapter.tab.icon-hit" title="Icons" onPress={() => setTab('icon-hit')} />
       </View>
-      {tab === 'icon-hit' ? <IconActionHitFixture /> : tab === 'search' ? <SearchFieldFixture /> : tab === 'avatar' ? <AvatarPickerProbe /> : tab === 'inputs' ? <ArabicInputFixture /> : tab === 'files' ? (
+      {tab === 'icon-hit' ? <IconActionHitFixture /> : tab === 'search' ? <SearchFieldFixture /> : tab === 'users-input' ? <UsersEditorInputFixture /> : tab === 'avatar' ? <AvatarPickerProbe /> : tab === 'inputs' ? <ArabicInputFixture /> : tab === 'files' ? (
         <>
           <NativeToggle title="تحقق المفتاح الأصلي" value={toggleValue} onChange={value => {
             setToggleEvents(events => [...events, `${typeof value}:${String(value)}`].slice(-4));

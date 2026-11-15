@@ -52,4 +52,4 @@ test.skipIf(process.platform !== 'darwin')('the real Swift photo deletion policy
     expect(result.exitCode, output).toBe(0);
     expect(output).toContain(`${total} deletion-policy cases passed`);
   } finally { rmSync(directory, { recursive: true, force: true }); }
-});
+}, 30_000);

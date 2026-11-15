@@ -1,0 +1,20 @@
+import type { PromiseDetailData, PromiseState, SectorOption, SpeakerOption } from './model';
+import type { PromiseStatus } from '../../../../resources/js/Domain/promises/types';
+export type ReviewStatus = 'pending' | 'published' | 'rejected';
+export interface AdminPromiseRow { id: string; number: number | null; title: string; speakerName: string | null; speakerPending: boolean; status: PromiseStatus; state: PromiseState; reviewStatus: ReviewStatus; origin: string; statementDate: string | null; deadlineDate: string | null; sourcesCount: number; pendingReportsCount: number; submitterName: string | null; submitterNote: string | null; rejectionReason: string | null; updatedAt: string | null }
+export interface AdminPromiseDetail {
+  id: string; number: number | null; title: string; summary: string | null; quote: string; quoteIsVerbatim: boolean; speaker: SpeakerOption | null; speakerTitle: string | null;
+  coSpeakers: { speaker: SpeakerOption | null; speakerTitle: string | null }[]; institutionId: string | null; sectorId: string | null; isNational: boolean; governorates: string[]; tags: string[];
+  statementDate: string | null; statementVenue: string; deadlineWording: string | null; deadlineDate: string | null; deadlineReasoning: string | null; targetValue: number | null; targetUnit: string | null; baselineValue: number | null; baselineNote: string | null;
+  restatesPromiseId: string | null; restates: { id: string; number: number | null; title: string } | null; relatedPromiseIds: string[];
+  status: PromiseStatus; state: PromiseState; resolvedAt: string | null; reviewStatus: ReviewStatus; publishedAt: string | null; origin: string; submitterName: string | null; submitterNote: string | null; rejectionReason: string | null;
+  sources: PromiseDetailData['sources']; updates: PromiseDetailData['updates']; originalDeadlineDate: string | null; originalDeadlineWording: string | null; postponedCount: number; version: number;
+}
+export interface EditorOptions { sectors: SectorOption[]; governorates: { id: string; label: string }[]; institutions: { id: string; name: string }[]; venues: string[]; sourceTypes: string[]; statuses: PromiseStatus[]; earliestDate: string; today: string; restatable: { id: string; number: number; title: string }[] }
+export interface AdminSpeaker { id: string; name: string; title: string | null; image: string | null; xHandle: string | null; imageUrl: string | null; institutionId: string | null; institutionName: string | null; status: 'approved' | 'pending' | 'rejected'; link: 'candidate' | 'official' | 'house' | null; promisesCount: number; rejectionReason: string | null }
+export interface AdminSector { id: string; label: string; icon: string | null; isActive: boolean; promisesCount: number }
+export interface AdminReport { id: number; kind: 'progress' | 'error'; body: string; sourceUrl: string | null; createdOn: string | null; userName: string | null; promise: { id: string; number: number | null; title: string } }
+export interface SourceForm { key: string; url: string; outlet: string; type: string; publishedDate: string; language: string; archiveUrl: string; screenshotUrl: string; videoTimestamp: string; isPrimary: boolean }
+export interface EditorForm { speaker: SpeakerOption | null; speakerTitle: string; coSpeakers: { speaker: SpeakerOption | null; speakerTitle: string }[]; institutionId: string; sectorId: string; title: string; summary: string; quote: string; quoteIsVerbatim: boolean; statementDate: string; statementVenue: string; deadlineWording: string; deadlineDate: string; deadlineReasoning: string; targetValue: string; targetUnit: string; baselineValue: string; baselineNote: string; isNational: boolean; governorates: string[]; tags: string; restatesPromiseId: string; relatedPromiseIds: string[]; sources: SourceForm[] }
+export interface EditorState { promise: AdminPromiseDetail | null; form: EditorForm; formVersion: number; saved: string }
+// PORT STATUS: source Admin/Promises/_lib/types.ts, Edit.tsx and _components/SourcesEditor.tsx; confidence high; todos 0.

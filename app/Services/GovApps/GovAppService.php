@@ -55,7 +55,7 @@ class GovAppService
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<int, string>  $links
+     * @param  array<array-key, mixed>  $links
      */
     public function create(array $attributes, array $links = [], ?UploadedFile $icon = null): GovApp
     {
@@ -90,7 +90,7 @@ class GovAppService
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<int, string>|null  $links  Null leaves the existing list alone.
+     * @param  array<array-key, mixed>|null  $links  Null leaves the existing links alone.
      */
     public function update(string $id, array $attributes, ?array $links = null, ?UploadedFile $icon = null): GovApp
     {
@@ -184,18 +184,16 @@ class GovAppService
     }
 
     /**
-     * Keep only http(s) links and reindex, so the JSON column stays a list
-     * rather than becoming an object with gaps. `gov_apps.links` *is* a list;
-     * the entities' `socials` column is a platform-keyed map and uses its own
-     * filter in SyOfficialDirectoryService — copying this one there is what
-     * flattened the platform keys.
+     * Preserve the directory's named platform links. Older callers also send
+     * positional URL lists: compact those lists after filtering, without
+     * guessing which platform a positional or unknown named link belongs to.
      *
-     * @param  array<int, mixed>  $urls
-     * @return array<int, string>
+     * @param  array<array-key, mixed>  $urls
+     * @return array<array-key, string>
      */
     protected function filterUrls(array $urls): array
     {
-        return array_values(array_filter(
+        $filtered = array_filter(
             $urls,
             static function ($url): bool {
                 if (! is_string($url)) {
@@ -207,7 +205,15 @@ class GovAppService
                 return $url !== ''
                     && (str_starts_with($url, 'http://') || str_starts_with($url, 'https://'));
             },
-        ));
+        );
+
+        foreach (array_keys($urls) as $key) {
+            if (is_string($key)) {
+                return $filtered;
+            }
+        }
+
+        return array_values($filtered);
     }
 
     protected function assertIdFree(?string $id): void

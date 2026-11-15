@@ -13,6 +13,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   house: { title: 'مجلس الشعب', component: lazy(() => import('./features/House/Index').then(module => ({ default: module.HouseScreen }))) },
   justice: { title: 'العدالة الانتقالية', component: lazy(() => import('./features/Justice/Index').then(module => ({ default: module.JusticeScreen }))) },
   compass: { title: 'بوصلة سوريا', component: lazy(() => import('./features/Compass/Index').then(module => ({ default: module.CompassScreen }))) },
+  guesswho: { title: 'من هو؟', component: lazy(() => import('./features/GuessWho/Index').then(module => ({ default: module.GuessWhoScreen }))) },
   tierlist: { title: 'تقييم الأداء', component: lazy(() => import('./features/TierList/Index').then(module => ({ default: module.TierListScreen }))) },
   muslim: { title: 'الركن الإسلامي', component: lazy(() => import('./features/Muslim/Index').then(module => ({ default: module.MuslimScreen }))) },
   muslim_prayer: { title: 'مواقيت الصلاة', component: lazy(() => import('./features/Muslim/Prayer/Index').then(module => ({ default: module.PrayerScreen }))) },
@@ -29,6 +30,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   account: { title: 'الحساب', component: lazy(() => import('./features/Account/Index').then(module => ({ default: module.AccountScreen }))) },
   dashboard: { title: 'لوحة التحكم', component: lazy(() => import('./features/Dashboard/Index').then(module => ({ default: module.DashboardScreen }))) },
   places_admin: { title: 'إدارة أماكن مشوار', component: lazy(() => import('./features/Places/Admin').then(module => ({ default: module.PlacesAdminScreen }))) },
+  guesswho_admin: { title: 'إدارة من هو؟', component: lazy(() => import('./features/GuessWho/Admin').then(module => ({ default: module.GuessWhoAdminScreen }))) },
   transit_admin: { title: 'إدارة النقل', component: lazy(() => import('./features/TransitAdmin/Index').then(module => ({ default: module.TransitAdminScreen }))) },
   alignment: { title: 'مخطط المحاور', component: lazy(() => import('./features/Alignment/Index').then(module => ({ default: module.AlignmentScreen }))) }
 };

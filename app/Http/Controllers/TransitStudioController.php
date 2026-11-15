@@ -353,6 +353,8 @@ class TransitStudioController extends Controller
         }
 
         $route->status = 'disapproved';
+        // Only this draft's review may put the route back (see Route::booted).
+        $route->withdrawn_for_draft_id = (int) $draftId;
         $route->save();
 
         TransitRouteLog::create([

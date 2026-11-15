@@ -24,6 +24,22 @@ class Route extends Model
         'user_id',
     ];
 
+    /**
+     * The pending edit that took this route off the map, if any, is recorded
+     * in `withdrawn_for_draft_id` and only that edit's review may restore it.
+     * Any status change that does not set the column itself clears it, so a
+     * later decision (an admin hiding or republishing the route, a combine or
+     * split) is never undone by an old edit's review ending.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Route $route) {
+            if ($route->isDirty('status') && ! $route->isDirty('withdrawn_for_draft_id')) {
+                $route->withdrawn_for_draft_id = null;
+            }
+        });
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

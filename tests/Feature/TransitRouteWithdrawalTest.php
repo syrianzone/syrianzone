@@ -83,6 +83,50 @@ test('rejecting a suggestion does not republish a route an admin had withdrawn',
     expect($route->fresh()->status)->toBe('disapproved');
 });
 
+test('withdrawing one suggestion does not undo another editor\'s pending withdrawal', function () {
+    // A user files suggestion A, then an editor's edit B takes the route off
+    // the map. Withdrawing A must not republish the route while B is pending.
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs');
+    $user = User::factory()->create();
+    $editor = moduleStaff('transit');
+
+    $suggestionA = $this->actingAs($user)
+        ->postJson('/api/v1/studio/routes', editPayload($route))
+        ->assertCreated()
+        ->json('id');
+    $editB = $this->actingAs($editor)
+        ->postJson('/api/v1/studio/routes', editPayload($route))
+        ->assertCreated()
+        ->json('id');
+    expect($route->fresh()->status)->toBe('disapproved');
+
+    $this->actingAs($user)->deleteJson("/api/v1/studio/routes/{$suggestionA}")->assertOk();
+    expect($route->fresh()->status)->toBe('disapproved');
+
+    app(TransitAdminService::class)->rejectDraft(RouteDraft::find($editB), 'لا', null);
+    expect($route->fresh()->status)->toBe('published');
+});
+
+test('an admin status change after a withdrawal is not undone when the edit ends', function () {
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs');
+    $editor = moduleStaff('transit');
+
+    $edit = $this->actingAs($editor)
+        ->postJson('/api/v1/studio/routes', editPayload($route))
+        ->assertCreated()
+        ->json('id');
+
+    // An admin hides the route, then disapproves it again for their own reasons.
+    $service = app(TransitAdminService::class);
+    $service->setRouteStatus($route->fresh(), 'hidden', null);
+    $service->setRouteStatus($route->fresh(), 'disapproved', null);
+
+    $service->rejectDraft(RouteDraft::find($edit), 'لا', null);
+    expect($route->fresh()->status)->toBe('disapproved');
+});
+
 test('public transit search returns only published routes and their stops', function () {
     seedCity('damascus');
     if (DB::connection()->getDriverName() === 'sqlite') {

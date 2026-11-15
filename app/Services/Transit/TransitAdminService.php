@@ -240,24 +240,18 @@ class TransitAdminService
      * Put a route back on the map when the edit that took it offline is
      * rejected or withdrawn.
      *
-     * Only a route this draft's review actually withdrew is restored. A route
-     * an admin had disapproved for its own reasons stays off the map, or
-     * anyone could republish it by filing an edit that then gets rejected.
+     * Only a route this draft withdrew is restored: the route must still be
+     * off the map on behalf of this exact draft. A route an admin disapproved
+     * for its own reasons, or one another pending edit withdrew, stays off the
+     * map, or ending one suggestion's review could republish it.
      */
     public function restoreLinkedRoute(RouteDraft $draft, ?int $actorId): void
     {
         $route = Route::find($draft->route_id);
 
-        if ($route === null || $route->status !== 'disapproved') {
-            return;
-        }
-
-        $withdrawnForThisReview = TransitRouteLog::where('route_id', $route->id)
-            ->where('action', 'unpublished_for_edit')
-            ->where('created_at', '>=', $draft->created_at)
-            ->exists();
-
-        if (! $withdrawnForThisReview) {
+        if ($route === null
+            || $route->status !== 'disapproved'
+            || (int) $route->withdrawn_for_draft_id !== (int) $draft->id) {
             return;
         }
 

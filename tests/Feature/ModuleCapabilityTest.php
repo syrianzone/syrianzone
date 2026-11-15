@@ -257,12 +257,12 @@ it('keeps a full-catalogue account and superadmin unaffected', function () {
 
     $this->actingAs(User::factory()->withPermissions(PermissionCatalogue::all())->create())
         ->deleteJson("/api/v1/admin/syofficial/categories/{$category->id}")
-        ->assertRedirect();
+        ->assertOk()->assertJsonPath('success', true);
 
     $second = OfficialCategory::factory()->create();
     $this->actingAs(User::factory()->create(['role' => 'superadmin']))
         ->deleteJson("/api/v1/admin/syofficial/categories/{$second->id}")
-        ->assertRedirect();
+        ->assertOk()->assertJsonPath('success', true);
 });
 
 it('sends an unauthenticated api caller to json 401 rather than a login redirect', function () {

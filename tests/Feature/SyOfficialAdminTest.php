@@ -173,7 +173,7 @@ it('reorders entities through the sortable list endpoint', function () {
                 ['id' => $first->id, 'order_column' => 2],
             ],
         ])
-        ->assertRedirect();
+        ->assertOk()->assertJsonPath('success', true);
 
     expect($first->fresh()->order_column)->toBe(2)
         ->and($second->fresh()->order_column)->toBe(1);

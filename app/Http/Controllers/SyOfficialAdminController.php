@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondsToAdminMutations;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -17,6 +19,8 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
  */
 class SyOfficialAdminController extends Controller
 {
+    use RespondsToAdminMutations;
+
     public function __construct(private readonly SyOfficialDirectoryService $directory) {}
 
     public function renderIndex()
@@ -27,7 +31,7 @@ class SyOfficialAdminController extends Controller
         ]);
     }
 
-    public function storeCategory(Request $request): RedirectResponse
+    public function storeCategory(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'required|string|max:64|unique:official_categories,id|alpha_dash',
@@ -39,10 +43,10 @@ class SyOfficialAdminController extends Controller
 
         $this->directory->createCategory($validated);
 
-        return redirect()->back()->with('success', 'تم إضافة الفئة بنجاح');
+        return $this->adminMutationResponse('تم إضافة الفئة بنجاح');
     }
 
-    public function updateCategory(Request $request, string $id): RedirectResponse
+    public function updateCategory(Request $request, string $id): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'label_ar' => 'required|string|max:255',
@@ -53,17 +57,17 @@ class SyOfficialAdminController extends Controller
 
         $this->directory->updateCategory($id, $validated);
 
-        return redirect()->back()->with('success', 'تم تحديث الفئة بنجاح');
+        return $this->adminMutationResponse('تم تحديث الفئة بنجاح');
     }
 
-    public function destroyCategory(string $id): RedirectResponse
+    public function destroyCategory(string $id): JsonResponse|RedirectResponse
     {
         $this->directory->deleteCategory($id);
 
-        return redirect()->back()->with('success', 'تم حذف الفئة بنجاح');
+        return $this->adminMutationResponse('تم حذف الفئة بنجاح');
     }
 
-    public function storeEntity(Request $request): RedirectResponse
+    public function storeEntity(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'required|string|max:128|unique:official_entities,id|alpha_dash',
@@ -84,14 +88,14 @@ class SyOfficialAdminController extends Controller
             $request->file('image_file'),
         );
 
-        return redirect()->back()->with('success', 'تم إضافة الجهة الرسمية بنجاح');
+        return $this->adminMutationResponse('تم إضافة الجهة الرسمية بنجاح');
     }
 
     /**
      * Registered for both POST and PUT. The Inertia form posts, the agent-facing
      * convention uses PUT; same handler either way.
      */
-    public function updateEntity(Request $request, string $id): RedirectResponse
+    public function updateEntity(Request $request, string $id): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'category_id' => 'required|exists:official_categories,id',
@@ -116,17 +120,17 @@ class SyOfficialAdminController extends Controller
             $request->file('image_file'),
         );
 
-        return redirect()->back()->with('success', 'تم تحديث البيانات بنجاح');
+        return $this->adminMutationResponse('تم تحديث البيانات بنجاح');
     }
 
-    public function destroyEntity(string $id): RedirectResponse
+    public function destroyEntity(string $id): JsonResponse|RedirectResponse
     {
         $this->directory->deleteEntity($id);
 
-        return redirect()->back()->with('success', 'تم حذف الجهة الرسمية بنجاح');
+        return $this->adminMutationResponse('تم حذف الجهة الرسمية بنجاح');
     }
 
-    public function reorderCategories(Request $request): RedirectResponse
+    public function reorderCategories(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -136,10 +140,10 @@ class SyOfficialAdminController extends Controller
 
         $this->directory->reorderCategories($validated['orders']);
 
-        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
+        return $this->adminMutationResponse('تم إعادة الترتيب بنجاح');
     }
 
-    public function reorderEntities(Request $request): RedirectResponse
+    public function reorderEntities(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -149,6 +153,6 @@ class SyOfficialAdminController extends Controller
 
         $this->directory->reorderEntities($validated['orders']);
 
-        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
+        return $this->adminMutationResponse('تم إعادة الترتيب بنجاح');
     }
 }

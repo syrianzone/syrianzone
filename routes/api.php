@@ -32,7 +32,17 @@ use App\Http\Controllers\SiteNavigationAdminController;
 use App\Http\Controllers\TransitStudioController;
 use App\Http\Controllers\UserSettingsController;
 use App\Http\Controllers\WeatherController;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+
+foreach (['native-google-start' => 10, 'native-google-exchange' => 20] as $limiter => $attempts) {
+    RateLimiter::for($limiter, fn (Request $request) => Limit::perMinute($attempts)->by($request->ip())->response(
+        fn (Request $request, array $headers) => response()->json(['message' => 'محاولات تسجيل الدخول كثيرة. يرجى المحاولة لاحقاً.'], 429, $headers)
+            ->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer'),
+    ));
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -96,6 +106,10 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
 
         $googleTokenRoutes('/google/token', 'api.v1.auth.google.token');
         $googleTokenRoutes('/google', null);
+        Route::post('/google/native/token', [AuthController::class, 'nativeGoogleToken'])
+            ->middleware('throttle:native-google-exchange')->name('api.v1.auth.google.native.token');
+        Route::post('/superadmin/token', [AuthController::class, 'superadminToken'])
+            ->name('api.v1.auth.superadmin.token');
         Route::get('/user', [AuthController::class, 'user'])
             ->middleware(['api_user', 'throttle:60,1'])
             ->name('api.v1.auth.user');
@@ -435,3 +449,8 @@ $pollLeaderboardRoutes(null);
 Route::middleware('throttle:voting')->group(fn () => $pollBallotRoutes('/submit', null));
 
 $publicWidgetRoutes(null);
+
+// Shared public game actions and canonical authenticated administration.
+$guessWhoRoutes = require __DIR__.'/guesswho.php';
+Route::prefix('v1/guesswho')->middleware('api_user')->group(fn () => $guessWhoRoutes('rooms', 'actions', 'api.v1.guesswho.'));
+require __DIR__.'/admin-api.php';

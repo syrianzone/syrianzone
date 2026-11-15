@@ -1,8 +1,11 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 test('POST /api/v1/auth/google/token exchanges a valid Google id_token or access_token into the shared user pool', function () {
     Config::set('services.google.client_id', 'web-client-id.apps.googleusercontent.com');
@@ -233,13 +236,13 @@ test('GET /api/v1/navigation and superadmin PUT /api/v1/admin/navigation manage 
 
     // 2. Non-superadmin cannot update navigation catalog
     $normalUser = User::factory()->create();
-    $this->actingAs($normalUser)
+    $this->actingAs($normalUser, 'sanctum')
         ->putJson('/api/v1/admin/navigation', ['items' => []])
         ->assertForbidden();
 
     // 3. Superadmin can update items, hide a built-in item, and add subCategories
     $superadmin = User::factory()->create(['role' => 'superadmin']);
-    $this->actingAs($superadmin)
+    $this->actingAs($superadmin, 'web')
         ->get('/admin/navigation')
         ->assertOk();
 
@@ -280,7 +283,7 @@ test('GET /api/v1/navigation and superadmin PUT /api/v1/admin/navigation manage 
         ],
     ];
 
-    $this->actingAs($superadmin)
+    $this->actingAs($superadmin, 'sanctum')
         ->putJson('/api/v1/admin/navigation', ['items' => $customItems])
         ->assertOk();
 
@@ -299,7 +302,7 @@ test('GET /api/v1/navigation and superadmin PUT /api/v1/admin/navigation manage 
         ->and(collect($allPublic)->firstWhere('id', 'compass')['enabled'])->toBeFalse();
 
     // 6. Resetting with empty array restores default catalog (compass enabled again)
-    $this->actingAs($superadmin)
+    $this->actingAs($superadmin, 'sanctum')
         ->putJson('/api/v1/admin/navigation', ['items' => []])
         ->assertOk();
 
@@ -307,7 +310,7 @@ test('GET /api/v1/navigation and superadmin PUT /api/v1/admin/navigation manage 
 });
 
 test('user-facing /api/v1/* write routes live in api group without unconditional web CSRF and accept Bearer tokens', function () {
-    \Illuminate\Support\Facades\Storage::fake('public');
+    Storage::fake('public');
 
     $routeNames = [
         'api.v1.places.store',
@@ -336,7 +339,7 @@ test('user-facing /api/v1/* write routes live in api group without unconditional
     ];
 
     foreach ($routeNames as $name) {
-        $route = \Illuminate\Support\Facades\Route::getRoutes()->getByName($name);
+        $route = Route::getRoutes()->getByName($name);
         expect($route)->not->toBeNull("Missing named route {$name}");
         expect($route->middleware())->toContain('api')
             ->not->toContain('web');
@@ -353,7 +356,7 @@ test('user-facing /api/v1/* write routes live in api group without unconditional
             'description' => 'مقهى تاريخي قديم في دمشق القديمة قرب الجامع الأموي',
             'lat' => 33.5104,
             'lng' => 36.2913,
-            'photos' => [\Illuminate\Http\UploadedFile::fake()->image('photo.jpg', 640, 480)],
+            'photos' => [UploadedFile::fake()->image('photo.jpg', 640, 480)],
         ], ['Accept' => 'application/json'])
         ->assertCreated()
         ->assertJsonPath('status', 'pending');
@@ -370,4 +373,3 @@ test('user-facing /api/v1/* write routes live in api group without unconditional
         ->assertOk()
         ->assertJsonPath('saved', true);
 });
-

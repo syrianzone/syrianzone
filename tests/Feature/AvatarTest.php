@@ -7,6 +7,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
 function fakeGoogleLogin(string $email): void {
+  test()->withSession(['state' => 'avatar-google-state']);
   $provider = Mockery::mock(\Laravel\Socialite\Two\GoogleProvider::class);
   $provider->shouldReceive('stateless')->andReturnSelf();
   $provider->shouldReceive('user')->andReturn((new SocialiteUser)->setRaw([])->map([
@@ -137,7 +138,7 @@ test('google login does not clobber a custom avatar', function () {
   $custom = $user->fresh()->avatar_url;
 
   fakeGoogleLogin($user->email);
-  $this->get('/auth/google/callback')->assertRedirect();
+  $this->get('/auth/google/callback?state=avatar-google-state')->assertRedirect();
 
   expect($user->fresh()->avatar_url)->toBe($custom);
 });
@@ -147,7 +148,7 @@ test('google login still refreshes a google-hosted avatar', function () {
   $user = User::factory()->create(['avatar_url' => 'https://lh3.googleusercontent.com/a/stale']);
 
   fakeGoogleLogin($user->email);
-  $this->get('/auth/google/callback')->assertRedirect();
+  $this->get('/auth/google/callback?state=avatar-google-state')->assertRedirect();
 
   expect($user->fresh()->avatar_url)->toBe('https://lh3.googleusercontent.com/fresh-avatar');
 });
@@ -166,7 +167,7 @@ test('google login keeps a display name the user chose', function () {
   $provider->shouldReceive('user')->andReturn($google);
   \Laravel\Socialite\Facades\Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
 
-  $this->get('/auth/google/callback');
+  $this->withSession(['state' => 'avatar-google-state'])->get('/auth/google/callback?state=avatar-google-state');
 
   expect($user->fresh()->name)->toBe('macdoos');
 });

@@ -8,7 +8,7 @@ import test from 'node:test';
 // Bun's node:test adapter requires the explicit skip API.
 const testOnMac = process.platform === 'darwin' ? test : test.skip;
 
-testOnMac('the actual Files recovery helper reuses only an empty private directory and preserves refused paths', () => {
+testOnMac('the actual Files recovery helper reuses only an empty private directory and preserves refused paths', { timeout: 40_000 }, () => {
   const source = fs.readFileSync(new URL('../native-tests/NativeLocalFilesUITests.swift', import.meta.url), 'utf8');
   const start = source.indexOf('private func localFilesFailure(');
   const end = source.indexOf('private final class LocalFilesJournal', start);

@@ -17,21 +17,12 @@ import {
 import Svg, { Circle, Rect } from 'react-native-svg';
 import { createSvgImageFile, shareFile, shareSvgPng } from '../src/platform/files';
 import { imagePixelSize } from './image-header';
-interface NativeAudioStatus { token: number; seconds: number; duration: number; listenedSeconds: number; playing: boolean; loading: boolean; loaded: boolean; ended: boolean; error: string | null; sleepUntil: number | null }
-interface NativeAudioPort {
-  load(url: string, seconds: number, token: number): Promise<void>;
-  play(): Promise<void>; pause(): Promise<void>; stop(): Promise<void>;
-  seek(seconds: number, token: number): Promise<void>;
-  volume(value: number, muted: boolean): Promise<void>;
-  sleep(until: number | null): Promise<void>;
-  metadata(title: string, artist: string): Promise<void>;
-  release(): Promise<void>;
-}
+import type { NativeAudioPort, NativeAudioStatus } from '../src/platform/quran/engine';
 import { zipEntryPaths } from './zip-directory';
 import { NativePicker, NativeSlider, NativeToggle } from '../src/ui/native';
 import { ArabicInputFixture } from './arabic-input-fixture';
 
-
+import { AvatarPickerProbe } from './avatar-picker-probe';
 import { SearchFieldFixture } from './search-field-fixture';
 import { IconActionHitFixture } from './icon-action-hit-fixture';
 
@@ -460,12 +451,12 @@ export function AdapterFixture(): React.JSX.Element {
         <Button testID="adapter.tab.files" title="Files" onPress={() => setTab('files')} />
         <Button testID="adapter.tab.audio" title="Audio" onPress={() => setTab('audio')} />
         <Button testID="adapter.tab.inputs" title="Inputs" onPress={() => setTab('inputs')} />
-        
+        <Button testID="adapter.tab.avatar" title="Avatar" onPress={() => setTab('avatar')} />
         
         <Button testID="adapter.tab.search" title="Find" onPress={() => setTab('search')} />
         <Button testID="adapter.tab.icon-hit" title="Icons" onPress={() => setTab('icon-hit')} />
       </View>
-      {tab === 'icon-hit' ? <IconActionHitFixture /> : tab === 'search' ? <SearchFieldFixture /> : tab === 'inputs' ? <ArabicInputFixture /> : tab === 'files' ? (
+      {tab === 'icon-hit' ? <IconActionHitFixture /> : tab === 'search' ? <SearchFieldFixture /> : tab === 'avatar' ? <AvatarPickerProbe /> : tab === 'inputs' ? <ArabicInputFixture /> : tab === 'files' ? (
         <>
           <NativeToggle title="تحقق المفتاح الأصلي" value={toggleValue} onChange={value => {
             setToggleEvents(events => [...events, `${typeof value}:${String(value)}`].slice(-4));

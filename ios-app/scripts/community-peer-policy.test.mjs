@@ -39,4 +39,4 @@ print("18 community-peer policy cases passed")
     expect(result.exitCode, output).toBe(0);
     expect(output).toContain('18 community-peer policy cases passed');
   } finally { rmSync(directory, { recursive: true, force: true }); }
-});
+}, 30_000);

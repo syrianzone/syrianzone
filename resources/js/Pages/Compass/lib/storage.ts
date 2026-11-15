@@ -55,6 +55,7 @@ export function addResult(r: CompassResult) {
 export function clearLocal() {
   if (typeof window === 'undefined') return;
   try {
+    removePendingResult();
     localStorage.removeItem(KEY_PROGRESS);
     localStorage.removeItem(KEY_RESULTS);
   } catch {}
@@ -86,11 +87,17 @@ export function removeLocalResult(id: string | number | undefined | null): Compa
   if (typeof window === 'undefined' || id == null) return all;
   const kept = all.filter((r) => String(r.id) !== String(id));
   try {
+    removePendingResult(id);
     localStorage.setItem(KEY_RESULTS, JSON.stringify(kept));
   } catch {
     return null;
   }
   return kept;
+}
+
+function removePendingResult(id?: string | number | null): void {
+  const pending = safeParse<{ id?: string | number } | null>(localStorage.getItem(KEY_PENDING_SAVE), null);
+  if (id == null || (pending && String(pending.id) === String(id))) localStorage.removeItem(KEY_PENDING_SAVE);
 }
 
 /** Queue a completed result to be saved to the account once the user is

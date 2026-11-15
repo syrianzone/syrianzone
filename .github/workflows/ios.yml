@@ -1,0 +1,111 @@
+name: iOS app
+
+on:
+  pull_request:
+    paths:
+      - 'ios-app/**'
+      - 'resources/data/places.json'
+      - 'resources/data/transit.json'
+      - 'resources/data/search-fold.json'
+      - 'public/icons/**'
+      - '.github/workflows/ios.yml'
+  push:
+    branches: [ios]
+    paths:
+      - 'ios-app/**'
+      - 'resources/data/places.json'
+      - 'resources/data/transit.json'
+      - 'resources/data/search-fold.json'
+      - 'public/icons/**'
+      - '.github/workflows/ios.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: '1.3.11'
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, intl, zip
+          coverage: none
+      - name: Install PHP fixture dependencies
+        working-directory: .
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts --no-plugins
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bunx expo install --check
+      - run: bun audit
+      - run: bunx expo export --platform ios
+      - run: bun run benchmark
+
+  simulator:
+    runs-on: xcode-27
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: '1.3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Select newest Duo-capable Xcode
+        run: |
+          node --input-type=module <<'NODE'
+          import { readdirSync, appendFileSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          import { assertSdkSupport } from './scripts/simulator.mjs';
+          const candidates = readdirSync('/Applications').filter(name => /^Xcode.*\.app$/.test(name)).flatMap(name => {
+            const directory = `/Applications/${name}/Contents/Developer`;
+            try {
+              const sdk = execFileSync('xcrun', ['--sdk', 'iphonesimulator', '--show-sdk-version'], { env: { ...process.env, DEVELOPER_DIR: directory }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+              assertSdkSupport(sdk);
+              return [{ directory, sdk }];
+            } catch { return []; }
+          }).sort((first, second) => second.sdk.localeCompare(first.sdk, undefined, { numeric: true }));
+          if (!candidates[0]) throw new Error('No installed Xcode provides iOS Simulator SDK 27.1 or later.');
+          appendFileSync(process.env.GITHUB_ENV, `DEVELOPER_DIR=${candidates[0].directory}\n`);
+          console.log(`Selected ${candidates[0].directory}, iOS SDK ${candidates[0].sdk}`);
+          NODE
+      - name: Inspect Apple SDKs
+        run: xcodebuild -version && xcodebuild -showsdks
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, intl, zip
+          coverage: none
+      - name: Install PHP fixture dependencies
+        working-directory: .
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts --no-plugins
+      - run: bun install --frozen-lockfile
+      - name: Check source and Mac Swift host integrations
+        run: bun run check
+      - name: Require Duo SDK and prepare native project
+        run: bun run ios:prepare
+      - name: Install native dependencies
+        run: pod install --project-directory=ios
+      - name: Build universal simulator app
+        run: >-
+          xcodebuild -jobs 2 -workspace ios/SyrianZone.xcworkspace
+          -scheme SyrianZone -configuration Release -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath .expo/build
+          CODE_SIGNING_ALLOWED=NO build
+      - name: Catch native startup crashes
+        run: bun run ios:smoke

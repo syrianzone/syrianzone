@@ -1,0 +1,125 @@
+diff --git a/ios/PusherWebsocketReactNative.swift b/ios/PusherWebsocketReactNative.swift
+index 996885091394e2a5d87b5a33e34062abe1f9f3c1..907a00d58d9ac43867c717857c3b7cf03f515f61 100644
+--- a/ios/PusherWebsocketReactNative.swift
++++ b/ios/PusherWebsocketReactNative.swift
+@@ -1,5 +1,7 @@
+ import PusherSwift
+ import Foundation
++import Network
++import NWWebSocket
+ 
+ @objc(PusherWebsocketReactNative)
+ @objcMembers class PusherWebsocketReactNative: RCTEventEmitter, PusherDelegate, Authorizer {
+@@ -38,6 +40,16 @@ import Foundation
+     }
+ 
+     func initialize(_ args:[String: Any], resolve:RCTPromiseResolveBlock,reject:RCTPromiseRejectBlock) {
++        let origin: String?
++        if let value = args["origin"] {
++            guard let validated = PusherOrigin.validated(value) else {
++                reject("invalid_origin", "Origin must be a canonical HTTPS origin.", nil)
++                return
++            }
++            origin = validated
++        } else {
++            origin = nil
++        }
+         if PusherWebsocketReactNative.pusher != nil {
+             PusherWebsocketReactNative.pusher.unsubscribeAll()
+             PusherWebsocketReactNative.pusher.disconnect()
+@@ -87,6 +99,16 @@ import Foundation
+             activityTimeout: activityTimeout
+         )
+         PusherWebsocketReactNative.pusher = Pusher(key: args["apiKey"] as! String, options: options)
++        if let origin {
++            let connection = PusherWebsocketReactNative.pusher.connection
++            let webSocketOptions = NWWebSocket.defaultOptions
++            webSocketOptions.setSubprotocols(["pusher-channels-protocol-7"])
++            webSocketOptions.setAdditionalHeaders([("Origin", origin)])
++            // Pusher already constructed its original socket from this same URL.
++            let socket = NWWebSocket(url: URL(string: connection.url)!, options: webSocketOptions)
++            socket.delegate = connection
++            connection.socket = socket
++        }
+         if args["maxReconnectionAttempts"] is Int {
+             PusherWebsocketReactNative.pusher.connection.reconnectAttemptsMax = (args["maxReconnectionAttempts"] as! Int)
+         }
+@@ -275,3 +297,22 @@ import Foundation
+         resolve(nil)
+     }
+ }
++
++// Keep this Foundation-only validator in the existing Pod source target.
++enum PusherOrigin {
++  static func validated(_ value: Any) -> String? {
++    guard let origin = value as? String, origin.utf8.count <= 2048,
++      origin.utf8.allSatisfy({ $0 > 0x20 && $0 < 0x7f }),
++      let parts = URLComponents(string: origin), parts.scheme == "https",
++      parts.user == nil, parts.password == nil, parts.path.isEmpty,
++      parts.query == nil, parts.fragment == nil,
++      let host = parts.host, !host.isEmpty else { return nil }
++    if let port = parts.port, !(1...65535).contains(port) { return nil }
++    var canonical = URLComponents()
++    canonical.scheme = "https"
++    canonical.host = host.lowercased()
++    canonical.port = parts.port == 443 ? nil : parts.port
++    guard canonical.string == origin else { return nil }
++    return origin
++  }
++}
+diff --git a/lib/commonjs/index.js b/lib/commonjs/index.js
+index aa56aac382e542a490afbb934cf34c9cd3a5ae3b..6a8e563aeba663286b3fbba4e326354933a5d394 100644
+--- a/lib/commonjs/index.js
++++ b/lib/commonjs/index.js
+@@ -194,6 +194,7 @@ class Pusher {
+     });
+     return PusherWebsocketReactNative.initialize({
+       apiKey: args.apiKey,
++      ...(args.origin === undefined ? {} : { origin: args.origin }),
+       cluster: args.cluster,
+       host: args.host,
+       wsPort: args.wsPort,
+diff --git a/lib/module/index.js b/lib/module/index.js
+index 94a05899a59418cf0b02464f99c848a2fd12827c..cc57644fcac963b6e2d753b072c3e9f889b0f690 100644
+--- a/lib/module/index.js
++++ b/lib/module/index.js
+@@ -185,6 +185,7 @@ export class Pusher {
+     });
+     return PusherWebsocketReactNative.initialize({
+       apiKey: args.apiKey,
++      ...(args.origin === undefined ? {} : { origin: args.origin }),
+       cluster: args.cluster,
+       host: args.host,
+       wsPort: args.wsPort,
+diff --git a/lib/typescript/index.d.ts b/lib/typescript/index.d.ts
+index a38add69a0df6d26d469a8c98b3116240c3f0b19..6e76cd03fce0e64db615c8b6edc04d618214ee34 100644
+--- a/lib/typescript/index.d.ts
++++ b/lib/typescript/index.d.ts
+@@ -57,6 +57,7 @@ export declare class Pusher {
+     private addListener;
+     init(args: {
+         apiKey: string;
++        origin?: string;
+         cluster?: string;
+         host?: string;
+         wsPort?: Number;
+diff --git a/src/index.tsx b/src/index.tsx
+index 096e25646f56479688801d7d05a2886739d80d14..fc480e28cba8b183f0749acc9c4982ca6695f3ef 100644
+--- a/src/index.tsx
++++ b/src/index.tsx
+@@ -145,6 +145,7 @@ export class Pusher {
+ 
+   public init(args: {
+     apiKey: string;
++    origin?: string;
+     cluster?: string;
+     host?: string;
+     wsPort?: Number;
+@@ -281,6 +282,7 @@ export class Pusher {
+ 
+     return PusherWebsocketReactNative.initialize({
+       apiKey: args.apiKey,
++      ...(args.origin === undefined ? {} : { origin: args.origin }),
+       cluster: args.cluster,
+       host: args.host,
+       wsPort: args.wsPort,

@@ -175,7 +175,7 @@ const SHARED_TO_DOMAIN_ALLOWED = [
   'Components/GlobalSearch.tsx -> Domain/quran/targetAyah.ts',
   'Layouts/MainLayout.tsx -> Domain/quran/RadioMiniPlayer.tsx',
   'Layouts/MainLayout.tsx -> Domain/quran/usageStore.ts',
-  'Layouts/MainLayout.tsx -> Domain/settings/SettingsSync.tsx',
+  'Layouts/MainLayout.tsx -> Domain/settings/SettingsSyncView.tsx',
 ];
 
 /**

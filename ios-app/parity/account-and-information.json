@@ -1,0 +1,1349 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-11-14T18:38:55.394599+00:00",
+  "sourceRevision": "b1da794152dde5824909335d7ced4522b06aa31e",
+  "scope": [
+    "Account",
+    "Dashboard and poll management",
+    "About",
+    "Privacy",
+    "Terms",
+    "Stats",
+    "AssetManager",
+    "Navigation",
+    "SitePopup",
+    "ApiTokens"
+  ],
+  "evidencePolicy": "Source contracts, isolated tests and completed native interactions against the isolated local fixture are recorded separately. Public native proof is attributed to root. No production account/admin mutation, upload, deletion, token issuance or deployment was performed.",
+  "sections": [
+    {
+      "id": "account",
+      "title": "Account profile, avatar and deletion",
+      "sourceFiles": [
+        "resources/js/Pages/Dashboard/Index.tsx",
+        "app/Http/Controllers/DashboardController.php",
+        "app/Http/Controllers/AuthController.php",
+        "app/Services/Auth/SuperadminPasswordLogin.php",
+        "app/Services/Auth/MobileSessionTokens.php",
+        "app/Services/Auth/NativeGoogleBroker.php",
+        "app/Services/Auth/GoogleAccountResolver.php"
+      ],
+      "features": [
+        "Google account sign-in through the existing website client, native system browser, fixed app callback and one-use S256-bound mobile exchange. No separate Google iOS client is needed.",
+        "Name and email editing, required/length validation, canonical server refresh, Arabic field errors and first invalid-field focus.",
+        "Photo library selection/cancellation, square crop, JPEG/PNG/WebP,4 MiB, 64 to 6000 pixel validation, multipart upload, initials fallback for absent or broken image.",
+        "Destructive account deletion confirmation, confirmed server response, generation-bound session clearing.",
+        "Deletion is soft delete, revokes access tokens and removes hosted avatar. Public contributions can remain or transfer. Google login can restore the account. Native copy does not promise permanent PII erasure.",
+        "Session changes discard private profile draft and asynchronous stale responses cannot adopt another account.",
+        "Administrator password sign-in initializes expanded for account mode=superadmin, reuses the strict Google/mobile DTO and Keychain adoption path, clears password after each attempt and respects server Retry-After.",
+        "Canonical production Keychain/SQLite names remain unchanged; every other HTTPS origin uses full SHA256-scoped personal storage, device and game identities."
+      ],
+      "endpoints": [
+        {
+          "method": "PATCH",
+          "path": "/api/v1/account",
+          "response": "{ok:true}",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/account/avatar",
+          "response": "{avatar_url}",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/account",
+          "response": "{ok:true}",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/user",
+          "response": "canonical account",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/superadmin/token",
+          "response": "{token,token_type:Bearer,expires_at,user}",
+          "authentication": "Submitted credentials and actual server panel eligibility; no existing bearer substitution.",
+          "deployment": "Local draft with isolated backend regressions; no production credential request or deployment."
+        },
+        {
+          "method": "GET",
+          "path": "/auth/google/native",
+          "response": "System-browser redirect to the existing web Google client.",
+          "authentication": "Native state and S256 challenge, browser session and upstream Socialite state.",
+          "deployment": "Local implementation, backend rollout and real Google success pending."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/google/native/token",
+          "response": "{token,token_type:Bearer,expires_at,user}",
+          "authentication": "One-use short-lived grant, original native state and verifier; credential-free request.",
+          "deployment": "Local implementation, backend rollout and real Google success pending."
+        }
+      ],
+      "authRequirements": [
+        "Authenticated first-party mobile account.",
+        "No real production profile edit, image upload or deletion was tested."
+      ],
+      "graphics": [
+        "Source account photograph or native initials fallback.",
+        "Native photo picker and crop, SF Symbols."
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/UnifiedDashboardTest.php",
+          "tests/Feature/NativeSuperadminLoginTest.php",
+          "tests/Feature/NativeGoogleBrokerTest.php",
+          "tests/Feature/GoogleAccountResolutionTest.php"
+        ],
+        "nativeWritten": [
+          "src/features/Account/model.test.ts",
+          "src/platform/mobile-login.test.ts",
+          "src/platform/mobile-session-model.test.ts",
+          "src/platform/persistence-scope-model.test.ts",
+          "native-tests/account-fixture-model.test.ts",
+          "native-tests/NativeAccountUITests.swift",
+          "src/platform/native-google.test.ts",
+          "native-tests/NativeGoogleBrokerUITests.swift",
+          "native-tests/NativeSuperadminLoginUITests.swift"
+        ],
+        "requiredNative": [
+          "Authenticated profile errors, cancellation, upload response adoption, logout, soft-delete confirmation and account switching."
+        ],
+        "nativeObserved": [
+          "account-native06 full profile save/reopen persistence, corrected photo-button geometry, picker cancellation, original-profile restore and logout passed.",
+          "account-native06 synthetic Google consent/callback/exchange/native adoption/dashboard/logout and browser cancellation passed. Real Google success and server rollout remain pending.",
+          "account-native06 completed with 5 passes, including one fixture-cleanup case, and 3 failures. account-native07 subsequently passed campaign administration and Home popup geometry.",
+          "password-native12 remained incomplete with an iOS Save Password? sheet exposing Not Now and Save. The later account-password-native16 case passed native login/adoption/dashboard/logout, wrong-password rejection/field clearing and native 429 countdown/disabled controls after bounded local HTTP throttle setup. Cleanup and product restoration passed."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/Account/Index.tsx",
+        "src/features/Account/model.ts",
+        "src/platform/uploads.ts",
+        "src/features/Account/SuperadminSignIn.tsx",
+        "src/platform/mobile-login.ts",
+        "src/platform/mobile-session-model.ts",
+        "src/platform/persistence.ts",
+        "src/platform/persistence-scope-model.ts"
+      ],
+      "gaps": [
+        "Website-mediated native handoff passes synthetic native success and cancellation. Real Google success and deployment remain unverified.",
+        "The standard native password flow passed account-password-native16. Six consecutive native attempts and deep-link expansion of the administrator panel remain unverified.",
+        "Avatar upload, deletion and account-switch persistence need full native proof."
+      ],
+      "implementationStatus": "Implemented with native local profile, synthetic Google handoff/cancellation and eligible-administrator password flow proof. Avatar upload, deletion, deep-link panel expansion and real Google success remain pending.",
+      "subsections": []
+    },
+    {
+      "id": "dashboard",
+      "title": "Dashboard and full poll management",
+      "sourceFiles": [
+        "resources/js/Pages/Dashboard/Index.tsx",
+        "resources/js/Domain/polls/AdminPollManager.tsx",
+        "app/Http/Controllers/DashboardController.php",
+        "app/Http/Controllers/PollController.php",
+        "app/Http/Controllers/CandidateGroupController.php",
+        "app/Http/Controllers/CandidateController.php",
+        "resources/data/site-modules.json",
+        "resources/data/polls.json"
+      ],
+      "features": [
+        "Source initial-tab priority, profile, submissions and capability-gated polls.",
+        "Own transit submissions, status/history/date, rejected reason, pending withdraw confirmation, edit native Studio and view published native route.",
+        "Poll create, title/slug/activation edit, public native voting and leaderboard navigation, delete confirmation. Core best-ministers cannot be renamed/deleted.",
+        "Source default timezone Europe/Amsterdam is preserved when creating a poll.",
+        "Groups create/enable/disable/delete, active/default status, reorder up/down and choose default.",
+        "Candidates create/edit/delete with name/title/X handle, group, image URL, native image picker/upload and image removal.",
+        "Candidate active/archived/all filter, archive end date/reason/successor from active same-group roster and restore.",
+        "All state-changing actions require their exact server-resolved capability. Full disabled groups and archived candidates use private admin roster API.",
+        "Native capability cards activate only implemented destinations. Remaining remote policy/deployment gaps remain explicit.",
+        "User-administration card consumes authoritative canManageUsers, defaults false for predeployment responses and opens users_admin without client role inference."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/dashboard",
+          "response": "Inertia Dashboard/Index props",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/polls",
+          "response": "all poll summaries including candidate counts",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/polls/{id}?include_archived=1",
+          "response": "full groups and candidates",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "POST/PUT/DELETE",
+          "path": "/api/v1/admin/polls[/{id}]",
+          "response": "committed poll or204",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "POST/PATCH/DELETE",
+          "path": "/api/v1/admin/candidate-groups[/{id}]",
+          "response": "group mutation",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/candidate-groups/reorder",
+          "response": "{groups:[{id,sort_order}]}",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/candidate-groups/{id}/default",
+          "response": "group mutation",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "POST/PUT/DELETE",
+          "path": "/api/v1/admin/candidates[/{id}]",
+          "response": "candidate mutation",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/admin/candidates/{id}/archive|restore",
+          "response": "candidate mutation",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/transit/studio/routes/{id}",
+          "response": "confirmed withdrawal",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        }
+      ],
+      "authRequirements": [
+        "Authenticated account for dashboard.",
+        "polls.create, polls.edit or polls.delete for the matching operation, any one for full roster read.",
+        "Submissions require the originating account and source contribution constraints."
+      ],
+      "graphics": [
+        "Candidate photographs, native status labels, native sheet/date picker."
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/NativeAdminTransportTest.php"
+        ],
+        "nativeWritten": [
+          "src/features/Dashboard/model.test.ts"
+        ],
+        "requiredNative": [
+          "Independent capability fixtures, disabled and archived roster, image cancellation and multipart, destructive confirmation, source default/core guards and stale account response."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/Dashboard/Index.tsx",
+        "src/features/Dashboard/model.ts",
+        "src/features/Dashboard/api.ts",
+        "src/features/Dashboard/PollEditor.tsx",
+        "src/platform/Sheet.tsx"
+      ],
+      "gaps": [
+        "Canonical JSON aliases are local backend changes awaiting production rollout.",
+        "Civic06 passed the granted Transit card. Native11 poll creation stopped before writing after literal-title corruption; scoped source/render corrections need a complete native rerun for poll/group/candidate/ballot flows.",
+        "User12 passed its selected native user CRUD/bulk case. Directory/game administration, remaining user edge cases and submission withdrawals need separate native proof."
+      ],
+      "implementationStatus": "Native implementation with granted Transit entry and selected User12 CRUD/bulk proof. Remaining poll, submission and administration interactions are pending.",
+      "subsections": []
+    },
+    {
+      "id": "about",
+      "title": "About",
+      "sourceFiles": [
+        "resources/js/Pages/About.tsx"
+      ],
+      "features": [
+        "All 6 source sections, full text, cards, credits, resources and footer actions.",
+        "Safe native plain-text blocks, original HTTPS images and validated links.",
+        "About includes all 11 named identities/credits, GitHub current contributor avatars/counts/links and Save to Files brand kit."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/about",
+          "response": "Inertia About contributors",
+          "authentication": "public",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        }
+      ],
+      "authRequirements": [
+        "Public."
+      ],
+      "graphics": [
+        "Original portraits and brand artwork."
+      ],
+      "tests": {
+        "nativeWritten": [
+          "src/features/About/content.test.ts",
+          "src/platform/information-model.test.ts"
+        ],
+        "requiredNative": [
+          "All source paragraphs/credits and actions, broken image, failure/retry and Save to Files."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/About/Index.tsx",
+        "src/features/About/content.json",
+        "src/platform/InformationDocument.tsx"
+      ],
+      "gaps": [
+        "Native public page landing passed parent UI test. Full link, brand-kit and large-text review remains pending."
+      ],
+      "implementationStatus": "Native draft implemented; authenticated or functional native proof remains pending.",
+      "subsections": [
+        {
+          "id": "about.content.1",
+          "title": "عن المساحة السورية (Syrian Zone)",
+          "sourceFiles": [
+            "resources/js/Pages/About.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/About/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "about.content.2",
+          "title": "الفريق المؤسس",
+          "sourceFiles": [
+            "resources/js/Pages/About.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [
+            "https://github.com/hadealahmad.png?size=160",
+            "https://github.com/sb-nour.png?size=160"
+          ],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/About/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "about.content.3",
+          "title": "المساهمون والإسنادات (Contributors)",
+          "sourceFiles": [
+            "resources/js/Pages/About.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/About/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "about.content.4",
+          "title": "مساهمو GitHub",
+          "sourceFiles": [
+            "resources/js/Pages/About.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/About/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "about.content.5",
+          "title": "مشروع مفتوح المصدر (MIT License)",
+          "sourceFiles": [
+            "resources/js/Pages/About.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/About/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "about.content.6",
+          "title": "حقوق الموارد والأيقونات (Attributions)",
+          "sourceFiles": [
+            "resources/js/Pages/About.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/About/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "privacy",
+      "title": "Privacy",
+      "sourceFiles": [
+        "resources/js/Pages/Privacy.tsx"
+      ],
+      "features": [
+        "All 5 source sections, full text, cards, credits, resources and footer actions.",
+        "Safe native plain-text blocks, original HTTPS images and validated links.",
+        "Native copy distinguishes browser analytics preferences from this app, actual coordinate transmission/cache, Keychain/SQLite, MapKit and soft deletion."
+      ],
+      "endpoints": [],
+      "authRequirements": [
+        "Public."
+      ],
+      "graphics": [
+        "Native document layout."
+      ],
+      "tests": {
+        "nativeWritten": [
+          "src/features/About/content.test.ts",
+          "src/platform/information-model.test.ts"
+        ],
+        "requiredNative": [
+          "All source paragraphs/credits and actions, broken image, failure/retry and Save to Files."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/Privacy/Index.tsx",
+        "src/features/Privacy/content.json",
+        "src/platform/InformationDocument.tsx"
+      ],
+      "gaps": [
+        "Native public page landing passed parent UI test. Full link, brand-kit and large-text review remains pending."
+      ],
+      "implementationStatus": "Native draft implemented; authenticated or functional native proof remains pending.",
+      "subsections": [
+        {
+          "id": "privacy.content.1",
+          "title": "مقدمة عامة",
+          "sourceFiles": [
+            "resources/js/Pages/Privacy.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Privacy/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "privacy.content.2",
+          "title": "حسابات المستخدمين والمصادقة (Google OAuth)",
+          "sourceFiles": [
+            "resources/js/Pages/Privacy.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Privacy/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "privacy.content.3",
+          "title": "البيانات التي نقوم بتخزينها",
+          "sourceFiles": [
+            "resources/js/Pages/Privacy.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Privacy/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "privacy.content.4",
+          "title": "ميزات خاصة وصلاحيات المتصفح",
+          "sourceFiles": [
+            "resources/js/Pages/Privacy.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Privacy/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "privacy.content.5",
+          "title": "أدوات الطرف الثالث ومعالجة البيانات",
+          "sourceFiles": [
+            "resources/js/Pages/Privacy.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Privacy/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "terms",
+      "title": "Terms",
+      "sourceFiles": [
+        "resources/js/Pages/Terms.tsx"
+      ],
+      "features": [
+        "All 7 source sections, full text, cards, credits, resources and footer actions.",
+        "Safe native plain-text blocks, original HTTPS images and validated links.",
+        "Source terms preserved, adapting Android-only native wording to the actual iOS app."
+      ],
+      "endpoints": [],
+      "authRequirements": [
+        "Public."
+      ],
+      "graphics": [
+        "Native document layout."
+      ],
+      "tests": {
+        "nativeWritten": [
+          "src/features/About/content.test.ts",
+          "src/platform/information-model.test.ts"
+        ],
+        "requiredNative": [
+          "All source paragraphs/credits and actions, broken image, failure/retry and Save to Files."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/Terms/Index.tsx",
+        "src/features/Terms/content.json",
+        "src/platform/InformationDocument.tsx"
+      ],
+      "gaps": [
+        "Native public page landing passed parent UI test. Full link, brand-kit and large-text review remains pending."
+      ],
+      "implementationStatus": "Native draft implemented; authenticated or functional native proof remains pending.",
+      "subsections": [
+        {
+          "id": "terms.content.1",
+          "title": "قبول الشروط والاستخدام العام",
+          "sourceFiles": [
+            "resources/js/Pages/Terms.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Terms/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "terms.content.2",
+          "title": "حسابات المستخدمين والسلوك المقبول",
+          "sourceFiles": [
+            "resources/js/Pages/Terms.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Terms/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "terms.content.3",
+          "title": "استوديو الترانزيت وحقوق المساهمة",
+          "sourceFiles": [
+            "resources/js/Pages/Terms.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Terms/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "terms.content.4",
+          "title": "دليل \"مشوار\" ومساهمات الأماكن والفنادق",
+          "sourceFiles": [
+            "resources/js/Pages/Terms.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Terms/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "terms.content.5",
+          "title": "الألعاب والسلوك فيها",
+          "sourceFiles": [
+            "resources/js/Pages/Terms.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Terms/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "terms.content.6",
+          "title": "بوصلة سوريا والنتائج المشتركة",
+          "sourceFiles": [
+            "resources/js/Pages/Terms.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Terms/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        },
+        {
+          "id": "terms.content.7",
+          "title": "إخلاء المسؤولية وحدودها",
+          "sourceFiles": [
+            "resources/js/Pages/Terms.tsx"
+          ],
+          "features": [
+            "Preserve every source text block, named credit, card, image and action, with documented native factual corrections."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public."
+          ],
+          "graphics": [],
+          "tests": {
+            "nativeWritten": [
+              "src/features/About/content.test.ts",
+              "src/platform/information-model.test.ts"
+            ],
+            "requiredNative": [
+              "Review full scrollable Arabic document, links and large text."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Terms/content.json"
+          ],
+          "gaps": [
+            "Some actions still require native interaction proof."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stats",
+      "title": "Platform statistics",
+      "sourceFiles": [
+        "resources/js/Pages/Stats.tsx"
+      ],
+      "features": [
+        "Native TierList leaderboard button and native Compass statistics button.",
+        "Existing Google Data Studio report opens through its source external action. An external report is not represented as a completed native analytics implementation."
+      ],
+      "endpoints": [],
+      "authRequirements": [
+        "Public."
+      ],
+      "graphics": [
+        "Original TierList and Compass ProjectIcon artwork."
+      ],
+      "tests": {
+        "existing": [],
+        "requiredNative": [
+          "Verify all source interactions on standard iPhone 17."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/Stats/Index.tsx"
+      ],
+      "gaps": [
+        "Public landing passed parent UI test; report open and native statistics destinations need action proof."
+      ],
+      "implementationStatus": "Native draft implemented; authenticated or functional native proof remains pending.",
+      "subsections": []
+    },
+    {
+      "id": "assets-admin",
+      "title": "Hosted file administration",
+      "sourceFiles": [
+        "resources/js/Pages/Admin/AssetManager/Index.tsx",
+        "resources/js/Pages/Admin/AssetManager/_lib/api.ts",
+        "app/Http/Controllers/AssetUploadController.php"
+      ],
+      "features": [
+        "Cursor pagination, refresh bypass, retry, duplicate-safe append, repeated-cursor failure and loaded-byte total.",
+        "Arabic-folded filename/path search, folder facet with loaded counts, filtered/loaded result count, image thumbnail with failure fallback.",
+        "Native generic file selection or photo selection, actual local-file identity and50 MiB validation, editable folder max 50, upload only after explicit action, confirmed CDN URL copy and visible error.",
+        "Preview through QuickLook, direct URL copy with2 second feedback, individual Save to Files/share, confirmed delete with server refusal surfaced.",
+        "ZIP includes all currently loaded files, regardless of search/folder, preserving nested paths. Progress counts attempted files; per-file failures are listed and successful files form an explicit partial archive.",
+        "Default existing ZIP callers stay atomic and retain their200 file/100 MB limits. Asset backup opts into partial results and bounded available-disk staging.",
+        "Unsafe paths, traversal, normalization/case-fold duplicates and symlink escapes reject. Cached preview/download/ZIP files are removed after presentation completes."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/assets/list",
+          "response": "success,files,total_size,next_cursor,has_more",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/assets/upload",
+          "response": "multipart file+folder, committed URL/path",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/admin/assets/delete",
+          "response": "{path},success",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        }
+      ],
+      "authRequirements": [
+        "assets.manage, authenticated mobile session.",
+        "No production list credentials or mutations were used."
+      ],
+      "graphics": [
+        "Actual remote asset images, native document/photo picker, QuickLook, native share sheet and progress text."
+      ],
+      "tests": {
+        "nativeWritten": [
+          "src/features/AssetManager/model.test.ts",
+          "src/platform/document-model.test.ts"
+        ],
+        "requiredNative": [
+          "Pagination/search/folders, unknown file types, preview dismissal, partial archive failure details and path retention, upload/delete without production writes."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/AssetManager/Index.tsx",
+        "src/features/AssetManager/model.ts",
+        "src/platform/documents.ts",
+        "src/platform/document-model.ts",
+        "src/platform/files.ts",
+        "modules/syrian-files/ios/SyrianFilesModule.swift",
+        "modules/syrian-files/ios/ZipArchive.swift"
+      ],
+      "gaps": [
+        "The shared QuickLook preview/Done adapter passed, but the hosted-file administration caller still needs its own authenticated native preview flow.",
+        "Native document/photo cancellation,50 MiB bound, nested/partial ZIP and actual Save to Files need device proof.",
+        "Guarded alias rollout and authenticated non-production list/upload/delete proof remain pending."
+      ],
+      "implementationStatus": "Native draft implemented; authenticated or functional native proof remains pending.",
+      "subsections": []
+    },
+    {
+      "id": "navigation-admin",
+      "title": "Section and navigation catalogue administration",
+      "sourceFiles": [
+        "resources/js/Pages/Admin/Navigation/Index.tsx",
+        "resources/js/Lib/siteLinks.ts",
+        "app/Http/Controllers/SiteNavigationAdminController.php",
+        "app/Models/SiteSetting.php"
+      ],
+      "features": [
+        "Full private snapshot uses exact Inertia component Admin/Navigation/Index, retaining hidden items and defaults.",
+        "Total/enabled/home/navbar counts, top count 1 to 10, source up/down ordering. Separate-navbar-order values are preserved without invented controls.",
+        "Enable/disable cascades both visibility fields, independent home/navbar visibility while enabled, internal-vs-sister classification.",
+        "Create custom section, edit title/subtitle/ID/href/type/target,35 original icon choices, icon URL/image, child sections and source display choices.",
+        "Built-in IDs cannot change or delete. Custom items delete with confirmation and remove their navbar IDs. Custom rename updates navbar order consistently.",
+        "Up to100 items and30 children; blank child titles are filtered, native/web/external destination, original unknown fields and hidden child fields round-trip.",
+        "Edits remain staged until explicit save. Reset confirms and adopts fresh server defaults. Successful saves adopt committed normalized navigation; failures preserve drafts.",
+        "Permission/session change remounts the panel and closes private editor sheets."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/admin/navigation",
+          "response": "Inertia Admin/Navigation/Index {navigation,defaults}",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/admin/navigation",
+          "response": "{status:ok,navigation} for config or reset:true",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/navigation?include_disabled=1",
+          "response": "private JSON includes hidden items, no defaults",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        }
+      ],
+      "authRequirements": [
+        "site.navigation, authenticated mobile session."
+      ],
+      "graphics": [
+        "All35source icon options verified in order, original flag SVG or HTTPS custom image and shared ProjectIcon."
+      ],
+      "tests": {
+        "nativeWritten": [
+          "src/features/Navigation/model.test.ts",
+          "src/features/Navigation/icons.test.ts"
+        ],
+        "requiredNative": [
+          "Reorder, enable cascade, staged edit and failed save, custom ID/subcategory transitions, built-in guards and reset."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/Navigation/Index.tsx",
+        "src/features/Navigation/model.ts",
+        "src/features/Navigation/icons.json"
+      ],
+      "gaps": [
+        "Native full form/sheets, large text, reset and committed cache refresh need proof.",
+        "Private first-party page guard and JSON alias rollout are local backend drafts."
+      ],
+      "implementationStatus": "Native draft implemented; authenticated or functional native proof remains pending.",
+      "subsections": []
+    },
+    {
+      "id": "site-popup-admin",
+      "title": "Homepage announcement administration",
+      "sourceFiles": [
+        "resources/js/Pages/Admin/SitePopup/Index.tsx",
+        "resources/js/Domain/settings/popup.ts",
+        "resources/data/site-popup.json",
+        "app/Http/Controllers/SitePopupAdminController.php"
+      ],
+      "features": [
+        "Enabled toggle and all title (100), description (500), button (50), dismiss (50) and HTTPS link (2048) fields.",
+        "Explicit save, busy lock, validation, failed-save draft retention and committed server version adoption.",
+        "Each save increments the server version so previously dismissed visitors see the new announcement. Native editor does not invent a preview absent from source.",
+        "Permission/session changes close and clear the private draft."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/site-popup",
+          "response": "SitePopup",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/admin/site-popup",
+          "response": "{success:true,popup:committedVersion}",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        }
+      ],
+      "authRequirements": [
+        "site.popup, authenticated mobile session."
+      ],
+      "graphics": [
+        "Native text fields and SwiftUI toggle/button."
+      ],
+      "tests": {
+        "nativeWritten": [
+          "src/features/SitePopup/model.test.ts",
+          "native-tests/NativeAccountUITests.swift"
+        ],
+        "requiredNative": [
+          "All field limits, invalid HTTPS, busy/rapid save, server error preservation, capability changes and persistent dismissal by committed version."
+        ],
+        "nativeObserved": [
+          "account-native07 passed local administrator dashboard navigation, campaign-title save, reopen persistence and original-title restoration.",
+          "account-native07 passed Home overlay geometry, visit-only quieting without moving Home content and reappearance after relaunch."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/SitePopup/Index.tsx",
+        "src/features/SitePopup/model.ts"
+      ],
+      "gaps": [
+        "Guarded alias/JSON acknowledgment rollout remains pending.",
+        "Every field limit, failure preservation, rapid saves, capability refresh and persistent visitor dismissal by version require separate native proof."
+      ],
+      "implementationStatus": "Implemented with native local campaign-title persistence/restoration and visitor geometry/visit-only quieting proof. Remaining field and boundary checks are pending.",
+      "subsections": []
+    },
+    {
+      "id": "api-tokens-admin",
+      "title": "Agent credential administration",
+      "sourceFiles": [
+        "resources/js/Pages/Admin/ApiTokens/Index.tsx",
+        "resources/js/Pages/Admin/ApiTokens/_lib/api.ts",
+        "app/Http/Controllers/ApiTokenAdminController.php",
+        "app/Http/Middleware/AgentTokensAccess.php",
+        "app/Support/Agents/TokenIssuer.php"
+      ],
+      "features": [
+        "Server-controlled self-service vs superadmin owners, role labels, token name (255 characters), server TTL choices, grouped server capabilities and selected count.",
+        "Issue only offered owner/TTL/capabilities. No wildcard/mobile choice is possible. Server intersects owner capabilities and returns actual abilities/dropped/expiry.",
+        "Plaintext appears once from the issuance reply, explicit copy only, hide action and lost-token guidance. No plaintext persistence, logs or automatic clipboard writes.",
+        "Screen-owned disclosure invalidates in-flight replies on hide/blur/background and remounts on account/permission changes; effect replay regression included.",
+        "Token list includes owner/banned status, abilities, last-use, expiry/expired flag; source200 row backend limit and mobile-session exclusion remain.",
+        "Single revoke confirms; superadmin revoke-all confirms it also ends mobile sessions. Self-service owner restrictions remain server-authoritative.",
+        "Original endpoint/Bearer/MCP connection instructions and audit-log explanation."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/admin/api-tokens",
+          "response": "Inertia Admin/ApiTokens/Index",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/api-tokens",
+          "response": "201 plaintext once,abilities,dropped,expires_at,message",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/admin/api-tokens/{id}",
+          "response": "message",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/admin/users/{userId}/api-tokens",
+          "response": "superadmin revoke-all message",
+          "authentication": "account capability",
+          "deployment": "Local guarded alias draft where noted; no production mutation attempted."
+        }
+      ],
+      "authRequirements": [
+        "Any effective capability for self-service, actual server superadmin policy for other owners/revoke-all.",
+        "New local policy accepts trusted Google mobile session marker. Scoped and wildcard agent tokens remain forbidden, banned accounts forbidden.",
+        "Google exchange and the reviewed superadmin-password flow create first-party mobile sessions; agent TokenIssuer cannot grant mobile."
+      ],
+      "graphics": [
+        "Native grouped permission toggles, token cards and explicit copy."
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/NativeTokenAdministrationTest.php",
+          "tests/Feature/ApiTokenAdminTest.php"
+        ],
+        "nativeWritten": [
+          "src/features/ApiTokens/model.test.ts",
+          "src/features/ApiTokens/disclosure.test.ts"
+        ],
+        "requiredNative": [
+          "Grouped capability/owner/TTL form, secret copy/hide/background/session change, real test-backend issue/revoke and superadmin revoke-all."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/ApiTokens/Index.tsx",
+        "src/features/ApiTokens/model.ts",
+        "src/features/ApiTokens/disclosure.ts"
+      ],
+      "gaps": [
+        "Website-mediated Google handoff is implemented. Real Google success, rollout and privileged native token workflows remain pending.",
+        "Trusted-mobile policy is a local backend draft, no production deployment.",
+        "Lost issuance ACK can create a token without revealing plaintext; list/revoke then explicitly reissue. No automatic mutation retry."
+      ],
+      "implementationStatus": "Native draft implemented; authenticated or functional native proof remains pending.",
+      "subsections": []
+    }
+  ],
+  "sourceDrift": [
+    "Native privacy copy records actual soft delete and Google restore instead of permanent PII erasure.",
+    "Native privacy copy records coordinate transmission/cache and absence of a native Google Analytics SDK. Browser consent remains browser-scoped.",
+    "Original WOFF2 is used unchanged; licensed Alkalami001 is the native Ayah ornament. No marker015 redistribution.",
+    "Navigation rejects protocol-relative/credential-bearing URLs and preserves custom rename order consistently.",
+    "Native destructive token actions add explicit confirmation.",
+    "Canonical guarded JSON transport aliases preserve browser CSRF/redirect behavior; deployment remains required."
+  ],
+  "automatedEvidence": {
+    "latestWholeNativeGate": {
+      "tests": 530,
+      "assertions": 5607,
+      "files": 143,
+      "failures": 0,
+      "typecheck": "Passed",
+      "lint": "Passed",
+      "attribution": "Recorded integrated-origin-controls-check.log root source checkpoint, not a native interaction count. Later fixture changes need their own checks."
+    },
+    "sourceMarkerSnapshot": {
+      "declaredPortTodos": 105,
+      "attribution": "Latest read-only scripts/parity-status.ts report. Source annotations are not a remaining-feature or native-test count. This documentation pass did not clear source markers."
+    },
+    "nativeFocusedTests": 18,
+    "assertions": 115,
+    "failures": 0,
+    "log": "ios-app/.expo/account-admin-tests.log",
+    "prayerBackend": {
+      "cases": 22,
+      "assertions": 103,
+      "failures": 0,
+      "environment": "Local isolated Laravel testing environment, no production services."
+    },
+    "typecheck": "Whole native strict typecheck passed after the final SVG patch/fixture edits; root retains the final convergence run.",
+    "lint": "Targeted native account/admin/file cohort clean.",
+    "latestBoundaryCohorts": {
+      "scopeExportDashboard": {
+        "tests": 14,
+        "assertions": 83,
+        "failures": 0
+      },
+      "authAccount": {
+        "tests": 8,
+        "assertions": 33,
+        "failures": 0
+      },
+      "typecheck": "Whole native strict typecheck passed after Account password integration.",
+      "lint": "Owned auth/account/export/scope files pass targeted ESLint."
+    }
+  },
+  "nativeEvidence": {
+    "passedByRoot": [
+      "testRemainingPublicSections: Muslim,prayer,radio,Roznama,Board,stats and information pages landed.",
+      "testQuranRenderingPagingAndFocus: original WOFF2 glyphs and ornaments visible on pages 1 and 2, next-page and focus toggle.",
+      "SyrianFiles QuickLook actor-isolation fix passed full signed native build-for-testing.",
+      "adapters-green-03/testNativeSVGPixelDimensions passed with0failures and0runtimewarnings; actual PNG geometry checked independently.",
+      "adapters-lifecycle-07 asynchronous bare audio lifecycle, hardware, direct PNG/JPEG and SVG pixels/JPEG passed4cases with0runtimewarnings.",
+      "adapters-controls-09 file case passed SVG/PNG/ZIP share cancellation and native QuickLook preview/Done with zero runtime warnings. Overall cohort failed at a separate switch tap.",
+      "native-controls-14 passed actual native switch ON/OFF, controlled Boolean values and the system minimum28point height.",
+      "account-native06 passed profile save/reopen, photo-picker cancellation, original-profile restoration/logout and Board rename/account synchronization. Overall cohort had 5 passes, including one fixture-cleanup case, and 3 failures, with zero skipped cases and runtime warnings.",
+      "account-native06 passed synthetic Google browser consent, callback/PKCE exchange, native adoption, dashboard access, logout and browser cancellation. This is local fixture proof, not real Google success.",
+      "account-native07 passed campaign-title save/reopen/restoration and Home popup geometry with visit-only quieting and reappearance after relaunch.",
+      "account-password-native16 passed native eligible-administrator login/adoption/dashboard/logout, wrong-password 401 rejection/field clearing/signed-out state and native 429 countdown/disabled controls after bounded local HTTP throttle setup. Duration129.437seconds, runner cleanup and product restoration passed.",
+      "PhotoRecovery06 passed retained generated-photo fixture recovery in 7.692 seconds with zero skips, runtime warnings or remaining task-photo manifests.",
+      "NativePicker01 passed controlled first/second/first selection in 22.743 seconds, with one purpose callback per selection and checked values/identifiers.",
+      "Civic06 passed Atlas, two-widget Board editing and the granted Dashboard Transit entry: 3 passed, zero failed/skipped/runtime warnings, local cleanup passed and product restored. Board cold configuration persistence and remaining widgets are separate checks.",
+      "AvatarProbe04 passed the real legacy picker/crop path with the exact generated album, actual returned image header/bounds checks and task-owned cleanup. One case passed with zero failures/skips/runtime warnings and product restoration. No account or upload was used.",
+      "Native11 long-popup layout passed in 17.840565 seconds with full body accessibility label, three initially contained/hittable controls and one primary/Later row. Only closed fixture Home metadata changed; no server setting write, link open or persisted dismissal.",
+      "User12 passed the complete selected native administration case in 681.926443 seconds: two own creations, permission/city-scope edits, ban/unban, single and bulk soft-delete/restore and logout. Accounts 101-105 remained unchanged; exact owned cleanup, strict runner/local cleanup and product restoration passed."
+    ],
+    "pending": [
+      "Six consecutive native password attempts, deep-link administrator panel expansion and broader privileged administration need separate completed local-fixture runs. The standard native login/rejection and HTTP-prepared native 429 case passed.",
+      "Successful avatar upload, account deletion and account-switch persistence. Native photo-picker cancellation passed, but does not establish upload.",
+      "Successful Files/share completion, exact final share basename and product integration.",
+      "Board Civic06 proves two-widget creation, reorder and reopened work-minute editor retention. Remaining widgets, resize/autoscroll, cold configuration persistence and full synchronization remain pending; the earlier Board02 QA board is a separate cleanup follow-up.",
+      "Lock-screen/headphone/interruption and Quran-provider/account usage proof. Async bare-owner lifecycle correction passed native07."
+    ],
+    "knownFinding": "Shared NativeIconAction width regression was reproduced at57.33points, fixed by root with controlSize regular, and native bounds/paging/focus test now passes at48points or less.",
+    "graphicsExport": {
+      "red": "Actual iPhone17/iOS27.2 requested80x40 SVG export returned240x120, recorded in .expo/verification/adapters-svg-red/result.xcresult.",
+      "fix": "Pinned Bun react-native-svg15.16.0 patch uses exact scale1/requested bounds only for explicit exports and preserves default rendering. JS keeps integer aspect ratios unchanged. Native CoreGraphics PNG/JPEG encoder independently validates source/destination16MP. Actual native exact PNG/JPEG test passed in adapters-green-03. Async Expo58 writes are awaited before native encoding or copying.",
+      "tests": "Actual160x80 PNG artifact passed independent checks for opaque corners, red-top/blue-bottom orientation and circular46x46 extents. Native direct PNG/JPEG also passed. Native QuickLook Done dismissal and SVG/PNG/ZIP share cancellation passed controls09. Successful share completion and exact final basename remain pending.",
+      "nativeFixture": "native-tests/adapter-fixture.tsx is isolated from shipping App/index and invokes no API or usage reporting."
+    }
+  },
+  "publication": "Unpublished local work and review inventory only. No push or GitHub PR operation authorized."
+}

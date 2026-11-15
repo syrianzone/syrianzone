@@ -1,0 +1,2435 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-11-14",
+  "scope": "All reachable application GET routes from actual Laravel route graph, React page registry and global shell. This records drafts, not completed device parity.",
+  "generatedFrom": [
+    "php artisan route:list --json",
+    "routes/web.php",
+    "routes/api.php",
+    "ios-app/src/feature-registry.ts",
+    "ios-app/src/App.tsx"
+  ],
+  "counts": {
+    "reactPageRoutes": 67,
+    "publicReactPageRoutes": 47,
+    "privateReactPageRoutes": 20,
+    "redirectAliases": 11,
+    "filamentPageRoutes": 5,
+    "unclassifiedApplicationWebGetRoutes": 0,
+    "nativeFilamentUserPageDrafts": 3,
+    "nativeFilamentPanelPageDrafts": 2,
+    "unclaimedFilamentPanelPages": 0
+  },
+  "pageRoutes": [
+    {
+      "uri": "/",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:40",
+        "app/Http/Controllers/HomeController.php",
+        "resources/js/Pages/Home.tsx"
+      ],
+      "sourceComponent": "Home",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "home",
+        "params": {},
+        "file": "ios-app/src/features/Home/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/about",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:145",
+        "app/Http/Controllers/AboutController.php",
+        "resources/js/Pages/About.tsx"
+      ],
+      "sourceComponent": "About",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "about",
+        "params": {},
+        "file": "ios-app/src/features/About/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/api-tokens",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:269",
+        "app/Http/Controllers/ApiTokenAdminController.php",
+        "resources/js/Pages/Admin/ApiTokens/Index.tsx"
+      ],
+      "sourceComponent": "Admin/ApiTokens/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\AgentTokensAccess"
+      ],
+      "nativeTarget": {
+        "section": "api_tokens_admin",
+        "params": {},
+        "file": "ios-app/src/features/ApiTokens/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/assets",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:250",
+        "app/Http/Controllers/AssetUploadController.php",
+        "resources/js/Pages/Admin/AssetManager/Index.tsx"
+      ],
+      "sourceComponent": "Admin/AssetManager/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:assets.manage"
+      ],
+      "nativeTarget": {
+        "section": "assets_admin",
+        "params": {},
+        "file": "ios-app/src/features/AssetManager/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/compass",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:328",
+        "app/Http/Controllers/CompassAdminController.php",
+        "resources/js/Pages/Admin/Compass/Index.tsx"
+      ],
+      "sourceComponent": "Admin/Compass/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:compass.stats"
+      ],
+      "nativeTarget": {
+        "section": "compass",
+        "params": {
+          "view": "admin-stats"
+        },
+        "file": "ios-app/src/features/Compass/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/compass/figures",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:330",
+        "app/Http/Controllers/CompassAdminController.php",
+        "resources/js/Pages/Admin/Compass/Figures.tsx"
+      ],
+      "sourceComponent": "Admin/Compass/Figures",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:compass.figures"
+      ],
+      "nativeTarget": {
+        "section": "compass",
+        "params": {
+          "view": "admin-figures"
+        },
+        "file": "ios-app/src/features/Compass/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/compass/personas",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:332",
+        "app/Http/Controllers/CompassAdminController.php",
+        "resources/js/Pages/Admin/Compass/Personas.tsx"
+      ],
+      "sourceComponent": "Admin/Compass/Personas",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:compass.personas"
+      ],
+      "nativeTarget": {
+        "section": "compass",
+        "params": {
+          "view": "admin-personas"
+        },
+        "file": "ios-app/src/features/Compass/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/govapps",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:315",
+        "app/Http/Controllers/GovAppsAdminController.php",
+        "resources/js/Pages/Admin/GovApps/Index.tsx"
+      ],
+      "sourceComponent": "Admin/GovApps/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:any"
+      ],
+      "nativeTarget": {
+        "section": "govapps_admin",
+        "params": {},
+        "file": "ios-app/src/features/GovApps/Admin.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/guesswho",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:289",
+        "app/Http/Controllers/GuessWhoAdminController.php",
+        "resources/js/Pages/Admin/GuessWho/Index.tsx"
+      ],
+      "sourceComponent": "Admin/GuessWho/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:guesswho.manage"
+      ],
+      "nativeTarget": {
+        "section": "guesswho_admin",
+        "params": {},
+        "file": "ios-app/src/features/GuessWho/Admin.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/navigation",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:259",
+        "app/Http/Controllers/SiteNavigationAdminController.php",
+        "resources/js/Pages/Admin/Navigation/Index.tsx"
+      ],
+      "sourceComponent": "Admin/Navigation/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:site.navigation"
+      ],
+      "nativeTarget": {
+        "section": "navigation_admin",
+        "params": {},
+        "file": "ios-app/src/features/Navigation/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/phonebook",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:320",
+        "app/Http/Controllers/PhonebookAdminController.php",
+        "resources/js/Pages/Admin/Phonebook/Index.tsx"
+      ],
+      "sourceComponent": "Admin/Phonebook/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:any"
+      ],
+      "nativeTarget": {
+        "section": "phonebook_admin",
+        "params": {},
+        "file": "ios-app/src/features/Phonebook/Admin.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/places",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:294",
+        "app/Http/Controllers/PlaceAdminController.php",
+        "resources/js/Pages/Admin/Places/Index.tsx"
+      ],
+      "sourceComponent": "Admin/Places/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:any"
+      ],
+      "nativeTarget": {
+        "section": "places_admin",
+        "params": {},
+        "file": "ios-app/src/features/Places/Admin.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/promises",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:340",
+        "app/Http/Controllers/PromisesAdminController.php",
+        "resources/js/Pages/Admin/Promises/Index.tsx"
+      ],
+      "sourceComponent": "Admin/Promises/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:any"
+      ],
+      "nativeTarget": {
+        "section": "promises",
+        "params": {
+          "view": "admin"
+        },
+        "file": "ios-app/src/features/Promises/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/promises/new",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:342",
+        "app/Http/Controllers/PromisesAdminController.php",
+        "resources/js/Pages/Admin/Promises/Edit.tsx"
+      ],
+      "sourceComponent": "Admin/Promises/Edit",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:promises.create"
+      ],
+      "nativeTarget": {
+        "section": "promises",
+        "params": {
+          "view": "admin-edit"
+        },
+        "file": "ios-app/src/features/Promises/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/promises/review",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:344",
+        "app/Http/Controllers/PromisesAdminController.php",
+        "resources/js/Pages/Admin/Promises/Review.tsx"
+      ],
+      "sourceComponent": "Admin/Promises/Review",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:promises.review"
+      ],
+      "nativeTarget": {
+        "section": "promises",
+        "params": {
+          "view": "admin-review"
+        },
+        "file": "ios-app/src/features/Promises/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/promises/sectors",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:348",
+        "app/Http/Controllers/PromisesAdminController.php",
+        "resources/js/Pages/Admin/Promises/Sectors.tsx"
+      ],
+      "sourceComponent": "Admin/Promises/Sectors",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:promises.speakers"
+      ],
+      "nativeTarget": {
+        "section": "promises",
+        "params": {
+          "view": "admin-sectors"
+        },
+        "file": "ios-app/src/features/Promises/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/promises/speakers",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:346",
+        "app/Http/Controllers/PromisesAdminController.php",
+        "resources/js/Pages/Admin/Promises/Speakers.tsx"
+      ],
+      "sourceComponent": "Admin/Promises/Speakers",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:promises.speakers"
+      ],
+      "nativeTarget": {
+        "section": "promises",
+        "params": {
+          "view": "admin-speakers"
+        },
+        "file": "ios-app/src/features/Promises/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/promises/{id}/edit",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:352",
+        "app/Http/Controllers/PromisesAdminController.php",
+        "resources/js/Pages/Admin/Promises/Edit.tsx"
+      ],
+      "sourceComponent": "Admin/Promises/Edit",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:any"
+      ],
+      "nativeTarget": {
+        "section": "promises",
+        "params": {
+          "view": "admin-edit",
+          "id": "{id}"
+        },
+        "file": "ios-app/src/features/Promises/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/site-popup",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:256",
+        "app/Http/Controllers/SitePopupAdminController.php",
+        "resources/js/Pages/Admin/SitePopup/Index.tsx"
+      ],
+      "sourceComponent": "Admin/SitePopup/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:site.popup"
+      ],
+      "nativeTarget": {
+        "section": "site_popup_admin",
+        "params": {},
+        "file": "ios-app/src/features/SitePopup/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/admin/syofficial",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:310",
+        "app/Http/Controllers/SyOfficialAdminController.php",
+        "resources/js/Pages/Admin/SyOfficial/Index.tsx"
+      ],
+      "sourceComponent": "Admin/SyOfficial/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:any"
+      ],
+      "nativeTarget": {
+        "section": "syofficial_admin",
+        "params": {},
+        "file": "ios-app/src/features/SyOfficial/Admin.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/alignment",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:160",
+        "app/Http/Controllers/ExternalDataController.php",
+        "resources/js/Pages/Alignment/Index.tsx"
+      ],
+      "sourceComponent": "Alignment/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "alignment",
+        "params": {},
+        "file": "ios-app/src/features/Alignment/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/atlas",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:162",
+        "app/Http/Controllers/Api/PopulationAtlasController.php",
+        "resources/js/Pages/Population/Index.tsx"
+      ],
+      "sourceComponent": "Population/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "atlas",
+        "params": {},
+        "file": "ios-app/src/features/Population/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/board",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:228",
+        "app/Http/Controllers/BoardController.php",
+        "resources/js/Pages/Board/Index.tsx"
+      ],
+      "sourceComponent": "Board/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "board",
+        "params": {},
+        "file": "ios-app/src/features/Board/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/compass",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:81",
+        "app/Http/Controllers/CompassController.php",
+        "resources/js/Pages/Compass/Index.tsx"
+      ],
+      "sourceComponent": "Compass/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "compass",
+        "params": {},
+        "file": "ios-app/src/features/Compass/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/compass/s/{shareId}",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:83",
+        "app/Http/Controllers/CompassController.php",
+        "resources/js/Pages/Compass/Shared.tsx"
+      ],
+      "sourceComponent": "Compass/Shared",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "compass",
+        "params": {
+          "shareId": "{shareId}"
+        },
+        "file": "ios-app/src/features/Compass/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/compass/stats",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:82",
+        "app/Http/Controllers/CompassController.php",
+        "resources/js/Pages/Compass/Stats.tsx"
+      ],
+      "sourceComponent": "Compass/Stats",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "compass",
+        "params": {
+          "view": "stats"
+        },
+        "file": "ios-app/src/features/Compass/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/crossings",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:142",
+        "resources/js/Pages/Crossings/Index.tsx"
+      ],
+      "sourceComponent": "Crossings/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "crossings",
+        "params": {},
+        "file": "ios-app/src/features/Crossings/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/dashboard",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:237",
+        "app/Http/Controllers/DashboardController.php",
+        "resources/js/Pages/Dashboard/Index.tsx"
+      ],
+      "sourceComponent": "Dashboard/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport"
+      ],
+      "nativeTarget": {
+        "section": "dashboard",
+        "params": {},
+        "file": "ios-app/src/features/Dashboard/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/games",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:118",
+        "resources/js/Pages/Games/Index.tsx"
+      ],
+      "sourceComponent": "Games/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "games",
+        "params": {},
+        "file": "ios-app/src/features/Games/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/games/2048",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:121",
+        "resources/js/Pages/Games/2048/Index.tsx"
+      ],
+      "sourceComponent": "Games/2048/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "2048",
+        "params": {},
+        "file": "ios-app/src/features/Games/2048/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/games/solitare",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:124",
+        "resources/js/Pages/Games/Solitare/Index.tsx"
+      ],
+      "sourceComponent": "Games/Solitare/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "solitare",
+        "params": {},
+        "file": "ios-app/src/features/Games/Solitare/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/games/tarneeb",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:127",
+        "resources/js/Pages/Games/Tarneeb/Index.tsx"
+      ],
+      "sourceComponent": "Games/Tarneeb/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "tarneeb",
+        "params": {},
+        "file": "ios-app/src/features/Games/Tarneeb/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/games/trix",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:130",
+        "resources/js/Pages/Games/Trix/Index.tsx"
+      ],
+      "sourceComponent": "Games/Trix/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "trix",
+        "params": {},
+        "file": "ios-app/src/features/Games/Trix/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/govapps",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:161",
+        "app/Http/Controllers/GovAppController.php",
+        "resources/js/Pages/GovApps/Index.tsx"
+      ],
+      "sourceComponent": "GovApps/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "govapps",
+        "params": {},
+        "file": "ios-app/src/features/GovApps/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/guesswho",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:172",
+        "app/Http/Controllers/GuessWhoController.php",
+        "resources/js/Pages/GuessWho/Index.tsx"
+      ],
+      "sourceComponent": "GuessWho/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "guesswho",
+        "params": {},
+        "file": "ios-app/src/features/GuessWho/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/guesswho/room/{roomCode}",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:173",
+        "app/Http/Controllers/GuessWhoController.php",
+        "resources/js/Pages/GuessWho/Room.tsx"
+      ],
+      "sourceComponent": "GuessWho/Room",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "guesswho",
+        "params": {
+          "room": "{roomCode}"
+        },
+        "file": "ios-app/src/features/GuessWho/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/house",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:159",
+        "app/Http/Controllers/ExternalDataController.php",
+        "resources/js/Pages/House/Index.tsx"
+      ],
+      "sourceComponent": "House/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "house",
+        "params": {},
+        "file": "ios-app/src/features/House/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/justice",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:137",
+        "resources/js/Pages/Justice/Index.tsx"
+      ],
+      "sourceComponent": "Justice/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "justice",
+        "params": {},
+        "file": "ios-app/src/features/Justice/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/mishwar",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:222",
+        "app/Http/Controllers/PlaceController.php",
+        "resources/js/Pages/Places/Index.tsx"
+      ],
+      "sourceComponent": "Places/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "places",
+        "params": {},
+        "file": "ios-app/src/places.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/muslim",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:97",
+        "resources/js/Pages/Muslim/Index.tsx"
+      ],
+      "sourceComponent": "Muslim/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "muslim",
+        "params": {},
+        "file": "ios-app/src/features/Muslim/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/muslim/prayer",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:105",
+        "resources/js/Pages/Muslim/Prayer/Index.tsx"
+      ],
+      "sourceComponent": "Muslim/Prayer/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "muslim_prayer",
+        "params": {},
+        "file": "ios-app/src/features/Muslim/Prayer/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/muslim/quran",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:108",
+        "resources/js/Pages/Muslim/Quran/Index.tsx"
+      ],
+      "sourceComponent": "Muslim/Quran/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "muslim_quran",
+        "params": {},
+        "file": "ios-app/src/features/Muslim/Quran/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/muslim/radio",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:111",
+        "resources/js/Pages/Muslim/Radio/Index.tsx"
+      ],
+      "sourceComponent": "Muslim/Radio/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "muslim_radio",
+        "params": {},
+        "file": "ios-app/src/features/Muslim/Radio/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/party",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:158",
+        "app/Http/Controllers/ExternalDataController.php",
+        "resources/js/Pages/Party/Index.tsx"
+      ],
+      "sourceComponent": "Party/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "party",
+        "params": {},
+        "file": "ios-app/src/features/Party/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/phonebook",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:133",
+        "app/Http/Controllers/PhonebookController.php",
+        "resources/js/Pages/Phonebook/Index.tsx"
+      ],
+      "sourceComponent": "Phonebook/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "phonebook",
+        "params": {},
+        "file": "ios-app/src/features/Phonebook/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/polls",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:75",
+        "app/Http/Controllers/PollController.php",
+        "resources/js/Pages/Polls/Index.tsx"
+      ],
+      "sourceComponent": "Polls/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "tierlist",
+        "params": {
+          "view": "polls"
+        },
+        "file": "ios-app/src/features/TierList/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/polls/{slug}",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:76",
+        "app/Http/Controllers/PollController.php",
+        "resources/js/Pages/Polls/Show.tsx"
+      ],
+      "sourceComponent": "Polls/Show",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "tierlist",
+        "params": {
+          "poll": "{slug}"
+        },
+        "file": "ios-app/src/features/TierList/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/polls/{slug}/leaderboard",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:77",
+        "app/Http/Controllers/PollController.php",
+        "resources/js/Pages/Polls/Leaderboard.tsx"
+      ],
+      "sourceComponent": "Polls/Leaderboard",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "tierlist",
+        "params": {
+          "view": "leaderboard",
+          "poll": "{slug}"
+        },
+        "file": "ios-app/src/features/TierList/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/priorities",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:88",
+        "resources/js/Pages/Priorities/Index.tsx"
+      ],
+      "sourceComponent": "Priorities/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "priorities",
+        "params": {},
+        "file": "ios-app/src/features/Priorities/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/privacy",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:149",
+        "resources/js/Pages/Privacy.tsx"
+      ],
+      "sourceComponent": "Privacy",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "privacy",
+        "params": {},
+        "file": "ios-app/src/features/Privacy/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/promises",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:85",
+        "app/Http/Controllers/PromiseController.php",
+        "resources/js/Pages/Promises/Index.tsx"
+      ],
+      "sourceComponent": "Promises/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "promises",
+        "params": {},
+        "file": "ios-app/src/features/Promises/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/promises/suggest",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:86",
+        "app/Http/Controllers/PromiseController.php",
+        "resources/js/Pages/Promises/Suggest.tsx"
+      ],
+      "sourceComponent": "Promises/Suggest",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "promises",
+        "params": {
+          "view": "suggest"
+        },
+        "file": "ios-app/src/features/Promises/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/promises/{number}",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:87",
+        "app/Http/Controllers/PromiseController.php",
+        "resources/js/Pages/Promises/Show.tsx"
+      ],
+      "sourceComponent": "Promises/Show",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "promises",
+        "params": {
+          "number": "{number}"
+        },
+        "file": "ios-app/src/features/Promises/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/roznama",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:91",
+        "resources/js/Pages/Roznama/Index.tsx"
+      ],
+      "sourceComponent": "Roznama/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "roznama",
+        "params": {},
+        "file": "ios-app/src/features/Roznama/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/shawarma",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:134",
+        "resources/js/Pages/Shawarma/Index.tsx"
+      ],
+      "sourceComponent": "Shawarma/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "shawarma",
+        "params": {},
+        "file": "ios-app/src/features/Shawarma/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/sites",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:157",
+        "app/Http/Controllers/ExternalDataController.php",
+        "resources/js/Pages/Sites/Index.tsx"
+      ],
+      "sourceComponent": "Sites/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "sites",
+        "params": {},
+        "file": "ios-app/src/features/Sites/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/stats",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:146",
+        "resources/js/Pages/Stats.tsx"
+      ],
+      "sourceComponent": "Stats",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "stats",
+        "params": {},
+        "file": "ios-app/src/features/Stats/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/syid",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:155",
+        "app/Http/Controllers/ExternalDataController.php",
+        "resources/js/Pages/SyId/Index.tsx"
+      ],
+      "sourceComponent": "SyId/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "syid",
+        "params": {},
+        "file": "ios-app/src/features/SyId/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/syofficial",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:74",
+        "app/Http/Controllers/SyOfficialController.php",
+        "resources/js/Pages/SyOfficial/Index.tsx"
+      ],
+      "sourceComponent": "SyOfficial/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "syofficial",
+        "params": {},
+        "file": "ios-app/src/features/SyOfficial/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/syrian-contributors",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:156",
+        "app/Http/Controllers/ExternalDataController.php",
+        "resources/js/Pages/SyrianContributors/Index.tsx"
+      ],
+      "sourceComponent": "SyrianContributors/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "contributors",
+        "params": {},
+        "file": "ios-app/src/features/SyrianContributors/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/terms",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:152",
+        "resources/js/Pages/Terms.tsx"
+      ],
+      "sourceComponent": "Terms",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "terms",
+        "params": {},
+        "file": "ios-app/src/features/Terms/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/tierlist",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:79",
+        "app/Http/Controllers/PollController.php",
+        "resources/js/Pages/TierList/Index.tsx"
+      ],
+      "sourceComponent": "TierList/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "tierlist",
+        "params": {},
+        "file": "ios-app/src/features/TierList/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/tierlist/leaderboard",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:80",
+        "app/Http/Controllers/PollController.php",
+        "resources/js/Pages/TierList/Leaderboard.tsx"
+      ],
+      "sourceComponent": "TierList/Leaderboard",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "tierlist",
+        "params": {
+          "view": "leaderboard"
+        },
+        "file": "ios-app/src/features/TierList/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/transit",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:183",
+        "resources/js/Pages/Transit/Index.tsx"
+      ],
+      "sourceComponent": "Transit/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "transit",
+        "params": {},
+        "file": "ios-app/src/transit.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/transit/admin",
+      "visibility": "private",
+      "sourceFiles": [
+        "routes/web.php:303",
+        "resources/js/Pages/Transit/admin/Index.tsx"
+      ],
+      "sourceComponent": "Transit/admin/Index",
+      "middleware": [
+        "web",
+        "Illuminate\\Auth\\Middleware\\Authenticate:web,sanctum",
+        "App\\Http\\Middleware\\FirstPartyAdminTransport",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard",
+        "App\\Http\\Middleware\\ModuleCapabilityGuard:any"
+      ],
+      "nativeTarget": {
+        "section": "transit_admin",
+        "params": {},
+        "file": "ios-app/src/features/TransitAdmin/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/transit/city/{id}",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:189",
+        "resources/js/Pages/Transit/city/[id]/Index.tsx"
+      ],
+      "sourceComponent": "Transit/city/[id]/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "transit",
+        "params": {
+          "cityId": "{id}"
+        },
+        "file": "ios-app/src/transit.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    },
+    {
+      "uri": "/transit/studio",
+      "visibility": "public",
+      "sourceFiles": [
+        "routes/web.php:216",
+        "resources/js/Pages/Transit/studio/Index.tsx"
+      ],
+      "sourceComponent": "Transit/studio/Index",
+      "middleware": [
+        "web"
+      ],
+      "nativeTarget": {
+        "section": "transit_studio",
+        "params": {},
+        "file": "ios-app/src/features/TransitStudio/Index.tsx",
+        "filePresent": true,
+        "registryPresent": true
+      },
+      "status": "native_draft_requires_device_and_flow_verification"
+    }
+  ],
+  "redirectAliases": [
+    {
+      "uri": "/admin/polls",
+      "destination": "/dashboard",
+      "preserveSourceQuery": false,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/admin/polls/create",
+      "destination": "/dashboard?create-poll=1",
+      "preserveSourceQuery": false,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/admin/polls/{id}/edit",
+      "destination": "/dashboard?edit-poll={id}",
+      "preserveSourceQuery": false,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/places",
+      "destination": "/mishwar (preserve query)",
+      "preserveSourceQuery": true,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/population",
+      "destination": "/atlas",
+      "preserveSourceQuery": false,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/spotify",
+      "destination": "/",
+      "preserveSourceQuery": false,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/spotify/{any}",
+      "destination": "/",
+      "preserveSourceQuery": false,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/syriafy",
+      "destination": "/",
+      "preserveSourceQuery": false,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/syriafy/{any}",
+      "destination": "/",
+      "preserveSourceQuery": false,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/transit/city/{id}/map",
+      "destination": "/transit/city/{id} (preserve query)",
+      "preserveSourceQuery": true,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    },
+    {
+      "uri": "/transit/city/{id}/route/{routeId}",
+      "destination": "/transit/city/{id}?route={routeId}",
+      "preserveSourceQuery": false,
+      "sourceFiles": [
+        "routes/web.php"
+      ]
+    }
+  ],
+  "nonPageGetRoutes": [
+    {
+      "uri": "/api/answers",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/app-icon",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/candidate-groups",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/candidate-groups/{id}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/contributors",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/contributors/{contributor}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/events/today",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/feed",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/metrics",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/polls",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/polls/{idOrSlug}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/polls/{idOrSlug}/leaderboard",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/population/env-report",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/population/master",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/prayer-times",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/recipe-of-the-day",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/user",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/assets/list",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/candidate-groups",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/candidate-groups/{id}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/compass/figures",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/compass/personas",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/navigation",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/place-reports",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/places",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/polls",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/polls/{id}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/promises/speakers/search",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/route-drafts",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/routes",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/routes/logs",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/routes/{id}/geojson",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/routes/{id}/stops",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/admin/site-popup",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/answers",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/app-icon",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/atlas",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/atlas/environment",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/auth/user",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/board",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/cities",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/cities/{id}/map-data",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/cities/{id}/routes",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/compass/results",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/compass/share/{shareId}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/compass/shares/{shareId}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/contributors",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/contributors/{contributor}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/events/today",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/feed",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/geo/poi",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/global-search",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/guesswho/rooms/{roomCode}/state",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/guides",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/hotels",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/hotels/map",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/hotels/{id}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/metrics",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/my/places",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/my/saves",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/navigation",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/places",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/places/geocode",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/places/map",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/places/nearby",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/places/photos",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/places/{id}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/polls",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/polls/{idOrSlug}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/polls/{idOrSlug}/ballots",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/polls/{idOrSlug}/candidates",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/polls/{idOrSlug}/leaderboard",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/polls/{idOrSlug}/scores",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/population/env-report",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/population/master",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/prayer-times",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/promises/speakers",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/quran-bookmarks",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/recipe-of-the-day",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/recipes/today",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/search",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/search/global",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/stops/nearby",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/studio/routes",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/studio/routes/{id}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/studio/routes/{id}/from-route",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/cities",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/cities/{id}/map",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/cities/{id}/map-data",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/cities/{id}/routes",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/pois",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/search",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/stops/nearby",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/studio/routes",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/studio/routes/{id}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/transit/studio/routes/{id}/from-route",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/user",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/v1/weather",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/api/weather",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/auth/google",
+      "classification": "browser OAuth start, native uses supported mobile exchange"
+    },
+    {
+      "uri": "/auth/google/callback",
+      "classification": "browser OAuth callback"
+    },
+    {
+      "uri": "/broadcasting/auth",
+      "classification": "private room broadcast authorization"
+    },
+    {
+      "uri": "/dev/impersonate/{role}",
+      "classification": "development-only identity fixture"
+    },
+    {
+      "uri": "/filament/exports/{export}/download",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/filament/imports/{import}/failed-rows/download",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/guesswho/room/{roomCode}/state",
+      "classification": "JSON room state, native room client handles it"
+    },
+    {
+      "uri": "/healthcheck",
+      "classification": "infrastructure health response"
+    },
+    {
+      "uri": "/livewire-4aeeedbb/css/{component}.css",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/livewire-4aeeedbb/css/{component}.global.css",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/livewire-4aeeedbb/js/{component}.js",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/livewire-4aeeedbb/livewire.csp.min.js.map",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/livewire-4aeeedbb/livewire.min.js",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/livewire-4aeeedbb/livewire.min.js.map",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/livewire-4aeeedbb/preview-file/{filename}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/llms.txt",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/og/r/{type}/{key}.{format}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/sanctum/csrf-cookie",
+      "classification": "browser CSRF handshake"
+    },
+    {
+      "uri": "/sitemap.xml",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/storage/{path}",
+      "classification": "JSON, file, framework or machine endpoint; no standalone native page"
+    },
+    {
+      "uri": "/user",
+      "classification": "JSON account identity"
+    }
+  ],
+  "filamentRoutes": [
+    {
+      "uri": "/superadmin",
+      "action": "Filament\\Pages\\Dashboard",
+      "sourceFiles": [
+        "app/Providers/Filament/SuperadminPanelProvider.php",
+        "vendor/filament/filament/src/Widgets/AccountWidget.php",
+        "vendor/filament/filament/resources/views/widgets/account-widget.blade.php",
+        "app/Filament/Resources/UserResource.php"
+      ],
+      "middleware": [
+        "Filament\\Http\\Middleware\\SetUpPanel:superadmin",
+        "Illuminate\\Cookie\\Middleware\\EncryptCookies",
+        "Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse",
+        "Illuminate\\Session\\Middleware\\StartSession",
+        "Illuminate\\View\\Middleware\\ShareErrorsFromSession",
+        "Filament\\Http\\Middleware\\Authenticate",
+        "Filament\\Http\\Middleware\\AuthenticateSession",
+        "Illuminate\\Foundation\\Http\\Middleware\\VerifyCsrfToken",
+        "Illuminate\\Routing\\Middleware\\SubstituteBindings",
+        "Filament\\Http\\Middleware\\DisableBladeIconComponents",
+        "Filament\\Http\\Middleware\\DispatchServingFilamentEvent"
+      ],
+      "nativeStatus": "native_draft_not_device_verified",
+      "nativeTarget": {
+        "section": "dashboard",
+        "params": {},
+        "file": "ios-app/src/features/Dashboard/Index.tsx"
+      },
+      "nativeAdaptations": [
+        "The shared native dashboard exposes the source account/profile link and the UsersAdmin resource link. Profile display, avatar and logout live in the native Account screen.",
+        "Administrative destinations use server capabilities and authoritative canManageUsers. Mapping this URL does not grant panel access or infer privileges from a native role string."
+      ],
+      "excludedImplementationDetails": [
+        {
+          "id": "FilamentInfoWidget",
+          "sourceFiles": [
+            "vendor/filament/filament/src/Widgets/FilamentInfoWidget.php",
+            "vendor/filament/filament/resources/views/widgets/filament-info-widget.blade.php"
+          ],
+          "reason": "Framework branding, installed package version and external framework documentation/source links describe the web implementation. They are intentionally excluded from the native product."
+        }
+      ]
+    },
+    {
+      "uri": "/superadmin/login",
+      "action": "Filament\\Auth\\Pages\\Login",
+      "sourceFiles": [
+        "app/Providers/Filament/SuperadminPanelProvider.php",
+        "vendor/filament/filament/src/Auth/Pages/Login.php",
+        "app/Models/User.php:207",
+        "app/Http/Controllers/AuthController.php",
+        "app/Services/Auth/SuperadminPasswordLogin.php",
+        "app/Services/Auth/MobileSessionTokens.php"
+      ],
+      "middleware": [
+        "Filament\\Http\\Middleware\\SetUpPanel:superadmin",
+        "Illuminate\\Cookie\\Middleware\\EncryptCookies",
+        "Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse",
+        "Illuminate\\Session\\Middleware\\StartSession",
+        "Illuminate\\View\\Middleware\\ShareErrorsFromSession",
+        "Filament\\Http\\Middleware\\AuthenticateSession",
+        "Illuminate\\Foundation\\Http\\Middleware\\VerifyCsrfToken",
+        "Illuminate\\Routing\\Middleware\\SubstituteBindings",
+        "Filament\\Http\\Middleware\\DisableBladeIconComponents",
+        "Filament\\Http\\Middleware\\DispatchServingFilamentEvent"
+      ],
+      "nativeStatus": "native_draft_not_device_verified",
+      "nativeTarget": {
+        "section": "account",
+        "params": {
+          "mode": "superadmin"
+        },
+        "file": "ios-app/src/features/Account/Index.tsx"
+      },
+      "endpoints": [
+        "POST /api/v1/auth/superadmin/token",
+        "POST /api/v1/auth/google/token",
+        "POST /api/v1/auth/logout"
+      ],
+      "authRequirements": [
+        "Password verification accepts only an existing non-banned, non-deleted superadmin through the actual panel canAccessPanel policy. There is no password signup or ordinary-user password login.",
+        "The native password endpoint shares Filament's five-attempt IP lockout before form validation, generic credential failures and configured password rehash policy. A future required or enabled MFA challenge refuses password-only token issuance.",
+        "Google sign-in remains a separate existing source path. Both native methods adopt the same mobile-only Sanctum session through the verified account provider."
+      ],
+      "tests": [
+        "tests/Feature/NativeSuperadminLoginTest.php",
+        "ios-app/src/platform/app-links.test.ts"
+      ],
+      "verificationLimits": [
+        "Password transport and native form are implemented and tested locally. No real production credential request or production sign-in success has been claimed.",
+        "Backend rollout and local native sign-in flow verification remain separate required work."
+      ]
+    },
+    {
+      "uri": "/superadmin/users",
+      "action": "App\\Filament\\Resources\\UserResource\\Pages\\ListUsers",
+      "middleware": [
+        "Filament\\Http\\Middleware\\SetUpPanel:superadmin",
+        "Illuminate\\Cookie\\Middleware\\EncryptCookies",
+        "Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse",
+        "Illuminate\\Session\\Middleware\\StartSession",
+        "Illuminate\\View\\Middleware\\ShareErrorsFromSession",
+        "Filament\\Http\\Middleware\\Authenticate",
+        "Filament\\Http\\Middleware\\AuthenticateSession",
+        "Illuminate\\Foundation\\Http\\Middleware\\VerifyCsrfToken",
+        "Illuminate\\Routing\\Middleware\\SubstituteBindings",
+        "Filament\\Http\\Middleware\\DisableBladeIconComponents",
+        "Filament\\Http\\Middleware\\DispatchServingFilamentEvent"
+      ],
+      "nativeStatus": "native_draft_not_device_verified",
+      "nativeTarget": {
+        "section": "users_admin",
+        "params": {},
+        "file": "ios-app/src/features/UsersAdmin/Index.tsx"
+      }
+    },
+    {
+      "uri": "/superadmin/users/create",
+      "action": "App\\Filament\\Resources\\UserResource\\Pages\\CreateUser",
+      "middleware": [
+        "Filament\\Http\\Middleware\\SetUpPanel:superadmin",
+        "Illuminate\\Cookie\\Middleware\\EncryptCookies",
+        "Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse",
+        "Illuminate\\Session\\Middleware\\StartSession",
+        "Illuminate\\View\\Middleware\\ShareErrorsFromSession",
+        "Filament\\Http\\Middleware\\Authenticate",
+        "Filament\\Http\\Middleware\\AuthenticateSession",
+        "Illuminate\\Foundation\\Http\\Middleware\\VerifyCsrfToken",
+        "Illuminate\\Routing\\Middleware\\SubstituteBindings",
+        "Filament\\Http\\Middleware\\DisableBladeIconComponents",
+        "Filament\\Http\\Middleware\\DispatchServingFilamentEvent"
+      ],
+      "nativeStatus": "native_draft_not_device_verified",
+      "nativeTarget": {
+        "section": "users_admin",
+        "params": {
+          "create": "1"
+        },
+        "file": "ios-app/src/features/UsersAdmin/Index.tsx"
+      }
+    },
+    {
+      "uri": "/superadmin/users/{record}/edit",
+      "action": "App\\Filament\\Resources\\UserResource\\Pages\\EditUser",
+      "middleware": [
+        "Filament\\Http\\Middleware\\SetUpPanel:superadmin",
+        "Illuminate\\Cookie\\Middleware\\EncryptCookies",
+        "Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse",
+        "Illuminate\\Session\\Middleware\\StartSession",
+        "Illuminate\\View\\Middleware\\ShareErrorsFromSession",
+        "Filament\\Http\\Middleware\\Authenticate",
+        "Filament\\Http\\Middleware\\AuthenticateSession",
+        "Illuminate\\Foundation\\Http\\Middleware\\VerifyCsrfToken",
+        "Illuminate\\Routing\\Middleware\\SubstituteBindings",
+        "Filament\\Http\\Middleware\\DisableBladeIconComponents",
+        "Filament\\Http\\Middleware\\DispatchServingFilamentEvent"
+      ],
+      "nativeStatus": "native_draft_not_device_verified",
+      "nativeTarget": {
+        "section": "users_admin",
+        "params": {
+          "edit": "{record}"
+        },
+        "file": "ios-app/src/features/UsersAdmin/Index.tsx"
+      }
+    }
+  ],
+  "unclassified": [],
+  "gaps": [
+    {
+      "id": "canonical-route-linking",
+      "status": "root_in_progress",
+      "description": "Component exports do not prove deep-link reachability. Root is porting canonical website paths/query preservation into the native router, including public and private aliases."
+    },
+    {
+      "id": "backend-rollout",
+      "status": "not_deployed",
+      "description": "Stateless native admin aliases and strict JSON acknowledgements are implemented/tested locally only. Existing production browser middleware is not proof of working native writes."
+    },
+    {
+      "id": "native-auth",
+      "status": "external_configuration_pending",
+      "description": "Real Google native authentication and privileged flow verification require the configured iOS OAuth project and test account. No production political writes were made."
+    },
+    {
+      "id": "filament-users",
+      "status": "native_and_backend_drafts_implemented_not_deployed_or_device_verified",
+      "sourceFiles": [
+        "app/Providers/Filament/SuperadminPanelProvider.php",
+        "app/Filament/Resources/UserResource.php",
+        "app/Filament/Resources/UserResource/Pages/CreateUser.php",
+        "app/Filament/Resources/UserResource/Pages/EditUser.php",
+        "app/Filament/Resources/UserResource/Pages/ListUsers.php",
+        "app/Models/User.php:207"
+      ],
+      "authRequirements": [
+        "Same actual superadmin and not-banned panel access rule. Native options/Dashboard canManageUsers is authoritative, with first-party-only trusted mobile or browser session transport.",
+        "UserPermissionForm is the extracted unchanged source split/merge implementation; unknown existing capabilities and other module scopes survive updates.",
+        "Fresh actor authorization and row-version checking occur inside transactions. Source-permitted self-demotion/deletion remain allowed with native confirmations; existing ban refusals remain."
+      ],
+      "features": [
+        "Panel dashboard account/profile/logout and UserResource navigation use the shared native Dashboard and Account screens; framework information is explicitly excluded in filamentRoutes",
+        "Filament password login and the separate source Google sign-in path use native Account, with their exact transports recorded in filamentRoutes",
+        "List users with searchable name/email, sortable name/email/role/ban/created/deleted columns, toggleable timestamps and trashed filter",
+        "Create user with name,email,role,password and ban state",
+        "Edit user profile and optional replacement password",
+        "Assign exact PermissionCatalogue grouped capabilities and role user or superadmin",
+        "Assign governorate scope for transit capabilities, empty means unrestricted",
+        "Preserve unknown capability IDs and non-transit scope groups on editing",
+        "Soft-delete, restore and permanently delete individual users",
+        "Bulk soft-delete, restore and permanently delete users"
+      ],
+      "nativeTargets": [
+        "ios-app/src/features/UsersAdmin/Index.tsx",
+        "ios-app/src/features/UsersAdmin/Editor.tsx",
+        "app/Http/Controllers/UserAdminController.php",
+        "app/Services/Users/UserAdministrationService.php",
+        "app/Support/Permissions/UserPermissionForm.php",
+        "routes/admin-api.php"
+      ],
+      "tests": [
+        "tests/Feature/NativeUserAdministrationTest.php",
+        "ios-app/src/features/UsersAdmin/model.test.ts",
+        "ios-app/src/features/UsersAdmin/api.test.ts",
+        "Existing CapabilitiesTest, TransitGovernorateScopeTest and UserBanCapabilityTest pass after helper extraction.",
+        "Independent backend/native source reviews and rendered selection/permission regressions passed. Actual native form/privilege/destructive-flow verification and backend rollout remain required."
+      ],
+      "nativeAdaptations": [
+        "Exact server action and role metadata rather than native role inference",
+        "Strong record version rejects stale permission/profile edits",
+        "All-result selection across pages; writes use confirmed bounded batches, current account last, explicit partial counts and cancellation",
+        "No private user records, passwords or selections are stored on disk; password editing uses a secure native field and clears on loss of focus"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "alignment",
+      "sourceFiles": [
+        "routes/web.php:160",
+        "resources/js/Pages/Alignment/Index.tsx",
+        "resources/js/Pages/Alignment/CompassClient.tsx"
+      ],
+      "features": [
+        "Edit four physical axis labels",
+        "Choose arbitrary opaque quadrant RGB colors",
+        "Add points by chart touch or accessible center button",
+        "Select topmost overlapping point and drag with retained offset",
+        "Rename points and confirm individual deletion",
+        "Preserve axes/colors/points locally without account or server writes",
+        "Export PNG,JPG,SVG and open author website/X links"
+      ],
+      "endpoints": [],
+      "authRequirements": [
+        "None, all edits and exports are local"
+      ],
+      "graphics": [
+        "Four source colored quadrants, white cross axes, rotated Arabic vertical labels, eight-color automatic point palette",
+        "Original canvas typography/radii follow actual canvas size up to600; physical axis orientation stays unchanged in RTL"
+      ],
+      "tests": [
+        "ios-app/src/features/Alignment/model.test.ts"
+      ],
+      "nativeTargets": [
+        "ios-app/src/features/Alignment/Index.tsx",
+        "ios-app/src/features/Alignment/Drawing.tsx"
+      ],
+      "nativeAdaptations": [
+        "Dot coordinates persist as normalized fractions, avoiding source pixel-coordinate resize drift",
+        "PNG/JPG use exact600x600 native exports; SVG uses the source export composition at600",
+        "Actual JPEG quality0.9 replaces unsupported source image/jpg browser MIME fallback",
+        "Percentage position fields accept Arabic/Persian decimals for non-drag access",
+        "Bounded5000points and1000characters per label to protect local rendering/storage",
+        "Native SVG export escapes labels as XML text"
+      ],
+      "status": "implemented_draft_not_device_verified",
+      "gaps": [
+        "Native touch, VoiceOver, compact/fold state and all three exported files require device verification"
+      ]
+    },
+    {
+      "id": "global-public-popup",
+      "sourceFiles": [
+        "resources/js/Layouts/MainLayout.tsx",
+        "resources/js/Components/ConditionalLayout.tsx:47",
+        "resources/js/Components/UnblockSyriaNotification.tsx",
+        "resources/js/Domain/settings/popup.ts",
+        "resources/data/site-popup.json",
+        "app/Http/Middleware/HandleInertiaRequests.php:46"
+      ],
+      "features": [
+        "Show current enabled campaign after two seconds",
+        "Suppress all transit-family routes including map and Studio/admin",
+        "Announce campaign politely without moving focus",
+        "Open CTA externally without permanent dismissal",
+        "Close icon or dismiss button persist only that campaign version",
+        "Outside interaction or body touch hides only the current view",
+        "A newly published campaign version appears after older version was dismissed",
+        "Source browser analytics consent has priority; native privacy flow does not run browser analytics"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/",
+          "transport": "Public Inertia JSON, expected Home component, shared props.sitePopup, credentials omitted"
+        }
+      ],
+      "authRequirements": [
+        "None, public campaign and device-local versioned dismissal only"
+      ],
+      "graphics": [
+        "Exact source Syrian flag vector copied to site-popup-flag.json; native themed card"
+      ],
+      "tests": [
+        "ios-app/src/platform/site-popup-model.test.ts"
+      ],
+      "nativeTargets": [
+        "ios-app/src/platform/SitePopupPublic.tsx",
+        "ios-app/src/platform/site-popup-model.ts"
+      ],
+      "nativeAdaptations": [
+        "One global non-modal host, native bottom/side safe areas and a scroll cap min320points or40percent of window height",
+        "Serialized SQLite dismissal writes replace individual browser localStorage keys",
+        "AppState and pageKey gate work; shell supplies outside interaction version",
+        "Storage/config/action errors stay distinct, with retry instead of silently losing dismissal state",
+        "Outside interaction also quiets a campaign during its pending two-second delay, avoiding interruptions to native typing or gestures. The website only installs outside listeners after reveal."
+      ],
+      "status": "implemented_draft_root_global_wiring_in_progress",
+      "gaps": [
+        "Verify shell-level outside touch delivery from native SwiftUI controls and native keyboard",
+        "Verify enabled/disabled/version replacement with controlled fixtures on device"
+      ]
+    }
+  ]
+}

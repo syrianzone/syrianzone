@@ -1,0 +1,1898 @@
+{
+  "schemaVersion": 1,
+  "reviewState": "Contract accepted. Source review and rendered fixture tests are ongoing; native completion is not claimed.",
+  "phase": "Native drafts, behavior tests and native verification queue",
+  "recordedAt": "2026-11-14",
+  "scope": "Games, directories, visual identity and external homepage resources",
+  "nativeCheckpointByRoot": {
+    "guessWhoNative01": "Failed in 48.074 seconds before native Pusher readiness; sanitized evidence showed missing Origin and upstream HTTP 101.",
+    "guessWhoOrigin02": "The corrected product bridge passed actual native-connected readiness with the exact local Origin and HTTP 101. The second test peer then timed out in 44.225 seconds and also omitted Origin.",
+    "peerCorrection": "The test peer Origin correction was used in completed Community08; it passed both selected cases with zero failures/skips/runtime warnings, local cleanup and product restoration.",
+    "guessWhoCommunity08": "Native guest creation, real peer presence, one secret portrait/caption, both ready, acknowledged native elimination and turn transfer, then peer guess with native finished/loss state passed. Native join/resume/reconnect, own guess/rematch and privileged content writes remain separate."
+  },
+  "constraints": [
+    "Inventory source reads and subsequent native drafts are recorded separately. This workstream has performed no Git publication, portal/account mutation, production gameplay/contribution write or new device activity for these drafts.",
+    "Native draft files and fixture tests are recorded separately from on-device and authenticated integration proof.",
+    "Port first-party UI and domain behavior with native controls, maps, drawing, gestures, storage and file export. External applications remain explicit user-opened links."
+  ],
+  "sharedNativeContract": {
+    "status": "Accepted and implemented shared interfaces",
+    "graphics": "Bundle or cache the original project graphics with provenance. Native vector rendering must support each asset actual paths, transforms and clipping. Use native text/shape drawing for card pips; there is no card image deck.",
+    "links": "Shared handler validates http/https or explicit first-party actions such as tel, reports UIApplication.open failure, and opens external services only after a tap. HTTPS allows installed-app universal links and browser fallback. Do not infer successful app install or external account login from opening a URL.",
+    "externalBrowsing": "SFSafariViewController is an optional visible modal browser for external resources. It is not a replacement for first-party native screens, and web interactions/data are not accessible to the app.",
+    "authentication": "Directory reads and local games are public. Admin writes require auth:web,sanctum plus exact server capabilities. Guess Who uses a separate guest room identity. External services retain separate accounts.",
+    "tests": "Native acceptance requires iPhone 17 light/dark rendering plus real interaction for each first-party screen. Reused engines need deterministic existing invariants; imported graphics need visible comparison. This inventory makes no native parity completion claim.",
+    "appleSources": [
+      {
+        "title": "UIApplication.open",
+        "url": "https://developer.apple.com/documentation/uikit/uiapplication/open(_:options:completionhandler:)"
+      },
+      {
+        "title": "SFSafariViewController",
+        "url": "https://developer.apple.com/documentation/safariservices/sfsafariviewcontroller"
+      },
+      {
+        "title": "UIDocumentPickerViewController",
+        "url": "https://developer.apple.com/documentation/uikit/uidocumentpickerviewcontroller"
+      }
+    ],
+    "publicPageTransport": "Accepted root contract: api.page<T>(path, expectedComponent, decode, {params, signal}) validates public Inertia JSON props, bootstraps the current version, bounds a version refresh, and omits credentials. Root verified the live transport. Use native UI; no WebView or webpage rendering.",
+    "earnedSharedModules": [
+      "src/platform/entity-data.ts",
+      "src/platform/geo.ts",
+      "src/platform/transit-model.ts",
+      "src/platform/transit-client.ts",
+      "src/platform/pagination.ts",
+      "src/platform/usePages.ts",
+      "src/platform/hotel-map.ts",
+      "src/platform/guide-rank.ts",
+      "src/platform/original-svg.ts",
+      "src/platform/directory-admin/DirectoryAdmin.tsx",
+      "src/platform/directory-admin/admin-contract.ts",
+      "src/platform/directory-admin/admin-api.ts",
+      "src/ui/GuideBadge.tsx"
+    ]
+  },
+  "materialSourceFindings": [
+    "SyOfficial, Phonebook, Sites and GovApps have no standalone public JSON resource endpoints, but their public Inertia JSON props are usable through the accepted validated api.page adapter. This is native decoder/transport work, not a requirement to add backend routes.",
+    "Canonical stateless Bearer-protected directory and GuessWho JSON write contracts are implemented and source-tested. Native forms still require isolated authenticated integration and device proof.",
+    "Contributors page actual source is /contributors.json, separate from /api/v1/contributors database rows.",
+    "Guess Who has canonical versioned action endpoints and public category/room-roster props. Native self-hosted Reverb configuration and the official native Pusher SDK are implemented; real isolated two-client creation/join/reconnect proof is pending.",
+    "Source game persistence is records and display preferences only, not active game saves or account sync."
+  ],
+  "liveReadSources": [
+    {
+      "url": "https://syrian.zone",
+      "result": "Homepage navigation and external/sibling link behavior read."
+    },
+    {
+      "url": "https://food.syrian.zone",
+      "result": "Title wasfatna, no readable lines."
+    },
+    {
+      "url": "https://answers.syrian.zone",
+      "result": "Apache Answer public list read."
+    },
+    {
+      "url": "https://joory.chat",
+      "result": "Redirect to /chat, no readable lines."
+    },
+    {
+      "url": "https://jard.chat",
+      "result": "Read-only fetch timed out."
+    },
+    {
+      "url": "https://news.jard.chat",
+      "result": "Arabic news title, no readable lines."
+    },
+    {
+      "url": "https://discord.gg/NqE8849VzA",
+      "result": "Inaccessible via read-only browser."
+    },
+    {
+      "url": "https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog",
+      "result": "Chrome extension listing read, no install."
+    }
+  ],
+  "sections": [
+    {
+      "id": "games",
+      "sourceRoutes": [
+        "/games"
+      ],
+      "sourceFiles": [
+        "resources/data/games.json",
+        "resources/js/Domain/games/games.ts",
+        "resources/js/Domain/games/GameTile.tsx",
+        "resources/js/Pages/Games/Index.tsx",
+        "resources/js/Pages/Games/_components/GameShell.tsx",
+        "routes/web.php"
+      ],
+      "features": [
+        "Registry tiles open 2048, Solitaire, Tarneeb and Trix as separate routes.",
+        "Guess Who has an implemented direct route but its registry tile is disabled with comingSoon=true.",
+        "President opens https://game.hadealahmad.com as an external game.",
+        "Shared game shell has back navigation, Arabic rules sheet, focus mode, and game-owned actions.",
+        "Solo games have no server score API and no account synchronization."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/games",
+          "notes": "Inertia page only; registry data is bundled in resources/data/games.json."
+        }
+      ],
+      "authRequirements": {
+        "read": "Public, no account required.",
+        "writes": "None on the public page."
+      },
+      "graphics": [
+        {
+          "source": "resources/data/project-icons.json",
+          "format": "SVG path definitions",
+          "use": "games, game_2048, solitaire, tarneeb, trix, guesswho icons"
+        },
+        {
+          "source": "public/assets/games/president.svg",
+          "format": "SVG",
+          "use": "external President tile"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/GamesPageTest.php",
+          "resources/js/Components/Icons/projectIcons.test.ts"
+        ],
+        "required": [
+          "Every enabled tile opens its intended native screen.",
+          "Coming-soon state and external-game state remain distinguishable and accessible.",
+          "Rules, focus mode and return navigation work at iPhone 17 text sizes and in both color modes."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Native games registry and shared game navigation",
+        "apis": [
+          "SwiftUI navigation, toolbar and sheets",
+          "UIKit accessibility and native focus/full-screen presentation"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Games/Index.tsx",
+          "src/features/Games/components/GameShell.tsx"
+        ],
+        "targetPaths": [
+          "src/features/Games/2048/Index.tsx",
+          "src/features/Games/CardTable.tsx",
+          "src/features/Games/GameShell.tsx",
+          "src/features/Games/Index.tsx",
+          "src/features/Games/PlayingCard.tsx",
+          "src/features/Games/Solitare/Index.tsx",
+          "src/features/Games/Tarneeb/Index.tsx",
+          "src/features/Games/Trix/Index.tsx",
+          "src/features/Games/Trix/SheddingLayout.tsx",
+          "src/features/Games/Trix/layout.test.ts",
+          "src/features/Games/Trix/layout.ts",
+          "src/features/Games/engines.test.ts",
+          "src/features/Games/engines.ts",
+          "src/features/Games/model.test.ts",
+          "src/features/Games/model.ts",
+          "src/features/Games/records.ts"
+        ]
+      },
+      "gaps": [
+        "Verify native focus mode, safe areas, original hub graphics and all child navigation on iPhone17 in both appearances."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "2048",
+      "sourceRoutes": [
+        "/games/2048"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/Games/2048/Index.tsx",
+        "resources/js/Pages/Games/2048/styles.css",
+        "resources/js/Pages/Games/_components/Game2048.tsx",
+        "resources/js/Pages/Games/_lib/engine2048.ts",
+        "resources/js/Pages/Games/_lib/scores.ts"
+      ],
+      "features": [
+        "4 by 4 board begins with two random tiles; each successful move spawns a tile.",
+        "Directional swipes and arrow/WASD keys slide and merge equal adjacent values, once per move.",
+        "Show live score and highest stored score; save a new best immediately during a run.",
+        "Show win overlay at tile 2048, continue beyond 2048 once dismissed, and show loss when no move remains.",
+        "New game resets the current board and score but preserves the best score.",
+        "Slide, spawn, merge-pop and absorbed-tile fade animations preserve tile identity.",
+        "Only the best score is persisted. Active board, undo and account score sync are absent in the source."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public, no account required.",
+        "writes": "None on the public page."
+      },
+      "graphics": [
+        {
+          "source": "resources/js/Pages/Games/_lib/engine2048.ts",
+          "format": "Numeric tile geometry and palette/class lookup",
+          "use": "Draw actual tile values and all tile states natively; do not use a board screenshot."
+        },
+        {
+          "source": "resources/js/Pages/Games/2048/styles.css",
+          "format": "CSS animation timing",
+          "use": "Reference for native animation behavior, not portable CSS"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/GamesPageTest.php",
+          "resources/js/Pages/Games/_lib/scores.test.ts"
+        ],
+        "required": [
+          "Add characterization tests for directional compression, merge-once, spawn only after a moved board, score gain, win/continue and no-moves loss. No dedicated engine2048.test.ts was found.",
+          "Seed randomness in engine tests.",
+          "Exercise swipes, new game, win/loss and persisted best on iPhone 17."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "2048 board",
+        "apis": [
+          "Native touch/pan gesture handling",
+          "Native text and rounded tile drawing",
+          "Native animation",
+          "Device-local preference storage"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Games/2048/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/Games/2048/Index.tsx"
+        ]
+      },
+      "gaps": [
+        "Native sliding, spawning and absorbed-tile animation parity remains unfinished.",
+        "Hardware-keyboard command parity remains unfinished.",
+        "Verify complete native swipe, win, continue, game-over and persisted-record flows."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "solitare",
+      "displayName": "Solitaire",
+      "sourceRoutes": [
+        "/games/solitare"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/Games/Solitare/Index.tsx",
+        "resources/js/Pages/Games/Solitare/styles.css",
+        "resources/js/Pages/Games/_components/Solitaire.tsx",
+        "resources/js/Pages/Games/_lib/solitaire.ts",
+        "resources/js/Pages/Games/_lib/useCardDrag.ts",
+        "resources/js/Domain/games/cards.ts",
+        "resources/js/Domain/games/PlayingCard.tsx",
+        "resources/js/Pages/Games/_lib/cardDisplay.ts",
+        "resources/js/Pages/Games/_lib/scores.ts"
+      ],
+      "features": [
+        "Klondike uses 52 cards, seven tableau columns of 1 through 7 cards and a 24-card stock.",
+        "Tap stock to draw one card; recycle waste when stock runs out.",
+        "Move descending alternating-color face-up runs; only a king starts an empty column; reveal covered face-down cards.",
+        "Build four foundations from ace to king in suit; legal top foundation cards can move back to tableau.",
+        "Support tap-select then destination, drag a card/run, and quick foundation movement.",
+        "Undo a committed deal transition, show a legal-move hint, and auto-move available cards to foundations.",
+        "Display moves, elapsed time, shortest winning time, win state and stuck state.",
+        "New game clears the run and undo stack; persisted shortest winning time remains.",
+        "Shared large-rank/pip preference persists across all three card games.",
+        "Active deal, elapsed run and undo stack are memory-only in the source."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public, no account required.",
+        "writes": "None on the public page."
+      },
+      "graphics": [
+        {
+          "source": "resources/js/Domain/games/PlayingCard.tsx",
+          "format": "DOM text, Unicode suit glyphs and percentage pip coordinates, not SVG or card image files",
+          "use": "Native card shape, red/black rank/suit and traditional pip drawing, back, selected, hinted and legal-drop states"
+        },
+        {
+          "source": "resources/js/Domain/games/cards.ts",
+          "format": "Card values and PIP_LAYOUTS coordinates",
+          "use": "Preserve ace/court/2-10 geometry and lower-half pip rotation"
+        },
+        {
+          "source": "resources/js/Pages/Games/Solitare/styles.css",
+          "format": "CSS",
+          "use": "Reference for seven columns, card fan, piles, drop and hint effects"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "resources/js/Pages/Games/_lib/solitaire.test.ts",
+          "resources/js/Domain/games/cards.test.ts",
+          "resources/js/Pages/Games/_lib/cardDisplay.test.ts",
+          "resources/js/Pages/Games/_lib/scores.test.ts"
+        ],
+        "required": [
+          "Preserve deck/deal/move/foundation/stock tests with seeded randomness.",
+          "Add undo, hint, auto-foundation, win and elapsed-record tests at the native-state boundary.",
+          "Verify tap and drag alternatives, seven-column readability, pile accessibility names, large-rank preference and best-time persistence on iPhone 17."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Solitaire table",
+        "apis": [
+          "Native card drawing and accessible buttons",
+          "Native drag/pan and hit testing",
+          "Native toolbar/sheets",
+          "Native timer lifecycle and device-local preferences"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Games/Solitare/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/Games/Solitare/Index.tsx"
+        ]
+      },
+      "gaps": [
+        "Verify seven-column card readability, drag hit testing, selected-card stacking, accessibility and complete native win/record flow.",
+        "Verify foreground/focus timer pausing and resumed interaction on iPhone17."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "tarneeb",
+      "sourceRoutes": [
+        "/games/tarneeb"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/Games/Tarneeb/Index.tsx",
+        "resources/js/Pages/Games/_components/Tarneeb.tsx",
+        "resources/js/Pages/Games/_lib/tarneeb.ts",
+        "resources/js/Pages/Games/_lib/tarneebAi.ts",
+        "resources/js/Pages/Games/_lib/cardGames/bidding.ts",
+        "resources/js/Pages/Games/_lib/cardGames/trick.ts",
+        "resources/js/Pages/Games/_lib/cardGames/hand.ts",
+        "resources/js/Pages/Games/_lib/cardGames/match.ts",
+        "resources/js/Pages/Games/_components/table.css",
+        "resources/js/Domain/games/cards.ts",
+        "resources/js/Domain/games/PlayingCard.tsx",
+        "resources/js/Pages/Games/_lib/cardDisplay.ts",
+        "resources/js/Pages/Games/_lib/scores.ts"
+      ],
+      "features": [
+        "One human seat and three local heuristic AI seats, in opposite-seat partnerships. No network multiplayer.",
+        "Deal 13 cards per seat. Auction opens to the dealer left, bids 7 through 13, pass is legal, and all-pass redeals.",
+        "High bidder selects trump, leads, and all seats must follow suit when possible. Highest trump wins, otherwise highest led suit wins.",
+        "Pause after a completed trick until the human continues; show played cards and winning seat.",
+        "Made contract scores tricks taken. Failed contract awards the bid to defenders.",
+        "Kaboot 13 made scores 26. Failed kaboot costs declarer 16 and awards defenders twice their tricks. A sweep on a lower bid earns 3 extra. First team to 41 wins.",
+        "AI estimates trump strength, chooses a legal bid/trump/play and avoids taking a safe partner trick. AI delay is 750 ms.",
+        "Show live team/trick/auction state, match statistics sheet, options, new game, rules, card style, tap-select/play and card drag.",
+        "Persist finished-match win/loss/played totals and shared card display preference, not active match state.",
+        "Optional doubles are explicitly not implemented in the website rules engine."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public, no account required.",
+        "writes": "None on the public page."
+      },
+      "graphics": [
+        {
+          "source": "resources/js/Domain/games/PlayingCard.tsx",
+          "format": "Text/pip card renderer",
+          "use": "Four-seat hands, central trick, legal/selected cards, hidden opponent backs"
+        },
+        {
+          "source": "resources/js/Pages/Games/_components/table.css",
+          "format": "CSS table geometry",
+          "use": "Native responsive four-seat table reference"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "resources/js/Pages/Games/_lib/tarneeb.test.ts",
+          "resources/js/Pages/Games/_lib/tarneebAi.test.ts",
+          "resources/js/Pages/Games/_lib/cardGames/bidding.test.ts",
+          "resources/js/Pages/Games/_lib/cardGames/trick.test.ts",
+          "resources/js/Pages/Games/_lib/cardGames/hand.test.ts",
+          "resources/js/Pages/Games/_lib/cardGames/match.test.ts",
+          "resources/js/Pages/Games/_lib/scores.test.ts"
+        ],
+        "required": [
+          "Retain auction, follow-suit, trump, kaboot and match-target characterization.",
+          "Retain AI-vs-AI legal-play simulations.",
+          "Verify actual human bidding/trump/play/continue, result statistics and new game on iPhone 17.",
+          "Cancel AI timers on navigation/background and prevent a stale action after restart."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Tarneeb table",
+        "apis": [
+          "Native card drawing and gestures",
+          "Native toolbar, rules/options/stat sheets",
+          "Native lifecycle-aware timing",
+          "Device-local match records"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Games/Tarneeb/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/Games/Tarneeb/Index.tsx"
+        ]
+      },
+      "gaps": [
+        "Verify native bidding, trump choice, legal human cards, AI pacing, caboot, match result and exactly-once records through a complete match.",
+        "Verify four-seat layout and card stacking on narrow native screens."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "trix",
+      "sourceRoutes": [
+        "/games/trix"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/Games/Trix/Index.tsx",
+        "resources/js/Pages/Games/Trix/styles.css",
+        "resources/js/Pages/Games/_components/Trix.tsx",
+        "resources/js/Pages/Games/_lib/trix.ts",
+        "resources/js/Pages/Games/_lib/trixAi.ts",
+        "resources/js/Pages/Games/_lib/cardGames/avoidance.ts",
+        "resources/js/Pages/Games/_lib/cardGames/shedding.ts",
+        "resources/js/Pages/Games/_lib/cardGames/hand.ts",
+        "resources/js/Pages/Games/_lib/cardGames/trick.ts",
+        "resources/js/Domain/games/cards.ts",
+        "resources/js/Domain/games/PlayingCard.tsx",
+        "resources/js/Pages/Games/_lib/cardDisplay.ts",
+        "resources/js/Pages/Games/_lib/scores.ts"
+      ],
+      "features": [
+        "One human and three local AI seats play 20 deals: four kingdoms, five distinct contracts in each kingdom. No network multiplayer.",
+        "First kingdom belongs to the seat dealt seven of hearts; kingdom holder sees their hand before choosing a remaining contract.",
+        "Contracts are queens, diamonds, tricks, king of hearts and trix. Four avoidance contracts have no trump and enforce following suit.",
+        "Queen penalty is 25, diamond penalty 10, trick penalty 15 and king-of-hearts penalty 75. Hearts cannot lead king-of-hearts unless the hand contains only hearts.",
+        "Trix lays suit runs from jacks upward to ace and downward to two. Pass is legal only when no legal lay exists. Finishing order pays 200, 150, 100 and 50.",
+        "Support individual and opposite-seat partnership modes. Show standings, contract/kingdom, deal result, next deal and final result.",
+        "AI chooses a suitable remaining contract, ducks/sheds penalties, spares its partner in team mode and plays legal shedding cards. AI delay is 700 ms.",
+        "Tap-select/play and drag cards, continue after trick, change shared card display, view rules/stats/options, and start a fresh game.",
+        "Persist finished-match statistics and card display preference. Current kingdom, hands, totals and mode are not persisted across a page reload.",
+        "Doubling and early deal termination are not implemented in the source."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public, no account required.",
+        "writes": "None on the public page."
+      },
+      "graphics": [
+        {
+          "source": "resources/js/Domain/games/PlayingCard.tsx",
+          "format": "Text/pip card renderer",
+          "use": "Four-seat table, central trick and suit-run layout"
+        },
+        {
+          "source": "resources/js/Pages/Games/Trix/styles.css",
+          "format": "CSS",
+          "use": "Reference for shedding board and card layout"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "resources/js/Pages/Games/_lib/trix.test.ts",
+          "resources/js/Pages/Games/_lib/trixAi.test.ts",
+          "resources/js/Pages/Games/_lib/cardGames/avoidance.test.ts",
+          "resources/js/Pages/Games/_lib/cardGames/shedding.test.ts",
+          "resources/js/Pages/Games/_lib/scores.test.ts"
+        ],
+        "required": [
+          "Retain penalty, legal-play, kingdom order and session end tests.",
+          "Retain 20-deal AI simulations and zero-sum session invariant in individual and team modes.",
+          "Verify human contract selection, legal pass, continue, next deal, mode/new-game and one-time result recording on iPhone 17."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Trix table",
+        "apis": [
+          "Native card and shedding-layout drawing",
+          "Native gestures, buttons and sheets",
+          "Native lifecycle-aware timing",
+          "Device-local match records"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Games/Trix/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/Games/Trix/Index.tsx",
+          "src/features/Games/Trix/SheddingLayout.tsx",
+          "src/features/Games/Trix/layout.test.ts",
+          "src/features/Games/Trix/layout.ts"
+        ]
+      },
+      "gaps": [
+        "Verify native solo/team game, all five contracts, shedding layout and full-session record accounting.",
+        "Verify original card layout, card stacking and foreground/focus AI timing on iPhone17."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "guesswho",
+      "sourceRoutes": [
+        "/guesswho",
+        "/guesswho/room/{roomCode}"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/GuessWho/Index.tsx",
+        "resources/js/Pages/GuessWho/Room.tsx",
+        "resources/js/Pages/GuessWho/_lib/api.ts",
+        "resources/js/Lib/guessWhoSession.ts",
+        "resources/js/echo.js",
+        "app/Http/Controllers/GuessWhoController.php",
+        "app/Support/GuessWho/RoomChannel.php",
+        "app/Events/GuessWhoStateEvent.php",
+        "app/Models/GuessWhoGame.php",
+        "routes/web.php",
+        "routes/channels.php",
+        "docs/modules/guess-who.md"
+      ],
+      "features": [
+        "Create a room using an active category with at least 12 characters, or mix/random. Room has up to 24 characters and a UUID room code.",
+        "Share/copy room URL or enter a room code, join as one of two guest session identities, and reject a third player/full room.",
+        "Choose and confirm a private secret character. Both ready selections start play, with player 1 taking the first turn.",
+        "Eliminate and restore character cards on a private board; server stores eliminated IDs per player and broadcasts only remaining counts.",
+        "Player on turn may pass or confirm a character guess. Correct guess wins; wrong guess passes turn. Server owns legality, turn and winner.",
+        "Resume/rejoin fetches own secret, eliminations, opponent remaining count and authoritative status. Presence shows opponent connection state.",
+        "Laravel Reverb presence channel guesswho.{roomCode}, event .state. Channel authorization requires membership in a room player slot.",
+        "Finished room remains finished; play-again returns to lobby to create a new room. No rematch/reset action or AI opponent exists.",
+        "Spoken questions use an external voice/video channel; the game has no implemented audio/video calling or text-question API.",
+        "Guest identity is browser-tab scoped in the website, separate from a signed-in account."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/guesswho",
+          "notes": "Public Inertia JSON via accepted api.page adapter, expected component GuessWho/Index, props categories and total_characters. No separate JSON resource endpoint is required for native rendering."
+        },
+        {
+          "method": "GET",
+          "path": "/guesswho/room/{roomCode}",
+          "notes": "Public Inertia JSON via api.page, expected GuessWho/Room, props game.room_code and game.category.characters. Native decoder required."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/guesswho/rooms",
+          "notes": "JSON {category_id: string or random, player_session}; 10 requests/minute. Numeric UI category IDs need conversion to string for current validation."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/guesswho/rooms/{roomCode}/join",
+          "notes": "JSON {player_session}; 30/minute. Returns role or room-full error."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/guesswho/rooms/{roomCode}/actions",
+          "notes": "JSON {sender_session, action, payload}; 120/minute. Actions select_ready {id}, elimination_update {eliminated}, pass_turn {}, guess {character_id}. Payload cap 16384 bytes."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/guesswho/rooms/{roomCode}/state?sender_session={identity}",
+          "notes": "Own-view JSON snapshot; membership checked, 60/minute."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/guesswho/broadcasting/auth",
+          "notes": "Presence-channel auth with socket_id, channel_name and X-Guess-Who-Session-ID or session_id. Only room-member channels are signed, 30/minute."
+        },
+        {
+          "method": "GET",
+          "path": "/storage/{character.image_path}",
+          "notes": "Public character portraits."
+        },
+        {
+          "method": "ADMIN",
+          "path": "/api/v1/admin/guesswho/categories and /characters",
+          "notes": "Authenticated guesswho.manage category/character CRUD and portrait uploads, reorder routes in routes/web.php."
+        }
+      ],
+      "authRequirements": {
+        "read": "Lobby and room pages are public.",
+        "play": "No account required. An unguessable guest session identity must occupy one of the room slots and authorize each action/snapshot/channel.",
+        "admin": "auth:web,sanctum plus guesswho.manage. Verify native JSON/multipart responses before using admin writes."
+      },
+      "graphics": [
+        {
+          "source": "/storage/guesswho/characters/**",
+          "format": "Uploaded portraits, server image_path",
+          "use": "Character grid, secret card, eliminated/grayscale state and confirmation state"
+        },
+        {
+          "source": "resources/js/Pages/GuessWho/Room.tsx",
+          "format": "DOM/CSS flip effect",
+          "use": "Replace with native confirmation interaction and accessible card state"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/GuessWhoActionTest.php"
+        ],
+        "required": [
+          "Retain outsider, invalid-character, oversize payload, turn, pass, correct/wrong guess and own-view privacy tests.",
+          "Add native two-client integration test through actual Reverb auth, join, both-ready, eliminate, guess, finish and reconnect.",
+          "Verify session identity survives intended app resume without leaking between separate participants.",
+          "Verify missing/full/pruned room, network loss, reconnect snapshot and absent portrait fallbacks.",
+          "No multiplayer claim until two independent clients complete a real match."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Guess Who lobby and room",
+        "apis": [
+          "Native grid/images, confirmation dialogs and share sheet",
+          "Native WebSocket transport with Reverb-compatible presence authentication",
+          "Secure device-local guest identity scoped to intended player/session",
+          "Native URL/deep-link routing and foreground reconnect"
+        ],
+        "proposedTargetPaths": [
+          "src/features/GuessWho/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/GuessWho/Admin.tsx",
+          "src/features/GuessWho/Index.tsx",
+          "src/features/GuessWho/Room.tsx",
+          "src/features/GuessWho/admin-model.ts",
+          "src/features/GuessWho/api.ts",
+          "src/features/GuessWho/model.test.ts",
+          "src/features/GuessWho/model.ts",
+          "src/features/GuessWho/realtime-model.test.ts",
+          "src/features/GuessWho/realtime-model.ts",
+          "src/features/GuessWho/realtime.ts",
+          "src/features/GuessWho/session.ts"
+        ]
+      },
+      "gaps": [
+        "Community08 completed the named native/second-client match flow. Native join/resume, reconnect and own guess/rematch controls still need separate proof.",
+        "Verify guest Keychain identity across relaunch without account bearer credentials on room endpoints.",
+        "Native category/character administration is implemented and fixture-tested; authenticated image/attribute/cascade mutations need native integration proof.",
+        "The selected secret portrait/caption passed. Remaining lobby filters, room controls, original portraits and both appearances need their own rendering/interaction checks."
+      ],
+      "publicPageContract": {
+        "transport": "api.page",
+        "path": "/guesswho",
+        "expectedComponent": "GuessWho/Index",
+        "props": "categories and total_characters",
+        "validation": "Decode all server data from unknown and reject wrong component or malformed props; preserve visible loading/empty/error/retry.",
+        "room": {
+          "path": "/guesswho/room/{roomCode}",
+          "expectedComponent": "GuessWho/Room",
+          "props": "game.room_code, game.category.name_ar, game.category.characters"
+        }
+      },
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "syofficial",
+      "sourceRoutes": [
+        "/syofficial"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/SyOfficial/Index.tsx",
+        "resources/js/Domain/syofficial/types.ts",
+        "resources/js/Domain/syofficial/social.ts",
+        "app/Http/Controllers/SyOfficialController.php",
+        "app/Services/SyOfficial/SyOfficialPresenter.php",
+        "app/Services/SyOfficial/SyOfficialDirectoryService.php",
+        "resources/js/Pages/Admin/SyOfficial/Index.tsx",
+        "app/Http/Controllers/SyOfficialAdminController.php",
+        "resources/js/Components/directory/useDirectory.ts",
+        "resources/js/Components/directory/useDirectory.test.ts"
+      ],
+      "features": [
+        "Browse active entities in active categories with Arabic/English names and descriptions and public logo images.",
+        "Search names/descriptions using shared Arabic-normalized directory search; accept an incoming q search parameter.",
+        "Select category, clear filters, show result count, switch grid/table, and group all-category results by category.",
+        "Switch interface language among Arabic, English, Turkish and Kurdish. Non-Arabic entity fields use name/description and English category labels.",
+        "Open nonempty social/website links with platform icon and accessible title; open official X list and Telegram list.",
+        "Authorized users open management or edit an entity. Categories/entities support create, edit, is_active change, ordering and delete; entity image upload and platform-keyed social map must be preserved.",
+        "Deleting a category cascades its entities. Public browsing has no add-account submission or geographic map."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/syofficial",
+          "notes": "Public Inertia JSON via accepted api.page adapter, expected component SyOfficial/Index, props initialData and categories. No separate JSON resource endpoint is required for native rendering."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/syofficial/categories",
+          "notes": "Create category, admin response redirects."
+        },
+        {
+          "method": "PUT|DELETE",
+          "path": "/api/v1/admin/syofficial/categories/{id}",
+          "notes": "Edit/toggle through is_active or delete cascading category."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/syofficial/categories/reorder",
+          "notes": "{orders:[{id,order_column}]}"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/syofficial/entities",
+          "notes": "Create entity and optional image_file upload."
+        },
+        {
+          "method": "POST|PUT|DELETE",
+          "path": "/api/v1/admin/syofficial/entities/{id}",
+          "notes": "Edit fields/socials/image/is_active or delete."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/syofficial/entities/reorder",
+          "notes": "{orders:[{id,order_column}]}"
+        }
+      ],
+      "authRequirements": {
+        "read": "Public.",
+        "writes": "auth:web,sanctum and per-action syofficial.create/edit/delete/reorder. Permission-resolved capability controls must come from server, not a native role guess."
+      },
+      "graphics": [
+        {
+          "source": "resources/data/media.json and SyOfficialPresenter",
+          "format": "R2 public entity image URLs, default placeholder",
+          "use": "Native cached logos and failure placeholder"
+        },
+        {
+          "source": "resources/js/Domain/syofficial/social.ts",
+          "format": "Platform-to-icon mapping",
+          "use": "Native social-brand labels/icons; preserve unknown platform keys"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/DirectoryPublicShapeTest.php",
+          "tests/Feature/SyOfficialDirectoryTest.php",
+          "tests/Feature/SyOfficialAdminTest.php",
+          "resources/js/Domain/syofficial/social.test.ts",
+          "resources/js/Components/directory/useDirectory.test.ts"
+        ],
+        "required": [
+          "Add native public decoder tests and search/category/language parity.",
+          "Verify grid/list, empty/reset, social links, image failure and q links on iPhone 17.",
+          "Native admin write flow needs capability and 401/403/422/cascade-confirmation tests."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Official account directory and capability-gated forms",
+        "apis": [
+          "Native search field, filters, grid/list and images",
+          "UIApplication.open for outbound HTTPS",
+          "Native image picker/multipart upload and destructive confirmation"
+        ],
+        "proposedTargetPaths": [
+          "src/features/SyOfficial/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/SyOfficial/Admin.tsx",
+          "src/features/SyOfficial/Index.tsx",
+          "src/features/SyOfficial/admin-model.ts",
+          "src/features/SyOfficial/generate-source.ts",
+          "src/features/SyOfficial/graphics.generated.ts",
+          "src/features/SyOfficial/model.test.ts",
+          "src/features/SyOfficial/model.ts",
+          "src/features/SyOfficial/translations.generated.ts",
+          "src/features/SyOfficial/translations.test.ts"
+        ]
+      },
+      "gaps": [
+        "Verify grouped all-category grid headers against the source; current native grid remains flat.",
+        "Verify original brand/flag artwork, all four languages and light/dark rendering on iPhone17.",
+        "Native entity/category administration is drafted and fixture-tested; isolated authenticated image/social/reorder/delete proof remains pending."
+      ],
+      "publicPageContract": {
+        "transport": "api.page",
+        "path": "/syofficial",
+        "expectedComponent": "SyOfficial/Index",
+        "props": "initialData and categories",
+        "validation": "Decode all server data from unknown and reject wrong component or malformed props; preserve visible loading/empty/error/retry."
+      },
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "phonebook",
+      "sourceRoutes": [
+        "/phonebook"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/Phonebook/Index.tsx",
+        "resources/js/Domain/phonebook/types.ts",
+        "app/Http/Controllers/PhonebookController.php",
+        "app/Services/Phonebook/PhonebookDirectoryService.php",
+        "app/Services/Phonebook/PhonebookCache.php",
+        "resources/js/Pages/Admin/Phonebook/Index.tsx",
+        "app/Http/Controllers/PhonebookAdminController.php",
+        "resources/js/Components/directory/useDirectory.ts",
+        "resources/js/Components/directory/useDirectory.test.ts"
+      ],
+      "features": [
+        "Browse active entries in active categories; show Arabic/English name/category, number, WhatsApp availability and source URL.",
+        "Arabic-normalized name/category search and normalized numeric substring search; incoming q query initializes search.",
+        "Category filter, result count, empty/reset and grid/table display; table is the initial display.",
+        "Copy the original number with success state, call a sanitized tel number, open WhatsApp and open official source.",
+        "WhatsApp removes spaces/dashes/parentheses and 00/+ prefix; a 10-digit Syrian 09 number becomes 9639 plus the remaining digits.",
+        "Authorized management has category/entry CRUD, ordering, category is_active, entry is_active and explicit entry toggle.",
+        "No public contribution form, geolocation, city map or address field exists on this page."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/phonebook",
+          "notes": "Public Inertia JSON via accepted api.page adapter, expected component Phonebook/Index, props initialData and categories. No separate JSON resource endpoint is required for native rendering."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/phonebook/categories",
+          "notes": "Create category."
+        },
+        {
+          "method": "PUT|DELETE",
+          "path": "/api/v1/admin/phonebook/categories/{id}",
+          "notes": "Edit category/is_active or delete."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/phonebook/categories/reorder",
+          "notes": "{orders:[{id,order_column}]}"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/phonebook/entries",
+          "notes": "Create entry."
+        },
+        {
+          "method": "POST|PUT|DELETE",
+          "path": "/api/v1/admin/phonebook/entries/{id}",
+          "notes": "Update fields or delete."
+        },
+        {
+          "method": "PATCH|POST",
+          "path": "/api/v1/admin/phonebook/entries/{id}/toggle",
+          "notes": "Toggle visibility."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/phonebook/entries/reorder",
+          "notes": "{orders:[{id,order_column}]}"
+        }
+      ],
+      "authRequirements": {
+        "read": "Public.",
+        "writes": "auth:web,sanctum plus phonebook.create/edit/delete/reorder/toggle per action."
+      },
+      "graphics": [
+        {
+          "source": "resources/data/project-icons.json",
+          "format": "Project/category icons and native call/copy/WhatsApp/source icons",
+          "use": "Native controls; no map artwork or phonebook photo gallery exists."
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/PhonebookAdminTest.php",
+          "resources/js/Components/directory/useDirectory.test.ts"
+        ],
+        "required": [
+          "Golden tests for tel/WhatsApp normalization including local Syrian numbers, +/00, whitespace and invalid values.",
+          "Verify copy, system call prompt, WhatsApp HTTPS fallback, sources, q search and category/reset on iPhone 17.",
+          "Do not place a real phone call as a test without explicit authorization.",
+          "Verify permission-gated edit/toggle/delete and server validation once native JSON contract exists."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Phonebook directory and capability-gated forms",
+        "apis": [
+          "Native search/filter/list",
+          "UIPasteboard",
+          "UIApplication.open for tel and https://wa.me",
+          "Native forms and confirmations"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Phonebook/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/Phonebook/Admin.tsx",
+          "src/features/Phonebook/DirectoryAdmin.test.tsx",
+          "src/features/Phonebook/DirectoryAdmin.tsx",
+          "src/features/Phonebook/Index.tsx",
+          "src/features/Phonebook/admin-api.test.ts",
+          "src/features/Phonebook/admin-api.ts",
+          "src/features/Phonebook/admin-contract.test.ts",
+          "src/features/Phonebook/admin-contract.ts",
+          "src/features/Phonebook/admin-model.test.ts",
+          "src/features/Phonebook/admin-model.ts",
+          "src/features/Phonebook/model.test.ts",
+          "src/features/Phonebook/model.ts",
+          "src/features/Phonebook/test-hosts.tsx"
+        ]
+      },
+      "gaps": [
+        "Verify copy, source links, call intent and WhatsApp handoff on iPhone17; no real call was placed.",
+        "Native category/entry forms, visibility and reorder are drafted and fixture-tested; isolated authenticated write/device proof remains pending."
+      ],
+      "publicPageContract": {
+        "transport": "api.page",
+        "path": "/phonebook",
+        "expectedComponent": "Phonebook/Index",
+        "props": "initialData and categories",
+        "validation": "Decode all server data from unknown and reject wrong component or malformed props; preserve visible loading/empty/error/retry."
+      },
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "sites",
+      "sourceRoutes": [
+        "/sites"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/Sites/Index.tsx",
+        "resources/js/Pages/Sites/SitesClient.tsx",
+        "resources/js/Pages/Sites/types.ts",
+        "app/Http/Controllers/ExternalDataController.php",
+        "app/Services/ExternalData/ExternalSheetCache.php",
+        "resources/js/Components/directory/useDirectory.ts",
+        "resources/js/Components/directory/useDirectory.test.ts"
+      ],
+      "features": [
+        "Load website list from a published Google Sheet through server-side cache; use stable name/URL-based IDs.",
+        "Search name/description/URL and filter by site type. Type labels group personal blogs, company/initiative sites and news/blog sites.",
+        "Grid/table toggle, visible/total count, empty/reset and client load-more in pages of 24.",
+        "Open a website externally. Favicon comes from Google s2 favicon service, with a globe fallback.",
+        "Add new website opens an external Google Form; there is no native first-party submission endpoint or account write on this page.",
+        "No directory map or geolocation flow exists."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/sites",
+          "notes": "Public Inertia JSON via accepted api.page adapter, expected component Sites/Index, props initialWebsites and fetchedAt. No separate JSON resource endpoint is required for native rendering."
+        },
+        {
+          "method": "GET",
+          "path": "https://www.google.com/s2/favicons?domain={hostname}&sz=64",
+          "notes": "External favicon image source."
+        },
+        {
+          "method": "EXTERNAL FORM",
+          "path": "https://docs.google.com/forms/d/e/1FAIpQLSdIu8TFwSmT7fHxzsVlOwt35X9Myfhg0RZ6jwEkIMxxvyctqA/viewform",
+          "notes": "User-initiated website submission remains on Google Forms."
+        }
+      ],
+      "authRequirements": {
+        "read": "Public.",
+        "writes": "External Google Form owns any sign-in/submission requirements. Syrian Zone has no Sites account-write API."
+      },
+      "graphics": [
+        {
+          "source": "Google s2 favicon URLs",
+          "format": "Remote raster favicon with globe fallback",
+          "use": "Native image cache; do not block an entry if favicon fails."
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/ExternalDataTest.php",
+          "resources/js/Components/directory/useDirectory.test.ts"
+        ],
+        "required": [
+          "Verify sheet cache failure/retry and empty results against native API.",
+          "Verify type filter, search/reset, grid/list, 24-item pagination, broken favicon and HTTPS external links.",
+          "Open submission form without submitting during UI checks."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Syrian sites directory",
+        "apis": [
+          "Native search, filters, grid/list and incremental rows",
+          "Native image cache",
+          "System browser for website and external submission form"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Sites/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/Sites/Index.tsx",
+          "src/features/Sites/model.test.ts",
+          "src/features/Sites/model.ts"
+        ]
+      },
+      "gaps": [
+        "Verify native search, filters, grid/list pagination, favicon fallback and the original external submission form handoff."
+      ],
+      "publicPageContract": {
+        "transport": "api.page",
+        "path": "/sites",
+        "expectedComponent": "Sites/Index",
+        "props": "initialWebsites and fetchedAt",
+        "validation": "Decode all server data from unknown and reject wrong component or malformed props; preserve visible loading/empty/error/retry."
+      },
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "govapps",
+      "sourceRoutes": [
+        "/govapps"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/GovApps/Index.tsx",
+        "resources/js/Pages/GovApps/GovAppsClient.tsx",
+        "resources/js/Domain/govapps/types.ts",
+        "resources/js/Domain/govapps/media.ts",
+        "app/Http/Controllers/GovAppController.php",
+        "app/Services/GovApps/GovAppPresenter.php",
+        "app/Services/GovApps/GovAppService.php",
+        "resources/js/Pages/Admin/GovApps/Index.tsx",
+        "resources/js/Pages/Admin/GovApps/_components/AppDialog.tsx",
+        "app/Http/Controllers/GovAppsAdminController.php",
+        "resources/js/Components/directory/useDirectory.ts",
+        "resources/js/Components/directory/useDirectory.test.ts"
+      ],
+      "features": [
+        "Browse active ordered government applications with Arabic display name/description, icon and links.",
+        "Search name/description, and use a multi-value platform facet for Android, iPhone and official website.",
+        "Expand/collapse descriptions; show no-results/reset and icon fallback.",
+        "Open available Apple App Store, Android/store or official website links. Android links remain external information, not iOS installs.",
+        "Authorized users manage apps with create/update/is_active/order/delete, multilingual metadata, icon upload and per-platform links. Delete is soft deletion in service.",
+        "Model/presenter carry images gallery URLs, but public GovAppsClient currently renders the icon only and has no screenshot gallery interaction.",
+        "No public app submission or geographic map exists."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/govapps",
+          "notes": "Public Inertia JSON via accepted api.page adapter, expected component GovApps/Index, props initialData. No separate JSON resource endpoint is required for native rendering."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/govapps",
+          "notes": "Create app, optional icon_file max 5 MB and links."
+        },
+        {
+          "method": "POST|PUT|DELETE",
+          "path": "/api/v1/admin/govapps/{id}",
+          "notes": "Edit/icon/is_active or soft delete."
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/govapps/reorder",
+          "notes": "{orders:[{id,order_column}]}"
+        }
+      ],
+      "authRequirements": {
+        "read": "Public.",
+        "writes": "auth:web,sanctum plus govapps.create/edit/delete/reorder per action. No public restore route; restore exists at service/agent-tool level."
+      },
+      "graphics": [
+        {
+          "source": "resources/data/media.json and GovAppPresenter",
+          "format": "R2 WebP/raster icon/image URLs",
+          "use": "Native cached icons; fallback is /govapps/mofa/icon.webp on media host."
+        },
+        {
+          "source": "resources/js/Pages/GovApps/GovAppsClient.tsx",
+          "format": "Inline Android and Apple SVG brand paths",
+          "use": "Native brand icons and descriptive link labels"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/DirectoryPublicShapeTest.php",
+          "tests/Feature/GovAppsServiceTest.php",
+          "tests/Feature/GovAppsAdminTest.php",
+          "resources/js/Components/directory/useDirectory.test.ts"
+        ],
+        "required": [
+          "Decode exact public shape and preserve platform keys.",
+          "Verify multi-platform filtering, expand/collapse, absent/broken icons, empty/reset and App Store/website opening on iPhone 17.",
+          "Native management tests cover permission, multipart image, validation, ordering and soft delete without exercising live writes during inventory.",
+          "Passed a rendered regression for Home global search parameters, including q, before native query navigation proof."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Government apps directory and capability-gated forms",
+        "apis": [
+          "Native search/filter/grid and image loading",
+          "UIApplication.open for Apple App Store/HTTPS",
+          "Native image picker/forms"
+        ],
+        "proposedTargetPaths": [
+          "src/features/GovApps/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/GovApps/Admin.tsx",
+          "src/features/GovApps/Index.tsx",
+          "src/features/GovApps/admin-model.ts",
+          "src/features/GovApps/model.test.ts",
+          "src/features/GovApps/model.ts",
+          "src/features/GovApps/Index.test.tsx"
+        ]
+      },
+      "gaps": [
+        "Verify native platform links, icon fallback, description expansion and external store handoff.",
+        "Native bilingual app/image/reorder administration is drafted and fixture-tested; isolated authenticated write/device proof remains pending.",
+        "Backend keyed-link preservation is repaired with source tests. Already flattened legacy production URLs are preserved as raw links and are not assigned guessed platforms."
+      ],
+      "publicPageContract": {
+        "transport": "api.page",
+        "path": "/govapps",
+        "expectedComponent": "GovApps/Index",
+        "props": "initialData",
+        "validation": "Decode all server data from unknown and reject wrong component or malformed props; preserve visible loading/empty/error/retry."
+      },
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "contributors",
+      "sourceRoutes": [
+        "/syrian-contributors"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/SyrianContributors/Index.tsx",
+        "app/Http/Controllers/ExternalDataController.php",
+        "public/contributors.json",
+        "app/Http/Controllers/ContributorController.php",
+        "app/Models/Contributor.php",
+        "routes/api.php"
+      ],
+      "features": [
+        "Leaderboard reads public/contributors.json via Inertia initial props, then refreshes the same static JSON hourly; first empty payload triggers immediate fetch.",
+        "Daily, monthly, yearly and total tabs sort corresponding contribution metrics descending.",
+        "Show first-place winner, second/third cards, remaining ranked rows, avatars/fallback initials and GitHub profile links.",
+        "Tap the Syrian flag to toggle eagle logo, and show identity pattern background and author attribution.",
+        "Retain the displayed list if a refresh fails; show empty/error and retry only when no list exists.",
+        "No leaderboard submission/account-write, search, map, score manipulation or native GitHub login exists.",
+        "Separate database contributors API is not the source of this page and cannot replace the static leaderboard without shape/metric comparison."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/contributors.json",
+          "notes": "Actual public leaderboard source containing username, avatar_url and daily/monthly/yearly/total counts."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/contributors?page={n}",
+          "notes": "Separate database pagination, 20 rows sorted total descending. Not the page source."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/contributors/{contributor}",
+          "notes": "Separate database contributor with contributions relationship. Not linked as page detail."
+        }
+      ],
+      "authRequirements": {
+        "read": "Public, no account required.",
+        "writes": "None on the public page."
+      },
+      "graphics": [
+        {
+          "source": "public/assets/ar.svg",
+          "format": "SVG",
+          "use": "Tappable Syrian flag"
+        },
+        {
+          "source": "public/syid-assets/materials/logo.ai.svg",
+          "format": "SVG with clipping/color profile",
+          "use": "Eagle/logo alternative"
+        },
+        {
+          "source": "public/syid-assets/materials/pattern.svg",
+          "format": "SVG",
+          "use": "Background pattern; native reduced-motion friendly presentation"
+        },
+        {
+          "source": "avatar_url in public/contributors.json",
+          "format": "Remote avatar raster",
+          "use": "Native cached avatar and initials fallback"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/ContributorTest.php",
+          "tests/Feature/ExternalDataTest.php"
+        ],
+        "required": [
+          "Add tests for static leaderboard shape, metric sorting, rank positions, empty data and refresh preserving prior list. Existing ContributorTest covers the separate database API.",
+          "Verify all four metric tabs, avatar fallback, flag/eagle toggle and GitHub link on iPhone 17."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Contributors leaderboard",
+        "apis": [
+          "Native segmented picker/list and image loading",
+          "Native SVG-compatible asset rendering",
+          "Foreground-aware refresh and system browser"
+        ],
+        "proposedTargetPaths": [
+          "src/features/SyrianContributors/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/SyrianContributors/Index.tsx",
+          "src/features/SyrianContributors/model.test.ts",
+          "src/features/SyrianContributors/model.ts"
+        ]
+      },
+      "gaps": [
+        "Verify native original flag/eagle artwork, avatar fallback, Reduce Motion and foreground/focus refresh behavior."
+      ],
+      "publicPageContract": {
+        "transport": "direct public JSON",
+        "path": "/contributors.json",
+        "validation": "Decode actual static leaderboard metrics. Do not substitute unrelated paginated DB API."
+      },
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "syid",
+      "sourceRoutes": [
+        "/syid"
+      ],
+      "sourceFiles": [
+        "resources/js/Pages/SyId/Index.tsx",
+        "resources/js/Pages/SyId/SyidClient.tsx",
+        "resources/js/Pages/SyId/SyriaMap.tsx",
+        "resources/js/Pages/SyId/featureToSVG.ts",
+        "resources/js/Pages/SyId/page_custom.css",
+        "resources/js/Components/map/geo.ts",
+        "resources/js/Domain/geography/governorates.ts",
+        "public/syid-assets/data.json",
+        "public/assets/population/syria_provinces_opt.geojson",
+        "app/Http/Controllers/ExternalDataController.php"
+      ],
+      "features": [
+        "Four palette groups, Forest, Golden Wheat, Deep Umber and Charcoal, each with three swatches. Copy HEX, HSL, CMYK or OKLCH value with feedback.",
+        "Qomra purchase link and discount code copy. HayyakumAllah download modal provides Light/Regular/Medium/Bold in TTF, WOFF and WOFF2 tabs.",
+        "Lazy font comparison preview renders HayyakumAllah text and light/dark Qomra raster samples. No licensed Qomra font file is bundled in this source.",
+        "Draw official flag dimensions and stars; download PNG, SVG and DWG proportion files.",
+        "Preview/download flag guide from Google Drive, logo SVG and official materials ZIP; preserve author/identity-site links.",
+        "Preview 14 framed governorate landmark icons; choose Classic/Forest/Wheat/Umber/Charcoal artwork color scheme and export each recolored SVG.",
+        "Lazy-load 14-province GeoJSON map, pan/zoom, search/select full Syria or a province, highlight selection and fit bounds.",
+        "Export full/selected province as standalone SVG or GeoJSON; also link full-precision R2 GeoJSON and Wikimedia blank/physical maps.",
+        "Export files retain identity/artwork colors independent of app light/dark UI.",
+        "No account write, geographic editing, route planning or user-upload flow exists."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/assets/population/syria_provinces_opt.geojson",
+          "notes": "Bundled public map, 239984 bytes and 14 features measured from repository."
+        },
+        {
+          "method": "GET",
+          "path": "/syid-assets/icons/governorates/with-frame/{file}.svg",
+          "notes": "14 source SVGs fetched by current page, recolored on device for export."
+        },
+        {
+          "method": "GET",
+          "path": "/syid-assets/fonts/HayyakumAllah/{TTF|WOFF|WOFF2}/{weight}.{extension}",
+          "notes": "12 font downloads, four weights in three formats."
+        },
+        {
+          "method": "GET",
+          "path": "/syid-assets/materials/{asset}",
+          "notes": "Flag PNG/SVG/DWG, guide preview, official logo and font sample raster files."
+        },
+        {
+          "method": "GET",
+          "path": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/191b8f0d278fc2ab095fb4f344e3e9b4-vGF1L1.zip",
+          "notes": "Official material archive link; not downloaded during this inventory."
+        },
+        {
+          "method": "GET",
+          "path": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/syria_provinces.geojson",
+          "notes": "Full-precision map link."
+        },
+        {
+          "method": "EXTERNAL",
+          "path": "https://drive.google.com/uc?export=download&id=1-HbfWI2PC76TTR6rKpmGl7GDcUlcZFXl",
+          "notes": "Flag guide download owned by Google Drive."
+        }
+      ],
+      "authRequirements": {
+        "read": "Public, no account required.",
+        "writes": "None on the public page."
+      },
+      "graphics": [
+        {
+          "source": "public/syid-assets/icons/governorates/with-frame and no-frame",
+          "format": "14 SVGs per variant plus AI/PDF/SVG source exports",
+          "use": "Native previews and original file export. SVGs include style, path, rect, line and transforms."
+        },
+        {
+          "source": "public/syid-assets/materials/logo.ai.svg",
+          "format": "SVG containing defs, color-profile, clipPath, path and group",
+          "use": "Native-compatible preview conversion must preserve clipping; original download remains unchanged."
+        },
+        {
+          "source": "public/syid-assets/fonts/HayyakumAllah/TTF",
+          "format": "Four TTF weights",
+          "use": "Native font preview can use TTF. WOFF/WOFF2 remain downloadable resources, not iOS font rendering formats."
+        },
+        {
+          "source": "public/syid-assets/materials",
+          "format": "SVG/PNG/JPG/WebP/DWG",
+          "use": "Flag, guide, identity logo, wallpapers and preview samples. Current React page does not render every entry in legacy data.json."
+        },
+        {
+          "source": "public/assets/population/syria_provinces_opt.geojson",
+          "format": "GeoJSON Polygon/MultiPolygon, 14 provinces",
+          "use": "MapKit polygon overlays and original SVG/GeoJSON export geometry"
+        },
+        {
+          "source": "resources/js/Pages/SyId/page_custom.css",
+          "format": "CSS geometry and font-face",
+          "use": "Recreate flag dimension diagram natively instead of copying CSS or screenshotting it."
+        }
+      ],
+      "tests": {
+        "existing": [
+          "resources/js/Components/map/geo.test.ts",
+          "tests/Feature/ExternalDataTest.php"
+        ],
+        "required": [
+          "Golden checks for color copy values, recolored SVG paths/background and exact exported feature selection.",
+          "Characterize featureToSVG including Polygon/MultiPolygon, bounds, empty data and standalone SVG output. No dedicated featureToSVG test was found.",
+          "Verify font preview and all downloadable format actions with native file picker/share/preview. Do not download every archive during inventory.",
+          "Verify lazy map loading/error/retry, 14 province labels, full/selected bounds, filtering and export on iPhone 17.",
+          "Visually check original artwork, flag proportions, SVG clipping, light/dark samples, Arabic font and Reduce Motion."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/model/rendered fixture proof, device verification pending",
+        "screen": "Native identity guide, artwork browser and map/export tools",
+        "apis": [
+          "Native color swatches and UIPasteboard",
+          "CoreText/SwiftUI custom TTF font preview",
+          "Native vector/path and raster rendering",
+          "MapKit MKPolygon/MKMultiPolygon overlays",
+          "URLSession downloads, app temporary files, UIDocumentPickerViewController export, UIActivityViewController and Quick Look"
+        ],
+        "proposedTargetPaths": [
+          "src/features/SyId/Index.tsx"
+        ],
+        "targetPaths": [
+          "src/features/SyId/Index.tsx",
+          "src/features/SyId/SyriaMap.tsx",
+          "src/features/SyId/artwork.test.ts",
+          "src/features/SyId/generate-artwork.ts",
+          "src/features/SyId/identity.generated.ts",
+          "src/features/SyId/model.test.ts",
+          "src/features/SyId/model.ts",
+          "src/features/SyId/provinces.generated.ts",
+          "src/features/SyId/svg.test.ts",
+          "src/features/SyId/svg.ts"
+        ]
+      },
+      "gaps": [
+        "Verify original SVG appearance, Arabic font shaping, vector map pan/pinch/holes and each export format on iPhone17.",
+        "Native file/share, ZIP and SVG-to-PNG adapters are implemented but this workstream has not verified every real export.",
+        "Qomra remains the source external purchase flow; no unlicensed font is bundled."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "recipes",
+      "scope": "native resource link, plus existing Syrian Zone widget where listed; external application is not ported",
+      "sourceRoutes": [
+        "https://food.syrian.zone"
+      ],
+      "sourceFiles": [
+        "resources/data/site-modules.json",
+        "resources/js/Pages/Home.tsx",
+        "app/Http/Controllers/RecipeController.php",
+        "resources/js/Pages/Board/_widgets/recipe/View.tsx",
+        "resources/js/Pages/Board/_widgets/recipe/index.ts",
+        "resources/js/Pages/Board/_lib/sources.ts"
+      ],
+      "features": [
+        "Homepage tile opens the sibling recipe app at food.syrian.zone.",
+        "Board recipe-of-the-day widget displays name, optional thumbnail/city/time/difficulty/tags, retry/empty/error, and opens the recipe permalink.",
+        "Recipe choice is normalized and cached by Syrian Zone; recipe creation/search/details belong to the sibling application."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/recipes/today",
+          "notes": "Public Syrian Zone {recipe} JSON. Also /api/v1/recipe-of-the-day and legacy /api/recipe-of-the-day."
+        },
+        {
+          "method": "UPSTREAM GET",
+          "path": "https://food.syrian.zone/api/recipes?page={n}",
+          "notes": "Server-only proxy source, not a promise to port the recipe app API."
+        }
+      ],
+      "authRequirements": {
+        "read": "Public resource link or public Syrian Zone widget.",
+        "writes": "External destination owns its account, permissions and writes. Do not pass Syrian Zone tokens to it or perform automatic writes."
+      },
+      "graphics": [
+        {
+          "source": "Recipe image_url thumbnail, with broken-image fallback.",
+          "use": "Native thumbnail or registry icon, with accessible name and fallback"
+        },
+        {
+          "source": "Shared recipes project SVG icon.",
+          "use": "Native thumbnail or registry icon, with accessible name and fallback"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/RecipeTest.php"
+        ],
+        "required": [
+          "Verify exact HTTPS destination and explicit user-initiated opening on iPhone 17.",
+          "Verify native return/back path and opening failure. Do not submit, join, install or send messages while checking links.",
+          "Retain normalized decoder, failure/retry, empty state and broken-image behavior for the Syrian Zone widget."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "Outbound-link or sibling-widget scope. Integration owned by Home/Board workstreams; no third-party native application port claimed.",
+        "screen": "Native resource row and existing read-only widget",
+        "apis": [
+          "UIApplication.open through the shared native link handler",
+          "Optional visibly presented SFSafariViewController for external website browsing",
+          "Native share/copy URL action"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Resources/recipes/Index.tsx"
+        ]
+      },
+      "observedBehavior": "Live homepage contains the external link. food.syrian.zone responded with title wasfatna and no readable server-rendered content in the read-only browser. No recipe interactions were tested.",
+      "gaps": [
+        "Port the Syrian Zone widget and outbound links. Full sibling recipe app parity is not established by this repository."
+      ]
+    },
+    {
+      "id": "answers",
+      "scope": "native resource link, plus existing Syrian Zone widget where listed; external application is not ported",
+      "sourceRoutes": [
+        "https://answers.syrian.zone"
+      ],
+      "sourceFiles": [
+        "resources/data/site-modules.json",
+        "resources/js/Pages/Home.tsx",
+        "app/Http/Controllers/AnswersController.php",
+        "resources/js/Pages/Board/_widgets/answers/View.tsx",
+        "resources/js/Pages/Board/_widgets/answers/index.ts",
+        "resources/js/Pages/Board/_lib/sources.ts"
+      ],
+      "features": [
+        "Homepage tile opens answers.syrian.zone, a separate Apache Answer community application.",
+        "Board latest-questions widget shows normalized title, tags, answer count and permalink with loading/error/retry/empty states.",
+        "Full questions, answers, voting, sign-in and writing belong to the separate service."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/answers?limit={1..20}",
+          "notes": "Public {items}; default limit 8 and cache 300 seconds. Legacy /api/answers exists."
+        },
+        {
+          "method": "UPSTREAM GET",
+          "path": "https://answers.syrian.zone/answer/api/v1/question/page",
+          "notes": "Server proxy requests newest questions and checks body code 200."
+        }
+      ],
+      "authRequirements": {
+        "read": "Public resource link or public Syrian Zone widget.",
+        "writes": "External destination owns its account, permissions and writes. Do not pass Syrian Zone tokens to it or perform automatic writes."
+      },
+      "graphics": [
+        {
+          "source": "Shared answers project SVG icon.",
+          "use": "Native thumbnail or registry icon, with accessible name and fallback"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/AnswersTest.php"
+        ],
+        "required": [
+          "Verify exact HTTPS destination and explicit user-initiated opening on iPhone 17.",
+          "Verify native return/back path and opening failure. Do not submit, join, install or send messages while checking links.",
+          "Retain normalized decoder, failure/retry, empty state and broken-image behavior for the Syrian Zone widget."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "Outbound-link or sibling-widget scope. Integration owned by Home/Board workstreams; no third-party native application port claimed.",
+        "screen": "Native resource row and existing read-only widget",
+        "apis": [
+          "UIApplication.open through the shared native link handler",
+          "Optional visibly presented SFSafariViewController for external website browsing",
+          "Native share/copy URL action"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Resources/answers/Index.tsx"
+        ]
+      },
+      "observedBehavior": "Read-only live page displayed newest/active/score question lists, tags, counts, pagination and Apache Answer branding. No vote, question or answer was submitted.",
+      "gaps": [
+        "A latest-question widget is native scope; do not claim the separate question/answer/vote account system is ported."
+      ]
+    },
+    {
+      "id": "codex",
+      "scope": "native resource link, plus existing Syrian Zone widget where listed; external application is not ported",
+      "sourceRoutes": [
+        "https://discord.gg/NqE8849VzA"
+      ],
+      "sourceFiles": [
+        "resources/data/site-modules.json",
+        "resources/js/Pages/Home.tsx"
+      ],
+      "features": [
+        "Homepage opens the community Discord invite https://discord.gg/NqE8849VzA.",
+        "Community membership, chat and Discord sign-in belong to Discord."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public resource link or public Syrian Zone widget.",
+        "writes": "External destination owns its account, permissions and writes. Do not pass Syrian Zone tokens to it or perform automatic writes."
+      },
+      "graphics": [
+        {
+          "source": "Shared codex project SVG icon.",
+          "use": "Native thumbnail or registry icon, with accessible name and fallback"
+        }
+      ],
+      "tests": {
+        "existing": [],
+        "required": [
+          "Verify exact HTTPS destination and explicit user-initiated opening on iPhone 17.",
+          "Verify native return/back path and opening failure. Do not submit, join, install or send messages while checking links."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "Outbound-link or sibling-widget scope. Integration owned by Home/Board workstreams; no third-party native application port claimed.",
+        "screen": "Native resource row",
+        "apis": [
+          "UIApplication.open through the shared native link handler",
+          "Optional visibly presented SFSafariViewController for external website browsing",
+          "Native share/copy URL action"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Resources/codex/Index.tsx"
+        ]
+      },
+      "observedBehavior": "Invite URL verified in homepage registry and live homepage link. Invite destination was inaccessible to the read-only browser; acceptance/validity was not tested.",
+      "gaps": [
+        "Use HTTPS opening so iOS can hand off to Discord when available or its browser page. Do not auto-join, create a Discord client or claim membership."
+      ]
+    },
+    {
+      "id": "flag_replacer",
+      "scope": "native resource link, plus existing Syrian Zone widget where listed; external application is not ported",
+      "sourceRoutes": [
+        "https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog"
+      ],
+      "sourceFiles": [
+        "resources/data/site-modules.json",
+        "resources/js/Pages/Home.tsx"
+      ],
+      "features": [
+        "Homepage opens the Chrome Web Store listing for Syrian Flag Replacer.",
+        "Extension replaces Syrian flag emoji images on Twitter/X; its desktop extension installation is not an iOS app feature."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public resource link or public Syrian Zone widget.",
+        "writes": "External destination owns its account, permissions and writes. Do not pass Syrian Zone tokens to it or perform automatic writes."
+      },
+      "graphics": [
+        {
+          "source": "public/flag-replacer/1f1f8-1f1fe.svg",
+          "use": "Native thumbnail or registry icon, with accessible name and fallback"
+        }
+      ],
+      "tests": {
+        "existing": [],
+        "required": [
+          "Verify exact HTTPS destination and explicit user-initiated opening on iPhone 17.",
+          "Verify native return/back path and opening failure. Do not submit, join, install or send messages while checking links."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "Outbound-link or sibling-widget scope. Integration owned by Home/Board workstreams; no third-party native application port claimed.",
+        "screen": "Native resource row",
+        "apis": [
+          "UIApplication.open through the shared native link handler",
+          "Optional visibly presented SFSafariViewController for external website browsing",
+          "Native share/copy URL action"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Resources/flag_replacer/Index.tsx"
+        ]
+      },
+      "observedBehavior": "Live listing is Syrian Flag Replacer by SyrianZone with Add to Desktop. No extension was installed.",
+      "gaps": [
+        "Preserve an informational external link and copy/share URL. Do not advertise Chrome extension installation into iOS Safari or native replacement of other apps emoji."
+      ]
+    },
+    {
+      "id": "joory",
+      "scope": "native resource link, plus existing Syrian Zone widget where listed; external application is not ported",
+      "sourceRoutes": [
+        "https://joory.chat"
+      ],
+      "sourceFiles": [
+        "resources/data/site-modules.json",
+        "resources/js/Pages/Home.tsx"
+      ],
+      "features": [
+        "Homepage external/sibling links section opens https://joory.chat.",
+        "Joory account, chat models, message storage and permissions belong to that external app."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public resource link or public Syrian Zone widget.",
+        "writes": "External destination owns its account, permissions and writes. Do not pass Syrian Zone tokens to it or perform automatic writes."
+      },
+      "graphics": [
+        {
+          "source": "https://joory.chat/favicon.svg, remote fallback needed.",
+          "use": "Native thumbnail or registry icon, with accessible name and fallback"
+        }
+      ],
+      "tests": {
+        "existing": [],
+        "required": [
+          "Verify exact HTTPS destination and explicit user-initiated opening on iPhone 17.",
+          "Verify native return/back path and opening failure. Do not submit, join, install or send messages while checking links."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "Outbound-link or sibling-widget scope. Integration owned by Home/Board workstreams; no third-party native application port claimed.",
+        "screen": "Native resource row",
+        "apis": [
+          "UIApplication.open through the shared native link handler",
+          "Optional visibly presented SFSafariViewController for external website browsing",
+          "Native share/copy URL action"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Resources/joory/Index.tsx"
+        ]
+      },
+      "observedBehavior": "Read-only open redirected to https://joory.chat/chat with Joory Arabic assistant title and no readable page content. Chat was not used.",
+      "gaps": [
+        "Native scope is a branded outbound link, not a port of a third-party assistant."
+      ]
+    },
+    {
+      "id": "jard",
+      "scope": "native resource link, plus existing Syrian Zone widget where listed; external application is not ported",
+      "sourceRoutes": [
+        "https://jard.chat"
+      ],
+      "sourceFiles": [
+        "resources/data/site-modules.json",
+        "resources/js/Pages/Home.tsx"
+      ],
+      "features": [
+        "Homepage external/sibling links section opens https://jard.chat.",
+        "No Jard application code or API is defined by Syrian Zone."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public resource link or public Syrian Zone widget.",
+        "writes": "External destination owns its account, permissions and writes. Do not pass Syrian Zone tokens to it or perform automatic writes."
+      },
+      "graphics": [
+        {
+          "source": "https://jard.chat/images/logo-light.svg, remote fallback needed.",
+          "use": "Native thumbnail or registry icon, with accessible name and fallback"
+        }
+      ],
+      "tests": {
+        "existing": [],
+        "required": [
+          "Verify exact HTTPS destination and explicit user-initiated opening on iPhone 17.",
+          "Verify native return/back path and opening failure. Do not submit, join, install or send messages while checking links."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "Outbound-link or sibling-widget scope. Integration owned by Home/Board workstreams; no third-party native application port claimed.",
+        "screen": "Native resource row",
+        "apis": [
+          "UIApplication.open through the shared native link handler",
+          "Optional visibly presented SFSafariViewController for external website browsing",
+          "Native share/copy URL action"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Resources/jard/Index.tsx"
+        ]
+      },
+      "observedBehavior": "Live homepage destination verified. Read-only destination fetch timed out; destination interactions and availability remain unverified.",
+      "gaps": [
+        "Keep explicit external identity and a native open failure/retry path. Do not invent Jard features or claim it was ported."
+      ]
+    },
+    {
+      "id": "news",
+      "scope": "native resource link, plus existing Syrian Zone widget where listed; external application is not ported",
+      "sourceRoutes": [
+        "https://news.jard.chat"
+      ],
+      "sourceFiles": [
+        "resources/data/site-modules.json",
+        "resources/js/Pages/Home.tsx"
+      ],
+      "features": [
+        "Homepage external/sibling links section opens https://news.jard.chat.",
+        "News reading, search, preferences and account features on that separate site are outside this repository."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public resource link or public Syrian Zone widget.",
+        "writes": "External destination owns its account, permissions and writes. Do not pass Syrian Zone tokens to it or perform automatic writes."
+      },
+      "graphics": [
+        {
+          "source": "Shared news project SVG icon.",
+          "use": "Native thumbnail or registry icon, with accessible name and fallback"
+        }
+      ],
+      "tests": {
+        "existing": [],
+        "required": [
+          "Verify exact HTTPS destination and explicit user-initiated opening on iPhone 17.",
+          "Verify native return/back path and opening failure. Do not submit, join, install or send messages while checking links."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "Outbound-link or sibling-widget scope. Integration owned by Home/Board workstreams; no third-party native application port claimed.",
+        "screen": "Native resource row",
+        "apis": [
+          "UIApplication.open through the shared native link handler",
+          "Optional visibly presented SFSafariViewController for external website browsing",
+          "Native share/copy URL action"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Resources/news/Index.tsx"
+        ]
+      },
+      "observedBehavior": "Read-only page responded with title أخبار سوريا but no readable server-rendered lines. No article navigation was tested.",
+      "gaps": [
+        "Native scope is the existing outbound resource link. A native news reader would require a separate API/content contract."
+      ]
+    },
+    {
+      "id": "president",
+      "scope": "external game link only",
+      "sourceRoutes": [
+        "https://game.hadealahmad.com"
+      ],
+      "sourceFiles": [
+        "resources/data/games.json",
+        "resources/js/Domain/games/GameTile.tsx",
+        "public/assets/games/president.svg"
+      ],
+      "features": [
+        "Games hub opens President as a labeled external game. Its gameplay/rules are not implemented in this repository."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "External destination controls access.",
+        "writes": "No first-party account/game-state writes."
+      },
+      "graphics": [
+        {
+          "source": "public/assets/games/president.svg",
+          "format": "SVG",
+          "use": "Native external game tile"
+        }
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/GamesPageTest.php"
+        ],
+        "required": [
+          "Verify exact URL opening and return navigation without claiming native gameplay."
+        ],
+        "execution": "Native source-derived boundary and relevant rendered fixture tests run. Latest whole-app check:395 tests and4528 assertions passed; this total is not per-section or device proof."
+      },
+      "nativeTargets": {
+        "status": "Outbound-link or sibling-widget scope. Integration owned by Home/Board workstreams; no third-party native application port claimed.",
+        "screen": "External President game tile",
+        "apis": [
+          "UIApplication.open"
+        ],
+        "proposedTargetPaths": [
+          "src/features/Resources/president/Index.tsx"
+        ]
+      },
+      "gaps": [
+        "Do not replace an external website with a fake native game or claim it has been ported. Destination gameplay was not tested."
+      ]
+    },
+    {
+      "id": "shawarma",
+      "sourceRoutes": [
+        "/shawarma"
+      ],
+      "sourceFiles": [
+        "routes/web.php",
+        "resources/js/Pages/Shawarma/Index.tsx",
+        "public/assets/shawarma/*.webp"
+      ],
+      "features": [
+        "Render @macdoos's Shawarma Tier List with source S, A, B, C order and original rank colors.",
+        "Preserve all ten named restaurants, their editorial tiers and within-tier ordering.",
+        "Render each unchanged original WebP logo without a network requirement.",
+        "Open each exact Instagram or Facebook restaurant account only after explicit user action.",
+        "Adapt the source link tile to a native restaurant sheet with original logo, name and social platform, then a deliberate external-account action."
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "read": "Public static source content.",
+        "writes": "No Syrian Zone write, scoring or ballot endpoint. Social accounts own their external authentication."
+      },
+      "graphics": [
+        {
+          "source": "public/assets/shawarma/*.webp",
+          "format": "Ten original WebP files statically bundled by Metro",
+          "use": "Native image views, unchanged original files."
+        }
+      ],
+      "tests": {
+        "existing": [],
+        "required": [
+          "Original-source golden verifies all restaurant names, rank membership/order, logo paths and account URLs.",
+          "WebP signatures and HTTPS social hosts are verified for each original asset/link.",
+          "Native testShawarmaOriginalRankingAndRestaurantSheet opens S and C restaurant sheets and captures logos without opening social applications."
+        ],
+        "execution": "Four source/asset/bundle-manifest/contrast tests passed with68 assertions. Native XCTest authored but not yet run by this workstream."
+      },
+      "nativeTargets": {
+        "status": "native draft; source/asset proof, device validation pending",
+        "screen": "ShawarmaScreen, key shawarma",
+        "targetPaths": [
+          "src/features/Shawarma/Index.tsx",
+          "src/features/Shawarma/model.ts",
+          "src/features/Shawarma/logos.ts",
+          "src/features/Shawarma/model.test.ts"
+        ]
+      },
+      "gaps": [
+        "Verify original logos/rank colors, narrow layout, Dynamic Type and restaurant sheet navigation on iPhone17.",
+        "External account handoff remains separately user initiated and is not automatically exercised by the read-only UI test."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    }
+  ]
+}

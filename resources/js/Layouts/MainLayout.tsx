@@ -8,7 +8,7 @@ import AnalyticsConsentBanner from '@/Components/AnalyticsConsentBanner';
 import SeoHead from '@/Components/SeoHead';
 import { Toaster } from '@/Components/ui/sonner';
 import { useUsageTracker } from '@/Domain/quran/usageStore';
-import SettingsSync from '@/Domain/settings/SettingsSync';
+import SettingsSync from '@/Domain/settings/SettingsSyncView';
 import { focusInlineSearch, useAppShell } from '@/Lib/appShell';
 
 const GlobalCommandPalette = React.lazy(() => import('@/Components/GlobalCommandPalette'));

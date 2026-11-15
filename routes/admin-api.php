@@ -15,6 +15,7 @@ use App\Http\Controllers\SitePopupAdminController;
 use App\Http\Controllers\SyOfficialAdminController;
 use App\Http\Controllers\TransitAdminController;
 use App\Http\Controllers\TransitImportController;
+use App\Http\Controllers\UserAdminController;
 use App\Http\Middleware\FirstPartyAdminTransport;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,17 @@ Route::middleware(['auth:sanctum', FirstPartyAdminTransport::class])->group(func
     $promisesRescheduleRoutes = require __DIR__.'/promises-reschedule.php';
 
     Route::middleware('superadmin')->group(function () {
+        Route::prefix('v1/admin/users')->group(function () {
+            Route::get('/options', [UserAdminController::class, 'options']);
+            Route::get('/', [UserAdminController::class, 'index']);
+            Route::post('/', [UserAdminController::class, 'store']);
+            Route::post('/bulk', [UserAdminController::class, 'bulk']);
+            Route::get('/{id}', [UserAdminController::class, 'show'])->whereNumber('id');
+            Route::put('/{id}', [UserAdminController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [UserAdminController::class, 'destroy'])->whereNumber('id');
+            Route::post('/{id}/restore', [UserAdminController::class, 'restore'])->whereNumber('id');
+            Route::delete('/{id}/force', [UserAdminController::class, 'forceDestroy'])->whereNumber('id');
+        });
 
         Route::delete('/v1/admin/users/{userId}/api-tokens', [ApiTokenAdminController::class, 'revokeAllForUser'])
             ->whereNumber('userId')

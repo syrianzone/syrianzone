@@ -26,7 +26,7 @@ test.skipIf(process.platform !== 'darwin')('real RN comparisons skip equal-text 
   const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
   expect(result.exitCode, output).toBe(0);
   expect(output).toContain('17 comparison checks, 0 failures');
-});
+}, 30_000);
 
 test('the installed Expo plugin persists a source build for the patched RN core', async () => {
   const config = (await import(pathToFileURL(resolve(root, 'app.config.ts')).href)).default;

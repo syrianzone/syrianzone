@@ -10,6 +10,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   hotels: { title: 'الفنادق', component: lazy(() => import('./features/Hotels/Index').then(module => ({ default: module.HotelsScreen }))) },
   hotel: { title: 'تفاصيل الفندق', component: lazy(() => import('./features/Hotels/Index').then(module => ({ default: module.HotelScreen }))) },
   guides: { title: 'المرشدون المحليون', component: lazy(() => import('./features/Guides/Index').then(module => ({ default: module.GuidesScreen }))) },
+  board: { title: 'لوح', component: lazy(() => import('./features/Board/Index').then(module => ({ default: module.BoardScreen }))) },
   transit_studio: { title: 'استوديو النقل', component: lazy(() => import('./features/TransitStudio/Index').then(module => ({ default: module.TransitStudioScreen }))) },
   account: { title: 'الحساب', component: lazy(() => import('./features/Account/Index').then(module => ({ default: module.AccountScreen }))) },
   dashboard: { title: 'لوحة التحكم', component: lazy(() => import('./features/Dashboard/Index').then(module => ({ default: module.DashboardScreen }))) },

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -42,6 +43,13 @@ class AppServiceProvider extends ServiceProvider
         View::composer('app', function ($view) {
             $view->with('meta', \App\Support\Seo\SeoMeta::resolve(request()));
         });
+
+        // A banned owner's token does not authenticate, on any route. Banning
+        // also deletes the user's tokens; this covers a token issued in the
+        // window around the ban and any path that sets is_banned directly.
+        Sanctum::authenticateAccessTokensUsing(
+            fn (PersonalAccessToken $token, bool $isValid): bool => $isValid && ! (bool) $token->tokenable?->is_banned
+        );
 
         // Any write to the tracker drops the cached /promises payload.
         foreach ([Promise::class, PromiseUpdate::class, PromiseSpeaker::class, PromiseSector::class] as $model) {

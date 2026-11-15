@@ -29,8 +29,9 @@ test('the tokens page needs a capability, not a role', function () {
     $this->actingAs(User::factory()->create(['role' => 'user', 'permissions' => []]))
         ->get('/admin/api-tokens')->assertForbidden();
 
+    // A banned user's session is ended before the page is reached.
     $this->actingAs(moduleStaff('places', ['is_banned' => true]))
-        ->get('/admin/api-tokens')->assertForbidden();
+        ->get('/admin/api-tokens')->assertRedirect('/?error=banned');
 
     $this->actingAs(moduleStaff('places'))
         ->get('/admin/api-tokens')->assertOk();

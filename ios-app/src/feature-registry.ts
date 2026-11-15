@@ -6,6 +6,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   muslim_prayer: { title: 'مواقيت الصلاة', component: lazy(() => import('./features/Muslim/Prayer/Index').then(module => ({ default: module.PrayerScreen }))) },
   muslim_quran: { title: 'قارئ القرآن', component: lazy(() => import('./features/Muslim/Quran/Index').then(module => ({ default: module.QuranScreen }))) },
   muslim_radio: { title: 'إذاعة القرآن', component: lazy(() => import('./features/Muslim/Radio/Index').then(module => ({ default: module.RadioScreen }))) },
+  roznama: { title: 'الروزنامة', component: lazy(() => import('./features/Roznama/Index').then(module => ({ default: module.RoznamaScreen }))) },
   hotels: { title: 'الفنادق', component: lazy(() => import('./features/Hotels/Index').then(module => ({ default: module.HotelsScreen }))) },
   hotel: { title: 'تفاصيل الفندق', component: lazy(() => import('./features/Hotels/Index').then(module => ({ default: module.HotelScreen }))) },
   guides: { title: 'المرشدون المحليون', component: lazy(() => import('./features/Guides/Index').then(module => ({ default: module.GuidesScreen }))) },

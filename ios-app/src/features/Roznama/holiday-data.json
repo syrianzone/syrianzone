@@ -1,0 +1,162 @@
+{
+  "fixed": [
+    {
+      "nameAr": "رأس السنة الميلادية",
+      "nameEn": "New Year's Day",
+      "month": 1,
+      "date": 1,
+      "description": "بداية العام الميلادي الجديد",
+      "isNew": false
+    },
+    {
+      "nameAr": "عيد الثورة السورية",
+      "nameEn": "Syrian Revolution Day",
+      "month": 3,
+      "date": 18,
+      "description": "ذكرى انطلاق الثورة السورية عام 2011، اعتمد كعيد وطني رسمي بموجب المرسوم 188 لعام 2025.",
+      "isNew": true
+    },
+    {
+      "nameAr": "عيد الأم",
+      "nameEn": "Mother's Day",
+      "month": 3,
+      "date": 21,
+      "description": "تكريم للأم ودورها في المجتمع.",
+      "isNew": false
+    },
+    {
+      "nameAr": "عيد الجلاء",
+      "nameEn": "Evacuation Day",
+      "month": 4,
+      "date": 17,
+      "description": "ذكرى جلاء آخر جندي فرنسي عن الأراضي السورية عام 1946.",
+      "isNew": false
+    },
+    {
+      "nameAr": "عيد العمال العالمي",
+      "nameEn": "International Workers' Day",
+      "month": 5,
+      "date": 1,
+      "description": "تكريم للعمال وجهودهم.",
+      "isNew": false
+    },
+    {
+      "nameAr": "عيد التحرير الوطني",
+      "nameEn": "National Liberation Day",
+      "month": 12,
+      "date": 8,
+      "description": "العيد الوطني الجديد المعتمد بموجب المرسوم 188 لعام 2025 احتفاءً بسقوط الاستبداد عام 2024.",
+      "isNew": true
+    },
+    {
+      "nameAr": "عيد الميلاد المجيد",
+      "nameEn": "Christmas Day",
+      "month": 12,
+      "date": 25,
+      "description": "ذكرى ميلاد السيد المسيح عليه السلام.",
+      "isNew": false
+    }
+  ],
+  "variables": {
+    "2026": [
+      {
+        "nameAr": "عيد الفطر السعيد",
+        "nameEn": "Eid al-Fitr",
+        "month": 3,
+        "date": 20,
+        "description": "عطلة عيد الفطر السعيد (3 أيام).",
+        "isNew": false
+      },
+      {
+        "nameAr": "عيد الفصح المجيد (غربي)",
+        "nameEn": "Western Easter",
+        "month": 4,
+        "date": 5,
+        "description": "عيد الفصح المجيد (التقويم الغربي).",
+        "isNew": false
+      },
+      {
+        "nameAr": "عيد الفصح المجيد (شرقي)",
+        "nameEn": "Eastern Easter",
+        "month": 4,
+        "date": 12,
+        "description": "عيد الفصح المجيد (التقويم الشرقي).",
+        "isNew": false
+      },
+      {
+        "nameAr": "عيد الأضحى المبارك",
+        "nameEn": "Eid al-Adha",
+        "month": 5,
+        "date": 27,
+        "description": "عطلة عيد الأضحى المبارك (4 أيام).",
+        "isNew": false
+      },
+      {
+        "nameAr": "رأس السنة الهجرية",
+        "nameEn": "Islamic New Year",
+        "month": 6,
+        "date": 16,
+        "description": "رأس السنة الهجرية الجديدة.",
+        "isNew": false
+      },
+      {
+        "nameAr": "المولد النبوي الشريف",
+        "nameEn": "Prophet's Birthday",
+        "month": 8,
+        "date": 26,
+        "description": "ذكرى المولد النبوي الشريف.",
+        "isNew": false
+      }
+    ],
+    "2027": [
+      {
+        "nameAr": "عيد الفطر السعيد",
+        "nameEn": "Eid al-Fitr",
+        "month": 3,
+        "date": 10,
+        "description": "عطلة عيد الفطر السعيد (3 أيام).",
+        "isNew": false
+      },
+      {
+        "nameAr": "عيد الفصح المجيد (غربي)",
+        "nameEn": "Western Easter",
+        "month": 3,
+        "date": 28,
+        "description": "عيد الفصح المجيد (التقويم الغربي).",
+        "isNew": false
+      },
+      {
+        "nameAr": "عيد الفصح المجيد (شرقي)",
+        "nameEn": "Eastern Easter",
+        "month": 5,
+        "date": 2,
+        "description": "عيد الفصح المجيد (التقويم الشرقي).",
+        "isNew": false
+      },
+      {
+        "nameAr": "عيد الأضحى المبارك",
+        "nameEn": "Eid al-Adha",
+        "month": 5,
+        "date": 16,
+        "description": "عطلة عيد الأضحى المبارك (4 أيام).",
+        "isNew": false
+      },
+      {
+        "nameAr": "رأس السنة الهجرية",
+        "nameEn": "Islamic New Year",
+        "month": 6,
+        "date": 6,
+        "description": "رأس السنة الهجرية الجديدة.",
+        "isNew": false
+      },
+      {
+        "nameAr": "المولد النبوي الشريف",
+        "nameEn": "Prophet's Birthday",
+        "month": 8,
+        "date": 15,
+        "description": "ذكرى المولد النبوي الشريف.",
+        "isNew": false
+      }
+    ]
+  }
+}

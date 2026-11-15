@@ -1,0 +1,19 @@
+# ios: port the four local card and board games
+
+Reuse the original 2048, Solitaire, Tarneeb and Trix rule engines with native cards, gestures, focus mode, rules, records and hardware controls. Preserve each game's hand ordering and scoring.
+
+Validation: Rule-engine tests passed. Actual native testing exposed a Solitaire undo snapshot bug, now fixed in source. Public31 passed the selected Solitaire stock/move/undo/hint/new-deal case and actual 2048 arrow/lowercase/Shift hardware input. Its 2048 swipe and system Reduce Motion cases failed, as did the Tarneeb/Trix single-turn and complete-hand cases. The overall cohort had ten passes, eight failures and zero skips, with zero runtime warnings.
+
+The scoped 2048 correction gives its board early touch ownership and disables content-wide Back only on that route, preserving edge/native Back. Native40 passed rapid legal swipes with engine-ID, score and settled accessible-value checks in 38.602 seconds, and arrow/lowercase/Shift hardware input in 35.638 seconds. The separate public swipe/rules/focus case still failed its mass reader in 35.163 seconds despite visible movement and spawning. Its rules/focus assertions were not reached in that run. Native48 later passed the current public legal-swipe/rules/focus case in 41.871 seconds: initial tiles, legal movement with increased mass, the rules body, entering/leaving focus and a new-round score/tile reset. These settled checks do not measure animation frame duration or overlap.
+
+Native40 also passed Tarneeb's complete 13-card/trick/scoring/next-deal case in 277.730 seconds and Trix's complete avoidance-contract/score/next-contract case in 252.358 seconds. The public Tarneeb bid/trump/local-card case passed in 50.640 seconds, and Trix team-mode/local-turn passed in 52.381 seconds. Native40 overall had eight passes, two failures and zero skips across ten cases.
+
+System Reduce Motion40 failed in 40.713 seconds at the first requested ON value. Both original observations were OFF, and the last retained video remained OFF after the single tap. No changed-value or resumed-product checkpoint was reached. The guarded original-setting teardown left no known recovery record. This does not establish a product motion bug or public-getter lag. Native48 again failed the same dual-value guard in 30.185 seconds, before a changed-value or resumed-product checkpoint. Its pre-tap geometry is diagnostic evidence, not a passing system toggle. Native48 overall had three passes, one failure and zero skips or runtime warnings. The readiness-only Native50 retry still failed the dual-value guard in 34.545 seconds after its settled row-center tap.
+
+Native51 separately passed the full real-system Reduce Motion case in 51.293 seconds on the standard iPhone 17 Simulator, with one pass, zero failures, zero skips and zero runtime warnings. After waiting for settled Settings geometry, the test used the observed right-side track through a point derived from the current switch frame. Normal Settings and the public accessibility getter both changed OFF to ON and back to OFF. The same product process preserved board IDs, positions and score on each resume, and a legal native swipe worked under each value. Original OFF restoration and owned-record removal passed; Root confirmed the scoped system-fixture directory was empty. This does not measure native animation frame duration, interrupted-frame overlap or physical-device performance.
+
+Dependencies: Shared native controls, game records and original card artwork.
+
+Remaining checks: Native motion-frame review, remaining Solitaire drag behavior and other Tarneeb/Trix modes/contracts remain in the iPhone 17 verification queue.
+
+Local review draft only. No GitHub PR, push, deployment or production mutation has been performed for this draft.

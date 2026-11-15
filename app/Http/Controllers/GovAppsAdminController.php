@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondsToAdminMutations;
 use App\Services\GovApps\GovAppService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -15,6 +17,8 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
  */
 class GovAppsAdminController extends Controller
 {
+    use RespondsToAdminMutations;
+
     public function __construct(private readonly GovAppService $apps) {}
 
     public function renderIndex()
@@ -24,7 +28,7 @@ class GovAppsAdminController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'required|string|max:128|unique:gov_apps,id|alpha_dash',
@@ -44,10 +48,10 @@ class GovAppsAdminController extends Controller
             $request->file('icon_file'),
         );
 
-        return redirect()->back()->with('success', 'تم إضافة التطبيق الحكومي بنجاح');
+        return $this->adminMutationResponse('تم إضافة التطبيق الحكومي بنجاح');
     }
 
-    public function update(Request $request, string $id): RedirectResponse
+    public function update(Request $request, string $id): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -70,17 +74,17 @@ class GovAppsAdminController extends Controller
             $request->file('icon_file'),
         );
 
-        return redirect()->back()->with('success', 'تم تحديث بيانات التطبيق بنجاح');
+        return $this->adminMutationResponse('تم تحديث بيانات التطبيق بنجاح');
     }
 
-    public function destroy(string $id): RedirectResponse
+    public function destroy(string $id): JsonResponse|RedirectResponse
     {
         $this->apps->delete($id);
 
-        return redirect()->back()->with('success', 'تم حذف التطبيق بنجاح');
+        return $this->adminMutationResponse('تم حذف التطبيق بنجاح');
     }
 
-    public function reorder(Request $request): RedirectResponse
+    public function reorder(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -90,6 +94,6 @@ class GovAppsAdminController extends Controller
 
         $this->apps->reorder($validated['orders']);
 
-        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
+        return $this->adminMutationResponse('تم إعادة الترتيب بنجاح');
     }
 }

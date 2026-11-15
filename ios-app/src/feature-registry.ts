@@ -4,6 +4,7 @@ import type { FeatureScreenProps } from './platform/features';
 export const featureScreens: Record<string, { title: string; component: ComponentType<FeatureScreenProps> }> = {
   crossings: { title: 'المعابر', component: lazy(() => import('./features/Crossings/Index').then(module => ({ default: module.CrossingsScreen }))) },
   priorities: { title: 'أولوياتك', component: lazy(() => import('./features/Priorities/Index').then(module => ({ default: module.PrioritiesScreen }))) },
+  party: { title: 'الأحزاب', component: lazy(() => import('./features/Party/Index').then(module => ({ default: module.PartyScreen }))) },
   compass: { title: 'بوصلة سوريا', component: lazy(() => import('./features/Compass/Index').then(module => ({ default: module.CompassScreen }))) },
   tierlist: { title: 'تقييم الأداء', component: lazy(() => import('./features/TierList/Index').then(module => ({ default: module.TierListScreen }))) },
   muslim: { title: 'الركن الإسلامي', component: lazy(() => import('./features/Muslim/Index').then(module => ({ default: module.MuslimScreen }))) },

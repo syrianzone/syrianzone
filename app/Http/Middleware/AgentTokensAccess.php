@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Agents\TokenAbilities;
 use Closure;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -16,9 +17,8 @@ use Symfony\Component\HttpFoundation\Response;
  * the owner's permissions again. Superadmins additionally manage everyone's
  * tokens; ApiTokenAdminController narrows everything else to the caller.
  *
- * The request must come from a browser session, not a bearer token. Otherwise
- * an agent holding a narrow token could call these endpoints to mint itself a
- * fresh token with everything its owner holds, escaping its own ceiling.
+ * Browser and Google-authenticated mobile sessions represent the user.
+ * Scoped agent credentials cannot mint a wider token than they were issued.
  */
 class AgentTokensAccess
 {
@@ -30,7 +30,8 @@ class AgentTokensAccess
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        if ($user->currentAccessToken() instanceof PersonalAccessToken) {
+        $token = $user->currentAccessToken();
+        if ($token instanceof PersonalAccessToken && ! TokenAbilities::isMobileToken($token)) {
             return response()->json([
                 'message' => 'Agent tokens are managed from a signed-in browser session, not with an API token.',
             ], 403);

@@ -35,6 +35,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   transit_studio: { title: 'استوديو النقل', component: lazy(() => import('./features/TransitStudio/Index').then(module => ({ default: module.TransitStudioScreen }))) },
   about: { title: 'عن المساحة السورية', component: lazy(() => import('./features/About/Index').then(module => ({ default: module.AboutScreen }))) },
   privacy: { title: 'الخصوصية', component: lazy(() => import('./features/Privacy/Index').then(module => ({ default: module.PrivacyScreen }))) },
+  terms: { title: 'شروط الاستخدام', component: lazy(() => import('./features/Terms/Index').then(module => ({ default: module.TermsScreen }))) },
   account: { title: 'الحساب', component: lazy(() => import('./features/Account/Index').then(module => ({ default: module.AccountScreen }))) },
   dashboard: { title: 'لوحة التحكم', component: lazy(() => import('./features/Dashboard/Index').then(module => ({ default: module.DashboardScreen }))) },
   places_admin: { title: 'إدارة أماكن مشوار', component: lazy(() => import('./features/Places/Admin').then(module => ({ default: module.PlacesAdminScreen }))) },

@@ -39,6 +39,10 @@ class SitePopupAdminController extends Controller
 
         SiteSetting::flushPopupCache();
 
+        if ($request->wantsJson() && ! $request->header('X-Inertia')) {
+            return response()->json(['success' => true, 'popup' => SiteSetting::getPopup()]);
+        }
+
         return redirect()->back()->with('success', 'تم حفظ إعدادات النافذة المنبثقة');
     }
 }

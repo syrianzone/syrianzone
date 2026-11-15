@@ -1,0 +1,35 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Modal, ScrollView } from 'react-native';
+import Svg, { Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import { AdaptivePanes, contentStyle, EmptyState, Heading, Label, Section } from '../../components';
+import { NativeAction, NativePicker, NativeSegmented, NativeToggle } from '../../ui/native';
+import { shareSvgPng } from '../../platform/files';
+import { seriesData, type History, type RankingRow, type Timeframe } from './model';
+
+const palette = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#0891b2', '#be185d', '#4f46e5', '#ca8a04', '#059669'];
+export function TimeseriesChart({ history, candidates, title }: { history: History; candidates: RankingRow[]; title: string }): React.JSX.Element {
+  const [timeframe, setTimeframe] = useState<Timeframe>('day'); const [metric, setMetric] = useState<'score' | 'votes'>('score'); const [mode, setMode] = useState<'cumulative' | 'periodic'>('cumulative'); const [selected, setSelected] = useState<string[]>(['all']);
+  const [selector, setSelector] = useState(false); const [point, setPoint] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null); const svg = useRef<Svg | null>(null);
+  const lifetime = useRef<AbortController | null>(null);
+  useEffect(() => { const controller = new AbortController(); lifetime.current = controller; return () => controller.abort(); }, []);
+  const data = useMemo(() => seriesData(history, candidates.map(candidate => candidate.candidateId), metric, timeframe, mode), [history, candidates, metric, timeframe, mode]);
+  const visible = useMemo(() => selected.includes('all') ? candidates.slice(0, 5) : candidates.filter(candidate => selected.includes(candidate.candidateId)), [selected, candidates]);
+  const maximum = Math.max(1, ...data.flatMap(row => visible.map(candidate => row.values[candidate.candidateId] ?? 0))); const minimum = Math.min(0, ...data.flatMap(row => visible.map(candidate => row.values[candidate.candidateId] ?? 0)));
+  const graphHeight = 300 + visible.length * 18; const color = (id: string) => palette[Math.max(0, candidates.findIndex(candidate => candidate.candidateId === id)) % palette.length]!;
+  const inspected = data.find(row => row.date === point) ?? data[data.length - 1];
+  const toggle = (id: string) => setSelected(previous => { if (previous.includes(id)) { const next = previous.filter(value => value !== id); return next.length ? next : ['all']; } return [...previous.filter(value => value !== 'all'), id]; });
+  return <Section><Heading subtitle="تقدّم المرشحين عبر الزمن">{title}</Heading><NativeSegmented options={[{ value: 'cumulative', label: 'تراكمي' }, { value: 'periodic', label: 'دوري' }]} value={mode} onChange={setMode} disabled={busy} label="طريقة عرض المخطط" /><NativeSegmented options={[{ value: 'score', label: 'النقاط' }, { value: 'votes', label: 'الأصوات' }]} value={metric} onChange={setMetric} disabled={busy} label="القيمة المعروضة" /><NativePicker<Timeframe> disabled={busy} label="المدى الزمني" value={timeframe} onChange={setTimeframe} options={[{ value: 'day', label: 'يومي' }, { value: 'week', label: 'أسبوعي' }, { value: 'month', label: 'شهري' }, { value: 'year', label: 'سنوي' }]} />
+    {data.length ? <Svg ref={svg} width="100%" height={graphHeight} viewBox={`0 0 400 ${graphHeight}`} accessibilityRole="image" accessibilityLabel={`${title}، ${metric === 'score' ? 'النقاط' : 'الأصوات'}، تتوفر القيم التفصيلية أسفل المخطط`}>
+      <Rect width={400} height={graphHeight} rx={12} fill="#020817" /><SvgText x={200} y={22} textAnchor="middle" fill="#f8fafc" fontSize={12} fontWeight="700">{title}</SvgText>
+      {[0, 1, 2, 3, 4].map(index => { const y = 42 + index * 49; const value = maximum - index / 4 * (maximum - minimum); return <ViewlessGrid key={index} y={y} value={value} />; })}
+      {visible.map(candidate => <Polyline key={candidate.candidateId} fill="none" stroke={color(candidate.candidateId)} strokeWidth={2} points={data.map((row, index) => `${48 + index / Math.max(1, data.length - 1) * 330},${238 - ((row.values[candidate.candidateId] ?? 0) - minimum) / Math.max(1, maximum - minimum) * 196}`).join(' ')} />)}
+      <SvgText x={48} y={261} fill="#f8fafc" fontSize={10}>{data[0]?.date}</SvgText><SvgText x={378} y={261} textAnchor="end" fill="#f8fafc" fontSize={10}>{data[data.length - 1]?.date}</SvgText>
+      {visible.map((candidate, index) => <SvgText key={candidate.candidateId} x={375} y={288 + index * 18} fill={color(candidate.candidateId)} fontSize={11} textAnchor="end">{candidate.name}</SvgText>)}
+    </Svg> : <EmptyState title="لا توجد نقاط زمنية بعد" />}
+    <Label secondary>{selected.includes('all') ? 'عرض أول خمسة مرشحين. يمكنك اختيار أسماء أخرى أو عدة أسماء.' : `عرض ${visible.length} مرشحين`}</Label><NativeAction disabled={busy} title="اختيار المرشحين في المخطط" onPress={() => setSelector(true)} />
+    {data.length ? <><NativePicker label="استعراض قيم نقطة زمنية" value={inspected?.date ?? ''} onChange={setPoint} options={data.map(row => ({ value: row.date, label: row.date }))} />{visible.map(candidate => <Label key={candidate.candidateId}>{candidate.name}: {inspected?.values[candidate.candidateId] ?? 0}</Label>)}<NativeAction title={busy ? 'جارٍ إنشاء الصورة' : 'مشاركة صورة المخطط أو حفظها'} systemImage="square.and.arrow.up" disabled={busy} onPress={() => { if (!svg.current || !lifetime.current) return; const signal = lifetime.current.signal; setBusy(true); setError(null); const scale = Math.min(3, Math.sqrt(15_000_000 / (400 * graphHeight))); void shareSvgPng(svg.current, { filename: `chart-${Date.now()}.png`, width: Math.floor(400 * scale), height: Math.floor(graphHeight * scale), signal }).catch(reason => { if (!signal.aborted) setError(reason instanceof Error ? reason.message : 'تعذّر إنشاء المخطط'); }).finally(() => { if (!signal.aborted) setBusy(false); }); }} /></> : null}
+    {error ? <Label>{error}</Label> : null}<Modal visible={selector} presentationStyle="pageSheet" onRequestClose={() => setSelector(false)}><AdaptivePanes primary={<ScrollView contentContainerStyle={contentStyle}><NativeAction title="إغلاق اختيار المرشحين" systemImage="xmark" onPress={() => setSelector(false)} /><Heading>اختر للعرض</Heading><NativeAction title="عرض أول خمسة مرشحين" onPress={() => setSelected(['all'])} />{candidates.map(candidate => <NativeToggle key={candidate.candidateId} title={candidate.name} value={!selected.includes('all') && selected.includes(candidate.candidateId)} onChange={() => toggle(candidate.candidateId)} />)}</ScrollView>} /></Modal>
+  </Section>;
+}
+function ViewlessGrid({ y, value }: { y: number; value: number }): React.JSX.Element { return <><Line x1={48} x2={378} y1={y} y2={y} stroke="#1e293b" strokeDasharray="3,3" /><SvgText x={40} y={y + 4} textAnchor="end" fill="#f8fafc" fontSize={10}>{Math.round(value).toLocaleString('en-US')}</SvgText></>; }
+// PORT STATUS: source resources/js/Pages/Polls/_components/TimeseriesChart.tsx; confidence medium; todos 0.

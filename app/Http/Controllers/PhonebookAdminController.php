@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondsToAdminMutations;
 use App\Services\Phonebook\PhonebookDirectoryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -17,6 +19,8 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
  */
 class PhonebookAdminController extends Controller
 {
+    use RespondsToAdminMutations;
+
     public function __construct(private readonly PhonebookDirectoryService $directory) {}
 
     public function renderIndex()
@@ -27,7 +31,7 @@ class PhonebookAdminController extends Controller
         ]);
     }
 
-    public function storeCategory(Request $request): RedirectResponse
+    public function storeCategory(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'required|string|max:64|unique:phonebook_categories,id|alpha_dash',
@@ -39,10 +43,10 @@ class PhonebookAdminController extends Controller
 
         $this->directory->createCategory($validated);
 
-        return redirect()->back()->with('success', 'تم إضافة الفئة بنجاح');
+        return $this->adminMutationResponse('تم إضافة الفئة بنجاح');
     }
 
-    public function updateCategory(Request $request, string $id): RedirectResponse
+    public function updateCategory(Request $request, string $id): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'label_ar' => 'required|string|max:255',
@@ -53,17 +57,17 @@ class PhonebookAdminController extends Controller
 
         $this->directory->updateCategory($id, $validated);
 
-        return redirect()->back()->with('success', 'تم تحديث الفئة بنجاح');
+        return $this->adminMutationResponse('تم تحديث الفئة بنجاح');
     }
 
-    public function destroyCategory(string $id): RedirectResponse
+    public function destroyCategory(string $id): JsonResponse|RedirectResponse
     {
         $this->directory->deleteCategory($id);
 
-        return redirect()->back()->with('success', 'تم حذف الفئة بنجاح');
+        return $this->adminMutationResponse('تم حذف الفئة بنجاح');
     }
 
-    public function storeEntry(Request $request): RedirectResponse
+    public function storeEntry(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'nullable|string|max:128|unique:phonebook_entries,id|alpha_dash',
@@ -78,13 +82,13 @@ class PhonebookAdminController extends Controller
 
         $this->directory->createEntry($validated);
 
-        return redirect()->back()->with('success', 'تم إضافة الرقم بنجاح');
+        return $this->adminMutationResponse('تم إضافة الرقم بنجاح');
     }
 
     /**
      * Registered for both POST and PUT, matching the other two directories.
      */
-    public function updateEntry(Request $request, string $id): RedirectResponse
+    public function updateEntry(Request $request, string $id): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'category_id' => 'required|exists:phonebook_categories,id',
@@ -98,24 +102,24 @@ class PhonebookAdminController extends Controller
 
         $this->directory->updateEntry($id, $validated);
 
-        return redirect()->back()->with('success', 'تم تحديث البيانات بنجاح');
+        return $this->adminMutationResponse('تم تحديث البيانات بنجاح');
     }
 
-    public function toggleEntryActive(string $id): RedirectResponse
+    public function toggleEntryActive(string $id): JsonResponse|RedirectResponse
     {
         $entry = $this->directory->toggleEntryActive($id);
 
-        return redirect()->back()->with('success', $entry->is_active ? 'تم إظهار الرقم بنجاح' : 'تم إخفاء الرقم بنجاح');
+        return $this->adminMutationResponse($entry->is_active ? 'تم إظهار الرقم بنجاح' : 'تم إخفاء الرقم بنجاح');
     }
 
-    public function destroyEntry(string $id): RedirectResponse
+    public function destroyEntry(string $id): JsonResponse|RedirectResponse
     {
         $this->directory->deleteEntry($id);
 
-        return redirect()->back()->with('success', 'تم حذف الرقم بنجاح');
+        return $this->adminMutationResponse('تم حذف الرقم بنجاح');
     }
 
-    public function reorderCategories(Request $request): RedirectResponse
+    public function reorderCategories(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -125,10 +129,10 @@ class PhonebookAdminController extends Controller
 
         $this->directory->reorderCategories($validated['orders']);
 
-        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
+        return $this->adminMutationResponse('تم إعادة الترتيب بنجاح');
     }
 
-    public function reorderEntries(Request $request): RedirectResponse
+    public function reorderEntries(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -138,6 +142,6 @@ class PhonebookAdminController extends Controller
 
         $this->directory->reorderEntries($validated['orders']);
 
-        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
+        return $this->adminMutationResponse('تم إعادة الترتيب بنجاح');
     }
 }

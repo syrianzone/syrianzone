@@ -25,4 +25,5 @@ export const featureScreens: Record<string, { title: string; component: Componen
   dashboard: { title: 'لوحة التحكم', component: lazy(() => import('./features/Dashboard/Index').then(module => ({ default: module.DashboardScreen }))) },
   places_admin: { title: 'إدارة أماكن مشوار', component: lazy(() => import('./features/Places/Admin').then(module => ({ default: module.PlacesAdminScreen }))) },
   transit_admin: { title: 'إدارة النقل', component: lazy(() => import('./features/TransitAdmin/Index').then(module => ({ default: module.TransitAdminScreen }))) },
+  alignment: { title: 'مخطط المحاور', component: lazy(() => import('./features/Alignment/Index').then(module => ({ default: module.AlignmentScreen }))) }
 };

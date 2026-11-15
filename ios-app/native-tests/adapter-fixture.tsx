@@ -25,7 +25,7 @@ import { ArabicInputFixture } from './arabic-input-fixture';
 import { AvatarPickerProbe } from './avatar-picker-probe';
 import { SearchFieldFixture } from './search-field-fixture';
 import { IconActionHitFixture } from './icon-action-hit-fixture';
-
+import { ContributorsLayoutFixture } from './contributors-layout-fixture';
 import { useSaveControllerProbe } from './save-controller-probe';
 
 type AudioEvents = {
@@ -603,4 +603,4 @@ export function AdapterFixture(): React.JSX.Element {
   );
 }
 
-registerRootComponent(AdapterFixture);
+registerRootComponent(process.env.EXPO_PUBLIC_NATIVE_CONTRIBUTORS_LAYOUT === '1' || process.env.EXPO_PUBLIC_NATIVE_CONTRIBUTORS_LAYOUT === '2' ? ContributorsLayoutFixture : AdapterFixture);

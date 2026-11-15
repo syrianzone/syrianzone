@@ -11,6 +11,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   sites: { title: 'دليل المواقع', component: lazy(() => import('./features/Sites/Index').then(module => ({ default: module.SitesScreen }))) },
   govapps: { title: 'التطبيقات الحكومية', component: lazy(() => import('./features/GovApps/Index').then(module => ({ default: module.GovAppsScreen }))) },
   syofficial: { title: 'الحسابات الرسمية', component: lazy(() => import('./features/SyOfficial/Index').then(module => ({ default: module.SyOfficialScreen }))) },
+  contributors: { title: 'المساهمون السوريون', component: lazy(() => import('./features/SyrianContributors/Index').then(module => ({ default: module.ContributorsScreen }))) },
   crossings: { title: 'المعابر', component: lazy(() => import('./features/Crossings/Index').then(module => ({ default: module.CrossingsScreen }))) },
   priorities: { title: 'أولوياتك', component: lazy(() => import('./features/Priorities/Index').then(module => ({ default: module.PrioritiesScreen }))) },
   party: { title: 'الأحزاب', component: lazy(() => import('./features/Party/Index').then(module => ({ default: module.PartyScreen }))) },

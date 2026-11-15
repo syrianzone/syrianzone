@@ -1,0 +1,142 @@
+[
+  {
+    "key": "roznama",
+    "label": "الروزنامة"
+  },
+  {
+    "key": "muslim",
+    "label": "الركن الإسلامي"
+  },
+  {
+    "key": "quran",
+    "label": "القرآن الكريم"
+  },
+  {
+    "key": "quran_radio",
+    "label": "إذاعة القرآن"
+  },
+  {
+    "key": "games",
+    "label": "الألعاب"
+  },
+  {
+    "key": "transit",
+    "label": "ترانزيت"
+  },
+  {
+    "key": "mishwar",
+    "label": "مشوار"
+  },
+  {
+    "key": "board",
+    "label": "لوح"
+  },
+  {
+    "key": "compass",
+    "label": "البوصلة السياسية"
+  },
+  {
+    "key": "tierlist",
+    "label": "تقييم الحكومة"
+  },
+  {
+    "key": "promises",
+    "label": "عداد الوعود"
+  },
+  {
+    "key": "priorities",
+    "label": "أولويات سوريا"
+  },
+  {
+    "key": "crossings",
+    "label": "المنافذ الحدودية"
+  },
+  {
+    "key": "recipes",
+    "label": "وصفاتنا"
+  },
+  {
+    "key": "answers",
+    "label": "إجابات سوريا"
+  },
+  {
+    "key": "syofficial",
+    "label": "الحسابات الرسمية"
+  },
+  {
+    "key": "phonebook",
+    "label": "دليل الهاتف"
+  },
+  {
+    "key": "sites",
+    "label": "دليل المواقع"
+  },
+  {
+    "key": "contributors",
+    "label": "المساهمون"
+  },
+  {
+    "key": "govapps",
+    "label": "تطبيقات الحكومة"
+  },
+  {
+    "key": "party",
+    "label": "دليل الأحزاب"
+  },
+  {
+    "key": "house",
+    "label": "المجلس التشريعي"
+  },
+  {
+    "key": "justice",
+    "label": "العدالة الانتقالية"
+  },
+  {
+    "key": "syid",
+    "label": "الهوية البصرية"
+  },
+  {
+    "key": "atlas",
+    "label": "أطلس"
+  },
+  {
+    "key": "codex",
+    "label": "مجتمع كوديكس"
+  },
+  {
+    "key": "news",
+    "label": "أخبار سوريا"
+  },
+  {
+    "key": "globe",
+    "label": "كرة أرضية / موقع عام"
+  },
+  {
+    "key": "stats",
+    "label": "إحصائيات"
+  },
+  {
+    "key": "wheat",
+    "label": "سنبلة"
+  },
+  {
+    "key": "donations",
+    "label": "تبرعات / مساهمات"
+  },
+  {
+    "key": "flag",
+    "label": "علم سوريا"
+  },
+  {
+    "key": "prompts",
+    "label": "أوامر ذكاء اصطناعي"
+  },
+  {
+    "key": "population",
+    "label": "السكان"
+  },
+  {
+    "key": "free",
+    "label": "أدوات مجانية"
+  }
+]

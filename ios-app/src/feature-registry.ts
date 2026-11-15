@@ -42,6 +42,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   users_admin: { title: 'إدارة المستخدمين', component: lazy(() => import('./features/UsersAdmin/Index').then(module => ({ default: module.UsersAdminScreen }))) },
   places_admin: { title: 'إدارة أماكن مشوار', component: lazy(() => import('./features/Places/Admin').then(module => ({ default: module.PlacesAdminScreen }))) },
   assets_admin: { title: 'إدارة الملفات', component: lazy(() => import('./features/AssetManager/Index').then(module => ({ default: module.AssetManagerScreen }))) },
+  navigation_admin: { title: 'إدارة الأقسام', component: lazy(() => import('./features/Navigation/Index').then(module => ({ default: module.NavigationAdminScreen }))) },
   phonebook_admin: { title: 'إدارة دليل الهاتف', component: lazy(() => import('./features/Phonebook/Admin').then(module => ({ default: module.PhonebookAdminScreen }))) },
   govapps_admin: { title: 'إدارة التطبيقات', component: lazy(() => import('./features/GovApps/Admin').then(module => ({ default: module.GovAppsAdminScreen }))) },
   syofficial_admin: { title: 'إدارة الحسابات الرسمية', component: lazy(() => import('./features/SyOfficial/Admin').then(module => ({ default: module.SyOfficialAdminScreen }))) },

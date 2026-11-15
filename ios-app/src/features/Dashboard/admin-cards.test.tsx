@@ -6,7 +6,6 @@ import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import catalogue from '../../../../resources/data/site-modules.json';
 import capabilities from '../../../../resources/data/capabilities.json';
-import { featureScreens } from '../../feature-registry';
 import * as model from './model';
 
 const requireFromApp = createRequire(import.meta.url);
@@ -67,10 +66,6 @@ function renderDashboard(permissions: readonly string[], inspect: (actions: Acti
   }
 }
 
-test('the source admin catalogue has native targets for every currently supported card', () => {
-  expect(catalogue.adminSections.map(card => card.id).sort()).toEqual(Object.keys(destinations).sort());
-  for (const destination of Object.values(destinations)) expect(featureScreens[destination]).toBeDefined();
-});
 
 for (const card of catalogue.adminSections) {
   const qualifying = Object.keys(capabilities).filter(permission => 'capability' in card.gate

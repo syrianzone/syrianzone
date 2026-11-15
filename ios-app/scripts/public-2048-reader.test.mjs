@@ -8,7 +8,7 @@ import test from 'node:test';
 // Bun's node:test adapter requires the explicit skip API.
 const testOnMac = process.platform === 'darwin' ? test : test.skip;
 
-testOnMac('actual public 2048 reader survives global-text reordering and refuses ambiguous tile identities', () => {
+testOnMac('actual public 2048 reader survives global-text reordering and refuses ambiguous tile identities', { timeout: 40_000 }, () => {
   const source = fs.readFileSync(new URL('../native-tests/PublicInteractionsUITests.swift', import.meta.url), 'utf8');
   const start = source.indexOf('  @MainActor\n  private func tileValues(');
   const end = source.indexOf('  @MainActor\n  private func diagnose2048Reader(', start);

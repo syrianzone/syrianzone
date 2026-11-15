@@ -1,0 +1,21 @@
+# ios: port Quran, prayer and radio to native screens
+
+Port the full reader, shared recitation player, bookmarks, prayer log/settings and radio. Reuse all 604 source page models, original licensed Quran font and source timing calculations. Native AVPlayer owns background listening and sleep.
+
+Validation: 42 focused faith/Board tests and 1537 assertions pass. The parent iPhone 17 test confirms page 1/page 2 font and ornaments, paging/focus and corrected toolbar bounds. The local prayer backend cohort passes 22 cases and 103 assertions.
+
+The public prayer XCTest is source-ready after strict Swift 6 SDK checks and 29 independent clock-comparison checks. It requires the response date and timezone, chooses the earliest future event across all six public clocks, and only reads existing settings and completion controls. A read-only production GET on 2026-11-15 returned 200 with all six timings but omitted both metadata fields, so native execution is blocked on the additive backend rollout. Local backend and clock tests do not establish native midnight, foreign-timezone or account-synchronization behavior.
+
+Native Prayer33 passed the dedicated account case on iPhone 17 in 182.329 seconds, with one pass, zero failures and zero skips. Member101 marked Fajr, cold-relaunched and unmarked it; Other102 imported the source shared-device false record, then marked Dhuhr, cold-relaunched and unmarked it. Real native toggles reached the real account-settings endpoint, with active-account ownership verified at every checkpoint. The reviewed v2 fixture restored exact server fields and local Faith/Home/appearance records, retained guarded location/reading data, closed its journal and released its owner. Runner cleanup passed and the product was restored. The times were explicitly synthetic Damascus/method-three data; this does not establish live provider accuracy, the public metadata rollout, foreign timezones, midnight or GPS.
+
+The earlier Prayer26 case remains a native failure after successful first-account steps and the source OR import. Its narrower fixture refused the six Home fields adopted into the initially empty second account. Separate exact recovery restored that run; it is not counted as a passing case.
+
+Within adapters-lifecycle-07, the bare-owner audio, hardware and two image cases passed with zero runtime warnings. Audio covered play/pause/resume, ownership changes, background playback, native sleep and release. That run failed at QuickLook, whose later result is recorded in file-exports.md. This is adapter-level evidence; the integrated Quran provider and account usage remain separate checks.
+
+Native Quran71 passed the complete selected local-account case on iPhone 17 in 239.580 seconds, with one pass, zero failures, skips or runtime warnings. It used real public Quran metadata/media and the shipping AudioProvider: reciter changes, play/pause, mini-player next/previous actions, retained native track generation through four seconds in the background, and listening/media clocks exceeding the measured foreground budget. The actual fifteen-minute preset persisted across native navigation and was canceled. Reader playback owned the queue, explicit Stop cleared it, a cold relaunch retained the account reciter and usage, and logout completed. The backend observer verified usage seconds and the source-estimated byte total. Fixture cleanup passed and the normal product was restored.
+
+Native60, Native66 and Native68 remain failed historical runs in 67.534, 123.812 and 473.707 seconds. They exposed mini-player overlap, an immediate foreground-state assertion during Home transition, and later fixture Home acknowledgements. Native71 completed after the source placement correction and bounded native navigation/state checks; it does not establish every reader action or physical-device behavior.
+
+Still required: Selected-Ayah hit regions, jumps/spreads/bookmarks and geocoder timezone proof. Full fifteen-minute preset expiration, lock-screen remote commands, headphones and interruptions need separate product verification. The additive date/timezone backend draft is not deployed. Lost usage acknowledgments remain non-idempotent on the existing server.
+
+These are local review drafts. No GitHub PR, push, publication or production mutation is authorized.

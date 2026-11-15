@@ -1,5 +1,5 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, View, useColorScheme } from 'react-native';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
+import { ActivityIndicator, ScrollView, View, Platform, useColorScheme } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme, useNavigationContainerRef, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -14,6 +14,8 @@ import { HomeScreen } from './features/Home/Index';
 import { FeatureNavigationProvider } from './platform/features';
 import { writeDocument } from './platform/storage';
 import { AccountProvider } from './platform/account';
+import { AudioProvider, useQuranPlayer } from './platform/audio';
+import { AudioMiniPlayer, AudioMiniPlayerButton, AudioMiniPlayerSheet } from './platform/AudioMiniPlayer';
 import { featureScreens } from './feature-registry';
 import { featureParameters } from './platform/feature-location';
 import { SitePopupPublic } from './platform/SitePopupPublic';
@@ -69,7 +71,7 @@ function FeatureScreen({ route }: NativeStackScreenProps<RootRoutes, 'Feature'>)
   catch { return <EmptyState title="الرابط غير صالح" detail="افتح القسم من الرئيسية." />; }
   const Component = entry.component;
   return <View style={{ flex: 1 }}><Suspense fallback={<RouteLoading />}><Component params={params} /></Suspense>
-</View>;
+    <AudioMiniPlayer hidden={route.params.section === 'muslim_quran' || route.params.section === 'muslim_radio'} /></View>;
 }
 
 function SettingsScreen(): React.JSX.Element {
@@ -92,15 +94,26 @@ function SettingsScreen(): React.JSX.Element {
 }
 
 function MainTabs(): React.JSX.Element {
-  const { colors } = useTheme();
-  return <Tabs.Navigator screenOptions={{ headerShown: true, headerTintColor: colors.accent, headerStyle: { backgroundColor: colors.background },
+  const { colors } = useTheme(), player = useQuranPlayer();
+  const nativeAccessory = Platform.OS === 'ios' && Number.parseInt(String(Platform.Version), 10) >= 26;
+  const eligible = player.source === 'continuous' && player.current !== null;
+  const [miniOpen, setMiniOpen] = useState(false), eligibleRef = useRef(false);
+  useLayoutEffect(() => {
+    eligibleRef.current = eligible;
+    if (!eligible) setMiniOpen(false);
+    return () => { eligibleRef.current = false; };
+  }, [eligible]);
+  const openMini = useCallback(() => { if (eligibleRef.current) setMiniOpen(true); }, []);
+  const closeMini = useCallback(() => setMiniOpen(false), []);
+  return <><Tabs.Navigator screenLayout={({ children }) => <View style={{ flex: 1 }}>{children}{!nativeAccessory ? <AudioMiniPlayer /> : null}</View>} screenOptions={{ headerShown: true, headerTintColor: colors.accent, headerStyle: { backgroundColor: colors.background },
+    ...(nativeAccessory && eligible ? { bottomAccessory: ({ placement }) => <AudioMiniPlayerButton compact={placement === 'inline'} onPress={openMini} /> } : {}),
     tabBarActiveTintColor: colors.accent, tabBarInactiveTintColor: colors.secondary, tabBarControllerMode: 'tabSidebar', tabBarSidebarPreferredPlacement: 'sidebar' }}>
     <Tabs.Screen name="Home" component={HomeScreen} options={{ title: 'المساحة السورية', tabBarLabel: 'الرئيسية', tabBarIcon: { type: 'sfSymbol', name: 'house' } }} />
     <Tabs.Screen name="Transit" component={TransitScreen} options={{ lazy: true, title: 'ترانزيت', tabBarIcon: { type: 'sfSymbol', name: 'bus' } }} />
     <Tabs.Screen name="Places" component={LinkedPlacesScreen} options={{ lazy: true, title: 'مشوار', tabBarIcon: { type: 'sfSymbol', name: 'map' } }} />
     <Tabs.Screen name="Saved" component={SavedScreen} options={{ lazy: true, title: 'المحفوظات', tabBarIcon: { type: 'sfSymbol', name: 'bookmark' } }} />
     <Tabs.Screen name="Settings" component={SettingsScreen} options={{ title: 'الإعدادات', tabBarIcon: { type: 'sfSymbol', name: 'gearshape' } }} />
-  </Tabs.Navigator>;
+  </Tabs.Navigator>{nativeAccessory ? <AudioMiniPlayerSheet visible={eligible && miniOpen} onClose={closeMini} /> : null}</>;
 }
 
 function Application(): React.JSX.Element {
@@ -172,5 +185,5 @@ function Navigation(): React.JSX.Element {
 }
 
 export default function App(): React.JSX.Element {
-  return <SafeAreaProvider><StateProvider><AccountProvider><Application /></AccountProvider></StateProvider></SafeAreaProvider>;
+  return <SafeAreaProvider><StateProvider><AccountProvider><AudioProvider><Application /></AudioProvider></AccountProvider></StateProvider></SafeAreaProvider>;
 }

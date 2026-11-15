@@ -6,6 +6,7 @@ use App\Support\Facts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 
 class PrayerController extends Controller
 {
@@ -16,10 +17,8 @@ class PrayerController extends Controller
   // load-bearing: it broke on staging and on localhost. Fetching server-side has
   // no CORS at all and gives us caching the direct call never had.
   //
-  // Only a fixed governorate list is served: coordinates are never accepted
-  // from the client, so this cannot become an open proxy and the cache stays
-  // bounded. The list and its centres are the shared table in
-  // resources/data/governorates.json, which WeatherController reads too.
+  // Governorate centres come from the shared table. Custom coordinates are
+  // range checked and rounded before caching; the upstream host is fixed.
 
   // AlAdhan calculation methods. The table is resources/data/prayer.json, which
   // Domain/prayer/methods.ts reads too: `methods` is what the pickers offer, and
@@ -86,6 +85,7 @@ class PrayerController extends Controller
       'latitude' => 'nullable|numeric|between:-90,90',
       'longitude' => 'nullable|numeric|between:-180,180',
       'method' => 'nullable|integer|in:'.implode(',', self::methods()),
+      'date' => 'nullable|date_format:Y-m-d',
     ], [
       'governorate.in' => 'محافظة غير معروفة',
       'method.in' => 'طريقة حساب غير معروفة',
@@ -93,6 +93,11 @@ class PrayerController extends Controller
 
     $method = (int) ($validated['method'] ?? self::defaultMethod());
     $today = now()->timezone(self::timezone());
+    $day = $validated['date'] ?? $today->format('Y-m-d');
+    if ($day < $today->copy()->subDay()->format('Y-m-d') || $day > $today->copy()->addDay()->format('Y-m-d')) {
+      throw ValidationException::withMessages(['date' => 'اختر تاريخ اليوم في الموقع المحدد.']);
+    }
+    $requestedDay = \Illuminate\Support\Carbon::createFromFormat('!Y-m-d', $day, self::timezone());
 
     // Custom coordinates (diaspora / custom city): unlike weather, prayer is
     // deliberately NOT clamped to the Syria bbox — the user may be anywhere.
@@ -102,7 +107,7 @@ class PrayerController extends Controller
       $lat = round((float) $validated['latitude'], 2);
       $lon = round((float) $validated['longitude'], 2);
       $governorate = 'custom';
-      $key = "prayer:custom:{$lat}:{$lon}:{$method}:{$today->format('Y-m-d')}";
+      $key = "prayer:custom:{$lat}:{$lon}:{$method}:{$day}";
     } else {
       if (empty($validated['governorate'])) {
         return response()->json(['message' => 'المحافظة مطلوبة أو إحداثيات صالحة'], 422);
@@ -110,17 +115,22 @@ class PrayerController extends Controller
       $governorate = $validated['governorate'];
       // the date is part of the key, so the entry rolls over at Damascus midnight
       // on its own instead of relying on a ttl landing on the boundary
-      $key = "prayer:{$governorate}:{$method}:{$today->format('Y-m-d')}";
+      $key = "prayer:{$governorate}:{$method}:{$day}";
       [$lat, $lon] = self::coordsFor($governorate);
     }
 
     $cached = Cache::get($key);
     if ($cached !== null) {
+      // Old cache entries remain usable during rollout. Only Syrian centres
+      // have a known fallback; foreign coordinates must never get a guessed zone.
+      $cached['date'] = $cached['date'] ?? $day;
+      $cached['timezone'] = $this->validTimezone($cached['timezone'] ?? null)
+        ?? ($governorate === 'custom' ? null : self::timezone());
       return response()->json($cached)->header('Cache-Control', 'public, max-age=300');
     }
 
     try {
-      $response = Http::timeout(5)->get(rtrim(config('services.prayer.url'), '/').'/'.$today->format('d-m-Y'), [
+      $response = Http::timeout(5)->get(rtrim(config('services.prayer.url'), '/').'/'.$requestedDay->format('d-m-Y'), [
         'latitude' => $lat,
         'longitude' => $lon,
         'method' => $method,
@@ -156,6 +166,9 @@ class PrayerController extends Controller
       'latitude' => $lat,
       'longitude' => $lon,
       'method' => $method,
+      'date' => $day,
+      'timezone' => $this->validTimezone($response->json('data.meta.timezone'))
+        ?? ($governorate === 'custom' ? null : self::timezone()),
       'timings' => $normalized,
       'hijri' => $this->hijri($response->json('data.date.hijri')),
     ];
@@ -164,6 +177,12 @@ class PrayerController extends Controller
     Cache::put($key, $payload, $today->copy()->endOfDay()->timestamp - $today->timestamp + 1);
 
     return response()->json($payload)->header('Cache-Control', 'public, max-age=300');
+  }
+
+  private function validTimezone(mixed $timezone): ?string
+  {
+    return is_string($timezone) && in_array($timezone, timezone_identifiers_list(\DateTimeZone::ALL_WITH_BC), true)
+      ? $timezone : null;
   }
 
   // Aladhan already computes the Hijri date (Umm al-Qura basis) alongside the

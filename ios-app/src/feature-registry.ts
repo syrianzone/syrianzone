@@ -6,6 +6,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   priorities: { title: 'أولوياتك', component: lazy(() => import('./features/Priorities/Index').then(module => ({ default: module.PrioritiesScreen }))) },
   party: { title: 'الأحزاب', component: lazy(() => import('./features/Party/Index').then(module => ({ default: module.PartyScreen }))) },
   house: { title: 'مجلس الشعب', component: lazy(() => import('./features/House/Index').then(module => ({ default: module.HouseScreen }))) },
+  justice: { title: 'العدالة الانتقالية', component: lazy(() => import('./features/Justice/Index').then(module => ({ default: module.JusticeScreen }))) },
   compass: { title: 'بوصلة سوريا', component: lazy(() => import('./features/Compass/Index').then(module => ({ default: module.CompassScreen }))) },
   tierlist: { title: 'تقييم الأداء', component: lazy(() => import('./features/TierList/Index').then(module => ({ default: module.TierListScreen }))) },
   muslim: { title: 'الركن الإسلامي', component: lazy(() => import('./features/Muslim/Index').then(module => ({ default: module.MuslimScreen }))) },

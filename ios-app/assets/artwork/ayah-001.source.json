@@ -1,0 +1,62 @@
+{
+  "id": "ayah-markers/font-001-regular",
+  "type": "ayah-markers",
+  "style": "font-001-regular",
+  "lineage": "font",
+  "riwaya": null,
+  "viewBox": "0 0 99.456 100",
+  "aspect": 0.99456,
+  "variants": {
+    "color": "assets-ayah-markers-font-001-regular-color.svg",
+    "mono": "assets-ayah-markers-font-001-regular-mono.svg"
+  },
+  "slots": [
+    {
+      "role": "ayah-number",
+      "x": 32.7218,
+      "y": 40.5624,
+      "w": 34.1679,
+      "h": 19.1082,
+      "cx": 49.80575,
+      "cy": 50.116499999999995,
+      "r": 24.0271
+    }
+  ],
+  "palette": [
+    {
+      "name": "c1",
+      "hex": "#fff8e7"
+    },
+    {
+      "name": "c2",
+      "hex": "#f4e9bc"
+    },
+    {
+      "name": "c3",
+      "hex": "#d6ad43"
+    },
+    {
+      "name": "c4",
+      "hex": "#fffdf5"
+    },
+    {
+      "name": "c5",
+      "hex": "#083a3a"
+    }
+  ],
+  "symmetry": 1,
+  "source": {
+    "kind": "font",
+    "families": [
+      "Alkalami"
+    ],
+    "glyph": "U+06DD",
+    "codepoint": "U+E000"
+  },
+  "license": {
+    "id": "OFL-1.1",
+    "status": "confirmed"
+  },
+  "url": "https://quran.ws/demo/assets-ayah-markers-font-001-regular-color.svg",
+  "sha256": "bd060a98d5490d502a4aa23322bfced011b5f854d2964991acaf2a48e661a9cb"
+}

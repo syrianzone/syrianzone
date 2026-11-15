@@ -1,0 +1,331 @@
+{
+  "title": "عن المنصة",
+  "subtitle": "منصة تفاعلية مفتوحة المصدر للشعب السوري",
+  "sections": [
+    {
+      "title": "عن المساحة السورية (Syrian Zone)",
+      "subtitle": "مبادرة تفاعلية مفتوحة وغير تجارية",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "مرحبًا بكم في المساحة السورية (Syrian Zone)! هذا المشروع هو جهد تعاوني مفتوح المصدر يهدف إلى توفير أدوات وموارد متنوعة ومفيدة للمجتمع السوري.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "تضم المنصة مجموعة من المشاريع التفاعلية الأساسية:",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "item",
+          "text": "مشوار (Mishwar): دليل مجتمعي تفاعلي للأماكن، الفنادق، والمرشدين المحليين في مختلف المحافظات.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "item",
+          "text": "النقل والمواصلات (Transit): خرائط تفاعلية لخطوط السرافيس والنقل الداخلي والمواقف واستوديو الرسم التشاركي.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "item",
+          "text": "أطلس السكان (Population Atlas): خرائط ومعلومات ديمغرافية تفاعلية للمحافظات والتقسيمات الإدارية.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "item",
+          "text": "تقييم الأداء والحسابات الرسمية: نظام استطلاعات الرأي (التيير ليست) ودليل الحسابات والأرقام الخدمية الرسمية.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "نهدف من خلال هذا المشروع إلى بناء مساحة برمجية تتميز بالبساطة والقيمة العالية، وسهولة الوصول، والإطلاق السريع للأدوات المفتوحة التي تهم السوريين في الداخل ودول الاغتراب.",
+          "href": "",
+          "src": ""
+        }
+      ]
+    },
+    {
+      "title": "الفريق المؤسس",
+      "subtitle": "بدأ المشروع بمبادرة وتطوير شخصي من",
+      "blocks": [
+        {
+          "kind": "image",
+          "text": "هادي الأحمد",
+          "href": "",
+          "src": "https://github.com/hadealahmad.png?size=160"
+        },
+        {
+          "kind": "heading",
+          "text": "هادي الأحمد",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "مؤسس ومطور رئيسي",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "link",
+          "text": "hadealahmad",
+          "href": "https://github.com/hadealahmad",
+          "src": ""
+        },
+        {
+          "kind": "link",
+          "text": "@hadealahmad",
+          "href": "https://twitter.com/hadealahmad",
+          "src": ""
+        },
+        {
+          "kind": "image",
+          "text": "نور صوفناتي",
+          "href": "",
+          "src": "https://github.com/sb-nour.png?size=160"
+        },
+        {
+          "kind": "heading",
+          "text": "نور صوفناتي",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "مؤسس ومطور رئيسي",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "link",
+          "text": "sb-nour",
+          "href": "https://github.com/sb-nour",
+          "src": ""
+        },
+        {
+          "kind": "link",
+          "text": "@Nour_Sofanati",
+          "href": "https://twitter.com/Nour_Sofanati",
+          "src": ""
+        }
+      ]
+    },
+    {
+      "title": "المساهمون والإسنادات (Contributors)",
+      "subtitle": "نخص بالذكر والشكر جميع المساهمين الرائعين في هذا المشروع",
+      "blocks": [
+        {
+          "kind": "heading",
+          "text": "مكدوس (@macdoos)",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "ساهم بتطوير قسم تقييم الوزراء والمسؤولين بالكامل.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "heading",
+          "text": "الحارث الموسى (@tirh25)",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "قام بإضافة وتوثيق قاعدة بيانات الحسابات الرسمية السورية.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "heading",
+          "text": "haiueida (@haiueida)",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "وفر الترجمة الكردية لصفحة الحسابات الرسمية.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "heading",
+          "text": "Waleed Khamees (@WaleedKhamees)",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "ساهم في ضغط الصور وتحسين أداء سرعة الموقع.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "heading",
+          "text": "SourceM7",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "ساهم بتطوير أطلس سوريا وتطوير وتصميم الصفحة الرئيسية.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "heading",
+          "text": "وحيد شعّار (@WaheedShaar)",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "وفر النسخة الهندسية DWG للعلم السوري في الهوية البصرية.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "heading",
+          "text": "عبدالرحمن حداد (@abd_hmh)",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "وفر الدليل الإرشادي لتفاصيل وأبعاد العلم السوري.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "heading",
+          "text": "ولاء (@walaa_akdesign)",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "قامت بتصميم حزمة أيقونات المعالم البصرية للمحافظات السورية (تابعها على X / Twitter و Instagram ).",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "link",
+          "text": "X / Twitter",
+          "href": "https://x.com/walaa_akdesign",
+          "src": ""
+        },
+        {
+          "kind": "link",
+          "text": "Instagram",
+          "href": "https://www.instagram.com/walaa_akdesign/",
+          "src": ""
+        },
+        {
+          "kind": "heading",
+          "text": "يوري دندشي (@yuri.dandashi)",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "تصميم الشعار وأيقونة الموقع والهوية البصرية العامة.",
+          "href": "",
+          "src": ""
+        }
+      ]
+    },
+    {
+      "title": "مساهمو GitHub",
+      "subtitle": "",
+      "blocks": []
+    },
+    {
+      "title": "مشروع مفتوح المصدر (MIT License)",
+      "subtitle": "",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "هذا المشروع مرخص تحت رخصة MIT License الحرة ومتاحة شفرته المصدرية للجميع على منصة GitHub.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "link",
+          "text": "المستودع على GitHub",
+          "href": "https://github.com/syrianzone/syrianzone",
+          "src": ""
+        },
+        {
+          "kind": "link",
+          "text": "تحميل الهوية البصرية (Brand Kit)",
+          "href": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/brandkit-y5sZMu.zip",
+          "src": ""
+        }
+      ]
+    },
+    {
+      "title": "حقوق الموارد والأيقونات (Attributions)",
+      "subtitle": "",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "الأيقونات المستعملة في أدوات ومشاريع المنصة مأخوذة من مجموعات Streamline Icons ومتاحة بموجب رخصة Creative Commons Attribution 4.0 International (CC BY 4.0).",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "أيقونات واجهة المستخدم مأخوذة من Lucide عبر lucide-react بموجب رخصة ISC. تستخدم واجهة iOS أيضاً رموز Apple SF Symbols وعناصر SwiftUI وUIKit الأصلية.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "صور شخصيات «بوصلة سوريا» مصدرها Wikimedia Commons وWikipedia ، أغلبها في الملكية العامة، وبعضها بموجب رخص CC BY وCC BY-SA. القائمة الكاملة بالمصادر والرخص في ملف credits.json ضمن مجلد الصور.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "بيانات الخرائط التفاعلية في الترانزيت ومشوار مستندة إلى OpenStreetMap وMapLibre GL JS بموجب رخصة ODbL / Open Data Commons. تعرض نسخة iOS الخرائط عبر Apple MapKit، مع بقاء إسنادات مصادر البيانات الأصلية.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "نص مصحف المدينة وخط حفص العثماني من مجمع الملك فهد لطباعة المصحف الشريف. تُستخدم نسخة الخط الأصلية دون تعديل. علامة نهاية الآية في نسخة iOS هي Alkalami001 من فهرس quran.ws، برخصة SIL Open Font License 1.1، مع حفظ الهندسة والإسناد والرخصة.",
+          "href": "",
+          "src": ""
+        },
+        {
+          "kind": "paragraph",
+          "text": "التلاوات الصوتية وتوقيتات الآيات والكلمات والحروف مقدَّمة عبر واجهة MP3Quran v4 (ملفات الصوت من cdn.mp3quran.net) مع EveryAyah كمصدر احتياطي، ومواقيت الصلاة عبر Aladhan API، وبيانات الطقس من Open-Meteo وOpenWeatherMap، وتحديد الموقع التقريبي عبر ipwho.is.",
+          "href": "",
+          "src": ""
+        }
+      ]
+    }
+  ],
+  "footer": [
+    {
+      "kind": "link",
+      "text": "سياسة الخصوصية",
+      "href": "/privacy",
+      "src": ""
+    },
+    {
+      "kind": "link",
+      "text": "الشروط والأحكام",
+      "href": "/terms",
+      "src": ""
+    }
+  ]
+}

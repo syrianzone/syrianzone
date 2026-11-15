@@ -32,5 +32,6 @@ export const featureScreens: Record<string, { title: string; component: Componen
   places_admin: { title: 'إدارة أماكن مشوار', component: lazy(() => import('./features/Places/Admin').then(module => ({ default: module.PlacesAdminScreen }))) },
   guesswho_admin: { title: 'إدارة من هو؟', component: lazy(() => import('./features/GuessWho/Admin').then(module => ({ default: module.GuessWhoAdminScreen }))) },
   transit_admin: { title: 'إدارة النقل', component: lazy(() => import('./features/TransitAdmin/Index').then(module => ({ default: module.TransitAdminScreen }))) },
+  shawarma: { title: 'الشاورما السورية', component: lazy(() => import('./features/Shawarma/Index').then(module => ({ default: module.ShawarmaScreen }))) },
   alignment: { title: 'مخطط المحاور', component: lazy(() => import('./features/Alignment/Index').then(module => ({ default: module.AlignmentScreen }))) }
 };

@@ -2,6 +2,11 @@ import { lazy, type ComponentType } from 'react';
 import type { FeatureScreenProps } from './platform/features';
 
 export const featureScreens: Record<string, { title: string; component: ComponentType<FeatureScreenProps> }> = {
+  games: { title: 'الألعاب', component: lazy(() => import('./features/Games/Index').then(module => ({ default: module.GamesScreen }))) },
+  '2048': { title: '٢٠٤٨', component: lazy(() => import('./features/Games/2048/Index').then(module => ({ default: module.Game2048Screen }))) },
+  solitare: { title: 'سوليتير', component: lazy(() => import('./features/Games/Solitare/Index').then(module => ({ default: module.SolitaireScreen }))) },
+  tarneeb: { title: 'طرنيب', component: lazy(() => import('./features/Games/Tarneeb/Index').then(module => ({ default: module.TarneebScreen }))) },
+  trix: { title: 'تركس', component: lazy(() => import('./features/Games/Trix/Index').then(module => ({ default: module.TrixScreen }))) },
   crossings: { title: 'المعابر', component: lazy(() => import('./features/Crossings/Index').then(module => ({ default: module.CrossingsScreen }))) },
   priorities: { title: 'أولوياتك', component: lazy(() => import('./features/Priorities/Index').then(module => ({ default: module.PrioritiesScreen }))) },
   party: { title: 'الأحزاب', component: lazy(() => import('./features/Party/Index').then(module => ({ default: module.PartyScreen }))) },

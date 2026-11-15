@@ -8,6 +8,7 @@ export const featureScreens: Record<string, { title: string; component: Componen
   tarneeb: { title: 'طرنيب', component: lazy(() => import('./features/Games/Tarneeb/Index').then(module => ({ default: module.TarneebScreen }))) },
   trix: { title: 'تركس', component: lazy(() => import('./features/Games/Trix/Index').then(module => ({ default: module.TrixScreen }))) },
   phonebook: { title: 'دليل الهاتف', component: lazy(() => import('./features/Phonebook/Index').then(module => ({ default: module.PhonebookScreen }))) },
+  sites: { title: 'دليل المواقع', component: lazy(() => import('./features/Sites/Index').then(module => ({ default: module.SitesScreen }))) },
   govapps: { title: 'التطبيقات الحكومية', component: lazy(() => import('./features/GovApps/Index').then(module => ({ default: module.GovAppsScreen }))) },
   syofficial: { title: 'الحسابات الرسمية', component: lazy(() => import('./features/SyOfficial/Index').then(module => ({ default: module.SyOfficialScreen }))) },
   crossings: { title: 'المعابر', component: lazy(() => import('./features/Crossings/Index').then(module => ({ default: module.CrossingsScreen }))) },

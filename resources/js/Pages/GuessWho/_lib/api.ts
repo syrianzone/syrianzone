@@ -7,6 +7,8 @@ import { api as client } from '@/Lib/api';
 
 /** The authoritative snapshot the server returns when a player rejoins. */
 interface GuessWhoState {
+  /** This player's slot. Turn and winner are slots too, never session ids. */
+  self?: 'player_1' | 'player_2';
   myCharacterId?: number | null;
   myEliminated?: number[];
   opponentRemaining?: number;
@@ -20,7 +22,7 @@ export const guessWhoApi = {
     return client.post('/guesswho/rooms', { category_id: categoryId, player_session: playerSession });
   },
 
-  join(roomCode: string, playerSession: string): Promise<unknown> {
+  join(roomCode: string, playerSession: string): Promise<{ status: string; role: 'player_1' | 'player_2' }> {
     return client.post(`/guesswho/room/${roomCode}/join`, { player_session: playerSession });
   },
 

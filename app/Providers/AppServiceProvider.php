@@ -10,6 +10,7 @@ use App\Models\PromiseUpdate;
 use App\Services\Promises\PromiseIndexCache;
 use App\Support\Agents\AgentAuthorizer;
 use App\Support\Agents\AgentContext;
+use App\Support\Agents\TokenAbilities;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -42,6 +44,12 @@ class AppServiceProvider extends ServiceProvider
         View::composer('app', function ($view) {
             $view->with('meta', \App\Support\Seo\SeoMeta::resolve(request()));
         });
+
+        // Which tokens may authenticate which requests: a banned owner's token
+        // nowhere, an agent token only on the MCP endpoint. See TokenAbilities.
+        Sanctum::authenticateAccessTokensUsing(
+            fn (PersonalAccessToken $token, bool $isValid): bool => $isValid && TokenAbilities::authenticates($token, request())
+        );
 
         // Any write to the tracker drops the cached /promises payload.
         foreach ([Promise::class, PromiseUpdate::class, PromiseSpeaker::class, PromiseSector::class] as $model) {

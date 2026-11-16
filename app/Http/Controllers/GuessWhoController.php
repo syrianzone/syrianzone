@@ -133,9 +133,12 @@ class GuessWhoController extends Controller
             return $this->jsonError('غير مصرح لك بالانضمام لهذه الغرفة.', 403);
         }
 
+        // Presence identity is the public slot name, never the session id:
+        // the opponent sees this block.
+        $role = RoomChannel::role($game, $sessionId);
         $channelData = json_encode([
-            'user_id' => $sessionId,
-            'user_info' => RoomChannel::member($sessionId, $request->user()),
+            'user_id' => $role,
+            'user_info' => RoomChannel::member($role, $request->user()),
         ]);
 
         $stringToSign = $socketId . ':' . $channelName . ':' . $channelData;
@@ -217,31 +220,35 @@ class GuessWhoController extends Controller
             'payload' => 'nullable|array',
         ]);
 
-        $game = GuessWhoGame::where('room_code', $roomCode)->first();
-        if (!$game) {
-            return $this->jsonError('الغرفة غير موجودة.', 404);
-        }
-
-        $players = array_filter([$game->player_1_session, $game->player_2_session]);
-        if (!in_array($validated['sender_session'], $players, true)) {
-            return $this->jsonError('غير مصرح لك باللعب في هذه الغرفة.', 403);
-        }
-
         $payload = $validated['payload'] ?? [];
         if (strlen(json_encode($payload)) > self::MAX_ACTION_BYTES) {
             return $this->jsonError('حجم البيانات كبير جداً.', 413);
         }
 
-        $sender = $validated['sender_session'];
-        $opponent = $game->player_1_session === $sender ? $game->player_2_session : $game->player_1_session;
+        // The whole move runs against a locked row: two moves sent at once
+        // would otherwise both pass the turn check and both apply.
+        return DB::transaction(function () use ($roomCode, $validated, $payload) {
+            $game = GuessWhoGame::where('room_code', $roomCode)->lockForUpdate()->first();
+            if (!$game) {
+                return $this->jsonError('الغرفة غير موجودة.', 404);
+            }
 
-        return match ($validated['action']) {
-            'select_ready' => $this->selectReady($game, $sender, $payload),
-            'elimination_update' => $this->eliminate($game, $sender, $payload),
-            'pass_turn' => $this->passTurn($game, $sender, $opponent),
-            'guess' => $this->guess($game, $sender, $opponent, $payload),
-            default => $this->jsonError('الحركة غير معروفة.', 422),
-        };
+            $players = array_filter([$game->player_1_session, $game->player_2_session]);
+            if (!in_array($validated['sender_session'], $players, true)) {
+                return $this->jsonError('غير مصرح لك باللعب في هذه الغرفة.', 403);
+            }
+
+            $sender = $validated['sender_session'];
+            $opponent = $game->player_1_session === $sender ? $game->player_2_session : $game->player_1_session;
+
+            return match ($validated['action']) {
+                'select_ready' => $this->selectReady($game, $sender, $payload),
+                'elimination_update' => $this->eliminate($game, $sender, $payload),
+                'pass_turn' => $this->passTurn($game, $sender, $opponent),
+                'guess' => $this->guess($game, $sender, $opponent, $payload),
+                default => $this->jsonError('الحركة غير معروفة.', 422),
+            };
+        });
     }
 
     /** The requesting player's own view of the game, for a fresh load or a refresh. */
@@ -260,22 +267,28 @@ class GuessWhoController extends Controller
             return $this->jsonError('غير مصرح لك باللعب في هذه الغرفة.', 403);
         }
 
-        $opponent = $isP1 ? $game->player_2_session : $game->player_1_session;
+        $opponentRole = $isP1 ? 'player_2' : 'player_1';
 
         return response()->json([
-            'self' => $sender,
+            'self' => $isP1 ? 'player_1' : 'player_2',
             'status' => $game->status,
-            'turn' => $game->status === 'playing' ? $game->turn_session : null,
-            'winner' => $game->winner_session,
+            'turn' => $game->status === 'playing' ? RoomChannel::role($game, $game->turn_session) : null,
+            'winner' => RoomChannel::role($game, $game->winner_session),
             'myCharacterId' => $isP1 ? $game->player_1_character_id : $game->player_2_character_id,
             'myEliminated' => ($isP1 ? $game->player_1_eliminated : $game->player_2_eliminated) ?? [],
-            'opponentRemaining' => $opponent ? ($this->remaining($game)[$opponent] ?? null) : null,
+            'opponentRemaining' => $this->remaining($game)[$opponentRole] ?? null,
         ]);
     }
 
     /** A player locks in a secret; once both have, the game starts and player 1 leads. */
     private function selectReady(GuessWhoGame $game, string $sender, array $payload)
     {
+        // The secret is fixed once play starts. Changing it afterwards would
+        // let a player move their character away from the opponent's guesses.
+        if (!in_array($game->status, ['lobby', 'selecting'], true)) {
+            return $this->jsonError('لا يمكن تغيير الشخصية بعد بدء اللعبة.', 409);
+        }
+
         $id = $payload['id'] ?? null;
         if (!is_int($id) || !in_array($id, $game->character_ids ?? [], true)) {
             return $this->jsonError('الشخصية غير صالحة لهذه الغرفة.', 422);
@@ -338,7 +351,7 @@ class GuessWhoController extends Controller
         $game->save();
 
         return $this->broadcastState($game, [
-            'by' => $sender,
+            'by' => RoomChannel::role($game, $sender),
             'characterId' => $guessId,
             'correct' => $correct,
         ]);
@@ -367,21 +380,22 @@ class GuessWhoController extends Controller
     }
 
     /**
-     * Each player's remaining count, keyed by session. A player who has not
-     * chosen yet is null; only the count is public, never the eliminated ids.
+     * Each player's remaining count, keyed by slot (`player_1`, `player_2`).
+     * A player who has not chosen yet is null; only the count is public,
+     * never the eliminated ids, and never the session ids.
      */
     private function remaining(GuessWhoGame $game): array
     {
         $total = count($game->character_ids ?? []);
         $map = [];
 
-        foreach ([$game->player_1_session, $game->player_2_session] as $slot => $session) {
+        foreach (['player_1' => $game->player_1_session, 'player_2' => $game->player_2_session] as $role => $session) {
             if (!$session) {
                 continue;
             }
-            $secret = $slot === 0 ? $game->player_1_character_id : $game->player_2_character_id;
-            $eliminated = ($slot === 0 ? $game->player_1_eliminated : $game->player_2_eliminated) ?? [];
-            $map[$session] = $secret === null ? null : max(0, $total - count($eliminated));
+            $secret = $role === 'player_1' ? $game->player_1_character_id : $game->player_2_character_id;
+            $eliminated = ($role === 'player_1' ? $game->player_1_eliminated : $game->player_2_eliminated) ?? [];
+            $map[$role] = $secret === null ? null : max(0, $total - count($eliminated));
         }
 
         return $map;
@@ -390,20 +404,21 @@ class GuessWhoController extends Controller
     /** Broadcast the authoritative slice, and answer the actor with it. */
     private function broadcastState(GuessWhoGame $game, ?array $guess = null)
     {
-        $turn = $game->status === 'playing' ? $game->turn_session : null;
+        $turn = $game->status === 'playing' ? RoomChannel::role($game, $game->turn_session) : null;
+        $winner = RoomChannel::role($game, $game->winner_session);
 
         broadcast(new GuessWhoStateEvent(
             $game->room_code,
             $turn,
             $game->status,
-            $game->winner_session,
+            $winner,
             $guess,
             $this->remaining($game)
         ));
 
         return response()->json([
             'status' => 'ok',
-            'state' => ['turn' => $turn, 'status' => $game->status, 'winner' => $game->winner_session],
+            'state' => ['turn' => $turn, 'status' => $game->status, 'winner' => $winner],
         ]);
     }
 

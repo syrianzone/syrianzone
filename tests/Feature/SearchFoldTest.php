@@ -118,6 +118,8 @@ test('transit search folds route and stop names', function () {
         'name_ar' => 'مؤسسة الكهرباء',
         'geometry' => spatialValue(['type' => 'Point', 'coordinates' => [36.29, 33.51]]),
     ]);
+    // Public search only returns stops served by a published route.
+    DB::table('route_stop')->insert(['route_id' => $route->id, 'stop_id' => 'stop-test', 'order' => 1]);
 
     $response = $this->getJson('/api/v1/transit/search?q='.urlencode('احمد'))->assertOk();
     expect($response->json('routes.0.id'))->toBe($route->id);

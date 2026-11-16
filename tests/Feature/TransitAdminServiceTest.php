@@ -105,6 +105,8 @@ it('republishes a linked route when its edit is rejected', function () {
     seedCity('homs');
     transitRoute('route-homs-1', 'homs', ['status' => 'disapproved']);
     $draft = transitDraft('homs', ['route_id' => 'route-homs-1']);
+    // The route was taken offline for this edit's review.
+    Route::find('route-homs-1')->forceFill(['withdrawn_for_draft_id' => $draft->id])->save();
 
     $this->service->rejectDraft($draft, 'لا', $this->actor->id);
 

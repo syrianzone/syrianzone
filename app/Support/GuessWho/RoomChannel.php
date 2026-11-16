@@ -57,15 +57,35 @@ final class RoomChannel
     }
 
     /**
-     * The presence-channel member block for a player.
+     * The public name of a player's slot: `player_1` or `player_2`.
      *
-     * @return array{id: string, session_id: string, name: string}
+     * The session id is the player's only credential (it authorises moves and
+     * reads their secret), so nothing that reaches the other player may carry
+     * it. Everything broadcast to the room identifies players by slot instead.
      */
-    public static function member(string $sessionId, ?User $user): array
+    public static function role(GuessWhoGame $game, ?string $sessionId): ?string
+    {
+        if ($sessionId === null || $sessionId === '') {
+            return null;
+        }
+
+        return match ($sessionId) {
+            $game->player_1_session => 'player_1',
+            $game->player_2_session => 'player_2',
+            default => null,
+        };
+    }
+
+    /**
+     * The presence-channel member block for a player, keyed by slot.
+     *
+     * @return array{id: string, player: string, name: string}
+     */
+    public static function member(string $role, ?User $user): array
     {
         return [
-            'id' => $sessionId,
-            'session_id' => $sessionId,
+            'id' => $role,
+            'player' => $role,
             'name' => $user?->name ?? self::GUEST_NAME,
         ];
     }

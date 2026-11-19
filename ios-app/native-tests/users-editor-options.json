@@ -1,0 +1,289 @@
+{
+  "can_manage_users": true,
+  "actor_id": 103,
+  "default_role": "user",
+  "roles": [
+    {
+      "value": "superadmin",
+      "label": "مدير عام (وصول كامل غير مقيد)",
+      "can_be_banned": false
+    },
+    {
+      "value": "user",
+      "label": "مستخدم عادي",
+      "can_be_banned": true
+    }
+  ],
+  "groups": [
+    {
+      "id": "syofficial",
+      "label": "الحسابات الرسمية",
+      "icon": "syofficial",
+      "permissions": [
+        {
+          "id": "syofficial.create",
+          "label": "إنشاء الجهات والتصنيفات"
+        },
+        {
+          "id": "syofficial.edit",
+          "label": "تعديل بيانات الجهات وروابط التواصل"
+        },
+        {
+          "id": "syofficial.toggle",
+          "label": "إظهار الجهات والتصنيفات وإخفاؤها"
+        },
+        {
+          "id": "syofficial.delete",
+          "label": "حذف الجهات والتصنيفات"
+        },
+        {
+          "id": "syofficial.reorder",
+          "label": "السحب والإفلات للترتيب"
+        }
+      ]
+    },
+    {
+      "id": "govapps",
+      "label": "التطبيقات الحكومية",
+      "icon": "govapps",
+      "permissions": [
+        {
+          "id": "govapps.create",
+          "label": "إضافة التطبيقات الحكومية"
+        },
+        {
+          "id": "govapps.edit",
+          "label": "تعديل تفاصيل التطبيقات وروابطها"
+        },
+        {
+          "id": "govapps.toggle",
+          "label": "إظهار التطبيقات وإخفاؤها"
+        },
+        {
+          "id": "govapps.delete",
+          "label": "حذف التطبيقات"
+        },
+        {
+          "id": "govapps.reorder",
+          "label": "السحب والإفلات للترتيب"
+        }
+      ]
+    },
+    {
+      "id": "transit",
+      "label": "ترانزيت",
+      "icon": "transit",
+      "permissions": [
+        {
+          "id": "transit.review_drafts",
+          "label": "مراجعة المسارات المقترحة"
+        },
+        {
+          "id": "transit.approve",
+          "label": "الموافقة على المسارات ونشرها"
+        },
+        {
+          "id": "transit.reject",
+          "label": "رفض مسودات المسارات"
+        },
+        {
+          "id": "transit.edit_routes",
+          "label": "تعديل المسارات المنشورة والمواقف"
+        },
+        {
+          "id": "transit.delete_routes",
+          "label": "حذف المسارات"
+        }
+      ]
+    },
+    {
+      "id": "places",
+      "label": "مشوار",
+      "icon": "places",
+      "permissions": [
+        {
+          "id": "places.review",
+          "label": "مراجعة الأماكن قيد الانتظار"
+        },
+        {
+          "id": "places.approve",
+          "label": "الموافقة على الأماكن ونشرها"
+        },
+        {
+          "id": "places.edit",
+          "label": "تعديل تفاصيل الأماكن"
+        },
+        {
+          "id": "places.moderate_photos",
+          "label": "تدوير الصور وحذفها"
+        },
+        {
+          "id": "places.delete",
+          "label": "حذف الأماكن"
+        }
+      ]
+    },
+    {
+      "id": "phonebook",
+      "label": "دليل الهاتف",
+      "icon": "phonebook",
+      "permissions": [
+        {
+          "id": "phonebook.create",
+          "label": "إنشاء الإدخالات والتصنيفات"
+        },
+        {
+          "id": "phonebook.edit",
+          "label": "تعديل الأرقام والأسماء والتفاصيل"
+        },
+        {
+          "id": "phonebook.toggle",
+          "label": "إظهار الإدخالات وإخفاؤها"
+        },
+        {
+          "id": "phonebook.delete",
+          "label": "حذف الإدخالات والتصنيفات"
+        },
+        {
+          "id": "phonebook.reorder",
+          "label": "السحب والإفلات للترتيب"
+        }
+      ]
+    },
+    {
+      "id": "polls",
+      "label": "الاستبيانات",
+      "icon": "polls",
+      "permissions": [
+        {
+          "id": "polls.create",
+          "label": "إنشاء الاستبيانات"
+        },
+        {
+          "id": "polls.edit",
+          "label": "تعديل الاستبيانات والمرشحين"
+        },
+        {
+          "id": "polls.delete",
+          "label": "حذف الاستبيانات"
+        }
+      ]
+    },
+    {
+      "id": "compass",
+      "label": "بوصلة سوريا",
+      "icon": "compass",
+      "permissions": [
+        {
+          "id": "compass.stats",
+          "label": "عرض إحصاءات «بوصلة سوريا» المجهولة"
+        },
+        {
+          "id": "compass.figures",
+          "label": "إدارة شخصيات البوصلة (إضافة وتعديل وتفعيل)"
+        },
+        {
+          "id": "compass.personas",
+          "label": "إدارة أنماط البوصلة ونطاقاتها ومحتواها"
+        }
+      ]
+    },
+    {
+      "id": "promises",
+      "label": "عداد الوعود",
+      "icon": "promises",
+      "permissions": [
+        {
+          "id": "promises.create",
+          "label": "إضافة الوعود"
+        },
+        {
+          "id": "promises.edit",
+          "label": "تعديل الوعود ومصادرها وسجل تقدّمها"
+        },
+        {
+          "id": "promises.rule",
+          "label": "الحكم على الوعود وتغيير حالتها"
+        },
+        {
+          "id": "promises.review",
+          "label": "مراجعة الاقتراحات والبلاغات ونشر الوعود"
+        },
+        {
+          "id": "promises.speakers",
+          "label": "إدارة قائمة أصحاب التصريحات والقطاعات"
+        },
+        {
+          "id": "promises.delete",
+          "label": "حذف الوعود"
+        }
+      ]
+    },
+    {
+      "id": "users",
+      "label": "المستخدمون",
+      "icon": "users",
+      "permissions": [
+        {
+          "id": "users.ban",
+          "label": "حظر المستخدمين ومنعهم من تقديم مسارات"
+        }
+      ]
+    },
+    {
+      "id": "guesswho",
+      "label": "لعبة مَنْ هُوَ؟",
+      "icon": "games",
+      "permissions": [
+        {
+          "id": "guesswho.manage",
+          "label": "إدارة شخصيات لعبة «مَنْ هُوَ؟» وتصنيفاتها"
+        }
+      ]
+    },
+    {
+      "id": "assets",
+      "label": "ملفات الاستضافة",
+      "icon": "assets",
+      "permissions": [
+        {
+          "id": "assets.manage",
+          "label": "إدارة الملفات المرفوعة على الاستضافة"
+        }
+      ]
+    },
+    {
+      "id": "site",
+      "label": "إعدادات الموقع",
+      "icon": "site",
+      "permissions": [
+        {
+          "id": "site.popup",
+          "label": "تعديل النافذة المنبثقة للصفحة الرئيسية"
+        },
+        {
+          "id": "site.navigation",
+          "label": "تعديل القوائم والأيقونات في الموقع"
+        }
+      ]
+    }
+  ],
+  "cities": [
+    {
+      "id": "damascus",
+      "name_ar": "دمشق"
+    }
+  ],
+  "limits": {
+    "per_page_max": 100,
+    "bulk_max": 500
+  },
+  "sort_columns": [
+    "name",
+    "email",
+    "role",
+    "is_banned",
+    "created_at",
+    "deleted_at"
+  ]
+}

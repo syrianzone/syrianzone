@@ -1,0 +1,69 @@
+diff --git a/apple/Elements/RNSVGSvgView.h b/apple/Elements/RNSVGSvgView.h
+index 992ad9405157285c96f9d2bf7537cde4c75a47d4..78de74a6f08b9fad8a656a6f8ad2899f92c8c439 100644
+--- a/apple/Elements/RNSVGSvgView.h
++++ b/apple/Elements/RNSVGSvgView.h
+@@ -64,6 +64,7 @@
+ - (RNSVGFilter *)getDefinedFilter:(NSString *)filterName;
+ 
+ - (NSString *)getDataURLWithBounds:(CGRect)bounds;
++- (NSString *)getDataURLWithBounds:(CGRect)bounds exactSize:(BOOL)exactSize;
+ 
+ - (CGRect)getContextBounds;
+ 
+diff --git a/apple/Elements/RNSVGSvgView.mm b/apple/Elements/RNSVGSvgView.mm
+index 030578325ad3d9a6f11a4af0ad7a5dd042fae5f1..d64dccc7b97e4dca158ac26748d020b7fb447bec 100644
+--- a/apple/Elements/RNSVGSvgView.mm
++++ b/apple/Elements/RNSVGSvgView.mm
+@@ -382,15 +382,38 @@ - (RNSVGPlatformView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+ }
+ 
+ - (NSString *)getDataURLWithBounds:(CGRect)bounds
++{
++  return [self getDataURLWithBounds:bounds exactSize:NO];
++}
++
++- (NSString *)getDataURLWithBounds:(CGRect)bounds exactSize:(BOOL)exactSize
+ {
+ #if !TARGET_OS_OSX // [macOS]
+-  UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:bounds.size];
++  UIGraphicsImageRenderer *renderer;
++  if (exactSize) {
++    UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat defaultFormat];
++    format.scale = 1;
++    renderer = [[UIGraphicsImageRenderer alloc] initWithSize:bounds.size format:format];
++  } else {
++    renderer = [[UIGraphicsImageRenderer alloc] initWithSize:bounds.size];
++  }
+   UIImage *image = [renderer imageWithActions:^(__unused UIGraphicsImageRendererContext *_Nonnull rendererContext) {
+ #else // [macOS
+   RNSVGUIGraphicsBeginImageContextWithOptions(bounds.size, NO, 1);
+ #endif // macOS]
+     [self clearChildCache];
++#if !TARGET_OS_OSX
++    if (exactSize) {
++      CGRect previousBounds = self.boundingBox;
++      self.boundingBox = bounds;
++      [self drawToContext:rendererContext.CGContext withRect:bounds];
++      self.boundingBox = previousBounds;
++    } else {
++      [self drawRect:bounds];
++    }
++#else
+     [self drawRect:bounds];
++#endif
+     [self clearChildCache];
+     [self invalidate];
+ #if !TARGET_OS_OSX // [macOS]
+diff --git a/apple/RNSVGSvgViewModule.mm b/apple/RNSVGSvgViewModule.mm
+index 77ae7e8c2a4a5ed6f926730d102a6545f2df9649..12915702eaa0fbed19d6fd9b17d588b6234212af 100644
+--- a/apple/RNSVGSvgViewModule.mm
++++ b/apple/RNSVGSvgViewModule.mm
+@@ -52,7 +52,7 @@ - (void)toDataURL:(nonnull NSNumber *)reactTag
+         NSInteger hi = (NSInteger)[h intValue];
+ 
+         CGRect bounds = CGRectMake(0, 0, wi, hi);
+-        b64 = [svg getDataURLWithBounds:bounds];
++        b64 = [svg getDataURLWithBounds:bounds exactSize:YES];
+       }
+     } else {
+       RCTLogError(@"Invalid svg returned from registry, expecting RNSVGSvgView, got: %@", view);

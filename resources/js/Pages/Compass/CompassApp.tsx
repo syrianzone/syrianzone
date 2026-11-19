@@ -10,7 +10,7 @@ import { AXES } from '@/Domain/compass/axes';
 import { QUESTIONS } from '@/Domain/compass/questions';
 import { ALIGN_QUESTIONS } from '@/Domain/compass/align';
 import { activeQuestions, activeAlignQuestions, versionTotals, axisKey, alignKey } from '@/Domain/compass/engine';
-import { loadProgress, saveProgress, clearProgress, fetchAccountResults, saveResultToAccount, takePendingAccountSave, setPendingAccountSave, updateLocalResult } from './lib/storage';
+import { loadProgress, saveProgress, clearProgress, fetchAccountResults, savePendingResultToAccount } from './lib/storage';
 import type { CompassResult as SavedResult } from '@/Domain/compass/types';
 import CompassResult from './CompassResult';
 import SavedResults from './components/SavedResults';
@@ -59,16 +59,11 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
   // The run is queued; once we come back authenticated, save it for them.
   useEffect(() => {
     if (!isLoggedIn) return;
-    const pending = takePendingAccountSave();
-    if (!pending) return;
-    saveResultToAccount(pending)
+    void savePendingResultToAccount()
       .then((saved) => {
-        updateLocalResult(pending.id, { id: saved?.id ?? pending.id, savedToAccount: true });
-        refreshAccount();
+        if (saved) refreshAccount();
       })
       .catch((e) => {
-        // Put it back so a later visit can retry.
-        setPendingAccountSave(pending);
         notify.error(apiErrorMessage(e, 'تعذّر حفظ نتيجتك في حسابك، حاول لاحقاً'));
       });
   }, [isLoggedIn, refreshAccount]);

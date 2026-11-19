@@ -1,0 +1,673 @@
+{
+  "workstream": "Transit and Mishwar",
+  "sourceRevision": "b1da794152dde5824909335d7ced4522b06aa31e",
+  "status": "Native public/Studio drafts and model/API tests exist. Isolated writes and new iPhone17 interactions remain in the verification queue.",
+  "nativeCheckpointByRoot": {
+    "mishwarContributionDraft": "Account-sections-native02 passed validation, system photo-picker cancellation, draft preservation and confirmed discard in 110.316 seconds.",
+    "limitation": "This proves no successful upload, contribution submission or moderation. Those workflows require their own identified test-owned image and completed native result.",
+    "communityScroll08": "The completed read-only location-gutter diagnostic passed in Community08; it did not submit a contribution or prove the normal reveal helper.",
+    "normalReveal09": "Native09 passed the normal helper offscreen-to-fully-contained/hittable location confirmation regression in 43.907742 seconds. It stopped before confirming the location or submitting.",
+    "contribution10": "Native10 passed exact synthetic name/description guards and reached Submit, then showed a connection error. No successful native upload/contribution/moderation result is recorded; diagnostics and rerun remain pending."
+  },
+  "crosscutting": {
+    "coordinates": "API and GeoJSON tuples remain longitude,latitude; native maps use latitude,longitude objects. Preserve route segments and all stop memberships.",
+    "authentication": "Public reads omit bearer credentials. Owner reads, pending places, server saves, reports and contribution writes explicitly use the current bearer session. Studio new-route submission can be anonymous; linked edits cannot.",
+    "lifecycle": "Abort screen-owned pagination, search, geocoding and location requests on blur, background and parameter changes. Ignore responses from an older query or account. Retain already loaded pages when a later page fails.",
+    "writes": "No automated contribution, report, save, photo or moderation writes against production. Validate request and acknowledgement shapes with isolated fixtures or a test backend. Never infer a successful save from a redirect or an absent response ID.",
+    "nativeMaps": "Apple Maps exposes real geographic map taps and camera changes. Native Studio edits select a vertex then tap its replacement, or confirm the actual camera center. Marker drag/long press are deliberately adapted. Place and hotel clusters use separate Supercluster indexes with source radius25/maxZoom10 and viewport-aware MapKit zoom conversion.",
+    "existingBaseline": "Keep TransitScreen, TransitCityScreen, PlacesScreen, PlaceScreen and SavedScreen exports. Device-local saved snapshots remain separate from account-synchronized saves, with explicit labels. Existing iPad/Duo baseline screenshots do not verify these new flows."
+  },
+  "sections": [
+    {
+      "id": "transit",
+      "sourceFiles": [
+        "resources/js/Pages/Transit/Index.tsx",
+        "resources/js/Pages/Transit/city/[id]/Index.tsx",
+        "resources/js/Pages/Transit/_components/landing/CityCard.tsx",
+        "resources/js/Pages/Transit/_components/landing/CityGrid.tsx",
+        "resources/js/Pages/Transit/_components/landing/Hero.tsx",
+        "resources/js/Pages/Transit/_components/SidebarRoutes.tsx",
+        "resources/js/Pages/Transit/_components/SidebarRouteDetail.tsx",
+        "resources/js/Pages/Transit/_components/citymap/GlobalSearchBox.tsx",
+        "resources/js/Pages/Transit/_components/citymap/NearbyTransitDrawer.tsx",
+        "resources/js/Pages/Transit/_components/citymap/RouteLayer.tsx",
+        "resources/js/Pages/Transit/_components/citymap/StopsLayer.tsx",
+        "resources/js/Pages/Transit/_components/citymap/UserLocationLayer.tsx",
+        "resources/js/Pages/Transit/_lib/api.ts",
+        "resources/js/Pages/Transit/_lib/mapColors.ts",
+        "resources/js/Pages/Transit/_store/useMapStore.ts",
+        "resources/js/Domain/transit/types.ts",
+        "resources/js/Domain/transit/limits.ts",
+        "app/Http/Controllers/Api/V1/TransitController.php",
+        "routes/web.php",
+        "routes/api.php"
+      ],
+      "features": [
+        "Browse governorate cards with original outline graphics, route counts and active/coming-soon state; unavailable cities remain non-navigable.",
+        "Open a city with its declared bounds, center and zoom. Show its shared map group and each member's routes without hardcoded city pairs.",
+        "List published routes grouped by their city when the map is shared. Show route color, available stop count and new-currency fare.",
+        "Select a route to highlight its geometry, fit the map and show Arabic/English name, fare and ordered stops. Return to the route list without changing city.",
+        "Respect selected route query links and browser history behavior through native navigation and shareable route selection.",
+        "Search server routes and stops after 300ms. Include geocoder POIs for queries of at least three characters. Cancel stale requests and clear results on empty search.",
+        "Selecting a route result opens it; selecting a stop focuses and highlights that stop; selecting a POI adds a distinct named pin and focuses its building.",
+        "Toggle all-stop visibility, retaining selected-route stops and marker selection behavior.",
+        "Ask for foreground location only after an explicit action, display the user location, and provide a recenter action.",
+        "Show nearby stops within the configured radius and each stop's route chips. A chip selects its route. Keep denied, unavailable, empty and fetch-failure states distinct.",
+        "Open directions to a stop using a native map action while retaining the website's explicit Google Maps option.",
+        "Reach Studio from the city and route screens using the correct city; preserve source account gating for contribution ownership.",
+        "Preserve full route geometry, route-to-stop membership, color-index wrapping and map-group labels through strict decoders."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/transit/cities",
+          "auth": "public",
+          "response": "TransitCity[] with mapGroup, bounds, zoom and optional outline icon"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/transit/cities/{id}/routes",
+          "auth": "public",
+          "response": "RouteProperties[] including cityId, fares and stopsCount"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/transit/cities/{id}/map-data",
+          "auth": "public",
+          "response": "routes and stops GeoJSON FeatureCollections"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/transit/search",
+          "auth": "public",
+          "params": [
+            "q",
+            "city_id"
+          ],
+          "response": "routes and stops search groups"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/geo/poi",
+          "auth": "public",
+          "params": [
+            "q",
+            "city_id"
+          ],
+          "response": "places with name, optional address and coordinate fields"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/transit/stops/nearby",
+          "auth": "public",
+          "params": [
+            "lat",
+            "lng",
+            "radius"
+          ],
+          "response": "stop rows with cityId, coordinates and route IDs/names"
+        }
+      ],
+      "authRequirements": [
+        "All discovery reads are public.",
+        "Do not infer account or staff capabilities from role labels."
+      ],
+      "graphics": [
+        "resources/js/Pages/Transit/_data/governorates/*.svg",
+        "resources/js/Pages/Transit/_data/governorate_svgs.ts",
+        "resources/data/transit.json route_palette",
+        "Route polylines, stops, user-location and distinct geocoder POI markers"
+      ],
+      "tests": [
+        "tests/Feature/TransitApiTest.php",
+        "tests/Feature/TransitRedirectTest.php",
+        "tests/Feature/TransitGovernorateScopeTest.php",
+        "resources/js/Pages/Transit/_lib/mapColors.test.ts",
+        "Native source-derived decoder, search-race, map-group, color and route-selection boundary tests",
+        "iPhone 17 city, search, stop, POI, nearby, denial and route-selection flows"
+      ],
+      "nativeTargets": [
+        "src/transit.tsx",
+        "src/features/Transit"
+      ],
+      "gaps": [
+        "Native city/search/route/stop/POI/location/nearby and source camera behavior need iPhone17 verification.",
+        "Foreign-city nearby route identity/navigation is repaired and boundary-tested; native stop-to-route navigation remains pending."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "transit_studio",
+      "sourceFiles": [
+        "resources/js/Pages/Transit/studio/Index.tsx",
+        "resources/js/Pages/Transit/_store/useStudioStore.ts",
+        "resources/js/Pages/Transit/_types/admin.ts",
+        "resources/js/Pages/Transit/_lib/api.ts",
+        "resources/js/Components/map/geo.ts",
+        "app/Http/Controllers/TransitStudioController.php",
+        "app/Services/Transit/TransitRules.php",
+        "routes/api.php"
+      ],
+      "features": [
+        "Choose a city and constrain reference geometry to that city's bounds and staff city scope, using edit target city as authoritative.",
+        "Draw a route line point by point, show its active preview, finish a valid line and undo the latest point.",
+        "Redraw or reset a route with the original metadata, stop and submitted-state reset rules.",
+        "Edit existing line vertices, insert a vertex at its nearest segment, and remove a vertex while preserving a valid line.",
+        "Overlay published reference routes and stops, toggle their visibility, and warn when a drawn route's bounding box substantially overlaps an existing one.",
+        "Add stops at map coordinates, edit stop names and coordinates, remove stops, and retain unnamed stops according to the source payload contract.",
+        "Choose the original palette color; preview line and stop colors together and wrap stored color indices consistently.",
+        "Edit required Arabic route name, optional English name, integer price and notes. Validate required city and line before submission.",
+        "Load an existing editable draft from edit parameters; if appropriate, resolve a published route through the from-route adapter, preserving route linkage and city.",
+        "Preserve pending work across Google login, including drawn line, stops, city, metadata, edit IDs and color.",
+        "Submit a new route as an anonymous visitor or signed-in contributor, with distinct attribution and success copy.",
+        "Send published-route changes as reviewable linked drafts. Explain that a linked edit takes the live route offline pending approval.",
+        "Update an existing owned/authorized draft and send it back to moderation. Rejected/approved status is not treated as already published success.",
+        "Require a real returned draft ID before showing success. Offer edit current route, start a new route and return to the transit map.",
+        "Preserve visible validation, forbidden, missing-target, connection and failed-save states without discarding the drawing."
+      ],
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/api/v1/transit/studio/routes",
+          "auth": "optional bearer for attribution; required for linked edits",
+          "body": [
+            "city_id",
+            "name_ar",
+            "name_en",
+            "price",
+            "notes",
+            "color_index",
+            "route_id",
+            "geojson FeatureCollection of one LineString and Points"
+          ],
+          "response": "created route draft with actual id"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/transit/studio/routes",
+          "auth": "bearer",
+          "response": "data array of own or authorized drafts"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/transit/studio/routes/{id}",
+          "auth": "bearer owner or matching staff permission",
+          "response": "draft metadata and normalized GeoJSON"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/transit/studio/routes/{id}/from-route",
+          "auth": "bearer owner or matching staff permission",
+          "response": "published route projected into Studio draft shape"
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/transit/studio/routes/{id}",
+          "auth": "bearer owner or matching staff permission",
+          "response": "updated actual draft"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/transit/studio/routes/{id}",
+          "auth": "bearer owner or matching staff permission",
+          "response": "server acknowledgement; preserve source withdrawal rules"
+        }
+      ],
+      "authRequirements": [
+        "A new unlinked route may be anonymous, but never silently claim account attribution.",
+        "Published route linkage requires authentication and same-city validation.",
+        "Staff city restrictions come from server capabilities and scope, not client role inference.",
+        "Real production submission is never part of automated verification."
+      ],
+      "graphics": [
+        "Original route palette",
+        "Native reference polylines and stop markers",
+        "Editable route vertices and nearest-segment insertion preview",
+        "Native map camera and coordinate controls"
+      ],
+      "tests": [
+        "tests/Feature/AuthStudioAndNavigationApiTest.php",
+        "tests/Feature/TransitGovernorateScopeTest.php",
+        "tests/Feature/TransitAdminServiceTest.php",
+        "Fixture-only geometry, snapshot restore, integer-price, required-ID and request-body tests",
+        "Isolated authenticated/anonymous submit and linked-edit tests",
+        "Native point drawing, undo, stop editing and failed-save retention flows"
+      ],
+      "nativeTargets": [
+        "src/features/TransitStudio"
+      ],
+      "gaps": [
+        "Verify native multi-segment geometry editing, undo, stop snapping, reference/overlap, scope choices, pending-login restore and owner changes.",
+        "No production route was submitted. Anonymous, linked and own-draft mutation acknowledgements need isolated integration proof.",
+        "Source marker dragging and long press are adapted to selection plus real map-coordinate taps or confirmed camera center."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "mishwar_discovery",
+      "sourceFiles": [
+        "resources/js/Pages/Places/Index.tsx",
+        "resources/js/Pages/Places/_components/FilterBar.tsx",
+        "resources/js/Pages/Places/_components/PlacesPanel.tsx",
+        "resources/js/Pages/Places/_components/PlacesMap.tsx",
+        "resources/js/Pages/Places/_components/PinLayer.tsx",
+        "resources/js/Pages/Places/_components/PhotoGrid.tsx",
+        "resources/js/Pages/Places/_components/Lightbox.tsx",
+        "resources/js/Pages/Places/_components/PlaceDetailView.tsx",
+        "resources/js/Pages/Places/_components/PhotoGallery.tsx",
+        "resources/js/Pages/Places/_components/EngagementBar.tsx",
+        "resources/js/Pages/Places/_components/ReportButton.tsx",
+        "resources/js/Domain/places/api.ts",
+        "resources/js/Domain/places/types.ts",
+        "resources/js/Domain/places/categories.ts",
+        "resources/js/Domain/places/reports.ts",
+        "app/Http/Controllers/PlaceController.php",
+        "app/Http/Controllers/PlaceEngagementController.php",
+        "app/Http/Controllers/PlaceReportController.php",
+        "app/Services/Places/PlacePresenter.php",
+        "app/Services/Places/PlaceRules.php"
+      ],
+      "features": [
+        "Load the complete public map pin collection independently of paginated result cards, plus the hotel pin collection.",
+        "Switch map and photo-grid views while preserving already fetched data and selection.",
+        "Filter map pins by place category, contributor and all/places/hotels view. Keep hotel pins independent from place-category filters.",
+        "Search listed places after 300ms, suppress stale results, and show at most eight matching place suggestions alongside geocoder suggestions.",
+        "Parse coordinates with decimal points or marked decimal commas, signed coordinates and hemisphere order; reject ambiguous or out-of-range values.",
+        "A coordinate query focuses and temporarily highlights the map rather than filtering the place catalogue by coordinate text.",
+        "Select a geocoder result or place suggestion to focus the correct coordinate and open the appropriate detail.",
+        "Browse newest/popular paginated place cards with category, cover image and save count. Preserve query/category/contributor across pagination.",
+        "Browse the newest public photo wall, load more photos and filter it to a selected guide's contributions.",
+        "Open a photo lightbox with previous/next image, touch gestures, zoom, close/back and an action to show that photo's place on the map.",
+        "Select a place or hotel pin without ID collisions, open the correct detail, clear selection on empty-map tap and preserve selection when resizing.",
+        "Open a shared place URL and show its detail, even when its pin has not loaded yet.",
+        "Show place gallery, category, full description, contributor avatar/name/rank, coordinates and coordinate-copy feedback.",
+        "Only approved places offer engagement actions. Own pending/rejected detail shows moderation state instead.",
+        "Save and unsave an approved place in the signed-in account; use server-confirmed saved state and count. A guest is asked to sign in.",
+        "Share the canonical mishwar?place link through the native share sheet; allow explicit Google Maps and native Apple Maps directions.",
+        "Report a published place using original reason choices and optional details up to 1000 characters. Show the server's accepted/already-reported outcome only after acknowledgement.",
+        "Preserve device-local saved snapshots and offline browsing as a separate native feature without conflating them with account saves."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/places/map",
+          "auth": "public",
+          "response": "complete approved place Point FeatureCollection with user_id"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/places",
+          "auth": "public",
+          "params": [
+            "category",
+            "q",
+            "sort",
+            "page",
+            "user_id"
+          ],
+          "response": "20-per-page public place list"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/places/geocode",
+          "auth": "public",
+          "params": [
+            "q"
+          ],
+          "response": "suggestions with safe names, addresses and coordinates"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/places/{id}",
+          "auth": "public for approved; explicit bearer for owner pending/rejected or saved_by_me",
+          "response": "full place detail, user level, photos and saved_by_me"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/places/photos",
+          "auth": "public",
+          "params": [
+            "page",
+            "user_id"
+          ],
+          "response": "24-per-page photos with parent place summary"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/my/saves",
+          "auth": "bearer",
+          "params": [
+            "page"
+          ],
+          "response": "approved account-saved places, newest save first"
+        },
+        {
+          "method": "POST or DELETE",
+          "path": "/api/v1/places/{id}/save",
+          "auth": "bearer",
+          "response": "saved:boolean and saves_count:number"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/places/{id}/report",
+          "auth": "bearer",
+          "body": [
+            "reason",
+            "details"
+          ],
+          "response": "actual accepted or already-reported message"
+        }
+      ],
+      "authRequirements": [
+        "Pending/rejected places and saved_by_me require explicit bearer reads.",
+        "Account save/report calls never substitute local snapshots or fabricated counts.",
+        "Only approved places accept save/report interactions; server checks ownership and status."
+      ],
+      "graphics": [
+        "resources/data/places.json category glyphs",
+        "Complete native place and hotel markers, selection and coordinate highlight",
+        "Public place thumbnails and display photos",
+        "Native lightbox paging/zoom",
+        "Contributor avatars and original rank badge hierarchy"
+      ],
+      "tests": [
+        "tests/Feature/PlacesPublicShapeTest.php",
+        "tests/Feature/PlacesDiscoveryTest.php",
+        "tests/Feature/PlacesEngagementTest.php",
+        "tests/Feature/PlacesReportsTest.php",
+        "Source-derived coordinate parser boundary cases",
+        "Fixture-only account-save/report acknowledgement and old-account response tests",
+        "Native map/grid/filter/photo/detail/share/account-save and offline snapshot flows"
+      ],
+      "nativeTargets": [
+        "src/places.tsx",
+        "src/features/Places"
+      ],
+      "gaps": [
+        "Verify native complete pin collections, separate place/hotel clusters, count labels and expansion camera calibration.",
+        "Verify geocoder/coordinate jump, guide filter, photo wall/viewer, server saves/reports and detail offline fallback.",
+        "Pending/rejected private place snapshots are rejected and approved snapshots strip account metadata, with a boundary regression. Device offline behavior remains pending."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "mishwar_contributions",
+      "sourceFiles": [
+        "resources/js/Pages/Places/_components/SubmitSheet.tsx",
+        "resources/js/Pages/Places/_components/DuplicateSuggestions.tsx",
+        "resources/js/Pages/Places/_components/PhotoPicker.tsx",
+        "resources/js/Pages/Places/_components/ManagePlaceDialog.tsx",
+        "resources/js/Pages/Places/_components/PlacesPanel.tsx",
+        "resources/js/Domain/places/api.ts",
+        "resources/js/Domain/geography/syria.ts",
+        "resources/data/places.json",
+        "app/Http/Controllers/PlaceController.php",
+        "app/Services/Places/PlaceRules.php",
+        "app/Services/Places/PlaceModerationService.php",
+        "app/Services/PlaceImageService.php"
+      ],
+      "features": [
+        "Start add mode, choose a point on the map and reject locations outside the shared Syria bounding box before the form opens.",
+        "Require sign-in, then check places within 250m including the caller's pending submissions. Offer existing detail or continue; duplicate-check failure does not block the form.",
+        "Collect a trimmed place name, original category, 20-to-1000-character description, selected coordinate and one-to-ten supported photos.",
+        "Pick native photos, preview and remove individual images, validate JPEG/PNG/WebP, maximum 12MiB per image and dimensions from 200 to 6000 pixels.",
+        "Confirm before discarding a dirty contribution. Preserve user input after failure and show field-specific validation when provided.",
+        "Submit multipart place data with authenticated ownership. Show pending moderation only after an actual ID/status acknowledgement.",
+        "List own places with approved/pending/rejected state and rejection reason, paginate and refresh after edits.",
+        "Open own full detail and edit name/category/description using a partial patch. Successful edits return the place to pending moderation.",
+        "Edit location from parsed coordinates with immediate Syria-box feedback; successful location changes return the place to pending moderation.",
+        "Add and delete own photos with the same media validation and ten-photo limit; these changes return the place to pending moderation.",
+        "Rotate an own photo using the server endpoint, refresh versioned URLs, and retain the existing approval status.",
+        "Confirm deletion of an own place and acknowledge only the actual server result.",
+        "Allow rejected places to be resubmitted, display server rejection reasons and pending confirmation, and handle forbidden/not-found/rate-limit failures."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/places/nearby",
+          "auth": "bearer for include_pending",
+          "params": [
+            "lat",
+            "lng",
+            "radius_km=0.25",
+            "include_pending=true"
+          ],
+          "response": "places with distance_m"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/places",
+          "auth": "bearer",
+          "body": "multipart name/category/description/lat/lng/photos[]",
+          "response": "201 id/status=pending"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/my/places",
+          "auth": "bearer",
+          "params": [
+            "page"
+          ],
+          "response": "paginated own places with status/rejection_reason"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/my/places/{id}",
+          "auth": "bearer owner",
+          "body": "changed name/category/description only",
+          "response": "confirmed fields/status=pending"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/my/places/{id}/location",
+          "auth": "bearer owner",
+          "body": [
+            "lat",
+            "lng"
+          ],
+          "response": "id/lat/lng/status=pending"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/my/places/{id}/photos",
+          "auth": "bearer owner",
+          "body": "multipart photo",
+          "response": "new photo and place_status=pending"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/my/place-photos/{id}",
+          "auth": "bearer owner",
+          "response": "photo id/place_status=pending"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/my/place-photos/{id}/rotate",
+          "auth": "bearer owner",
+          "response": "actual versioned thumb/display URLs"
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/my/places/{id}",
+          "auth": "bearer owner",
+          "response": "204"
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/my/places/{id}/resubmit",
+          "auth": "bearer owner",
+          "response": "id/status=pending"
+        }
+      ],
+      "authRequirements": [
+        "Every contribution and ownership action requires bearer authentication; use the server's ownership/status checks.",
+        "Banned users cannot contribute.",
+        "Do not submit fabricated places or photos during automated tests."
+      ],
+      "graphics": [
+        "Native photo picker previews",
+        "Selected native map coordinate",
+        "Moderation state badges",
+        "Versioned server thumbnail/display images after rotation"
+      ],
+      "tests": [
+        "tests/Feature/PlacesTest.php",
+        "tests/Feature/PlacesPublicShapeTest.php",
+        "tests/Feature/PlacesAdminTest.php for moderation transitions",
+        "Photo type/size/dimension/count and Syria coordinate boundary fixtures",
+        "Isolated owner mutation request/acknowledgement tests",
+        "Native duplicate, dirty-discard, pick/remove-photo, field-error and retry flows"
+      ],
+      "nativeTargets": [
+        "src/features/Places/Submit.tsx",
+        "src/features/Places/Manage.tsx",
+        "src/features/Places/Community.tsx"
+      ],
+      "gaps": [
+        "Verify actual compatible media picking and authenticated multipart bytes with isolated fixtures/backend.",
+        "Mixed valid/invalid photo selection preserves accepted photos in order and reports all rejections, with boundary tests. Native picker and actual-byte validation remain pending.",
+        "Verify first-field focus, dirty dismissal, duplicate check, account changes and all owner photo/text/location/resubmit/delete flows."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "hotels",
+      "sourceFiles": [
+        "resources/js/Pages/Places/_components/HotelCard.tsx",
+        "resources/js/Pages/Places/_components/HotelDetailView.tsx",
+        "resources/js/Pages/Places/_components/PlacesPanel.tsx",
+        "resources/js/Domain/places/types.ts",
+        "resources/js/Domain/places/api.ts",
+        "app/Http/Controllers/HotelController.php",
+        "app/Services/HalaSyriaService.php"
+      ],
+      "features": [
+        "Browse paginated cached HalaSyria hotels in the Mishwar panel, with Arabic fallback names/cities, photo, star rating and available nightly rate/currency.",
+        "Load hotel map points independently from place points and open hotel details through a distinct typed selection.",
+        "Show hotel name, original image gallery with previous/next wrapping and image counter, star rating and Arabic/English description fallback.",
+        "Keep HalaSyria attribution and explicit source link, including source read-more action; opening a source is not a confirmed booking.",
+        "Preserve existing API filter capabilities for city, text, minimum stars and maximum price without claiming a source UI control that does not exist.",
+        "Handle missing images, unknown coordinates, absent rates and server failures without inventing hotel availability."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/hotels/map",
+          "auth": "public",
+          "response": "hotel Point FeatureCollection"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hotels",
+          "auth": "public",
+          "params": [
+            "city",
+            "q",
+            "min_stars",
+            "max_price",
+            "page"
+          ],
+          "response": "20-per-page hotel cards"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hotels/{id}",
+          "auth": "public",
+          "response": "full hotel, images, source_url and amenity/contact fields"
+        }
+      ],
+      "authRequirements": [
+        "Public read-only cached listings; source-site booking remains external."
+      ],
+      "graphics": [
+        "Original remote hotel thumbnails/photos",
+        "Hotel map markers",
+        "Star rating and gallery counter"
+      ],
+      "tests": [
+        "Strict list/map/detail fixtures, nullable coordinate/rate and image fallback tests",
+        "Native hotel selection, gallery wrapping and HalaSyria source actions"
+      ],
+      "nativeTargets": [
+        "src/features/Hotels"
+      ],
+      "gaps": [
+        "Verify native list filtering, null-coordinate list visibility, hotel detail/gallery and source HalaSyria external handoff."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    },
+    {
+      "id": "guides",
+      "sourceFiles": [
+        "resources/js/Pages/Places/_components/GuidesTab.tsx",
+        "resources/js/Pages/Places/_components/GuideProfileCard.tsx",
+        "resources/js/Pages/Places/_components/LevelBadge.tsx",
+        "resources/js/Pages/Places/_components/MilestonesSheet.tsx",
+        "resources/js/Pages/Places/Index.tsx",
+        "app/Http/Controllers/PlaceDiscoveryController.php",
+        "app/Services/GuideLevelService.php",
+        "resources/js/Domain/places/types.ts"
+      ],
+      "features": [
+        "Load the server-ranked top 20 contributors and switch points/submissions/saves/recent ranking without reordering server ties locally.",
+        "Show rank, name/avatar fallback, guide level, points, approved contributions, saves and recent 30-day count when relevant.",
+        "Open a guide profile with original rank badge, level progress and contribution metrics.",
+        "Show a selected guide's map pins, paginated places and photo wall, display a removable guide chip, and support canonical guide query links.",
+        "Open the rank/milestones sheet, preserve all ten names and thresholds, and show the original point rules.",
+        "Handle loading, retry, empty ranking and unknown guide names without conflating a failed read with no contributors."
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/guides",
+          "auth": "public",
+          "params": [
+            "sort=points|submissions|saves|recent"
+          ],
+          "response": "sort and ranked guide rows"
+        }
+      ],
+      "authRequirements": [
+        "Public rankings; contributor identity is supplied by server, with banned/deleted accounts excluded there."
+      ],
+      "graphics": [
+        "Contributor avatars",
+        "Original tier colors, pin/star rank hierarchy and contrast-safe star ink",
+        "Native progress indicator and milestones rows"
+      ],
+      "tests": [
+        "tests/Feature/PlacesDiscoveryTest.php",
+        "Threshold/rank boundary fixtures and source-derived golden data",
+        "Native sort, profile, milestones and show/clear contributions flows"
+      ],
+      "nativeTargets": [
+        "src/features/Guides"
+      ],
+      "gaps": [
+        "Verify source sort orders, rank badges, progress thresholds, milestones and contribution navigation on iPhone17."
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending"
+    }
+  ],
+  "relatedPrivilegedQueue": {
+    "sourceFiles": [
+      "resources/js/Pages/Transit/admin/Index.tsx",
+      "resources/js/Pages/Transit/admin/ImportTab.tsx",
+      "resources/js/Pages/Admin/Places/Index.tsx",
+      "resources/js/Pages/Admin/Places/ReportsTab.tsx",
+      "app/Http/Controllers/TransitAdminController.php",
+      "app/Http/Controllers/TransitImportController.php",
+      "app/Http/Controllers/PlaceAdminController.php"
+    ],
+    "scope": "Full website scope also includes transit draft moderation, route publication/status/edit/move/combine/split/delete/import/logs and place moderation/photo/report administration. These are recorded as an outstanding privileged work queue, not completed by public/owner screens.",
+    "tests": [
+      "tests/Feature/TransitAdminTest.php",
+      "tests/Feature/TransitAdminServiceTest.php",
+      "tests/Feature/TransitImportTest.php",
+      "tests/Feature/PlacesAdminTest.php",
+      "tests/Feature/PlacesReportsTest.php"
+    ]
+  },
+  "relatedPrivilegedQueueStatus": "Root has drafted Places moderation with exact response validators and source-derived tests. feature_map owns new TransitAdmin drafts. Their authenticated/native verification is separate from this public/Studio workstream.",
+  "sharedLayering": "Shared validators, transit data/client, pagination and hotel-map decoding are platform modules. src/places.tsx composes Hotels/Guides render slots into Places Discovery, and ui/GuideBadge is shared. The whole-tree import gate passed after24 production cross-feature violations failed before extraction."
+}

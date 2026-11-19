@@ -1,0 +1,23 @@
+{
+  "reactNative": "0.88.1",
+  "upstream59197": "a91468ffe62122bc49d964a08b493374f0af4775",
+  "merged59718": "a9790c7a3424837998c20b907cb1ba0ed8167e8b",
+  "patchSHA256": "253c2004866407c40dc0b4a37291be9aad53c532f2fad1c8c4fce83c40191706",
+  "files": [
+    {
+      "path": "React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm",
+      "beforeSHA256": "796c5a19c1edcfa290f301ce0cbe67f42f9966336d90c210e1ab8b164c3f9f15",
+      "afterSHA256": "d26bf0f3a3a35f127a750ac8e2051b9641a0706a5d44188c4719c22949efcc57"
+    },
+    {
+      "path": "ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.h",
+      "beforeSHA256": "784cc39d2b58cc12640d70d4a4aca84d25c0f6caf38c7a3155760701db5a0d13",
+      "afterSHA256": "bc2e422f24d02257a264b775b344b3d04a01645088382e75fc7cc213e2f2b42a"
+    },
+    {
+      "path": "ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.mm",
+      "beforeSHA256": "9cbbb59d3885f30c8a8dc463780a3401e83ef5502b8dc0db83c9bd13fd8f1069",
+      "afterSHA256": "b9aed4e471e030512bd9470df40818751acaa6f3345caafc751faf1bf55081af"
+    }
+  ]
+}

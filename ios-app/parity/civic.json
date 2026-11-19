@@ -1,0 +1,3210 @@
+{
+  "schemaVersion": 1,
+  "workstream": "civic",
+  "generatedAt": "2026-11-14T16:37:40Z",
+  "sourceRevision": "b1da794152dde5824909335d7ced4522b06aa31e",
+  "status": "native_civic_drafts_in_progress_not_device_verified",
+  "nativeCheckpointByRoot": {
+    "attribution": "Individual conventional iPhone17 results, not a complete civic parity pass.",
+    "compass": "Account-sections-native02 complete anonymous questionnaire case passed in 541.516 seconds. Authenticated history and export remain separate.",
+    "house": "Account-sections-native02 real roster/filter/graphic case passed in 86.100 seconds. Historical archive modes remain pending.",
+    "promises": "Native13 passed suggestion validation and retained editing in 82.993673 seconds, then the owned create/edit/publish/public-filter/layout/detail-return/Yes-to-No/cold-restart workflow in 326.338943 seconds. Exact owned cleanup and protected baseline checks passed. Other sections failed in that cohort; public valid suggestion submission, reports, exports, ruler/review and directory actions remain separate.",
+    "priorities": "Earlier five-subfile boundary case passed in 125.045 seconds. Allocation02 failed in 33.277 seconds at 97 points; outward-endpoint test correction awaits a rerun, with no product slider defect established.",
+    "atlas": "Atlas02 reached Damascus data and first comparison, then failed in 45.623 seconds. Helper correction awaits a rerun."
+  },
+  "constraints": {
+    "readOnlyAnalysis": false,
+    "implementationAuthorizedInThisPhase": true,
+    "allowedOutput": "ios-app/parity/civic.json and assigned civic feature directories/tests",
+    "remoteWritesPerformed": false,
+    "buildOrDeviceActionsPerformed": false,
+    "existingTestsExecutedForInventory": false,
+    "nativeAppScope": "Arabic RTL, native iOS controls/services, light and dark, compact iPhone first",
+    "implementationScope": "Following root contract review, own civic feature directories and tests; no shared-core, git, build, device or remote mutations."
+  },
+  "crossCuttingRequirements": [
+    {
+      "id": "auth_and_capabilities",
+      "requirement": "Root-owned Keychain bearer account session, server-resolved effective permissions, signed-in return intents and explicit guest/banned/forbidden handling. Never store tokens in SQLite or send to external links.",
+      "sections": [
+        "compass",
+        "promises",
+        "tierlist"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "routes/web.php",
+          "line": 260
+        },
+        {
+          "path": "routes/api.php",
+          "line": 261
+        },
+        {
+          "path": "routes/api.php",
+          "line": 383
+        }
+      ]
+    },
+    {
+      "id": "transport_contract",
+      "requirement": "Keep capability-filtered UI routes distinct from raw export APIs. Inertia-only props require an explicit reviewed JSON/typed transport. Existing401 for protected write is expected, not a missing backend.",
+      "sections": [
+        "compass",
+        "promises",
+        "tierlist",
+        "party",
+        "house"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "app/Http/Controllers/CompassController.php",
+          "line": 15
+        },
+        {
+          "path": "app/Http/Controllers/PromiseController.php",
+          "line": 31
+        },
+        {
+          "path": "app/Http/Controllers/PollController.php",
+          "line": 211
+        },
+        {
+          "path": "app/Http/Controllers/Api/V1/VotingDataController.php",
+          "line": 49
+        }
+      ]
+    },
+    {
+      "id": "guest_identity",
+      "requirement": "Use one opaque persistent guest installation ID for voting. Preserve caller-specific local vote choices/cooldowns without physical device fingerprinting.",
+      "sections": [
+        "tierlist",
+        "promises"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "resources/js/Domain/polls/TierBoard.tsx",
+          "line": 272
+        },
+        {
+          "path": "resources/js/Pages/Promises/_lib/useVote.ts",
+          "line": 80
+        }
+      ]
+    },
+    {
+      "id": "graphics",
+      "requirement": "Root-owned native vector/chart and PNG/file/ZIP export support. Preserve source shapes, text, source photos, numerical meaning and accessible alternatives. DOM canvas/html2canvas/Recharts/Leaflet are not native implementations.",
+      "sections": [
+        "compass",
+        "tierlist",
+        "promises",
+        "priorities",
+        "crossings",
+        "house",
+        "justice",
+        "atlas"
+      ]
+    },
+    {
+      "id": "map_geometry",
+      "requirement": "MapKit needs polygon/multipolygon fills, selected feature callback/callout and camera/bounds behavior for Atlas; Crossings needs marker/list camera synchronization. GeoJSON coordinate arrays are longitude,latitude.",
+      "sections": [
+        "atlas",
+        "crossings"
+      ],
+      "sourceEvidence": [
+        {
+          "path": "resources/js/Pages/Population/components/map/MapClient.tsx",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "clock_and_dates",
+      "requirement": "Use AppState-aware timers and authoritative source/server dates. Crossings Asia/Damascus clock, poll-local voteDay, Promise counters and historical Justice asOf are different concepts.",
+      "sections": [
+        "crossings",
+        "tierlist",
+        "promises",
+        "justice"
+      ]
+    },
+    {
+      "id": "links_and_state",
+      "requirement": "Typed native navigation and universal-link parser must support numeric Promise detail, Compass shares, Crossing c query, Priorities encoded state and leaderboard status. Preserve list/back state, validate external URLs and keep first-party features native.",
+      "sections": [
+        "compass",
+        "tierlist",
+        "promises",
+        "priorities",
+        "crossings",
+        "party",
+        "house"
+      ]
+    },
+    {
+      "id": "lifecycle_accessibility",
+      "requirement": "Cancellable latest-request-wins reads, explicit loading/empty/failure/retry, no fabricated successful writes, offline source labels, native Arabic shaping/RTL, dynamic text, VoiceOver chart equivalents and reservation-free layouts for all controls.",
+      "sections": [
+        "compass",
+        "tierlist",
+        "promises",
+        "priorities",
+        "crossings",
+        "party",
+        "house",
+        "justice",
+        "atlas"
+      ]
+    }
+  ],
+  "liveReadMethod": "Credential-free Bun fetch with Accept:application/json and15-second abort. No POST/PATCH/DELETE were sent. urllib requests received edge403, so they are not classified as missing backend. Inertia probes returned null bodies and are not counted as verified JSON contracts. Root separately verified version-aware public Inertia JSON reads200 for Compass, Promises and Party; shared api.page is the reviewed native transport.",
+  "portContractReview": {
+    "document": "ios-app/PORTING.md",
+    "result": "No concrete incorrect civic mapping found.",
+    "requiredClarifications": [
+      "Enabled Compass figures/personas and aggregate stats are Inertia-only.",
+      "Promise public reads and suggestion date/config are Inertia-only.",
+      "Raw canonical poll details expose disabled groups and lack is_active; board requires existing filtered legacy route or new UI adapter.",
+      "Compass automatic anonymous-statistics submission is distinct from manual account save, with token-based withdrawal.",
+      "Atlas requires actual polygon graphics, not marker substitution."
+    ],
+    "resolvedClarifications": [
+      "Root accepted public Inertia JSON adapter with source component/version validation.",
+      "Root documented automatic anonymous stats versus manual account save.",
+      "Root will supply native API, links, storage, graphics and navigation interfaces."
+    ]
+  },
+  "sections": [
+    {
+      "id": "compass",
+      "titleAr": "بوصلة سوريا",
+      "routes": [
+        "/compass",
+        "/compass/stats",
+        "/compass/s/{shareId}"
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending",
+      "sourceFiles": [
+        "resources/js/Pages/Compass/CompassApp.tsx",
+        "resources/js/Pages/Compass/CompassResult.tsx",
+        "resources/js/Pages/Compass/Index.tsx",
+        "resources/js/Pages/Compass/Shared.tsx",
+        "resources/js/Pages/Compass/Stats.tsx",
+        "resources/js/Pages/Compass/compass.css",
+        "resources/js/Pages/Compass/components/CompassCanvas.tsx",
+        "resources/js/Pages/Compass/components/CompassShareCard.tsx",
+        "resources/js/Pages/Compass/components/FigureAvatar.tsx",
+        "resources/js/Pages/Compass/components/SavedResults.tsx",
+        "resources/js/Pages/Compass/flags.ts",
+        "resources/js/Pages/Compass/lib/storage.ts",
+        "resources/js/Domain/compass/AlignmentCard.tsx",
+        "resources/js/Domain/compass/AxisBars.tsx",
+        "resources/js/Domain/compass/QuestionAverage.tsx",
+        "resources/js/Domain/compass/SpectrumIcon.tsx",
+        "resources/js/Domain/compass/align.ts",
+        "resources/js/Domain/compass/api.ts",
+        "resources/js/Domain/compass/axes.ts",
+        "resources/js/Domain/compass/axisDisplay.ts",
+        "resources/js/Domain/compass/engine.test.ts",
+        "resources/js/Domain/compass/engine.ts",
+        "resources/js/Domain/compass/figures.ts",
+        "resources/js/Domain/compass/questions.ts",
+        "resources/js/Domain/compass/spectra.ts",
+        "resources/js/Domain/compass/types.ts",
+        "app/Http/Controllers/CompassController.php",
+        "app/Http/Controllers/Api/CompassResultController.php",
+        "app/Http/Controllers/Api/CompassShareController.php",
+        "app/Http/Controllers/Api/CompassStatsController.php",
+        "app/Support/Compass/CompassStats.php",
+        "app/Models/CompassFigure.php",
+        "app/Models/CompassPersona.php",
+        "app/Models/CompassResult.php"
+      ],
+      "features": [
+        {
+          "id": "versions",
+          "description": "Choose short, standard or full quiz. Display version-specific question and per-axis totals. The question bank has eleven civic axes plus foreign-policy alignment questions.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/CompassApp.tsx",
+              "line": 18
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "quiz",
+          "description": "Answer on a five-point scale from -2 to 2; show question progress, previous/next navigation, preserve answers while moving, and finish into results.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/CompassApp.tsx",
+              "line": 76
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "resume",
+          "description": "Autosave current version, answer map and question index locally. Intro offers resume or a fresh quiz. Restart clears progress.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/CompassApp.tsx",
+              "line": 91
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "hardware_keyboard",
+          "description": "Web accepts keys1 to5 and RTL previous/next arrow shortcuts. Native hardware keyboard needs equivalent accessible actions.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/CompassApp.tsx",
+              "line": 156
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "scoring",
+          "description": "Reuse weighted axis and alignment scoring, version-dependent question tiers, consistency, figure matching, strong-match threshold and persona matching. Preserve null/unanswered axes.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/compass/engine.ts",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "result_graphics",
+          "description": "Render persona badge/description, consistency, answered count, match percentage, eleven axis bars, foreign alignment card and compass plot.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/CompassResult.tsx",
+              "line": 56
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "character_visibility",
+          "description": "Preserve current showCharacterNames=false flag. Do not accidentally reveal figure names or portraits in result surfaces currently hidden by the website.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/flags.ts",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "local_history",
+          "description": "Automatically save a fresh result locally once; retain at most50 local results. Merge local/account history, open historical results read-only, delete individual results, and confirm clearing history.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/lib/storage.ts",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "account_save",
+          "description": "Account save is manual, with visible loading/failure and unsave. A guest save queues the result, signs in, returns to Compass, then retries pending account save. No account write should be reported as successful after failure.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/CompassResult.tsx",
+              "line": 90
+            }
+          ],
+          "authRequirement": "signed_in_for_account_persistence",
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "anonymous_statistics",
+          "description": "A fresh completed result automatically attempts anonymous statistics submission. Show shared/unshared state, retry after failure and withdrawal using returned deletion token. Historical read-only result must not resubmit.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/CompassResult.tsx",
+              "line": 135
+            }
+          ],
+          "sourceEvidenceAdditional": [
+            {
+              "path": "resources/js/Pages/Compass/CompassResult.tsx",
+              "line": 182
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "delete_history",
+          "description": "Confirm deleting local history and all account results; account deletion failures stay visible. Native must not claim successful remote deletion after a failed request.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/CompassResult.tsx",
+              "line": 157
+            }
+          ],
+          "authRequirement": "signed_in_for_remote_delete",
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "share_png",
+          "description": "Download a story result image with Syrian Zone identity and computed result. Replace DOM capture with native render/export and share/file save.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/CompassResult.tsx",
+              "line": 170
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "share_link",
+          "description": "Account-independent share creation canonicalizes version plus answers to a deterministic32-character hash. Shared page reconstructs read-only result using current enabled figures/personas. Handle unknown/expired share keys.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/CompassShareController.php",
+              "line": 14
+            }
+          ],
+          "availability": "public share routes and Shared page exist; result UI currently exposes image export, not a visible link-creation control",
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "public_statistics",
+          "description": "Public statistics screen selects all/short/standard/full scope, shows total runs, version counts, persona distribution, axis averages and question-average visualizations. Never include individual timestamps, consistency or recent runs.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Compass/Stats.tsx",
+              "line": 16
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "admin_stats",
+          "description": "Permission-gated Compass statistics dashboard is a distinct privileged surface, not a public result feature. Preserve its counts, filters and anonymity.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/CompassAdminController.php",
+              "line": 1
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "compass.stats"
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "admin_figures",
+          "description": "Permission-gated figure list, create/edit/delete, enable/disable, sort/configuration and image upload. Native permissions must use effective capabilities.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 663
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "compass.figures"
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "admin_personas",
+          "description": "Permission-gated persona list, create/edit/delete and enable/disable. Persona scores/descriptions drive public results and cannot be replaced by stale bundled assumptions.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 684
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "compass.personas"
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/compass",
+          "auth": "public",
+          "contract": "Inertia page props {figures:Figure[],personas:Persona[]}; enabled, ordered database records. Not a documented JSON configuration API.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/CompassController.php",
+              "line": 15
+            }
+          ],
+          "transport": "inertia_page_props",
+          "nativeTransport": "Root-owned api.page(path, expectedComponent, decode, options) with version bootstrap, one bounded409 refresh, credential omission and strict props validation."
+        },
+        {
+          "method": "GET",
+          "path": "/compass/stats",
+          "auth": "public",
+          "contract": "Inertia page props {stats:{counts,bySpectrum,axisAverages,questionAverages,...},personas:[{id,name}]}; ten-minute aggregate cache.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/CompassController.php",
+              "line": 28
+            }
+          ],
+          "transport": "inertia_page_props",
+          "nativeTransport": "Root-owned api.page(path, expectedComponent, decode, options) with version bootstrap, one bounded409 refresh, credential omission and strict props validation."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/compass/results",
+          "auth": "sanctum",
+          "contract": "{data:Result[]} newest first, max50, owned by caller.",
+          "sourceEvidence": [
+            {
+              "path": "routes/api.php",
+              "line": 261
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/compass/results",
+          "auth": "sanctum",
+          "contract": "{version:short|standard|full,answers:object,scores:object,align:object,topFigure?,topScore?:0..1,spectrum?,consistency?:0..1,answered?:0..500,statsConsent?} ->201 {data:Result}.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/CompassResultController.php",
+              "line": 26
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/compass/results/{id}",
+          "auth": "sanctum",
+          "contract": "Deletes only caller-owned result ->{deleted:boolean}.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/CompassResultController.php",
+              "line": 61
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/compass/results",
+          "auth": "sanctum",
+          "contract": "Deletes caller-owned history ->{deleted:number}.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/CompassResultController.php",
+              "line": 60
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/compass/stats",
+          "auth": "public",
+          "contract": "Anonymous scored result submission; response contains deletion token. Throttled; token is needed for withdrawal.",
+          "sourceEvidence": [
+            {
+              "path": "routes/api.php",
+              "line": 287
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/compass/stats",
+          "auth": "public_with_deletion_token",
+          "contract": "{token:string}; withdraw prior anonymous contribution.",
+          "sourceEvidence": [
+            {
+              "path": "routes/api.php",
+              "line": 290
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/compass/shares",
+          "auth": "public",
+          "contract": "{version,answers} ->{share_id:string}. Idempotent for canonical sorted answer map plus version.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/CompassShareController.php",
+              "line": 14
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/compass/shares/{shareId}",
+          "auth": "public",
+          "contract": "{data:{version,answers}} or404 Arabic message. Configuration still comes from page props.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/CompassShareController.php",
+              "line": 45
+            }
+          ]
+        },
+        {
+          "method": "GET|POST|PUT|DELETE|PATCH",
+          "path": "/api/v1/admin/compass/figures[/{id}|/upload-image|/{id}/toggle]",
+          "auth": "auth:web,sanctum plus compass.figures",
+          "contract": "Figure CRUD, image upload, toggle; actual route methods vary by suffix.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 664
+            }
+          ]
+        },
+        {
+          "method": "GET|POST|PUT|DELETE|PATCH",
+          "path": "/api/v1/admin/compass/personas[/{id}|/{id}/toggle]",
+          "auth": "auth:web,sanctum plus compass.personas",
+          "contract": "Persona CRUD and toggle; actual route methods vary by suffix.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 685
+            }
+          ]
+        }
+      ],
+      "authRequirements": {
+        "guest": [
+          "quiz",
+          "resume",
+          "local history",
+          "anonymous statistics submission/withdrawal",
+          "public stats",
+          "shared result",
+          "PNG export"
+        ],
+        "account": [
+          "list/save/delete own results",
+          "resume pending save after login"
+        ],
+        "privileged": [
+          "compass.stats",
+          "compass.figures",
+          "compass.personas"
+        ],
+        "loginReturnIntent": "Persist pending result before login; consume only after actual authenticated session.",
+        "privacy": "Anonymous statistics and account history are separate storage paths. Preserve user-visible withdrawal and avoid including personal identifiers in shared/statistic payloads."
+      },
+      "graphics": [
+        {
+          "kind": "native_vector",
+          "source": "resources/js/Pages/Compass/components/CompassCanvas.tsx",
+          "requirements": "Plot position, labels, quadrants, directions and figure markers; RTL text and light/dark variants."
+        },
+        {
+          "kind": "native_vector",
+          "source": "resources/js/Domain/compass/AxisBars.tsx",
+          "requirements": "Eleven diverging bars, pole labels, values and color meaning."
+        },
+        {
+          "kind": "native_vector",
+          "source": "resources/js/Domain/compass/AlignmentCard.tsx",
+          "requirements": "Foreign-policy alignment graphic and labels."
+        },
+        {
+          "kind": "native_vector",
+          "source": "resources/js/Domain/compass/SpectrumIcon.tsx",
+          "requirements": "Persona symbols must retain original vector identities."
+        },
+        {
+          "kind": "share_card",
+          "source": "resources/js/Pages/Compass/components/CompassShareCard.tsx",
+          "requirements": "Native PNG story export, Arabic shaping, identity, correct result and filename."
+        },
+        {
+          "kind": "remote_portraits",
+          "source": "app/Models/CompassFigure.php",
+          "requirements": "Admin-managed images; show only where current visibility flags allow. Image failure placeholder."
+        }
+      ],
+      "localState": {
+        "progress": "version, answers, current index",
+        "historyLimit": 50,
+        "pendingAccountSave": true,
+        "webKeys": [
+          "sz-compass-v2-progress",
+          "sz-compass-v2-results"
+        ],
+        "nativeStorage": "SQLite for nonsecret quiz/history; account credential belongs in shared Keychain owner"
+      },
+      "nativeTargets": {
+        "screens": [
+          "src/features/Compass/Index.tsx",
+          "src/features/Compass/Stats.tsx",
+          "src/features/Compass/Shared.tsx",
+          "src/features/Compass/Graphics.tsx",
+          "src/features/Compass/Admin.tsx"
+        ],
+        "nativeControls": [
+          "native segmented quiz length",
+          "accessible answer buttons",
+          "progress indicator",
+          "list/history",
+          "confirmation sheet",
+          "native file/share sheet"
+        ],
+        "reusableModels": [
+          "Domain/compass engine, axes, questions, alignment and typed figures/personas"
+        ],
+        "adapters": [
+          "SQLite quiz progress/history",
+          "bearer API",
+          "native vector renderer",
+          "native image export",
+          "typed universal links"
+        ]
+      },
+      "gaps": [
+        "Native administration and all public flows require controlled-account and iPhone light/dark/VoiceOver verification. No invented quiz/statistics writes were sent to production.",
+        "Independent review corrections for queued-save deletion, export replacement and strongest-axis summary are owned by simulator_audit."
+      ],
+      "tests": {
+        "existingSourceTests": [
+          "resources/js/Domain/compass/engine.test.ts",
+          "tests/Feature/CompassPublicStatsTest.php",
+          "tests/Feature/CompassAdminTest.php",
+          "tests/Feature/CompassFigureAdminTest.php",
+          "tests/Feature/CompassPersonaAdminTest.php"
+        ],
+        "sourceTestsRunForInventory": false,
+        "requiredNativeAcceptance": [
+          "Golden scoring for every version; figure self-match and no strong match for random answers.",
+          "Quit/resume/restart and history max50; local/account dedupe and failed login return retry.",
+          "Fresh result submits stats only once; read-only result never writes; withdrawal/delete failure is visible.",
+          "Save/unsave and owner isolation; missing config and404 share state.",
+          "Light/dark screenshot comparison of compass, bars, persona and exported PNG; VoiceOver controls and numerical descriptions."
+        ],
+        "nativeVerification": "pending_not_claimed",
+        "nativeBehaviorTests": [
+          "src/features/Compass/model.test.ts",
+          "src/features/Compass/admin-model.test.ts"
+        ]
+      }
+    },
+    {
+      "id": "tierlist",
+      "titleAr": "التقييم وقائمة الترتيب",
+      "routes": [
+        "/tierlist",
+        "/tierlist/leaderboard",
+        "/polls",
+        "/polls/{slug}",
+        "/polls/{slug}/leaderboard"
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending",
+      "sourceFiles": [
+        "resources/js/Pages/TierList/Index.tsx",
+        "resources/js/Pages/TierList/Leaderboard.tsx",
+        "resources/js/Pages/Polls/Index.tsx",
+        "resources/js/Pages/Polls/Leaderboard.tsx",
+        "resources/js/Pages/Polls/Show.tsx",
+        "resources/js/Pages/Polls/_components/TimeseriesChart.tsx",
+        "resources/js/Domain/polls/AdminPollManager.tsx",
+        "resources/js/Domain/polls/TierAvatar.tsx",
+        "resources/js/Domain/polls/TierBoard.tsx",
+        "resources/js/Domain/polls/api.ts",
+        "resources/js/Domain/polls/core.ts",
+        "resources/js/Domain/polls/exportTierList.ts",
+        "resources/js/Domain/polls/tiers.ts",
+        "resources/js/Domain/polls/types.ts",
+        "resources/data/polls.json",
+        "app/Http/Controllers/PollController.php",
+        "app/Http/Controllers/Api/V1/VotingDataController.php",
+        "app/Services/Polls/PollRules.php",
+        "app/Services/VotingService.php"
+      ],
+      "features": [
+        {
+          "id": "poll_catalogue",
+          "description": "List launched polls and open a selected poll board. Poll editors may also see unlaunched polls, based on server capabilities.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Polls/Index.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "core_poll",
+          "description": "TierList uses shared core slug best-ministers, with community/nonofficial disclaimer and a link to public results. Missing poll data has an explicit error state.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/TierList/Index.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "published_categories",
+          "description": "Use only server-published candidate groups and eligible candidates, ordered/defaulted by server. Category switch resets the board, bank and selection. Disabled categories cannot be voted on.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/polls/TierBoard.tsx",
+              "line": 100
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "ranking_board",
+          "description": "Six tiers S,A,B,C,D,F with shuffled candidate bank seeded by pollId and voteDay. Tap candidate or multi-select then tap a tier to move, move back to bank, reorder within tiers, and reset.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/polls/TierBoard.tsx",
+              "line": 80
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "drag",
+          "description": "Desktop drag/drop is an alternative to tap placement. Native gestures must retain every reachable placement/reorder action and offer an accessible tap alternative.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/polls/TierBoard.tsx",
+              "line": 225
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "submit_ballot",
+          "description": "Submit at least3 assigned candidates; payload records candidate UUID and position per tier. Show busy/success/error, one-minute local cooldown and countdown. Backend validation/rate limiting remain authoritative.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/polls/TierBoard.tsx",
+              "line": 245
+            }
+          ],
+          "authRequirement": "guest_allowed_with_stable_device_id",
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "board_export",
+          "description": "Export current tier board to PNG with candidate names/titles/images and Syrian Zone watermark.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/polls/TierBoard.tsx",
+              "line": 300
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "candidate_image_download",
+          "description": "Download an individual original candidate image, undoing CDN resizing. Download all current category images as a ZIP with safe filenames.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/polls/TierBoard.tsx",
+              "line": 410
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "leaderboard_filters",
+          "description": "Public leaderboard selects published group and active/former/all status. Archived is accepted as former alias; status stays in shareable URL. Loading/failure preserve current usable results.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Polls/Leaderboard.tsx",
+              "line": 222
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "leaderboard_rows",
+          "description": "Show top3 podium and complete ranking rows: rank, portrait/name/title, points, votes and average. Former candidates show archive/term/successor context.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Polls/Leaderboard.tsx",
+              "line": 103
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "leaderboard_chart",
+          "description": "Candidate multi-selection/all, cumulative/periodic, score/votes and day/week/month/year redraw the history line chart. Preserve aggregation math and export chart PNG.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Polls/_components/TimeseriesChart.tsx",
+              "line": 64
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "data_api",
+          "description": "Public raw poll/candidate/daily-score/ballot APIs support data analysis; paginated scores/ballots permit from/to and candidate filter with range validation. These raw records are not the board presentation contract.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/V1/VotingDataController.php",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "admin_polls",
+          "description": "Create/edit/delete and launch/unlaunch polls through capability-gated dashboard; core poll deletion/slug rename is guarded.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/polls/AdminPollManager.tsx",
+              "line": 1
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "polls.create",
+            "polls.edit",
+            "polls.delete"
+          ],
+          "nativeStatus": "pending_implementation"
+        },
+        {
+          "id": "admin_groups",
+          "description": "Create/update/delete categories, publish/unpublish, reorder and set default. Disabling default clears its default flag; disabled group cannot become default.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 367
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "polls.create",
+            "polls.edit",
+            "polls.delete"
+          ],
+          "nativeStatus": "pending_implementation"
+        },
+        {
+          "id": "admin_candidates",
+          "description": "Create/edit/delete candidate, image upload, archive with dates/reason/successor and restore. Preserve field validation and group ownership.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 384
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "polls.create",
+            "polls.edit",
+            "polls.delete"
+          ],
+          "nativeStatus": "pending_implementation"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/tierlist or /polls/{slug}",
+          "auth": "public",
+          "transport": "inertia_page_props",
+          "contract": "{poll,groups,candidates,voteDay} presentation payload; published groups, camelCase imageUrl/originalUrl candidates and authoritative voteDay. Use shared api.page for exact web-board parity.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PollController.php",
+              "line": 58
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/polls",
+          "auth": "public; capability-aware for editors",
+          "contract": "Poll[]; guest sees active only, editor can see inactive. This legacy endpoint backs website UI.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PollController.php",
+              "line": 26
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/polls/{idOrSlug}?include_archived=0|1",
+          "auth": "public; capability-aware for editors",
+          "contract": "Capability-aware JSON {poll,groups,candidates,todayScores,voteDay}; groups have is_active and candidates use raw DB snake_case image_url. Guest sees active categories; editor sees all. voteDay is server poll-local ISO timestamp. Normalize to native board type explicitly.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PollController.php",
+              "line": 211
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/polls/{idOrSlug}",
+          "auth": "public",
+          "contract": "RAW payload {poll,groups,candidates}; snake_case columns. Includes disabled groups and omits group is_active. Must not directly populate public board.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/V1/VotingDataController.php",
+              "line": 49
+            }
+          ],
+          "transportWarning": "Raw-data API differs from capability-aware public board payload."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/polls",
+          "auth": "public",
+          "contract": "Active Poll[] with id,slug,title,timezone,is_active,created_at,updated_at.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/V1/VotingDataController.php",
+              "line": 42
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/polls/{idOrSlug}/leaderboard?status=active|former|all",
+          "auth": "public",
+          "contract": "{poll,groups,status,generated_at,[rankingKey]:[{candidateId,name,title,imageUrl,status,rank,score,votes,avg,termStartedAt,termEndedAt,archiveReason,successorId}],history:{candidateId:[{date,votes,score}]}}; disabled groups omitted.",
+          "sourceEvidence": [
+            {
+              "path": "routes/api.php",
+              "line": 46
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/polls/{idOrSlug}/ballots",
+          "auth": "public",
+          "contract": "{pollSlug?,deviceId,tiers:{S|A|B|C|D|F:[{candidateId:uuid,pos:integer}]}}; minimum3, candidate/category validity and voting throttle. Alias /api/submit is used by website.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PollController.php",
+              "line": 291
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/polls/{idOrSlug}/candidates?status=active|former|all",
+          "auth": "public",
+          "contract": "Raw candidate[]; archived accepted as former alias; invalid status422.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/V1/VotingDataController.php",
+              "line": 60
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/polls/{idOrSlug}/scores?from=&to=&candidate_id=&page=&per_page=",
+          "auth": "public",
+          "contract": "Laravel page of {candidate_id,day,votes,score}; per_page max1000, paired date span max31days.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/V1/VotingDataController.php",
+              "line": 79
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/polls/{idOrSlug}/ballots?from=&to=&page=&per_page=",
+          "auth": "public",
+          "contract": "Laravel page of {id,poll_id,vote_day,created_at,items:[{id,ballot_id,candidate_id,tier,position}]}; never voter_key/ip_hash/user_agent.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/V1/VotingDataController.php",
+              "line": 107
+            }
+          ]
+        },
+        {
+          "method": "POST|PUT|DELETE",
+          "path": "/api/polls[/{id}]",
+          "auth": "auth:web,sanctum plus polls.create/edit/delete",
+          "contract": "Poll management. Methods/capabilities per action, core poll protected.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 348
+            }
+          ]
+        },
+        {
+          "method": "GET|POST|PUT|PATCH|DELETE",
+          "path": "/api/candidate-groups[/{id}|/reorder|/{id}/default]",
+          "auth": "auth:web,sanctum plus polls.create/edit/delete",
+          "contract": "Group management, publication, sort and default.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 367
+            }
+          ]
+        },
+        {
+          "method": "POST|PUT|PATCH|DELETE",
+          "path": "/api/candidates[/{id}|/{id}/archive|/{id}/restore]",
+          "auth": "auth:web,sanctum plus polls.create/edit/delete",
+          "contract": "Candidate CRUD/archive/restore.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 384
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/assets/upload",
+          "auth": "auth:web,sanctum plus assets capability",
+          "contract": "Multipart {file,folder:candidates} ->{url}.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/polls/api.ts",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "authRequirements": {
+        "guest": [
+          "board",
+          "ballot with stable device ID",
+          "PNG/ZIP export",
+          "leaderboard",
+          "public data APIs"
+        ],
+        "account": [
+          "No ordinary login is required to rank candidates."
+        ],
+        "privileged": [
+          "polls.create",
+          "polls.edit",
+          "polls.delete"
+        ],
+        "serverAuthority": "Never infer launch/category visibility or edit/delete permission from a role name. Use filtered UI payload/effective permissions."
+      },
+      "graphics": [
+        {
+          "kind": "candidate_portraits",
+          "source": "resources/js/Domain/polls/TierAvatar.tsx",
+          "requirements": "Portraits, title text, original downloads and failure placeholders."
+        },
+        {
+          "kind": "tier_board",
+          "source": "resources/js/Domain/polls/exportTierList.ts",
+          "requirements": "S,A,B,C,D,F colors, cells, Arabic wrapping, watermark and exported PNG."
+        },
+        {
+          "kind": "podium",
+          "source": "resources/js/Pages/Polls/Leaderboard.tsx",
+          "requirements": "Top3 portraits, places and row formatting."
+        },
+        {
+          "kind": "line_chart",
+          "source": "resources/js/Pages/Polls/_components/TimeseriesChart.tsx",
+          "requirements": "Multiseries history with filters/legend and native PNG export."
+        }
+      ],
+      "localState": {
+        "deviceId": "Shared opaque stable installation ID. Never use physical hardware identifier.",
+        "cooldownKey": "submitCooldown:${pollId}:${voteDay}",
+        "cooldownMs": 60000,
+        "boardShuffleSeed": "pollId|voteDay",
+        "boardDraft": "In-memory in current website; changing group resets it."
+      },
+      "nativeTargets": {
+        "screens": [
+          "src/features/TierList/Index.tsx",
+          "src/features/TierList/Leaderboard.tsx",
+          "src/features/TierList/TimeseriesChart.tsx",
+          "src/features/TierList/Export.tsx",
+          "src/features/TierList/Polls.tsx"
+        ],
+        "nativeControls": [
+          "native group picker",
+          "accessible selectable candidate grid",
+          "tap target tiers",
+          "native drag gesture",
+          "submit/progress/cooldown",
+          "native chart controls",
+          "file/share sheet"
+        ],
+        "reusableModels": [
+          "Domain/polls types, tiers and shared polls.json"
+        ],
+        "adapters": [
+          "Filtered board API",
+          "stable device ID",
+          "charts/native image export",
+          "file and ZIP export"
+        ]
+      },
+      "gaps": [
+        "Dashboard owns the shared native poll CRUD/group/candidate/archive/restore/reorder/image editor, connected from the public catalogue. Shared stateless admin aliases are implemented locally, not deployed.",
+        "Native source-matching PNG and ZIP exports require device verification.",
+        "Public ballots were never submitted during tests."
+      ],
+      "liveReadChecks": [
+        {
+          "method": "GET",
+          "path": "/api/v1/polls/best-ministers",
+          "status": 200,
+          "observedAt": "2026-11-14T16:37:40Z",
+          "observed": {
+            "groups": 4,
+            "candidates": 146,
+            "candidateFields": [
+              "id",
+              "poll_id",
+              "candidate_group_id",
+              "name",
+              "title",
+              "x_handle",
+              "image_url",
+              "category",
+              "sort",
+              "status",
+              "term_started_at",
+              "term_ended_at",
+              "archive_reason",
+              "successor_id"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/polls/best-ministers/leaderboard?status=active",
+          "status": 200,
+          "observedAt": "2026-11-14T16:37:40Z",
+          "observed": {
+            "publishedGroups": 3,
+            "rankingKeys": [
+              "ministers",
+              "governors",
+              "security",
+              "jolani"
+            ],
+            "history": "candidate UUID keyed daily points"
+          }
+        }
+      ],
+      "tests": {
+        "existingSourceTests": [
+          "tests/Feature/PollTest.php",
+          "tests/Feature/CandidateTest.php",
+          "tests/Feature/CandidateGroupTest.php",
+          "tests/Feature/CandidateGroupVisibilityTest.php",
+          "tests/Feature/ApiStandardRoutesTest.php",
+          "tests/Feature/TierlistXAutomationTest.php"
+        ],
+        "sourceTestsRunForInventory": false,
+        "requiredNativeAcceptance": [
+          "Guest never sees disabled groups and cannot submit disabled/archived/ineligible candidates.",
+          "Assign/reorder/move-back/reset and multi-select preserve unique candidate ownership across six tiers and bank.",
+          "Group switch reset, minimum3, duplicate candidate rejection, cooldown after relaunch and authoritative429.",
+          "VoteDay is poll timezone aware across midnight and device timezone change.",
+          "Leaderboard former/all aliases, successor labels and latest response wins while switching filters.",
+          "Golden cumulative/periodic and week/month/year aggregation, candidate toggles, PNG and ZIP filenames."
+        ],
+        "nativeVerification": "pending_not_claimed",
+        "nativeBehaviorTests": [
+          "src/features/TierList/model.test.ts"
+        ]
+      }
+    },
+    {
+      "id": "promises",
+      "titleAr": "عداد الوعود",
+      "routes": [
+        "/promises",
+        "/promises/{number}",
+        "/promises/suggest"
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending",
+      "sourceFiles": [
+        "resources/js/Pages/Promises/Index.tsx",
+        "resources/js/Pages/Promises/Show.test.ts",
+        "resources/js/Pages/Promises/Show.tsx",
+        "resources/js/Pages/Promises/Suggest.tsx",
+        "resources/js/Pages/Promises/_components/CardVote.tsx",
+        "resources/js/Pages/Promises/_components/Countdown.test.ts",
+        "resources/js/Pages/Promises/_components/Countdown.tsx",
+        "resources/js/Pages/Promises/_components/PromiseCard.test.ts",
+        "resources/js/Pages/Promises/_components/PromiseCard.tsx",
+        "resources/js/Pages/Promises/_components/PromiseCharts.tsx",
+        "resources/js/Pages/Promises/_components/ReportDialog.tsx",
+        "resources/js/Pages/Promises/_components/Scoreboard.tsx",
+        "resources/js/Pages/Promises/_components/ShareCardDialog.tsx",
+        "resources/js/Pages/Promises/_components/SourceList.tsx",
+        "resources/js/Pages/Promises/_components/TargetProgress.tsx",
+        "resources/js/Pages/Promises/_components/VotePanel.tsx",
+        "resources/js/Pages/Promises/_lib/charts.test.ts",
+        "resources/js/Pages/Promises/_lib/charts.ts",
+        "resources/js/Pages/Promises/_lib/filters.test.ts",
+        "resources/js/Pages/Promises/_lib/filters.ts",
+        "resources/js/Pages/Promises/_lib/useVote.test.ts",
+        "resources/js/Pages/Promises/_lib/useVote.ts",
+        "resources/js/Domain/promises/SpeakerAvatar.tsx",
+        "resources/js/Domain/promises/SpeakerPicker.tsx",
+        "resources/js/Domain/promises/StateBadge.tsx",
+        "resources/js/Domain/promises/Timeline.test.ts",
+        "resources/js/Domain/promises/Timeline.tsx",
+        "resources/js/Domain/promises/api.ts",
+        "resources/js/Domain/promises/format.test.ts",
+        "resources/js/Domain/promises/format.ts",
+        "resources/js/Domain/promises/status.test.ts",
+        "resources/js/Domain/promises/status.ts",
+        "resources/js/Domain/promises/types.ts",
+        "resources/data/promises.json",
+        "app/Http/Controllers/PromiseController.php",
+        "app/Http/Controllers/PromisesAdminController.php",
+        "app/Services/Promises/PromiseEditor.php",
+        "app/Services/Promises/PromiseFormOptions.php",
+        "app/Services/Promises/PromiseIndexCache.php",
+        "app/Services/Promises/PromiseModerationService.php",
+        "app/Services/Promises/PromisePresenter.php",
+        "app/Services/Promises/PromiseRules.php",
+        "app/Services/Promises/PromiseSectorService.php",
+        "app/Services/Promises/PromiseSpeakerService.php",
+        "app/Services/Promises/PromiseSubmissionService.php",
+        "app/Services/Promises/PromiseVoteService.php",
+        "app/Services/Promises/SpeakerDirectory.php",
+        "app/Models/Promise.php",
+        "app/Models/PromiseCoSpeaker.php",
+        "app/Models/PromiseGovernorate.php",
+        "app/Models/PromiseReport.php",
+        "app/Models/PromiseSector.php",
+        "app/Models/PromiseSource.php",
+        "app/Models/PromiseSpeaker.php",
+        "app/Models/PromiseTag.php",
+        "app/Models/PromiseUpdate.php",
+        "app/Models/PromiseVote.php"
+      ],
+      "features": [
+        {
+          "id": "public_list",
+          "description": "Only published promises. Show global scoreboard with state counts, cards or rows and live date counters. Scoreboard selection narrows to exactly its global state and retains sort.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/Index.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "filters",
+          "description": "Arabic-normalized title/speaker/co-speaker search. Multi-select state, sector, governorate/national, speaker, institution and tag facets. OR inside each facet, AND between facets; overlapping matches count once.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/_lib/filters.ts",
+              "line": 29
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "sort_views",
+          "description": "Urgency uses server order; deadline sort places missing deadlines last; newest sorts statement date. Grid/list/charts choice persists. Filter URLs retain facets and sort; free text remains local.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/_lib/filters.ts",
+              "line": 22
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "navigation_state",
+          "description": "Opening detail carries safe /promises return context and preserves matching list filters/scroll on Back. Reject external or mismatched return URLs.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/_lib/filters.ts",
+              "line": 71
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "charts",
+          "description": "Charts show filtered promises: state donut, cumulative statement/verdict trend, lifeline/deadline timeline, sectors and speaker breakdowns. Chart marks narrow filters only where exact, show-more expands limited lists and timeline opens detail.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/_components/PromiseCharts.tsx",
+              "line": 58
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "public_detail",
+          "description": "Show title, speaker/co-speaker portraits/roles, institution, sector, national/governorates, tags, quote/verbatim metadata, summary, statement venue/date, deadline wording/reasoning and state.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/Show.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "counter_progress",
+          "description": "Preserve pending/in-progress/fulfilled/partial/broken/postponed/retracted and derived overdue semantics; distinguish no deadline, due today, days left/overdue, fulfilled early/on time/late. Show target current/baseline/value/units/percent and rescheduling history.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/promises/types.ts",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "sources_timeline",
+          "description": "Open original source, archive, screenshot or video timestamp; show primary-source markers, publication dates, status/progress update timeline, restates/restatedBy and related promises.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/Show.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "guest_vote",
+          "description": "Open promises permit yes/no belief vote from both list cards and detail. Same visitor can change answer. Busy prevents duplicate taps; chosen answer persists locally and latest returned tally overrides stale Back props only.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/_lib/useVote.ts",
+              "line": 52
+            }
+          ],
+          "authRequirement": "public_with_guest_device_id_or_account",
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "closed_vote",
+          "description": "A verdict closes voting and displays final state instead. Never permit a stale page to fake acceptance if server says voting closed.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/_components/VotePanel.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "share_link",
+          "description": "Share/copy canonical promise URL. Preserve public numeric promise number and safe return-navigation context separately.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/Show.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "share_image",
+          "description": "Preview square share card using current counter/date, all speakers, state and canonical URL; download PNG or share image. Cancel is not an error; prevent stale exports after dialog or promise changes.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/_components/ShareCardDialog.tsx",
+              "line": 26
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "suggest",
+          "description": "Guest sees login gate; signed-in visitor picks an approved speaker or enters a new name/role, title, exact quote, statement date/venue, deadline wording,1..5 source URLs and optional note. Inline field validation; success explains moderation and permits another suggestion.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/Suggest.tsx",
+              "line": 1
+            }
+          ],
+          "authRequirement": "signed_in_not_banned",
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "speaker_search",
+          "description": "Search approved speaker/official directory, debounced and cancellable; pending speaker records belonging to someone else are not selectable.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/promises/SpeakerPicker.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "report_progress",
+          "description": "Authenticated progress report requires10..2000 character body and source URL. Send to review, show success only after201; retain retryable failures and field messages.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/_components/ReportDialog.tsx",
+              "line": 20
+            }
+          ],
+          "authRequirement": "signed_in_not_banned",
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "report_error",
+          "description": "Authenticated error report requires10..2000 character body, correction URL optional; independent of progress update flow.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/_components/ReportDialog.tsx",
+              "line": 25
+            }
+          ],
+          "authRequirement": "signed_in_not_banned",
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "admin_editor",
+          "description": "Permission-gated editor creates/updates/deletes promises, source collections, quote/metadata, speaker/co-speakers, institutions/sectors/governorates/tags, target, deadline and related/restatement links; attach images.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PromisesAdminController.php",
+              "line": 1
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "promises.create",
+            "promises.edit",
+            "promises.delete"
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "admin_rule",
+          "description": "Rulers set verdict/status with evidence, undo a prior status change and reschedule deadlines while retaining audit/update history.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 754
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "promises.rule"
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "admin_review",
+          "description": "Review suggestion/report queues, publish/unpublish/reject promises and resolve/dismiss reports. Distinct permission from editing and ruling.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 769
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "promises.review"
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "admin_directories",
+          "description": "Manage speaker profile/photo and sector CRUD/order/active state with promises.speakers. Pending speaker approve/reject uses promises.review.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 715
+            }
+          ],
+          "scope": "privileged",
+          "capabilities": [
+            "promises.speakers",
+            "promises.review"
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "methodology",
+          "description": "Show the source methodology, calculation definitions and provenance footer through an expandable native section.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Promises/Index.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/promises",
+          "auth": "public",
+          "contract": "Inertia props PromisePresenter.index(): {promises:PromiseCardData[],stats,filters,dueSoonDays,...}. No public JSON index route exists.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PromiseController.php",
+              "line": 31
+            }
+          ],
+          "transport": "inertia_page_props",
+          "nativeTransport": "Root-owned api.page(path, expectedComponent, decode, options) with version bootstrap, one bounded409 refresh, credential omission and strict props validation."
+        },
+        {
+          "method": "GET",
+          "path": "/promises/{number}",
+          "auth": "public",
+          "contract": "Inertia props {promise:PromiseDetailData}; published only, unknown/unpublished/deleted/oversized number404.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PromiseController.php",
+              "line": 36
+            }
+          ],
+          "transport": "inertia_page_props",
+          "nativeTransport": "Root-owned api.page(path, expectedComponent, decode, options) with version bootstrap, one bounded409 refresh, credential omission and strict props validation."
+        },
+        {
+          "method": "GET",
+          "path": "/promises/suggest",
+          "auth": "public_page_with_login_gate",
+          "contract": "Inertia form config {venues,earliestDate,today}. Bounds use server tracker date.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PromiseController.php",
+              "line": 46
+            }
+          ],
+          "transport": "inertia_page_props",
+          "nativeTransport": "Root-owned api.page(path, expectedComponent, decode, options) with version bootstrap, one bounded409 refresh, credential omission and strict props validation."
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/promises/speakers?q=",
+          "auth": "public",
+          "contract": "{speakers:SpeakerOption[]}; q max80chars, approved speakers and publicly listed officials only.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PromiseController.php",
+              "line": 56
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/promises",
+          "auth": "sanctum_not_banned",
+          "contract": "{speaker_ref OR speaker_name,speaker_title?,title<=200,quote<=5000,statement_date:2024-12-08..server_today,statement_venue?,deadline_wording?<=255,source_urls:1..5 HTTP(S)URLs,note?<=2000} ->201 {message}; pending moderation.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PromiseController.php",
+              "line": 63
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/promises/{number}/reports",
+          "auth": "sanctum_not_banned",
+          "contract": "{kind:progress|error,body:10..2000,source_url:HTTP(S)URL|null}; source required for progress ->201 {message}; pending moderation.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PromiseController.php",
+              "line": 112
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/promises/{number}/vote",
+          "auth": "public_or_account",
+          "contract": "{believes:boolean,device_id?:string<=64}; guest must have device ID, signed-in votes use account. ->{votes:{yes:number,no:number}}. May change answer, closed promise rejects.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/PromiseController.php",
+              "line": 141
+            }
+          ]
+        },
+        {
+          "method": "POST|PUT|DELETE",
+          "path": "/api/v1/admin/promises[/{uuid}]",
+          "auth": "auth:web,sanctum plus promises.create/edit/delete",
+          "contract": "Promise create/update/delete. Read editor/list/review props remain separate Inertia pages.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 747
+            }
+          ]
+        },
+        {
+          "method": "POST|DELETE",
+          "path": "/api/v1/admin/promises/{uuid}/status[/{updateId}]",
+          "auth": "auth:web,sanctum plus promises.rule",
+          "contract": "Set verdict/status or undo status change.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 756
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/promises/{uuid}/reschedule",
+          "auth": "auth:web,sanctum plus promises.rule",
+          "contract": "Reschedule with preserved history. Same definition also mounted under /admin/promises.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 727
+            }
+          ]
+        },
+        {
+          "method": "POST|DELETE",
+          "path": "/api/v1/admin/promises/{uuid}/updates[/{updateId}]",
+          "auth": "auth:web,sanctum plus promises.edit",
+          "contract": "Add/remove sourced timeline updates.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 763
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/promises/{uuid}/publish|unpublish|reject",
+          "auth": "auth:web,sanctum plus promises.review",
+          "contract": "Moderation decisions. Each suffix is a distinct route.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 769
+            }
+          ]
+        },
+        {
+          "method": "GET|POST|PUT|DELETE",
+          "path": "/api/v1/admin/promises/speakers[/search|/{id}|/upload-image|/{id}/approve|/{id}/reject]",
+          "auth": "auth:web,sanctum plus promises.speakers or any for search",
+          "contract": "Search/CRUD/image upload uses any/speakers/edit per route; approve/reject pending speakers requires promises.review.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 736
+            }
+          ]
+        },
+        {
+          "method": "POST|PUT|PATCH|DELETE",
+          "path": "/api/v1/admin/promises/sectors[/{id}|/reorder|/{id}/toggle]",
+          "auth": "auth:web,sanctum plus promises.speakers",
+          "contract": "Sector CRUD, ordering and active toggle.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 801
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/promises/reports/{id}/accept|dismiss",
+          "auth": "auth:web,sanctum plus promises.review",
+          "contract": "Accept report into sourced update or dismiss review item. Each suffix is a distinct POST route.",
+          "sourceEvidence": [
+            {
+              "path": "routes/web.php",
+              "line": 794
+            }
+          ]
+        }
+      ],
+      "authRequirements": {
+        "guest": [
+          "published list/detail/charts/filters",
+          "yes/no vote with stable device ID",
+          "share URL and image",
+          "approved speaker search"
+        ],
+        "account": [
+          "suggest a promise",
+          "report progress",
+          "report error",
+          "account vote identity persists across devices"
+        ],
+        "privileged": [
+          "promises.create",
+          "promises.edit",
+          "promises.delete",
+          "promises.rule",
+          "promises.review",
+          "promises.speakers"
+        ],
+        "bannedAccounts": "Cannot suggest or report even if otherwise authenticated. Preserve server error."
+      },
+      "graphics": [
+        {
+          "kind": "speaker_portraits",
+          "source": "resources/js/Domain/promises/SpeakerAvatar.tsx",
+          "requirements": "Single/co-speaker overlap and initial placeholder."
+        },
+        {
+          "kind": "charts",
+          "source": "resources/js/Pages/Promises/_components/PromiseCharts.tsx",
+          "requirements": "State donut, hatched/non-color-only state distinctions, trend, lifelines, sector/speaker bars; interactively narrow filters and open details."
+        },
+        {
+          "kind": "progress",
+          "source": "resources/js/Pages/Promises/_components/TargetProgress.tsx",
+          "requirements": "Target current/baseline/value/percent plus units and unknown values."
+        },
+        {
+          "kind": "timeline",
+          "source": "resources/js/Domain/promises/Timeline.tsx",
+          "requirements": "Sourced status/progress/reschedule events and linked evidence."
+        },
+        {
+          "kind": "share_card",
+          "source": "resources/js/Pages/Promises/_components/ShareCardDialog.tsx",
+          "requirements": "Square native PNG, counter evaluated from current server-relative date, all speakers, status and canonical URL."
+        }
+      ],
+      "localState": {
+        "layout": "Persist grid/list/charts choice.",
+        "filters": "Keep local free text and screen/list return state; canonical URL facets/sort are shareable.",
+        "vote": "promise-vote:${number} choice plus in-memory newest tally conflict rules.",
+        "deviceId": "Shared stable opaque guest installation ID."
+      },
+      "nativeTargets": {
+        "screens": [
+          "src/features/Promises/Index.tsx",
+          "src/features/Promises/Show.tsx",
+          "src/features/Promises/Forms.tsx",
+          "src/features/Promises/ShareCard.tsx",
+          "src/features/Promises/PromiseCharts.tsx",
+          "src/features/Promises/Primitives.tsx",
+          "src/features/Promises/Admin.tsx",
+          "src/features/Promises/AdminEditor.tsx",
+          "src/features/Promises/AdminDirectories.tsx",
+          "src/features/Promises/AdminLog.tsx",
+          "src/features/Promises/AdminSources.tsx"
+        ],
+        "nativeControls": [
+          "native list/cards",
+          "native multi-facet sheets",
+          "segmented layout",
+          "accessible charts and timeline",
+          "date/input pickers",
+          "login return flow",
+          "native share and PNG export"
+        ],
+        "reusableModels": [
+          "Domain/promises types/status/format",
+          "filters/charts pure helpers",
+          "typed presenter DTOs"
+        ],
+        "adapters": [
+          "JSON read/config transport",
+          "authenticated writes",
+          "guest voting identity",
+          "server-date clock",
+          "persistent list/vote state",
+          "native chart/render exporter"
+        ]
+      },
+      "gaps": [
+        "Native13 verified suggestion validation/retained editing without a valid submission and owned create/edit/publish/public filters/layout/detail-return/Yes-to-No server tallies/local choice/cold-restart persistence/exact cleanup. Valid suggestion submission, report/share/export, ruler/review and privileged directory/log flows still need native proof. No production votes, suggestions or reports were written.",
+        "Shared canonical stateless admin route adapters are implemented locally but not deployed.",
+        "Independent review correction for same-account capability revocation in the editor is owned by simulator_audit."
+      ],
+      "liveReadChecks": [
+        {
+          "method": "GET",
+          "path": "/api/v1/promises/speakers?q=",
+          "status": 200,
+          "observedAt": "2026-11-14T16:37:40Z",
+          "observed": {
+            "speakers": 36
+          }
+        }
+      ],
+      "tests": {
+        "existingSourceTests": [
+          "tests/Feature/PromisesTest.php",
+          "tests/Feature/PromiseVocabularyTest.php",
+          "tests/Feature/PromisesAdminTest.php",
+          "tests/Feature/PromisesAdminSectionsTest.php",
+          "tests/Feature/Promises/PromisesRelatedAndRescheduleTest.php",
+          "resources/js/Pages/Promises/Show.test.ts",
+          "resources/js/Pages/Promises/_lib/filters.test.ts",
+          "resources/js/Pages/Promises/_lib/charts.test.ts",
+          "resources/js/Pages/Promises/_lib/useVote.test.ts",
+          "resources/js/Pages/Promises/_components/Countdown.test.ts",
+          "resources/js/Pages/Promises/_components/PromiseCard.test.ts",
+          "resources/js/Domain/promises/status.test.ts",
+          "resources/js/Domain/promises/format.test.ts",
+          "resources/js/Domain/promises/Timeline.test.ts"
+        ],
+        "sourceTestsRunForInventory": false,
+        "requiredNativeAcceptance": [
+          "State vocabulary and every counter mode, null deadline, midnight refresh, reschedule and late verdict.",
+          "OR/AND facets, co-speaker filters, no-deadline sort, scoreboard exactness, chart narrowing and safe Back restoration.",
+          "Guest vote/change/closed/retry, stable ID and latest list/detail tally reconciliation.",
+          "Login return for suggestion/report; new/pending speaker ownership, source count/URL/date bounds and Arabic field errors.",
+          "Native PNG counts are fresh and cancellation/navigation cannot share a stale promise.",
+          "Capability-specific editor/ruler/reviewer controls and server rejection."
+        ],
+        "nativeVerification": "pending_not_claimed",
+        "nativeBehaviorTests": [
+          "src/features/Promises/model.test.ts",
+          "src/features/Promises/admin-model.test.ts",
+          "src/features/Promises/vote-state.test.ts",
+          "src/features/Promises/charts.test.ts",
+          "src/features/Promises/filters.test.ts",
+          "src/features/Promises/navigation-state.test.ts"
+        ]
+      }
+    },
+    {
+      "id": "priorities",
+      "titleAr": "سوريا حسب أولوياتك",
+      "routes": [
+        "/priorities",
+        "/priorities?state={encodedState}"
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending",
+      "sourceFiles": [
+        "resources/js/Pages/Priorities/Index.tsx",
+        "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+        "resources/js/Pages/Priorities/data.ts"
+      ],
+      "features": [
+        {
+          "id": "intro",
+          "description": "Show explainer and dismissible banner; persist only dismissal using sz-priorities-banner-dismissed.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+              "line": 219
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "allocation",
+          "description": "Allocate a shared100-point budget across economy, justice, housing, security, politics and digital. Sliders and +/- clamp to0..100 and remaining global budget; show remaining/allocated and overflow feedback.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+              "line": 252
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "subfiles",
+          "description": "Expand/collapse topic details and toggle at most5 priority subfiles across topics. Reaching cap gives visible warning; reset clears points and selected subfiles.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+              "line": 291
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "dependencies",
+          "description": "Compute complexity and missing prerequisite dependencies for selected subfiles; show satisfied/unsatisfied prerequisites, explanatory names and warnings.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+              "line": 330
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "comparison",
+          "description": "Choose reference comparison and redraw six-axis radar against current allocation; show point totals and meaningful labels.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+              "line": 485
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "persona",
+          "description": "Show persona only once total allocation reaches100; dominant topic determines persona details with source order tie behavior.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+              "line": 424
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "share_text",
+          "description": "After complete allocation, copy text summary including sorted topic allocations, persona and selected subfiles. Incomplete budget gives visible prompt.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+              "line": 504
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "share_link",
+          "description": "Encode allocations and selected subfiles into base64 query state, copy link, decode it on entry to reproduce the plan. Validate unknown/malformed/unbounded state at native boundary.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+              "line": 539
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "share_story",
+          "description": "Preview and download story PNG containing custom radar, persona, ranked allocations and selected subfiles. Website exposes multiple story themes; native app product requirement currently supports light/dark only and must map artwork coherently.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Priorities/PrioritiesApp.tsx",
+              "line": 556
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        }
+      ],
+      "endpoints": [],
+      "authRequirements": {
+        "guest": [
+          "all flows"
+        ],
+        "account": [],
+        "privileged": [],
+        "backend": "No server writes, synchronization or analytics endpoint exists for allocations."
+      },
+      "graphics": [
+        {
+          "kind": "radar_chart",
+          "source": "resources/js/Pages/Priorities/PrioritiesApp.tsx:818",
+          "requirements": "Six-axis reference/current radar with labels, legend and accessible numerical fallback."
+        },
+        {
+          "kind": "topic_icons",
+          "source": "resources/js/Pages/Priorities/PrioritiesApp.tsx:54",
+          "requirements": "Six source identity icons, persona emoji/artwork, dependency/warning symbols."
+        },
+        {
+          "kind": "story_card",
+          "source": "resources/js/Pages/Priorities/PrioritiesApp.tsx:1029",
+          "requirements": "Tall story layout and embedded custom vector radar, correct percentage order and text wrapping; PNG export."
+        },
+        {
+          "kind": "source_flag_and_qr",
+          "source": "resources/js/Pages/Priorities/PrioritiesApp.tsx:1068",
+          "requirements": "Story header preserves original Syrian flag vector and static QR path linking to public priorities simulator. QR does not encode current plan."
+        }
+      ],
+      "localState": {
+        "allocation": "Current website keeps in memory; state link restores it. Do not claim automatic local allocation persistence as existing behavior.",
+        "persisted": [
+          "banner dismissal"
+        ],
+        "sharedState": "base64 of topicId:points comma list + | + subfileId comma list"
+      },
+      "nativeTargets": {
+        "screens": [
+          "src/features/Priorities/Index.tsx",
+          "src/features/Priorities/Radar.tsx",
+          "src/features/Priorities/Story.tsx"
+        ],
+        "nativeControls": [
+          "native sliders and steppers",
+          "checkbox/toggle list",
+          "expandable groups",
+          "comparison picker",
+          "native share sheet",
+          "story preview"
+        ],
+        "reusableModels": [
+          "INITIAL_TOPICS",
+          "COMPARISONS",
+          "DEPENDENCIES",
+          "budget/dependency/persona pure calculation adapter"
+        ],
+        "adapters": [
+          "validated universal-link state",
+          "native vector radar",
+          "native PNG export",
+          "SQLite banner preference"
+        ]
+      },
+      "gaps": [
+        "Native sliders, dependency/persona diagrams, restored shared state and exact source story need iPhone/VoiceOver/light-dark verification."
+      ],
+      "tests": {
+        "existingSourceTests": [],
+        "sourceTestsRunForInventory": false,
+        "requiredNativeAcceptance": [
+          "Six-topic allocation always stays within100 with steppers and sliders; rapid updates cannot overspend.",
+          "Five-subfile cap, reset, dependency warnings and persona ties match source.",
+          "Valid shared URL reproduces plan; malformed/oversized/negative/unknown state rejects safely.",
+          "Incomplete budget blocks final sharing with explanation; complete text/link/PNG agree.",
+          "VoiceOver adjustable sliders and large Arabic text; light/dark radar and story screenshots."
+        ],
+        "nativeVerification": "pending_not_claimed",
+        "nativeBehaviorTests": [
+          "src/features/Priorities/model.test.ts"
+        ]
+      }
+    },
+    {
+      "id": "crossings",
+      "titleAr": "المنافذ الحدودية",
+      "routes": [
+        "/crossings",
+        "/crossings?c={number}"
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending",
+      "sourceFiles": [
+        "resources/js/Pages/Crossings/Index.tsx",
+        "resources/js/Pages/Crossings/_components/CrossingDetail.tsx",
+        "resources/js/Pages/Crossings/_components/CrossingsLayer.tsx",
+        "resources/js/Pages/Crossings/_components/CrossingsMap.tsx",
+        "resources/js/Pages/Crossings/_components/CrossingsTable.tsx",
+        "resources/js/Pages/Crossings/_components/MapErrorBoundary.tsx",
+        "resources/js/Pages/Crossings/_components/StatusPill.tsx",
+        "resources/js/Pages/Crossings/_components/WhatsAppIcon.tsx",
+        "resources/js/Domain/crossings/crossings.ts",
+        "resources/data/crossings.json"
+      ],
+      "features": [
+        {
+          "id": "directory",
+          "description": "Bundled20 crossings/ports; display name, neighboring country/direction, operation type and source/as-of context. Group list clockwise north/west/east/south/sea.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Crossings/Index.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "damascus_clock",
+          "description": "Show actual Asia/Damascus clock and offset; status uses local crossing work windows, not device timezone. One-second clock and thirty-second status refresh; unknown time is pending.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/crossings/crossings.ts",
+              "line": 71
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "status",
+          "description": "Compute open/closed/soon with24h, split windows, overnight windows, equal start/end and explicit overrides. Opening-soon and override message precede routine schedule. Global counts stay global when search narrows list.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/crossings/crossings.ts",
+              "line": 119
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "search",
+          "description": "Arabic name/country search, result count and empty state. Search must remain available alongside map.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Crossings/Index.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "map_selection",
+          "description": "Status-colored map markers and list selection open same crossing detail and focus map. Desktop hover preview maps to native marker callout. Closing detail resets map overview. Map failure has visible fallback/retry.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Crossings/_components/CrossingsMap.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "detail",
+          "description": "Detail shows name, country, operation, current state, work windows with currently-open indicator and override warning.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Crossings/_components/CrossingDetail.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "contact_directions",
+          "description": "Open formatted international WhatsApp link and source external map URL. Do not invent in-app chat or booking.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Crossings/_components/CrossingDetail.tsx",
+              "line": 1
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "share_deeplink",
+          "description": "Share current crossing status text and /crossings?c=N URL using native share sheet, with copy fallback. Deep link opens matching crossing.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/crossings/crossings.ts",
+              "line": 169
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "source_advisory",
+          "description": "Current bundled data originates from provisional external source page; preserve date/source caveat and opening-soon/override labels. Do not claim realtime authority.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/crossings/crossings.ts",
+              "line": 39
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "bundled",
+          "path": "resources/data/crossings.json",
+          "auth": "public",
+          "contract": "{meta:{...},crossings:[{n,name,intl,category:crossing|port,country,direction,lat,lon,opType,windows:[{label?,start?,end?,h24?}],mapsUrl,openingSoon,override}]}",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Domain/crossings/crossings.ts",
+              "line": 1
+            }
+          ]
+        }
+      ],
+      "authRequirements": {
+        "guest": [
+          "all public flows"
+        ],
+        "account": [],
+        "privileged": [],
+        "backend": "No section-specific live schedule endpoint or write API currently exists."
+      },
+      "graphics": [
+        {
+          "kind": "native_map",
+          "source": "resources/js/Pages/Crossings/_components/CrossingsLayer.tsx",
+          "requirements": "Status-colored marker collection and selected marker; readable native map in light/dark."
+        },
+        {
+          "kind": "state_pills",
+          "source": "resources/js/Pages/Crossings/_components/StatusPill.tsx",
+          "requirements": "Open/closed/soon/pending distinguished with text and accessible state, not color alone."
+        },
+        {
+          "kind": "brand_icon",
+          "source": "resources/js/Pages/Crossings/_components/WhatsAppIcon.tsx",
+          "requirements": "Original WhatsApp vector icon on actual external contact action."
+        }
+      ],
+      "localState": {
+        "selection": "current crossing number and query deeplink",
+        "clock": "AppState-aware Asia/Damascus timer, never persistent obsolete status"
+      },
+      "nativeTargets": {
+        "screens": [
+          "src/features/Crossings/Index.tsx"
+        ],
+        "nativeControls": [
+          "virtualized grouped list",
+          "native search",
+          "Apple Maps marker/callout",
+          "detail sheet",
+          "native external links/share"
+        ],
+        "reusableModels": [
+          "Domain/crossings pure schedule helpers",
+          "shared crossings.json"
+        ],
+        "adapters": [
+          "AppState clock",
+          "native map camera/callout",
+          "safe WhatsApp/maps URLs",
+          "typed query deeplinks"
+        ]
+      },
+      "gaps": [
+        "Map pins/camera, all native detail/share/external actions and current-clock transitions require iPhone verification."
+      ],
+      "tests": {
+        "existingSourceTests": [
+          "tests/Feature/CrossingsTest.php",
+          "tests/Feature/SharedFactsTest.php"
+        ],
+        "sourceTestsRunForInventory": false,
+        "requiredNativeAcceptance": [
+          "At opening/closing minute, overnight and24h cases match source in foreign device timezone.",
+          "OpeningSoon/override precedence, initial pending and refreshed current share text.",
+          "Search counts versus global counts, marker/list synchronization, close reset and unknown c query.",
+          "WhatsApp/maps/share actions open exact intended destination; no permission prompt on browse.",
+          "Offline bundled list remains useful, map failure visible and VoiceOver labels include status."
+        ],
+        "nativeVerification": "pending_not_claimed",
+        "nativeBehaviorTests": [
+          "src/features/Crossings/model.test.ts"
+        ]
+      }
+    },
+    {
+      "id": "party",
+      "titleAr": "دليل الأحزاب والتجمعات",
+      "routes": [
+        "/party"
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending",
+      "sourceFiles": [
+        "resources/js/Pages/Party/Index.tsx",
+        "resources/js/Pages/Party/PartyClient.tsx",
+        "resources/js/Pages/Party/data.ts",
+        "resources/js/Pages/Party/types.ts",
+        "app/Http/Controllers/ExternalDataController.php",
+        "app/Services/ExternalData/ExternalSheetCache.php"
+      ],
+      "features": [
+        {
+          "id": "directory",
+          "description": "List live cached political organizations with description, type, location, language and political leaning badges; show result count and empty state.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Party/PartyClient.tsx",
+              "line": 28
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "filters",
+          "description": "Arabic-normalized search across name/description/location/type; category,country,city,language facets with clear filters.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Party/PartyClient.tsx",
+              "line": 31
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "presentation",
+          "description": "Switch card grid/table; initial15 results with load more. Table and cards expose source fields appropriate to their layout.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Party/PartyClient.tsx",
+              "line": 43
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "organization_links",
+          "description": "Open organization website, manifesto, founder/member details and social links X/Instagram/Facebook/YouTube/Telegram where present. Language codes map to Arabic display names.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Party/PartyClient.tsx",
+              "line": 145
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "contribute",
+          "description": "Add-new-organization button and footer open existing external Google Form. It is an external submission flow, not a native/backend create operation.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Party/PartyClient.tsx",
+              "line": 64
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "feed_state",
+          "description": "Server fetches public CSV, normalizes fields, produces stable name-derived IDs and caches nonempty valid data for ten minutes. Failed/bad-header feeds yield honest empty data and are not cached as success.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/ExternalDataController.php",
+              "line": 72
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/party",
+          "auth": "public",
+          "contract": "Inertia {initialOrganizations:Organization[],fetchedAt}; Organization{id,name,description?,type?,country?,city?,formattedLocation?,socialX?,socialInsta?,socialFb?,website?,manifesto?,email?,phone?,lang?,politicalLeanings?:string[],mvpMembers?,youtube?,telegram?}. No documented JSON endpoint.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/ExternalDataController.php",
+              "line": 72
+            }
+          ],
+          "transport": "inertia_page_props",
+          "nativeTransport": "Root-owned api.page(path, expectedComponent, decode, options) with version bootstrap, one bounded409 refresh, credential omission and strict props validation."
+        },
+        {
+          "method": "external_navigation",
+          "path": "https://forms.gle/vLAxoz5RNt6z6qyj9",
+          "auth": "external service decides",
+          "contract": "Existing contribution form; preserve outbound action.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Party/PartyClient.tsx",
+              "line": 64
+            }
+          ]
+        }
+      ],
+      "authRequirements": {
+        "guest": [
+          "all in-app directory flows"
+        ],
+        "account": [],
+        "privileged": [],
+        "externalContribution": "External Google Form may have its own session requirements. Do not claim native moderation submission."
+      },
+      "graphics": [
+        {
+          "kind": "section_identity",
+          "source": "resources/js/Pages/Party/PartyClient.tsx",
+          "requirements": "Organization/type/ideology badges and source social-brand icons; retain original link labels."
+        }
+      ],
+      "localState": {
+        "queryAndFacets": "In-memory directory state; restore when returning from external link.",
+        "pagination": "Visible item count increments from15 without network-page fiction."
+      },
+      "nativeTargets": {
+        "screens": [
+          "src/features/Party/Index.tsx"
+        ],
+        "nativeControls": [
+          "native search and facet menus",
+          "virtualized cards/list",
+          "layout picker",
+          "load-more action",
+          "native browser external form"
+        ],
+        "reusableModels": [
+          "Pages/Party/types.ts Organization",
+          "shared directory filtering adapter"
+        ],
+        "adapters": [
+          "Stable cached organizations JSON transport",
+          "safe external URL handling"
+        ]
+      },
+      "gaps": [
+        "Native facets/table/grid/detail and external contribution form require iPhone verification."
+      ],
+      "tests": {
+        "existingSourceTests": [
+          "tests/Feature/ExternalDataTest.php"
+        ],
+        "sourceTestsRunForInventory": false,
+        "requiredNativeAcceptance": [
+          "Stable IDs survive inserted/reordered sheet rows; bad schema/outage is visible and recoverable.",
+          "Arabic search plus all facets, clear, grid/table and15-item load-more.",
+          "Every available social/website/manifesto link routes safely; external contribution opens exact form.",
+          "No-result/offline/error and return-from-browser preserve meaningful state."
+        ],
+        "nativeVerification": "pending_not_claimed",
+        "nativeBehaviorTests": [
+          "src/features/Party/model.test.ts"
+        ]
+      }
+    },
+    {
+      "id": "house",
+      "titleAr": "مجلس الشعب",
+      "routes": [
+        "/house",
+        "/house#historical-archive"
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending",
+      "sourceFiles": [
+        "resources/js/Pages/House/Hero2026.tsx",
+        "resources/js/Pages/House/HouseClient.tsx",
+        "resources/js/Pages/House/Index.tsx",
+        "resources/js/Pages/House/MemberTable2026.tsx",
+        "resources/js/Pages/House/ParliamentChart2026.tsx",
+        "resources/js/Pages/House/data.ts",
+        "resources/js/Pages/House/members2026.test.ts",
+        "resources/js/Pages/House/members2026.ts",
+        "resources/js/Pages/House/types.ts",
+        "app/Models/HouseMember2026.php",
+        "app/Http/Controllers/ExternalDataController.php"
+      ],
+      "features": [
+        {
+          "id": "current_roster",
+          "description": "Load database2026 roster ordered by governorate/name, with bundled source roster fallback. Merge missing social links by exact name. Hero shows total and active male/female counts.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/Index.tsx",
+              "line": 24
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "seat_chart",
+          "description": "Native equivalent of parliamentary seat semicircle. Select governorate/gender/selection/age/social grouping; tap legend to toggle linked roster facet while retaining other facet choices.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/ParliamentChart2026.tsx",
+              "line": 159
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "current_search_filter",
+          "description": "Name search and governorate,gender,selection method,age,social facets. Active/resigned/deceased/inactive status chips carry counts and select a status. Show matching count and no-result state.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/MemberTable2026.tsx",
+              "line": 32
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "current_member_rows",
+          "description": "Rows show Arabic name/management position, governorate, gender, age, appointment method and available Facebook/X links with appropriate placeholders.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/MemberTable2026.tsx",
+              "line": 99
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "lazy_archive",
+          "description": "Historical archive is collapsed initially and fetches only when opened. Closing/reopening should not lose source-aware data/failure handling.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/Index.tsx",
+              "line": 75
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "archive_modes",
+          "description": "Historical mode switch: voters,candidates,winners,presidential third. Governorate selector uses separate public sheet tabs; changing mode must clear irrelevant facets.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/HouseClient.tsx",
+              "line": 40
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "archive_filters",
+          "description": "Name/place normalized search plus sex and age filters; voters add appeal status, candidates add result, winners add electoral district. Clear all filters and show matching count.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/HouseClient.tsx",
+              "line": 55
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "archive_sort",
+          "description": "Sortable dynamic source table with Arabic text and numerical year/age sort. Hide helper/empty columns, retain mode-specific fields and no-results state.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/HouseClient.tsx",
+              "line": 126
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "archive_charts",
+          "description": "Historical charts show filtered counts, sex donut and age-group bars for voters/winners/presidential modes. Candidates use their source table/result facets.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/HouseClient.tsx",
+              "line": 149
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "archive_loading",
+          "description": "Public CSV parse/normalization supports quoted cells and typed sex/age/appeal/result fields. Abort fetch after10seconds; visible retry on load failure.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/data.ts",
+              "line": 128
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "source_links",
+          "description": "Retain election authority link, archive source attribution to Omran Center and source author website/X links.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/HouseClient.tsx",
+              "line": 246
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "archive_new_names",
+          "description": "Voter mode extracts names in the source names-new column, splits comma/Arabic-comma values and shows names present in final lists but not the preliminary lists.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/HouseClient.tsx",
+              "line": 203
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/house",
+          "auth": "public",
+          "contract": "Inertia {members2026:Member2026[]}; database cached600seconds; empty/database failure uses native bundled fallback matching source.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/ExternalDataController.php",
+              "line": 47
+            }
+          ],
+          "transport": "inertia_page_props",
+          "nativeTransport": "Root-owned api.page(path, expectedComponent, decode, options) with version bootstrap, one bounded409 refresh, credential omission and strict props validation."
+        },
+        {
+          "method": "GET",
+          "path": "https://docs.google.com/spreadsheets/d/{sheetId}/export?format=csv&gid={gid}",
+          "auth": "public external sheet",
+          "contract": "Mode/governorate map in House/types.ts; CSV rows and dynamic headers normalized by House/data.ts. This direct public source is website behavior, not an authenticated API.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/House/types.ts",
+              "line": 17
+            },
+            {
+              "path": "resources/js/Pages/House/data.ts",
+              "line": 128
+            }
+          ]
+        }
+      ],
+      "authRequirements": {
+        "guest": [
+          "all current and historical roster/chart/filter/link flows"
+        ],
+        "account": [],
+        "privileged": []
+      },
+      "graphics": [
+        {
+          "kind": "parliament_seats",
+          "source": "resources/js/Pages/House/ParliamentChart2026.tsx",
+          "requirements": "Semicircle seat dots, dimension colors, labels, legend and linked selection, current source count."
+        },
+        {
+          "kind": "archive_charts",
+          "source": "resources/js/Pages/House/HouseClient.tsx",
+          "requirements": "Sex pie and age bars with source totals, accessible data descriptions and no-data handling."
+        },
+        {
+          "kind": "identity_icons",
+          "source": "resources/js/Pages/House/Hero2026.tsx",
+          "requirements": "Current roster hero counters and source social-brand icons."
+        }
+      ],
+      "localState": {
+        "chartDimension": "selection default",
+        "filters": "Independent governorate/gender/selection/age/social and status; linked legend toggles one facet.",
+        "archive": "Lazy mode/province/filter/sort and fetch lifecycle."
+      },
+      "nativeTargets": {
+        "screens": [
+          "src/features/House/Index.tsx",
+          "src/features/House/HouseClient.tsx",
+          "src/features/House/ParliamentChart2026.tsx"
+        ],
+        "nativeControls": [
+          "native facets/search",
+          "virtualized rows",
+          "accessible native seat vector",
+          "chart dimension picker",
+          "collapsible archive",
+          "sortable row detail/list",
+          "browser source links"
+        ],
+        "reusableModels": [
+          "Member2026 and bundled roster",
+          "historical mode/sheet registry",
+          "CSV normalization adapter"
+        ],
+        "adapters": [
+          "Current roster JSON transport",
+          "timeout/cancellation for external CSV",
+          "native seat/pie/bar chart rendering"
+        ]
+      },
+      "gaps": [
+        "Current seat chart/facets and four historical CSV modes require iPhone/chart VoiceOver verification."
+      ],
+      "tests": {
+        "existingSourceTests": [
+          "resources/js/Pages/House/members2026.test.ts",
+          "tests/Feature/ExternalDataTest.php"
+        ],
+        "sourceTestsRunForInventory": false,
+        "requiredNativeAcceptance": [
+          "Bundled roster exactly matches seeded CSV and social links; unknown database fields fail validation honestly.",
+          "Seat counts and legend facets agree with active roster; status counts and chart selection remain distinct.",
+          "All four archive modes/provinces, applicable facets and numeric/text sort.",
+          "CSV quotes, Arabic normalization, missing columns, timeout, cancellation/out-of-order and retry.",
+          "Compact iPhone/large text conveys every table field and chart category with VoiceOver."
+        ],
+        "nativeVerification": "pending_not_claimed",
+        "nativeBehaviorTests": [
+          "src/features/House/model.test.ts"
+        ]
+      }
+    },
+    {
+      "id": "justice",
+      "titleAr": "العدالة الانتقالية",
+      "routes": [
+        "/justice"
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending",
+      "sourceFiles": [
+        "resources/js/Pages/Justice/Index.tsx",
+        "resources/js/Pages/Justice/_data/detainees.json"
+      ],
+      "features": [
+        {
+          "id": "dated_intro",
+          "description": "Show title/explanatory copy and updated-through date from bundled meta.asOf, never label historical data as updated today.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Justice/Index.tsx",
+              "line": 22
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "hierarchy",
+          "description": "Render blacklist hierarchy root, four groups, member name/role/portrait and connective structure. Mark names also present in detainee list with explicit detained badge/legend.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Justice/Index.tsx",
+              "line": 34
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "stats",
+          "description": "Show total detainees, ranked military total and15 military-rank count tiles. Counts come from meta/ranks, not the55 illustrated individual rows.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Justice/Index.tsx",
+              "line": 130
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "individuals",
+          "description": "Show55 notable detainee portrait/name/role cards with image placeholders and alt/accessible names.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Justice/Index.tsx",
+              "line": 145
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "actual_scope",
+          "description": "Actual page contains no search/filter/map/form/vote/share/export or account mutation. Preserve content and graphics faithfully; do not report invented interactions as parity.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Justice/Index.tsx",
+              "line": 77
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "bundled",
+          "path": "resources/js/Pages/Justice/_data/detainees.json",
+          "auth": "public",
+          "contract": "{meta:{source,sourceHandle,sourceUrl,asOf,totalDetainees,rankedTotal,...},ranks:[{ar,count}],individuals:[{name,role,photo|null}],hierarchy:{source,sourceUrl,root:{name,role?,photo?},groups:[{title,members:Member[]}]}}",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Justice/Index.tsx",
+              "line": 15
+            }
+          ]
+        }
+      ],
+      "authRequirements": {
+        "guest": [
+          "all content"
+        ],
+        "account": [],
+        "privileged": [],
+        "contentAttribution": "Preserve source metadata and historical as-of date with named individuals. Source has metadata URLs but currently no dedicated visible source anchor in page."
+      },
+      "graphics": [
+        {
+          "kind": "hierarchy",
+          "source": "resources/js/Pages/Justice/Index.tsx:101",
+          "requirements": "Root/groups/connectors and detained state, adapted to compact vertical native presentation without losing relationships."
+        },
+        {
+          "kind": "portraits",
+          "source": "resources/js/Pages/Justice/_data/detainees.json",
+          "requirements": "Source photo URLs for hierarchy and55 individuals; cache remote images and use explicit placeholder when absent/unavailable."
+        },
+        {
+          "kind": "rank_tiles",
+          "source": "resources/js/Pages/Justice/Index.tsx:130",
+          "requirements": "15 rank names/counts and total hierarchy, light/dark/large text."
+        }
+      ],
+      "localState": {
+        "data": "Bundled snapshot, no user-written state."
+      },
+      "nativeTargets": {
+        "screens": [
+          "src/features/Justice/Index.tsx"
+        ],
+        "nativeControls": [
+          "virtualized sections",
+          "native images",
+          "accessible hierarchy/group headings",
+          "rank-count grid"
+        ],
+        "reusableModels": [
+          "Bundled detainees JSON and Syrian date formatter"
+        ],
+        "adapters": [
+          "Source remote image loading and placeholders"
+        ]
+      },
+      "gaps": [
+        "Source portraits, hierarchy, counts and as-of date require iPhone light/dark/VoiceOver verification."
+      ],
+      "tests": {
+        "existingSourceTests": [],
+        "sourceTestsRunForInventory": false,
+        "requiredNativeAcceptance": [
+          "As-of date stays source date regardless of system clock.",
+          "Only exact source detainee names get detained mark and legend appears only when needed.",
+          "Meta totals are not replaced by individual list size;15 ranks,55 individuals and hierarchy remain intact.",
+          "Every portrait has accessible name and failure placeholder; Arabic text and tree groups remain readable in both schemes."
+        ],
+        "nativeVerification": "pending_not_claimed",
+        "nativeBehaviorTests": [
+          "src/features/Justice/model.test.ts"
+        ]
+      }
+    },
+    {
+      "id": "atlas",
+      "titleAr": "أطلس سوريا",
+      "routes": [
+        "/atlas",
+        "/population (301 to /atlas)"
+      ],
+      "implementationStatus": "native_draft_behavior_tested_device_validation_pending",
+      "sourceFiles": [
+        "resources/js/Pages/Population/Index.tsx",
+        "resources/js/Pages/Population/PopulationClient.tsx",
+        "resources/js/Pages/Population/components/map/MapClient.tsx",
+        "resources/js/Pages/Population/components/map/map-interactions.ts",
+        "resources/js/Pages/Population/components/map/map-styles.ts",
+        "resources/js/Pages/Population/components/map/tooltip-generators.tsx",
+        "resources/js/Pages/Population/constants/data-config.test.ts",
+        "resources/js/Pages/Population/constants/data-config.ts",
+        "resources/js/Pages/Population/types/data-types.ts",
+        "resources/js/Pages/Population/types/index.ts",
+        "resources/js/Pages/Population/types/rainfall-types.ts",
+        "resources/js/Pages/Population/utils/color-calculator.ts",
+        "resources/js/Pages/Population/utils/data-finder.ts",
+        "app/Http/Controllers/Api/PopulationAtlasController.php",
+        "docs/modules/population-atlas.md",
+        "public/assets/population/syr_admin1_opt.geojson",
+        "public/assets/population/syria_border.geojson",
+        "public/assets/population/syria_provinces_opt.geojson"
+      ],
+      "features": [
+        {
+          "id": "load_layers",
+          "description": "Load source GeoJSON governorate geometry, demographic snapshots, rainfall histories and environmental report. Distinguish loading/error/missing-data and retry. GeoJSON is required to show a meaningful map.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 60
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "metric_source",
+          "description": "Select population,IDP,IDP returnees,rainfall or environmental layer; choose date/source snapshot where available. Rainfall uses one layer without a source-row selector.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 93
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "choropleth",
+          "description": "Native polygon choropleth with full source geometry including Golan, fit bounds and zoom controls. Counts use data-driven10/40/70percent-of-max thresholds, rainfall latest available year and environment temperature bands. Legend and fill share classification logic.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/components/map/map-styles.ts",
+              "line": 27
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "map_inspection",
+          "description": "Tap a province to inspect its metric and details; desktop hover tooltip becomes native callout/sheet. No-data provinces stay explicitly unknown. Canonical governorate names map Arabic/English dataset aliases.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/components/map/map-interactions.ts",
+              "line": 23
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "comparison",
+          "description": "Select up to2 provinces from map or accessible source table, toggle off and reset. Third selection replaces oldest. Compare all demographic datasets with current layer/source alignment.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 125
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "source_panel",
+          "description": "Open/close responsive data panel, list source date/note/citation URL, governorate values and country total; rows can select comparison without requiring map precision.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 353
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "rainfall",
+          "description": "Click province to see all available annual rainfall/average records and mini chart/table. Map fill uses latest available year, not a hard-coded calendar year. There is no year slider in current source.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 395
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "environment_current",
+          "description": "Province detail shows coordinates,population,current temperature/feels-like/weather,min/max,humidity,wind speed/direction,pressure,cloud cover and precipitation with missing-value states.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 431
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "environment_risk",
+          "description": "Province cards show AQI category/health recommendation, drought classification/annual rain/dry months, temperature/rainfall trends and historical weather summary.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 570
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "environment_country",
+          "description": "Unselected environment panel shows report collection/date/sources, key findings, climate challenges, water basins and recommendations. Preserve source dates, estimates and units.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 735
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        },
+        {
+          "id": "native_map_accessibility",
+          "description": "Provide equivalent data-table values and comparison controls for chart/polygon users who cannot precisely tap a province. Native layout must retain panel controls beside/under map and reservation-free content.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 858
+            }
+          ],
+          "nativeStatus": "draft_requires_native_verification"
+        }
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/atlas",
+          "auth": "public",
+          "contract": "{groups:{population|idp|idp_returnees|environmental:DataSource[]},rainfall_data:{pcode:[{year,rainfall,rainfall_avg}]}}; DataSource{source_id,note,date|null,source_url,cities:{name:number}}; cached one hour.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/PopulationAtlasController.php",
+              "line": 1
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/atlas/environment",
+          "auth": "public",
+          "contract": "{metadata:{country,report_date,data_sources,cities_analyzed},cities:{name:{coordinates:{latitude,longitude},population,current_conditions,daily_forecast_summary,climate_trends,air_quality,drought_risk,historical_summary}},country_level:{world_bank,climate_context},summary:{...}}; sparse sections permitted, cached one hour.",
+          "sourceEvidence": [
+            {
+              "path": "app/Http/Controllers/Api/PopulationAtlasController.php",
+              "line": 1
+            }
+          ]
+        },
+        {
+          "method": "GET_or_bundled",
+          "path": "/assets/population/syr_admin1_opt.geojson",
+          "auth": "public",
+          "contract": "164362-byte GeoJSON FeatureCollection; preserve source geometry/properties and normalize aliases. Bundle/import original asset for offline shapes; coordinate arrays are longitude,latitude.",
+          "sourceEvidence": [
+            {
+              "path": "resources/js/Pages/Population/PopulationClient.tsx",
+              "line": 64
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/population/master and /api/population/env-report",
+          "auth": "public",
+          "contract": "Legacy aliases currently used by website; prefer canonical v1 routes for native.",
+          "sourceEvidence": [
+            {
+              "path": "routes/api.php",
+              "line": 68
+            }
+          ]
+        }
+      ],
+      "authRequirements": {
+        "guest": [
+          "all map, layer, source, inspection, comparison and chart/table flows"
+        ],
+        "account": [],
+        "privileged": [],
+        "location": "No GPS permission is needed to browse national datasets."
+      },
+      "graphics": [
+        {
+          "kind": "polygon_map",
+          "source": "public/assets/population/syr_admin1_opt.geojson",
+          "requirements": "Native polygon/multipolygon fill/stroke, holes, source bounds including Golan, feature hit testing and selected region highlight."
+        },
+        {
+          "kind": "legend",
+          "source": "resources/js/Pages/Population/constants/data-config.ts",
+          "requirements": "Class breaks and no-data bucket match fill exactly for every layer and loaded source; accessible labels and units."
+        },
+        {
+          "kind": "rain_chart",
+          "source": "resources/js/Pages/Population/components/map/tooltip-generators.tsx",
+          "requirements": "Yearly rainfall and average line/bar mini chart plus explicit table."
+        },
+        {
+          "kind": "environment_graphics",
+          "source": "resources/js/Pages/Population/PopulationClient.tsx:431",
+          "requirements": "Weather condition icons, wind direction, humidity/cloud/temperature bars, AQI and drought indicators; estimates and missing values accessible."
+        },
+        {
+          "kind": "comparison",
+          "source": "resources/js/Pages/Population/PopulationClient.tsx:207",
+          "requirements": "Two-province demographic comparison values and visual emphasis, readable in light/dark."
+        }
+      ],
+      "localState": {
+        "selection": "layer, source ID, panel state, max2 comparison provinces, rainfall/environment detail selection",
+        "cache": "Shared read cache may persist source snapshot/date; never silently label cached data as live."
+      },
+      "nativeTargets": {
+        "screens": [
+          "src/features/Population/Index.tsx",
+          "src/features/Population/AtlasMap.tsx",
+          "src/features/Population/EnvironmentDetails.tsx"
+        ],
+        "nativeControls": [
+          "native map polygon renderer",
+          "layer/source pickers",
+          "accessible province list",
+          "comparison sheet",
+          "rainfall table/chart",
+          "environment cards",
+          "source link browser"
+        ],
+        "reusableModels": [
+          "Population DTOs",
+          "DATA_TYPES/DATA_TYPE_CONFIG",
+          "color classifier",
+          "geography alias lookup",
+          "GeoJSON geometry adapter"
+        ],
+        "adapters": [
+          "Exact original GeoJSON native SVG paths with evenodd rings, native UIScrollView pinch/pan/zoom and region hit testing",
+          "Validated canonical API reads with focus/foreground cancellation",
+          "Source color/geography facades and native rain/comparison charts",
+          "Offline bundled geometry with source SHA256 and full geometry golden test"
+        ]
+      },
+      "gaps": [
+        "Native UIScrollView pinch/pan/zoom and SVG region hit testing need actual iPhone verification.",
+        "All five layer/source selections, comparison, sparse climate data and accessible equivalent list need source-versus-native review and VoiceOver verification."
+      ],
+      "liveReadChecks": [
+        {
+          "method": "GET",
+          "path": "/api/v1/atlas",
+          "status": 200,
+          "observedAt": "2026-11-14T16:37:40Z",
+          "observed": {
+            "populationSources": 5,
+            "idpSources": 1,
+            "idpReturneeSources": 2,
+            "environmentalSources": 1,
+            "rainfallCodes": 75
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/atlas/environment",
+          "status": 200,
+          "observedAt": "2026-11-14T16:37:40Z",
+          "observed": {
+            "cities": 14,
+            "topLevelKeys": [
+              "metadata",
+              "cities",
+              "country_level",
+              "summary"
+            ]
+          }
+        }
+      ],
+      "tests": {
+        "existingSourceTests": [
+          "tests/Feature/PopulationAtlasTest.php",
+          "tests/Feature/PopulationAtlasSeederTest.php",
+          "tests/Feature/ApiStandardRoutesTest.php",
+          "resources/js/Pages/Population/constants/data-config.test.ts"
+        ],
+        "sourceTestsRunForInventory": false,
+        "requiredNativeAcceptance": [
+          "Canonical API shape, sparse environment values/null dates and source cache behavior.",
+          "Coordinate order, multipolygon/holes/bounds/region tapping and Arabic/English governorate aliases.",
+          "Every legend threshold matches fill; missing and actual zero remain distinct.",
+          "Latest available rainfall year and full annual history, all metric/source switches.",
+          "Two-selection toggling, third replaces oldest, source table/map sync and reset.",
+          "Environmental units/icons/estimates, source attribution and country fallback; compact iPhone and VoiceOver remain usable."
+        ],
+        "nativeVerification": "pending_not_claimed",
+        "nativeBehaviorTests": [
+          "src/features/Population/model.test.ts"
+        ]
+      }
+    }
+  ]
+}

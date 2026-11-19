@@ -1,0 +1,2341 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-11-14T16:35:50Z",
+  "sourceRevision": "b1da794152dde5824909335d7ced4522b06aa31e",
+  "scope": [
+    "Muslim hub and all three tools",
+    "Quran reader, text, bookmarks, recitation engine, radio, mini player and usage",
+    "Roznama full daily calendar dashboard",
+    "Board core and all 14 widgets"
+  ],
+  "evidencePolicy": "Initial inventory was read-only. The implementation checkpoint records subsequent isolated tests and parent-attributed native proof. No production mutation or deployment was performed.",
+  "crossCuttingNativeRequirements": [
+    {
+      "id": "audio",
+      "need": "Global streaming, seek/status, interruption/route handling, remote controls, background playback and native sleep deadline",
+      "candidate": "Dedicated SyrianAudio Expo module with AVPlayer, MPRemoteCommandCenter and native SleepDeadline",
+      "existing": true,
+      "source": "ios-app/modules/syrian-audio/ios/SyrianAudioModule.swift",
+      "constraints": [
+        "Playback only, no microphone or recording permission.",
+        "Retain media ownership across routes.",
+        "No autoplay on launch.",
+        "Do not depend on JavaScript background ticks to pause at sleep deadline."
+      ]
+    },
+    {
+      "id": "font-and-vectors",
+      "need": "Hafs shaping, measured fifteen-line layout, Ayah hit regions, vector ornament and themed icons",
+      "candidate": "expo-font loads original unmodified Quran WOFF2 through CoreText; react-native-svg renders verified OFL Alkalami001 ornament",
+      "existing": true,
+      "constraints": [
+        "Original unmodified WOFF2 retained with extracted embedded license. Host CoreText registration and iPhone17 native Quran page 1/page 2 rendering passed. No conversion is permitted.",
+        "Marker015 is excluded. Verified Alkalami001 geometry and OFL license are in assets/artwork.",
+        "Preserve continuous native text, measured lines and interactive Ayah regions."
+      ]
+    },
+    {
+      "id": "storage",
+      "need": "Device preferences, bookmarks, Board v1 document, unsent usage and sync state",
+      "candidate": "Existing expo-sqlite/kv-store",
+      "existing": true,
+      "constraints": [
+        "Preserve schemas and unknown widget configs.",
+        "Flush accepted edit buffers before background or unmount.",
+        "Auth bearer credentials only in Keychain, never SQLite."
+      ]
+    },
+    {
+      "id": "location",
+      "need": "Shared foreground fix, GPS error/retry and manual city, coordinates and IP choices",
+      "candidate": "Existing expo-location and shared preference adapter",
+      "existing": true,
+      "constraints": [
+        "User intent owns permission prompt.",
+        "Device GPS/IP point never account synced.",
+        "Board nearby fix is distinct from prayer preferences."
+      ]
+    },
+    {
+      "id": "native-forms-and-layout",
+      "need": "Sheets, pickers, toggles, text editors, discrete size menu and accessible Board reorder",
+      "candidate": "Existing @expo/ui and native UIKit UICollectionView drag/drop if needed",
+      "existing": true,
+      "constraints": [
+        "No additional gesture dependency until native controls prove insufficient.",
+        "Full controls and content, not links.",
+        "Respect safe available geometry and large accessibility text."
+      ]
+    },
+    {
+      "id": "clock-lifecycle",
+      "need": "Foreground clock/prayer ticks, offscreen poll suspension and media-owned sleep timer",
+      "candidate": "Shared AppState-aware clock plus native audio deadline",
+      "existing": true,
+      "constraints": [
+        "Pomodoro running state is not account persisted and resets at view reload.",
+        "Quran sleep deadline is memory-only in source and survives routes.",
+        "Refresh date-keyed prayer data at national midnight and app resume."
+      ]
+    }
+  ],
+  "sourceDrift": [
+    "docs/modules/board.md says session-only and routes/web.php, but actual routes/api.php exposes Sanctum Bearer GET/PUT board. Actual routes are authoritative.",
+    "Muslim docs overstate full first-launch offline capability. Service worker caches fetched assets and public API responses, but streamed recitation, timings and text need network unless separately cached. No audio download UI exists.",
+    "Quran raw unified asset is 1,810,855 bytes, not the documented 290KB. Hydration yields every 300 Ayahs.",
+    "Quran compact MushafPage omits activeWord props passed by desktop, so full mobile karaoke is incomplete in source.",
+    "Source usage counters lack stored hydration and can bank idle time. Native usage cannot copy these bugs as parity.",
+    "Roznama upcoming-events label uses today default endpoint and drops past-start ongoing events. Resolve scope intent before porting.",
+    "Roznama variable holiday dates cover only 2026 and 2027. Official holiday freshness was not verified in this inventory.",
+    "Board prayer pinned city does not override GPS/IP in current parameter resolver, despite its description.",
+    "Board notes/tasks pending 400ms edits clear on unmount without flush. Native accepted edits must not disappear.",
+    "Quran marker015 license is unresolved in existing attribution. Resolve before bundling or use verified alternative.",
+    "Prayer proxy drops upstream timezone metadata. The source nextPrayer implementation treats selected-location HH:MM as device-local time. Default Damascus on a phone abroad has a shifted countdown. A known-governorate timezone adapter and authoritative timezone for arbitrary coordinates remain required."
+  ],
+  "liveChecks": [
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/answers?limit=3",
+      "status": 200,
+      "result": "3 items",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/recipes/today",
+      "status": 200,
+      "result": "recipe",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/events/today?governorate=damascus",
+      "status": 200,
+      "result": "10 events",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/feed?source=jard",
+      "status": 200,
+      "result": "15 items",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/feed?source=sana",
+      "status": 502,
+      "result": "Cloudflare JSON error",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/feed?source=halab-today",
+      "status": 502,
+      "result": "Cloudflare JSON error",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/feed?source=syrian-observer",
+      "status": 502,
+      "result": "Cloudflare JSON error",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/guides?sort=submissions",
+      "status": 200,
+      "result": "20 guides",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/places/nearby?lat=33.51&lng=36.27&radius_km=10",
+      "status": 200,
+      "result": "20 places",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/board",
+      "status": 401,
+      "result": "Expected guest authentication gate",
+      "credentials": false
+    },
+    {
+      "origin": "https://syrian.zone",
+      "checkedAt": "2026-11-14T16:35:30Z",
+      "method": "GET",
+      "path": "/api/v1/quran-bookmarks",
+      "status": 401,
+      "result": "Expected guest authentication gate",
+      "credentials": false
+    },
+    {
+      "origin": "https://api-staging.mp3quran.net",
+      "checkedAt": "2026-11-14T16:35:49Z",
+      "method": "GET",
+      "path": "/v4/surahs?all=true",
+      "status": 200,
+      "result": "114 Surahs",
+      "credentials": false
+    },
+    {
+      "origin": "https://api-staging.mp3quran.net",
+      "checkedAt": "2026-11-14T16:35:49Z",
+      "method": "GET",
+      "path": "/v4/recitations/mahmoud-husary/r1/surahs/1",
+      "status": 200,
+      "result": "original, mp3_64, opus_48; Ayah/word/letter/phoneme timings",
+      "credentials": false
+    },
+    {
+      "origin": "https://api-staging.mp3quran.net",
+      "checkedAt": "2026-11-14T16:35:49Z",
+      "method": "GET",
+      "path": "/v4/recitations/mahmoud-husary/r1/surahs/1/ayah-timings",
+      "status": 200,
+      "result": "7 Ayahs",
+      "credentials": false
+    },
+    {
+      "origin": "https://api-staging.mp3quran.net",
+      "checkedAt": "2026-11-14T16:35:49Z",
+      "method": "GET",
+      "path": "/v4/recitations/mahmoud-husary/r1/surahs/1/word-timings?include=text",
+      "status": 200,
+      "result": "29 words",
+      "credentials": false
+    },
+    {
+      "origin": "https://api-staging.mp3quran.net",
+      "checkedAt": "2026-11-14T16:35:49Z",
+      "method": "GET",
+      "path": "/v4/recitations/mahmoud-husary/r1/surahs/1/letter-timings?ayah=1",
+      "status": 200,
+      "result": "20 letters",
+      "credentials": false
+    },
+    {
+      "origin": "https://api-staging.mp3quran.net",
+      "checkedAt": "2026-11-14T16:35:49Z",
+      "method": "GET",
+      "path": "/v4/surahs/1/text?riwayah=hafs_an_asim",
+      "status": 200,
+      "result": "7 Ayahs",
+      "credentials": false
+    }
+  ],
+  "sections": [
+    {
+      "id": "muslim",
+      "sourceFiles": [
+        "docs/modules/muslim-corner.md",
+        "resources/js/Domain/muslim/tools.ts"
+      ],
+      "features": [
+        "Complete native hub, prayer/log/location, Mushaf reader/bookmarks, global recitation audio/radio/mini-player and usage."
+      ],
+      "endpoints": [],
+      "authRequirements": [
+        "Guest core plus optional account sync."
+      ],
+      "graphics": [
+        "public/quran-data/mushaf-unified.json",
+        "public/quran-data/hafs-16/manifest.json",
+        "public/quran-data/hafs-24/manifest.json",
+        "public/fonts/quran-hafs.woff2",
+        "resources/js/Domain/quran/marker-015-regular.svg",
+        "resources/js/Domain/quran/ATTRIBUTION.md"
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/MuslimPageTest.php"
+        ],
+        "requiredNative": [
+          "Validate every child acceptance case on iPhone17 and physical phone when reachable."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/Muslim/"
+      ],
+      "gaps": [
+        "Baseline contains no native Muslim tool."
+      ],
+      "subsections": [
+        {
+          "id": "muslim.hub",
+          "sourceFiles": [
+            "resources/js/Pages/Muslim/Index.tsx",
+            "resources/js/Domain/muslim/tools.ts",
+            "routes/web.php"
+          ],
+          "features": [
+            "Public hub has three real destinations: prayer, Quran reader and followed recitation radio.",
+            "Live next-prayer countdown ticks each second, excludes Sunrise, rolls over after Isha, and opens prayer screen.",
+            "Show endpoint Hijri date next to next prayer.",
+            "Signed-in users see most recently created account bookmark with Surah, Ayah and Page; tap opens reader and selects that Ayah.",
+            "Warm Quran text only on reader intent, honor browser save-data preference, avoid eager 1.8 MB text hydration for hub-only visitors.",
+            "Legacy /muslim?tab=prayer|quran|radio redirects to corresponding tool route; unknown tab stays hub; unknown slug is not a tool."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/prayer-times?governorate={id}&method={id}",
+              "auth": "public",
+              "notes": "Alternatively latitude and longitude worldwide; returns governorate, latitude, longitude, method, six timings and nullable hijri; Damascus calendar-day cache"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/quran-bookmarks",
+              "auth": "authenticated",
+              "notes": "Latest first; hub reads first bookmark"
+            }
+          ],
+          "authRequirements": [
+            "Hub and prayer public. Last-account-bookmark strip requires login; guest bookmarks remain available inside reader."
+          ],
+          "graphics": [
+            "resources/data/project-icons.json: muslim, quran, quran_radio",
+            "Prayer MoonStar and countdown graphic"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/MuslimPageTest.php",
+              "tests/Feature/PrayerTest.php",
+              "resources/js/Domain/prayer/nextPrayer.test.ts",
+              "resources/js/Domain/prayer/methods.test.ts"
+            ],
+            "requiredNative": [
+              "Open all three screens from native hub and deep link directly.",
+              "Countdown at exact prayer, before Fajr, after Isha, Damascus midnight and foreground resume.",
+              "Account bookmark opens exact Ayah without stopping global audio."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Muslim/Index.tsx"
+          ],
+          "gaps": [
+            "No corresponding native faith screen exists in the audited baseline.",
+            "Inertia navigation and prefetch DOM must be replaced with native navigation and bundled/lazy data loading."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "muslim.location-and-preferences",
+          "sourceFiles": [
+            "resources/js/Domain/location/location.ts",
+            "resources/js/Domain/location/preference.ts",
+            "resources/js/Domain/location/LocationModeSelector.tsx",
+            "resources/js/Domain/prayer/PrayerSettingsFields.tsx",
+            "resources/js/Domain/prayer/ResponsiveSettingsDialog.tsx",
+            "resources/js/Domain/settings/prefs.ts",
+            "resources/js/Domain/settings/settingsSync.ts",
+            "resources/data/governorates.json",
+            "resources/data/prayer.json"
+          ],
+          "features": [
+            "One reactive location preference shared by Home, prayer, Roznama and auto-follow Board prayer tile.",
+            "Sources: GPS, IP lookup, manual governorate, manual latitude/longitude. GPS/IP resolve on every tap; show busy/error and keep prior mode on failure.",
+            "GPS first attempts low power with 10-second timeout and ten-minute maximum age, then high accuracy for timeout/unavailable with 30-second timeout. Permission denial does not retry high accuracy.",
+            "GPS/IP coordinates rounded to two decimals. IP lookup uses client egress via ipwho.is and a nine-second timeout. Display place label and resolved coordinates.",
+            "GPS/IP mode and resolved point are device-local, never account-synced. Manual city and manual coordinates can sync to account.",
+            "Valid resolved GPS/IP wins; otherwise active manual coordinates; otherwise selected governorate, default Damascus. Weather uses lat/lon; prayer uses latitude/longitude or governorate.",
+            "Prayer and Roznama expose calculation-method picker and method detail. Shared prayer.json lists twelve offered methods and accepts four unlisted legacy IDs without silently resetting them.",
+            "Guest preferences persist locally. Login merges prayer log by per-day/prayer OR, Quran position by timestamp, bookmarks by union push. Curated location/method conflicts require device/account selection.",
+            "Prayer log retains last31 days. Reading position is Page1-604 plus epoch timestamp, recitation stored by permanent code with legacy migrations."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/prayer-times?governorate={id}&method={id}",
+              "auth": "public",
+              "notes": "Alternatively latitude and longitude worldwide; returns governorate, latitude, longitude, method, six timings and nullable hijri; Damascus calendar-day cache"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/weather?lat={lat}&lon={lon}",
+              "auth": "public",
+              "notes": "Alternatively governorate={id}; current conditions plus optional five-day forecast"
+            },
+            {
+              "method": "GET",
+              "path": "https://ipwho.is/",
+              "auth": "public third party",
+              "notes": "IP source only, no account credentials"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/user/settings",
+              "auth": "Sanctum bearer or web session",
+              "notes": "{settings: partial}; same account as website; read via GET /api/v1/user"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/user",
+              "auth": "authenticated",
+              "notes": "settings and effective permissions"
+            }
+          ],
+          "authRequirements": [
+            "All location and calculation controls usable without login. Only account synchronization requires authentication."
+          ],
+          "graphics": [
+            "Native location source selection and pin symbol",
+            "Arabic native city/method pickers, decimal coordinate fields"
+          ],
+          "tests": {
+            "existing": [
+              "resources/js/Domain/location/preference.test.ts",
+              "resources/js/Domain/settings/settingsSync.test.ts",
+              "tests/Feature/PrayerTest.php",
+              "resources/js/Domain/prayer/nextPrayer.test.ts",
+              "resources/js/Domain/prayer/methods.test.ts"
+            ],
+            "requiredNative": [
+              "Denied/unavailable/limited GPS preserves prior usable location; retry uses one shared foreground permission path.",
+              "Latitude and longitude validation, worldwide coordinates, stale fix and manual fallback.",
+              "Device point never enters account settings payload.",
+              "Login conflicting cities/methods, OR prayer-log merge, newer reading position, failed bookmark upload retained."
+            ]
+          },
+          "nativeTargets": [
+            "src/platform/location-model.ts",
+            "src/platform/location.ts",
+            "src/platform/faith-model.ts",
+            "src/platform/faith-preferences.ts",
+            "src/platform/PrayerSettingsFields.tsx",
+            "src/platform/PrayerSettingsSheet.tsx"
+          ],
+          "gaps": [
+            "Existing src/location.ts only supports nearby transit; full shared source-selection/preferences adapter is still required.",
+            "Browser storage, custom window events, navigator and responsive dialog must be replaced.",
+            "Do not label IP coordinates as precise GPS."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "muslim.prayer",
+          "sourceFiles": [
+            "resources/js/Pages/Muslim/Prayer/Index.tsx",
+            "resources/js/Pages/Muslim/_components/PrayerView.tsx",
+            "app/Http/Controllers/PrayerController.php",
+            "resources/js/Domain/prayer/times.ts",
+            "resources/js/Domain/prayer/nextPrayer.ts",
+            "resources/js/Domain/prayer/methods.ts",
+            "resources/js/Domain/prayer/hijri.ts",
+            "resources/js/Domain/settings/prefs.ts"
+          ],
+          "features": [
+            "Six timed rows: Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha; Sunrise is an event, not a trackable prayer.",
+            "Current row highlighted with Now badge; next row distinguished; prominent next-event countdown updates each second and rolls to next-day Fajr.",
+            "Five completion toggles, reversible per prayer, completion count0-5, national Asia/Damascus day boundary, guest local log and account sync.",
+            "City/effective-location label and Hijri date; open shared location/method settings with fiqh method note.",
+            "Loading skeletons, real failure message and retry. Twelve-second timeout leaves prior list without hard failure copy on this source screen.",
+            "Guest sign-in invitation for log sync; explanatory daily AlAdhan proxy source text."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/prayer-times?governorate={id}&method={id}",
+              "auth": "public",
+              "notes": "Alternatively latitude and longitude worldwide; returns governorate, latitude, longitude, method, six timings and nullable hijri; Damascus calendar-day cache"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/user/settings",
+              "auth": "Sanctum bearer or web session",
+              "notes": "{settings: partial}; same account as website; read via GET /api/v1/user"
+            }
+          ],
+          "authRequirements": [
+            "Public timings and guest local completion log. Login synchronizes log and preferences."
+          ],
+          "graphics": [
+            "resources/js/Domain/prayer/PrayerIcon.tsx",
+            "Six distinct prayer/time symbols and active/next-row states"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/PrayerTest.php",
+              "resources/js/Domain/prayer/nextPrayer.test.ts",
+              "resources/js/Domain/prayer/methods.test.ts"
+            ],
+            "requiredNative": [
+              "Five toggles persist across relaunch and reset to correct Damascus date, Sunrise cannot be completed.",
+              "Exact-time current/next transitions, next-day countdown and timezone differences.",
+              "Timeout preserves last valid data, failure retry cannot erase log.",
+              "Large text, RTL row order and VoiceOver completion labels."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Muslim/Prayer/Index.tsx",
+            "src/platform/prayer.ts",
+            "src/platform/prayer-rules.ts"
+          ],
+          "gaps": [
+            "No native prayer screen/log yet.",
+            "Current helper builds Date times in device timezone while endpoint day follows Damascus; resolve selected-location timezone semantics explicitly before claiming diaspora accuracy.",
+            "A date-keyed native refresh must prevent yesterday timings persisting across midnight or resume."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "muslim.quran.reader",
+          "sourceFiles": [
+            "resources/js/Pages/Muslim/Quran/Index.tsx",
+            "resources/js/Pages/Muslim/_components/QuranReader.tsx",
+            "resources/js/Pages/Muslim/_components/MushafPage.tsx",
+            "resources/js/Domain/quran/quran.ts",
+            "resources/js/Domain/quran/quranAudio.ts",
+            "resources/js/Domain/quran/AyahMark.tsx",
+            "resources/js/Domain/quran/quran.css",
+            "resources/js/Domain/quran/targetAyah.ts"
+          ],
+          "features": [
+            "Complete604-page,30-Juz,114-Surah Madina fifteen-line Mushaf built from vendored text and two calibrated layout manifests, no page images.",
+            "Fixed25px source typography basis; native page uniformly fits available width/height. Preserve title frames, Basmalah exceptions, continuous Arabic shaping, inline numbered rosettes, line stretching and centered special lines.",
+            "Single page on compact source layout; two-page RTL spread on wide source layout. Previous/next step1 or2 and clamp Page1-604.",
+            "Searchable114-Surah chooser opens Surah first Ayah. Jump input accepts Page number, numeric Surah:Ayah, or Arabic Surah name plus Ayah; invalid input has hint, successful Ayah jump selects target.",
+            "Display Surah name, Juz and visible Page range; hardware arrows and h/l page navigation, brackets jump20 pages, text-input focus suppresses shortcuts.",
+            "Single Ayah tap selects/highlights every visible fragment; double tap starts selected Ayah, including switching playback to another Ayah. Selected marker exposes bookmark toggle, saved Ayahs marked in text.",
+            "Focus mode hides navigation/reader chrome and pager, enlarges page into reclaimed height, leaves audio transport and exit-focus control available.",
+            "Reader follows shared audio Ayah and flips to containing Page when playback leaves visible pages. Word/letter highlight aligns normalized timing words to local Mushaf words when reconciliation succeeds.",
+            "Reading Page and reciter preference persist locally and sync account position with timestamp. Hub bookmark, radio Continue and global search can target exact Ayah.",
+            "Loading, content-load error/retry, end-of-Mushaf state, usage dialog and guest bookmark-sync invitation."
+          ],
+          "endpoints": [
+            {
+              "method": "BUNDLED GET",
+              "path": "/quran-data/mushaf-unified.json",
+              "auth": "public asset",
+              "notes": "1,810,855 bytes raw; hydrate incrementally"
+            },
+            {
+              "method": "BUNDLED GET",
+              "path": "/quran-data/hafs-16/manifest.json",
+              "auth": "public asset",
+              "notes": "11,982 bytes"
+            },
+            {
+              "method": "BUNDLED GET",
+              "path": "/quran-data/hafs-24/manifest.json",
+              "auth": "public asset",
+              "notes": "11,982 bytes"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/user/settings",
+              "auth": "Sanctum bearer or web session",
+              "notes": "{settings: partial}; same account as website; read via GET /api/v1/user"
+            }
+          ],
+          "authRequirements": [
+            "Reading, selection, playback and local bookmarks work as guest. Account position and bookmarks sync only when signed in."
+          ],
+          "graphics": [
+            "public/quran-data/mushaf-unified.json",
+            "public/quran-data/hafs-16/manifest.json",
+            "public/quran-data/hafs-24/manifest.json",
+            "public/fonts/quran-hafs.woff2",
+            "resources/js/Domain/quran/marker-015-regular.svg",
+            "resources/js/Domain/quran/ATTRIBUTION.md",
+            "Surah title frame, Basmalah text, fitted fifteen-line geometry, selected/saved Ayah decoration, timed word fill"
+          ],
+          "tests": {
+            "existing": [
+              "resources/js/Domain/quran/quran.test.ts",
+              "resources/js/Domain/quran/quranAudio.test.ts",
+              "tests/Feature/MuslimPageTest.php"
+            ],
+            "requiredNative": [
+              "Golden Page1,2,9,Surah transitions, multi-Surah page, multi-line Ayah, Page604, every page has15 line slots and valid mapping.",
+              "Native Arabic glyph shaping and measured line widths preserve complete text at normal/large accessibility size and rotations.",
+              "Ayah selection/hit testing, double tap play, bookmark marker, jump syntaxes, invalid bounds, Surah picker, focus exit and auto page flip.",
+              "Offline first launch can read bundled full text/manifests/font.",
+              "Phone versus wide safe-region spread and keyboard shortcuts on iPad; no text/controls in hinge or camera reserved regions."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Muslim/Quran/Index.tsx",
+            "src/features/Muslim/_components/MushafPage.tsx",
+            "src/platform/quran/mushaf.ts",
+            "src/platform/quran/fonts.ts",
+            "src/platform/NativeKeyCommands.tsx"
+          ],
+          "gaps": [
+            "Web DOM/CSS layout, ResizeObserver, font measurements, canPlayType and fetch-relative assets cannot be copied directly.",
+            "Original WOFF2 is loaded without conversion. Root verified host CoreText/CGFont registration; iOS font registration and shaping still need native proof.",
+            "Marker015 is not bundled. Root supplied verified OFL Alkalami001 geometry with attribution and hash golden tests.",
+            "Source compact reader omits activeWordKey/activeWordProgress props passed on desktop, so source mobile word-highlight behavior is incomplete.",
+            "Source docs claim approximately290KB unified text, actual raw asset is1.81MB; performance and offline claims need measured native evidence."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "muslim.quran.bookmarks",
+          "sourceFiles": [
+            "resources/js/Pages/Muslim/_components/BookmarksModal.tsx",
+            "resources/js/Domain/quran/guestBookmarks.ts",
+            "resources/js/Domain/quran/bookmarksApi.ts",
+            "resources/js/Domain/settings/settingsSync.ts",
+            "app/Http/Controllers/QuranBookmarkController.php"
+          ],
+          "features": [
+            "Save/remove selected Ayah with Surah, Ayah, Page and Juz. Guest cap50 newest-first entries, guest state survives relaunch.",
+            "Open bookmark sheet from reader/native navigation, scroll entries with Surah/Ayah/Page/Juz, tap jumps and selects exact Ayah, remove entry with per-item busy state.",
+            "Account list latest-first, max200 returned; create is idempotent on user+Surah+Ayah, writes and deletes scoped to user.",
+            "Guest-to-account login pushes union sequentially; remove only successfully pushed local entries, keep failed uploads for retry. Reader unions server list with leftover guest keys.",
+            "Account hub resume strip reads most recent server bookmark. Guest empty state explains how to add and sign-in sync remains optional."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/quran-bookmarks",
+              "auth": "authenticated",
+              "notes": "{bookmarks:[{surah,ayah,page,juz,created_at}]}"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/quran-bookmarks",
+              "auth": "authenticated",
+              "notes": "Validated Surah1-114,Ayah1-286,Page1-604,Juz1-30; upsert"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/quran-bookmarks/{surah}/{ayah}",
+              "auth": "authenticated",
+              "notes": "Owner-scoped idempotent removal"
+            }
+          ],
+          "authRequirements": [
+            "Local bookmark actions public. Server list/create/delete requires Sanctum token; guest GET401 is expected."
+          ],
+          "graphics": [
+            "Bookmark and filled-bookmark SF Symbol equivalents",
+            "Saved Ayah marker and exact native Mushaf selection"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/QuranBookmarkTest.php",
+              "resources/js/Domain/settings/settingsSync.test.ts"
+            ],
+            "requiredNative": [
+              "Guest cap/order/relaunch; login union partial failure retry; account isolation and idempotent duplicate save.",
+              "Deleting and jumping refresh both sheet and in-text state without affecting audio queue.",
+              "Network failure remains visible and does not claim saved/removed state."
+            ]
+          },
+          "nativeTargets": [
+            "src/platform/quran/bookmarks-model.ts",
+            "src/platform/quran/bookmark-store.ts",
+            "src/platform/quran/bookmarks.ts"
+          ],
+          "gaps": [
+            "Source swallows several bookmark list/delete errors; native contract requires visible retryable error, not fabricated empty/success.",
+            "Authenticated flows not live-tested in read-only inventory."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "muslim.quran.player-and-recitations",
+          "sourceFiles": [
+            "resources/js/Domain/quran/quranPlayer.ts",
+            "resources/js/Domain/quran/mp3quran.ts",
+            "resources/js/Domain/quran/quranAudio.ts",
+            "resources/js/Domain/quran/quranText.ts",
+            "resources/js/Domain/quran/RecitationPicker.tsx",
+            "resources/js/Pages/Muslim/_components/AudioPlayer.tsx"
+          ],
+          "features": [
+            "One global audio owner for reader, radio, Board Quran widget and mini player; screen changes do not create overlapping players or stop intended listening.",
+            "Whole-Mushaf queue from114 Surah summaries. Start reader from chosen Ayah or continuous recitation from first Ayah. Previous/next moves Ayah; end-of-Surah advances to next Surah; end-of-Mushaf stops.",
+            "Stream one file per Surah and seek only on user jumps. Derive active Ayah from media clock without cutting audio at every Ayah boundary; retain silence/gaps from recording.",
+            "Choose smallest supported audio tier, browser source preference Opus48 thenMP364 thenoriginal. Fall back to EveryAyah per-Ayah file when Surah or timing unavailable.",
+            "Six curated permanent recitation codes with Arabic/English search and style labels: Husary Murattal/Mujawwad, Minshawi, AbdulBasit, Alafasy, Muaiqly. Preserve legacy-ID/folder aliases and unknown future code.",
+            "Changing reciter clears timing/text state and restarts current Ayah when playing. Persistent volume0-1, mute/unmute, play/pause/loading/error and current-Ayah progress bar.",
+            "Ayah, word and letter timing tuples use binary search; distinguish repeated-word occurrence, align API text with local text, ignore uncertain unmatched highlights.",
+            "Riwayah-aware Surah text fetched once per recitation riwayah/Surah with in-flight deduplication and memory cache.",
+            "Media session metadata Surah/Ayah/reciter and remote play/pause/previous/next controls. Sleep deadline remains owned by global player across routes.",
+            "No website rate control, repeat-loop control, free seeking slider, recording, audio download manager, clipboard or file picker in these screens."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "https://api-staging.mp3quran.net/v4/surahs?all=true",
+              "auth": "public third party",
+              "notes": "114 summaries"
+            },
+            {
+              "method": "GET",
+              "path": "https://api-staging.mp3quran.net/v4/recitations/{reciter}/{code}/surahs/{surah}",
+              "auth": "public third party",
+              "notes": "File tiers and available timing levels"
+            },
+            {
+              "method": "GET",
+              "path": "https://api-staging.mp3quran.net/v4/recitations/{reciter}/{code}/surahs/{surah}/ayah-timings",
+              "auth": "public third party",
+              "notes": "Ayah,start_ms,end_ms"
+            },
+            {
+              "method": "GET",
+              "path": "https://api-staging.mp3quran.net/v4/recitations/{reciter}/{code}/surahs/{surah}/word-timings?include=text",
+              "auth": "public third party",
+              "notes": "Word timing, text and repeated occurrence"
+            },
+            {
+              "method": "GET",
+              "path": "https://api-staging.mp3quran.net/v4/recitations/{reciter}/{code}/surahs/{surah}/letter-timings?ayah={ayah}",
+              "auth": "public third party",
+              "notes": "Letter timing and confidence"
+            },
+            {
+              "method": "GET",
+              "path": "https://api-staging.mp3quran.net/v4/surahs/{surah}/text?riwayah={riwayah}",
+              "auth": "public third party",
+              "notes": "Written text"
+            },
+            {
+              "method": "MEDIA GET",
+              "path": "https://cdn.mp3quran.net/...",
+              "auth": "public third party",
+              "notes": "Exact URL from API, no bearer credentials"
+            },
+            {
+              "method": "MEDIA GET",
+              "path": "https://everyayah.com/data/{folder}/{SSSAAA}.mp3",
+              "auth": "public third party",
+              "notes": "Per-Ayah fallback"
+            }
+          ],
+          "authRequirements": [
+            "Playback and recitation catalogue public, no account needed. Never send Syrian Zone bearer token to audio/text hosts."
+          ],
+          "graphics": [
+            "Arabic reciter names/style labels",
+            "Ayah progress bar and word/letter sweep",
+            "Native audio controls, dynamic Surah/Ayah metadata"
+          ],
+          "tests": {
+            "existing": [
+              "resources/js/Domain/quran/quran.test.ts",
+              "resources/js/Domain/quran/quranAudio.test.ts",
+              "resources/js/Domain/quran/quranPlayer.test.ts"
+            ],
+            "requiredNative": [
+              "Single global audio across all four consumers; remote controls, phone call/route interruption and headphones disconnect.",
+              "Seek same Surah and cross-Surah without duplicate/stale play; fast reciter switches ignore old async results.",
+              "Ayah/word/letter boundaries, repeated occurrence, gaps, no timings and EveryAyah fallback.",
+              "iOS supported-codec detection selects playable MP3 when Opus container unsupported.",
+              "Foreground/background/locked playback, native sleep stop deadline and no unintended autoplay on app launch."
+            ]
+          },
+          "nativeTargets": [
+            "src/platform/audio.tsx",
+            "src/platform/quran/engine.ts",
+            "src/platform/quran/provider.ts",
+            "src/platform/quran/components.tsx",
+            "modules/syrian-audio/ios/SyrianAudioModule.swift",
+            "modules/syrian-audio/ios/SleepDeadline.swift"
+          ],
+          "gaps": [
+            "Native implementation uses dedicated AVPlayer owner, not expo-audio. Latest module changes need parent native build and device lifecycle proof.",
+            "Enable playback-only audio session and background audio; disable microphone permission because recording is absent.",
+            "Browser singleton/localStorage/mediaSession/HTMLAudio cannot run unchanged in native.",
+            "MP3Quran default host is staging and can be configured by VITE_MP3QURAN_API on web; native needs explicit separate third-party base and validation.",
+            "Metadata/timing/text default-Husary probes returned200; actual media playback and remaining five recitations not device-verified in this inventory.",
+            "Source docs mention next-Surah prefetch but quranPlayer.ts does not implement it; do not claim measured performance or add speculative prefetch without evidence."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "muslim.quran.radio-and-mini-player",
+          "sourceFiles": [
+            "resources/js/Pages/Muslim/Radio/Index.tsx",
+            "resources/js/Pages/Muslim/_components/RadioView.tsx",
+            "resources/js/Domain/quran/RadioMiniPlayer.tsx",
+            "resources/js/Domain/quran/QuranWordWindow.tsx",
+            "resources/js/Domain/quran/QuranNowReading.tsx"
+          ],
+          "features": [
+            "Followed recitation is on-demand continuous whole-Mushaf playback, not old live radio streams.",
+            "Radio play/pause, previous/next Ayah, loading/error state, recitation chooser and Continue in reader at current Ayah without stopping playback.",
+            "Rolling five-word centered window with current word highlighted, Surah label and Ayah number separators; hold last word during silence so window does not flicker.",
+            "Sleep options none,15,30,45,60,90 minutes, countdown and automatic pause at deadline even after leaving radio page.",
+            "Mini player shown only for continuous source with current Ayah, hidden on radio and reader. Desktop card has mute/stop/transport/link; phone floating control opens native controls sheet with word window, transport, radio navigation and stop.",
+            "Board Quran widget shares same owner and displays current full/compact Ayah with letter-level highlight rather than independent stream."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public playback and sleep timer. Account is needed only for optional usage synchronization."
+          ],
+          "graphics": [
+            "resources/data/project-icons.json: quran_radio",
+            "Rolling Arabic word window, play/pause/loading state, sleep MoonStar and compact now-playing card"
+          ],
+          "tests": {
+            "existing": [
+              "resources/js/Domain/quran/quranPlayer.test.ts",
+              "resources/js/Domain/quran/quranAudio.test.ts"
+            ],
+            "requiredNative": [
+              "Radio to reader Continue targets exact Ayah while audio keeps playing.",
+              "Mini player visibility and controls across all sections; no obstruction of native tabs or reserved geometry.",
+              "Sleep expires with radio unmounted and phone locked, cancelling timer prevents stop, clock changes handled.",
+              "Word window at Surah/Ayah boundaries, silence and missing timing data."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Muslim/Radio/Index.tsx",
+            "src/platform/AudioMiniPlayer.tsx",
+            "src/platform/quran/components.tsx"
+          ],
+          "gaps": [
+            "No radio/native mini-player yet.",
+            "Sleep deadline in web is memory-only and survives route changes, not a process restart. Native persistence is a deliberate product decision, not existing parity."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "muslim.quran.usage",
+          "sourceFiles": [
+            "resources/js/Domain/quran/radioUsage.ts",
+            "resources/js/Domain/quran/usageStore.ts",
+            "resources/js/Domain/quran/QuranUsageCard.tsx",
+            "app/Http/Controllers/RadioUsageController.php"
+          ],
+          "features": [
+            "Shared reader/radio usage readout displays expected bytes/hour, session totals, device totals and optional account totals with listening duration.",
+            "Usage is nominal128kbps estimate,57,600,000 bytes/hour, not measured transfer bytes; preserve disclosure.",
+            "One global accrual owner while playing, one-second display tick, device/pending persistence every15 seconds, authenticated pending delta push every60 seconds plus pause/background flush.",
+            "Account adds deltas under database row lock, preserving simultaneous-device increments; server validates integer seconds0-86400 and bytes0-2147483647.",
+            "Clear action requires destructive confirmation, clears session/device/pending and account counters when logged in.",
+            "Usage is accessible as radio card and reader dialog; guest explanatory text says device-only."
+          ],
+          "endpoints": [
+            {
+              "method": "POST",
+              "path": "/api/v1/user/radio-usage",
+              "auth": "authenticated",
+              "notes": "{seconds,bytes} delta returns accumulated totals"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/user/radio-usage",
+              "auth": "authenticated",
+              "notes": "Zero account counters"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/user",
+              "auth": "authenticated",
+              "notes": "Initial totals from settings quranRadioBytes/quranRadioSeconds"
+            }
+          ],
+          "authRequirements": [
+            "Session/device estimates public. Account increment/reset authenticated only."
+          ],
+          "graphics": [
+            "Usage HardDrive symbol and numeric size/duration table",
+            "Reader usage modal and radio card"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/RadioUsageTest.php"
+            ],
+            "requiredNative": [
+              "Only actual playing elapsed time accrues, pause/idle/initial mount never counts.",
+              "Relaunch hydrates device/pending totals, retries preserve unsent increments and do not double count acknowledged deltas.",
+              "User switch does not upload another account pending counters.",
+              "Clear cancellation preserves totals; failed server clear remains visibly unsynchronized."
+            ]
+          },
+          "nativeTargets": [
+            "src/platform/quran/usage-model.ts",
+            "src/platform/quran/usage.tsx"
+          ],
+          "gaps": [
+            "Source radioUsage.ts initializes memory counters to zero and exposes no hydration from stored device/pending values; native must meet stated persistence rather than reproduce loss.",
+            "Source usageStore banks elapsed time on not-playing effects and can count idle intervals; use playback-owned monotonic intervals.",
+            "Source clears all pending after async push; increments created during push need acknowledged-snapshot subtraction.",
+            "No request ID/idempotency key in server delta endpoint, so ambiguous network retries need an explicit strategy to avoid duplicate account totals.",
+            "Backend increments lack idempotency keys. A response lost after server commit remains an ambiguous retry and prevents exact-once network accounting claims."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        }
+      ]
+    },
+    {
+      "id": "roznama",
+      "sourceFiles": [
+        "resources/js/Pages/Roznama/Index.tsx"
+      ],
+      "features": [
+        "Full daily dashboard with clock/weather, prayer settings and schedule, annual holidays, next holiday/event and province event list."
+      ],
+      "endpoints": [],
+      "authRequirements": [
+        "Public with optional shared account preferences."
+      ],
+      "graphics": [
+        "public/og/roznama.png"
+      ],
+      "tests": {
+        "existing": [],
+        "requiredNative": [
+          "Validate all child behavior and responsive cards."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/Roznama/Index.tsx"
+      ],
+      "gaps": [
+        "No native Roznama screen in baseline."
+      ],
+      "subsections": [
+        {
+          "id": "roznama.clock-weather",
+          "sourceFiles": [
+            "resources/js/Pages/Roznama/Index.tsx",
+            "resources/js/Domain/weather/weather.ts",
+            "resources/js/Domain/weather/WeatherIcon.tsx",
+            "resources/js/Lib/syrian-date.ts",
+            "resources/js/Domain/prayer/hijri.ts"
+          ],
+          "features": [
+            "One-second24-hour clock including seconds, Syrian Gregorian month/day names and Arabic digits, API Hijri date with Intl fallback.",
+            "Effective shared location label and automatic-location badge. Current weather temperature, condition icon and Arabic description for that point.",
+            "Clock/weather/calendar dashboard rearranges from phone column to wide two-column layout."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/weather?lat={lat}&lon={lon}",
+              "auth": "public",
+              "notes": "Alternatively governorate={id}; current conditions plus optional five-day forecast"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/prayer-times?governorate={id}&method={id}",
+              "auth": "public",
+              "notes": "Alternatively latitude and longitude worldwide; returns governorate, latitude, longitude, method, six timings and nullable hijri; Damascus calendar-day cache"
+            }
+          ],
+          "authRequirements": [
+            "Public, shared preference edits optionally sync account."
+          ],
+          "graphics": [
+            "WeatherIcon sun/cloud/rain variants",
+            "Clock/date/location card and Gregorian/Hijri typography"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/WeatherTest.php",
+              "resources/js/Domain/weather/weather.test.ts"
+            ],
+            "requiredNative": [
+              "Clock updates on app foreground and day change without background polling.",
+              "Date fallback and Syrian month vocabulary, GPS/IP location label, weather unavailable state without indefinite fake loading."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Roznama/Index.tsx",
+            "src/platform/conditions.ts",
+            "src/platform/clock.ts"
+          ],
+          "gaps": [
+            "Source clock is device-local while prayer day is Damascus; preserve labels and decide zone display clearly.",
+            "Weather source displays loading indefinitely when fetch resolves to null; native needs actual error/empty state."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "roznama.prayer",
+          "sourceFiles": [
+            "resources/js/Pages/Roznama/Index.tsx",
+            "resources/js/Domain/prayer/times.ts",
+            "resources/js/Domain/prayer/nextPrayer.ts",
+            "resources/js/Domain/prayer/methods.ts",
+            "resources/js/Domain/prayer/hijri.ts",
+            "resources/js/Domain/settings/prefs.ts"
+          ],
+          "features": [
+            "Six prayer/event rows with current and next states, next-event countdown including Sunrise, no completion toggles on Roznama.",
+            "Shared city/GPS/IP/manual-coordinate/method settings sheet, source-specific city label, Hijri badge and prayer failure copy.",
+            "Method comes from shared Muslim preferences and edits synchronize same setting."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/prayer-times?governorate={id}&method={id}",
+              "auth": "public",
+              "notes": "Alternatively latitude and longitude worldwide; returns governorate, latitude, longitude, method, six timings and nullable hijri; Damascus calendar-day cache"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/user/settings",
+              "auth": "Sanctum bearer or web session",
+              "notes": "{settings: partial}; same account as website; read via GET /api/v1/user"
+            }
+          ],
+          "authRequirements": [
+            "Public timings. Account mirror optional."
+          ],
+          "graphics": [
+            "PrayerIcon six variants",
+            "Active prayer badge and prominent countdown"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/PrayerTest.php",
+              "resources/js/Domain/prayer/nextPrayer.test.ts",
+              "resources/js/Domain/prayer/methods.test.ts"
+            ],
+            "requiredNative": [
+              "Changing setting updates Home/prayer/Board-follow consistently.",
+              "Show correct method-specific explanatory copy and do not claim source default applies after user chooses another method."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Roznama/Index.tsx",
+            "src/platform/prayer.ts",
+            "src/platform/PrayerSettingsSheet.tsx"
+          ],
+          "gaps": [
+            "Source footer always claims default MWL method even after method changes; native should render chosen method."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "roznama.holidays",
+          "sourceFiles": [
+            "resources/js/Pages/Roznama/Index.tsx",
+            "resources/js/Lib/syrian-date.ts",
+            "resources/js/Domain/settings/prefs.ts"
+          ],
+          "features": [
+            "Next holiday hero with Arabic name, description, Gregorian date, days-left and Today/one/two-day copy; cross-year fallback.",
+            "Annual sorted holiday list, date/description, new-holiday badge, past versus upcoming state and days remaining.",
+            "Persist hide-passed toggle locally under sz-hide-passed-holidays. National day boundary uses Asia/Damascus.",
+            "Seven fixed annual dates and six variable holidays, variable table explicitly covers2026 and2027 only.",
+            "Source/legal-information card and official SANA decree link are part of website presentation, not a new calendar editor."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Public, hide-passed device-local."
+          ],
+          "graphics": [
+            "Calendar icon, next-holiday count badge, new/past/today indicators",
+            "Source information card"
+          ],
+          "tests": {
+            "existing": [],
+            "requiredNative": [
+              "Holiday list before/at/after date and year rollover, hide-passed persistence and selected timezone.",
+              "Variable dates beyond2027 cannot silently disappear under full parity claim.",
+              "Verify legal-calendar source/date accuracy before shipping refreshed holiday data."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Roznama/holidays.ts",
+            "src/features/Roznama/holiday-data.json"
+          ],
+          "gaps": [
+            "No separate holiday API; table and calculation currently embedded in page.",
+            "Only2026/2027 variable dates available. Broader-year maintenance and official-date verification remain work, not fabricated calculations."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "roznama.events",
+          "sourceFiles": [
+            "resources/js/Pages/Roznama/Index.tsx",
+            "app/Http/Controllers/EventsController.php"
+          ],
+          "features": [
+            "Show next event within next-holiday card and event list for selected governorate or all Syria.",
+            "Toggle other governorates, empty-state action widens to all Syria. Display event name, province, Syrian date/time, free versus ticket price, and external details link.",
+            "Loading skeletons, failure state, no-events copy and F3alia source/more-events link."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/events/today?governorate={id|all}",
+              "auth": "public",
+              "notes": "Source Roznama omits scope and thus requests today, despite upcoming labels"
+            }
+          ],
+          "authRequirements": [
+            "Public. Toggle is page state, not persisted account setting."
+          ],
+          "graphics": [
+            "Calendar/Sparkles and free/paid badges",
+            "Event date/province/price layout"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/EventsTest.php"
+            ],
+            "requiredNative": [
+              "Governorate/all toggle, empty widening, cancellation/stale response and correct free/unknown price.",
+              "Agree whether labels mean today or upcoming and request scope=upcoming if product intent is upcoming.",
+              "External details and source open actual URL using system behavior."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Roznama/Index.tsx",
+            "src/platform/conditions.ts"
+          ],
+          "gaps": [
+            "Source UI says upcoming while endpoint default scope is today and client filters starts>=today, dropping ongoing multi-day events; record mismatch before port."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        }
+      ]
+    },
+    {
+      "id": "board",
+      "sourceFiles": [
+        "docs/modules/board.md",
+        "resources/js/Pages/Board/Index.tsx",
+        "resources/js/Pages/Board/_lib/registry.ts"
+      ],
+      "features": [
+        "Complete customizable dashboard with all 14 widget definitions, 10 seeded and 4 gallery-only.",
+        "Local-first guest customization, optional account document sync, native forms/reordering/sizing and all widget interactions/content."
+      ],
+      "endpoints": [],
+      "authRequirements": [
+        "All 14 widgets usable as guest; nearby requires foreground location; only account sync authenticated."
+      ],
+      "graphics": [
+        "public/og/board.png",
+        "Fourteen widget icons and individual graphics"
+      ],
+      "tests": {
+        "existing": [
+          "tests/Feature/BoardTest.php",
+          "resources/js/Pages/Board/_lib/registry.test.ts"
+        ],
+        "requiredNative": [
+          "Exercise all 14 native widgets, configurations, sizing, reorder, persistence and failure states."
+        ]
+      },
+      "nativeTargets": [
+        "src/features/Board/"
+      ],
+      "gaps": [
+        "No native Board or widgets in audited baseline."
+      ],
+      "subsections": [
+        {
+          "id": "board.document-and-layout",
+          "sourceFiles": [
+            "resources/js/Pages/Board/Index.tsx",
+            "resources/js/Pages/Board/_lib/types.ts",
+            "resources/js/Pages/Board/_lib/doc.ts",
+            "resources/js/Pages/Board/_lib/layout.ts",
+            "resources/js/Pages/Board/_lib/registry.ts",
+            "resources/js/Pages/Board/_components/BoardGrid.tsx",
+            "resources/js/Pages/Board/_components/DashboardTabs.tsx",
+            "resources/js/Pages/Board/_components/BoardToolbar.tsx"
+          ],
+          "features": [
+            "Public editable dashboard, up to10 named dashboards, active selection, add, rename max40 characters, delete except final remaining dashboard. Toggle Customize/Done.",
+            "Immutable v1 document keys v,activeId,updatedAt,dashboards and widget i,d,w,h,c. Same shape local and server; array index determines order, no x/y/per-breakpoint copies.",
+            "Up to40 widgets/dashboard, widths1-12 and heights1-8, unknown widget definition/config round trips with removable MissingWidget view.",
+            "Resize uses discrete width2/3/4/6/8/12 and height1/2/3/4/6/8 choices constrained by widget min/max, never unrestricted drag resize.",
+            "Reorder from header handle only, preserve list-scroll gestures; source pointer threshold8px and keyboard reorder. Native accessible move actions must remain available.",
+            "Source grid uses2/6/12 columns,76px row units and12px gaps, dense flow, RTL visual ordering. Native layout must adapt safe available regions while preserving stored sizes/order.",
+            "Seed board10 widgets in order weather,prayer,clock,quran,pomodoro,recipe,rss,answers,notes,todo. Remaining four gallery-only definitions still fully supported.",
+            "Registry owns category sections, declarations/defaults/sizing/multiple/capability/refresh/source metadata, lazy views. All14 definitions must map to real native widget implementations."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Guest full customization available offline; account synchronization separate."
+          ],
+          "graphics": [
+            "Board14widget icons",
+            "Tile header actions and responsive layout",
+            "Missing-widget state"
+          ],
+          "tests": {
+            "existing": [
+              "resources/js/Pages/Board/_lib/registry.test.ts",
+              "tests/Feature/BoardTest.php"
+            ],
+            "requiredNative": [
+              "Golden v1 old documents and unknown-widget config preserved byte-semantically through save.",
+              "Caps, malformed/newer-version migration fallback, every resize clamp, dashboard final-delete guard.",
+              "All14 gallery entries,10seeded, category order and nonmultiple disabled state.",
+              "Reorder and resize on iPhone17, RTL, large text, iPad hardware keyboard and safe region changes without losing state."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/model.ts",
+            "src/features/Board/Index.tsx"
+          ],
+          "gaps": [
+            "No native Board or registry exists in baseline.",
+            "Vite glob, React DOM/DnD and CSS grid replaced by native registry/rendering while keeping JSON contract."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.persistence-and-sync",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_lib/storage.ts",
+            "resources/js/Pages/Board/_lib/sync.ts",
+            "resources/js/Pages/Board/_lib/api.ts",
+            "app/Http/Controllers/BoardController.php",
+            "app/Models/Board.php"
+          ],
+          "features": [
+            "Every mutation writes local document, storage failures degrade to in-memory without losing usable screen. Previous merge loser saved separately.",
+            "Authenticated GET loads {document,updated_at}, PUT {document} returns updated_at. Server shape-only validates opaque config and full request max65536bytes; one board row/user.",
+            "Local absent/server absent seeds and pushes; local present/server absent pushes guest board; local absent/server present adopts server; both present newer document.updatedAt wins, local wins equal time.",
+            "If server supersedes local, show restore previous or dismiss. Restore stamps new updatedAt and syncs restored document.",
+            "PUT debounce1500ms, at most one request in flight, dirty mutation re-fires latest once after settle, monotonic stale guards, flush pending save on background.",
+            "Failed save leaves local document and shows Not saved retry badge; initial read failure keeps local working copy."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/board",
+              "auth": "authenticated",
+              "notes": "{document:null|BoardDoc,updated_at:null|string}"
+            },
+            {
+              "method": "PUT",
+              "path": "/api/v1/board",
+              "auth": "authenticated",
+              "notes": "{document:BoardDoc}; max64KiB entire request"
+            }
+          ],
+          "authRequirements": [
+            "Guest document local only. Sync requires Sanctum bearer;401guest is expected, not missing backend."
+          ],
+          "graphics": [
+            "Unsaved cloud icon, merge recovery banner and restore/dismiss controls"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/BoardTest.php",
+              "resources/js/Pages/Board/_lib/registry.test.ts"
+            ],
+            "requiredNative": [
+              "Offline mutations/relaunch, read outage, retry latest doc, changes during save, account switch and logout isolation.",
+              "Four login merge combinations, timestamp tie, recovery restore/dismiss and unknown widget preservation.",
+              "Native background flush does not claim completion before server acknowledgement; request byte cap includes wrapper."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/state.ts",
+            "src/features/Board/sync.ts"
+          ],
+          "gaps": [
+            "Browser localStorage/window visibility/keepalive hooks require lifecycle replacement.",
+            "Source uses whole-document last-write-wins, not field merge or realtime sync; do not invent CRDT behavior.",
+            "Authenticated device sync not exercised in read-only live checks."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.gallery-config-and-shell",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_components/WidgetGallery.tsx",
+            "resources/js/Pages/Board/_components/WidgetConfigDialog.tsx",
+            "resources/js/Pages/Board/_components/WidgetShell.tsx",
+            "resources/js/Pages/Board/_components/BoardTile.tsx",
+            "resources/js/Pages/Board/_components/TileChrome.tsx",
+            "resources/js/Pages/Board/_components/SizeMenu.tsx",
+            "resources/js/Pages/Board/_components/MissingWidget.tsx",
+            "resources/js/Pages/Board/_lib/query.ts"
+          ],
+          "features": [
+            "Gallery sheet groups Time/faith,Personal/productivity,Community/news,Places/transit,Food; icon/name/description/Add, disables duplicate singleton widgets.",
+            "Edit mode exposes remove, size, configuration if fields exist, and drag handle per tile; no edit controls in normal mode.",
+            "Generic auto-saving config form supports text,number,toggle,selection with declaration defaults/ranges/options; body-edited notes/tasks do not duplicate editor fields.",
+            "One widget shell owns title/icon, loading skeleton, background-refresh hairline, accessible status, error/retry and empty copy; one scroll owner prevents nested-scroll traps.",
+            "Each source query keyed by definition+parameters; declared stale/interval policy, retry once, no background polling. Cached content should remain readable during refresh."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "All14 current definitions require no account. Capability gate can display login without requesting protected data for future auth widgets."
+          ],
+          "graphics": [
+            "14 icons and shared tile chrome",
+            "Gallery grouped cards and native config controls"
+          ],
+          "tests": {
+            "existing": [
+              "resources/js/Pages/Board/_lib/registry.test.ts"
+            ],
+            "requiredNative": [
+              "Every declaration config field editable and restored, sizes bounded, singleton gallery state per active dashboard.",
+              "Loading/error/retry/empty and stale-refresh cases for every remote widget.",
+              "Native sheet, keyboard dismissal, VoiceOver, RTL and large text remain usable within compact tile."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/Index.tsx",
+            "src/features/Board/model.ts"
+          ],
+          "gaps": [
+            "Do not replace widgets with a static list of links; controls and data states remain in each tile."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.location",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_components/GeoProvider.tsx",
+            "resources/js/Pages/Board/_components/BoardTile.tsx",
+            "resources/js/Pages/Board/_lib/storage.ts"
+          ],
+          "features": [
+            "Board shares one location fix and in-flight request across location-capable widgets, caches fix under sz-board:geo.",
+            "Nearby tile mounts only after granted fix; pending skeleton, denial Enable location retry. Source cache has no expiry validation.",
+            "Board nearby fix is separate from shared prayer/Home location preference and must not silently overwrite manual city or account values."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Location permission only for placed geo-requiring widget, currently places-nearby; no login required."
+          ],
+          "graphics": [
+            "Location permission state and retry tile"
+          ],
+          "tests": {
+            "existing": [],
+            "requiredNative": [
+              "Adding/removing nearby widget, denied/restricted/revoked permission, stale cached coordinate and retry.",
+              "No location request on Board without geo-requiring widget; one foreground prompt even with future multiple geo widgets."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx"
+          ],
+          "gaps": [
+            "Native platform contract requests permission on explicit user action, so gallery-add or Enable-location must own prompt rather than automatic mount effect.",
+            "Cached coordinate needs current permission/range/freshness validation; source does not expire it."
+          ],
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.clock",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/clock/index.ts",
+            "resources/js/Pages/Board/_widgets/clock/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Live local time ticks each second, 12/24-hour format and optional Syrian Gregorian date.",
+            "Config and multiple clock instances persist with document. Clock has no API."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "Clock symbol, Arabic tabular time/date"
+          ],
+          "tests": {
+            "existing": [],
+            "requiredNative": [
+              "12/24 format, date visibility, timezone/day change and foreground resume.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [],
+          "widget": {
+            "id": "clock",
+            "category": "time",
+            "defaultSize": {
+              "w": 4,
+              "h": 2
+            },
+            "minSize": {
+              "w": 2,
+              "h": 1
+            },
+            "maxSize": {
+              "w": 12,
+              "h": 2
+            },
+            "multiple": true,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "0",
+              "intervalMs": "null"
+            },
+            "configFields": [
+              "format: 24 default, or 12",
+              "showDate: true default"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.weather",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/weather/index.ts",
+            "resources/js/Pages/Board/_widgets/weather/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Governorate-specific current temperature and Arabic condition, optional four-day forecast strip with today/weekday label and daily min/max.",
+            "Missing forecast keeps current conditions. Multiple instances support individual city configs."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/weather?governorate={id}",
+              "auth": "public",
+              "notes": "Ten-minute source stale,15-minute polling"
+            }
+          ],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "CloudSun symbol and four forecast cells"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/WeatherTest.php",
+              "resources/js/Domain/weather/weather.test.ts"
+            ],
+            "requiredNative": [
+              "City config, no forecast, unknown weather code, stale refresh and day labels without UTC shift.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [],
+          "widget": {
+            "id": "weather",
+            "category": "time",
+            "defaultSize": {
+              "w": 4,
+              "h": 2
+            },
+            "minSize": {
+              "w": 3,
+              "h": 1
+            },
+            "maxSize": {
+              "w": 6,
+              "h": 2
+            },
+            "multiple": true,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "10 * 60_000",
+              "intervalMs": "15 * 60_000"
+            },
+            "configFields": [
+              "governorate: damascus default, shared governorate options"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.prayer",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/prayer/index.ts",
+            "resources/js/Pages/Board/_widgets/prayer/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Auto-follow shared location by default or stored governorate selection, own calculation-method selection.",
+            "Next event name/time, minutes or hours remaining, Hijri date and local 30-second countdown. After final event show Today prayers ended, no next-day rollover."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/prayer-times?governorate={id}&method={id}",
+              "auth": "public",
+              "notes": "Alternatively latitude and longitude worldwide; returns governorate, latitude, longitude, method, six timings and nullable hijri; Damascus calendar-day cache"
+            }
+          ],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "Moon symbol, next-event name/time and Hijri date"
+          ],
+          "tests": {
+            "existing": [
+              "resources/js/Pages/Board/_widgets/prayer/index.test.ts",
+              "tests/Feature/PrayerTest.php",
+              "resources/js/Domain/prayer/nextPrayer.test.ts",
+              "resources/js/Domain/prayer/methods.test.ts"
+            ],
+            "requiredNative": [
+              "Auto-follow mode, stored city, method, after-Isha empty state, midnight refresh and device timezone.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [
+            "Source configCity changes city, but resolvePrayerParams still prefers active GPS/IP. Pinned-city behavior needs explicit resolution, not misleading copy."
+          ],
+          "widget": {
+            "id": "prayer",
+            "category": "time",
+            "defaultSize": {
+              "w": 4,
+              "h": 2
+            },
+            "minSize": {
+              "w": 3,
+              "h": 1
+            },
+            "maxSize": {
+              "w": 6,
+              "h": 4
+            },
+            "multiple": false,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "6 * 60 * 60_000",
+              "intervalMs": "null"
+            },
+            "configFields": [
+              "governorate: auto default or known governorate",
+              "method: 3 default; picker 3,5,4,1,2"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.quran",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/quran/index.ts",
+            "resources/js/Pages/Board/_widgets/quran/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Shared global followed recitation, compact current-Ayah text with word/letter highlight and Surah/Ayah/reciter labels.",
+            "Previous/next Ayah, play/pause/loading/error and searchable reciter selector. Multiple tile instances bind same player, not separate audio."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "Radio symbol, Uthmanic text with timed word/letter highlight"
+          ],
+          "tests": {
+            "existing": [
+              "resources/js/Domain/quran/quranAudio.test.ts",
+              "resources/js/Domain/quran/quranPlayer.test.ts"
+            ],
+            "requiredNative": [
+              "Two Quran tiles and radio control one stream. Timer and navigation preserve intended playback.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [],
+          "widget": {
+            "id": "quran",
+            "category": "time",
+            "defaultSize": {
+              "w": 4,
+              "h": 2
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 6,
+              "h": 3
+            },
+            "multiple": true,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "24 * 60 * 60_000",
+              "intervalMs": "null"
+            },
+            "configFields": []
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.pomodoro",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/pomodoro/index.ts",
+            "resources/js/Pages/Board/_widgets/pomodoro/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Work/rest segmented selection, MM:SS countdown, elapsed progress, Start/Pause and Reset.",
+            "Work duration 5-90 minutes, default 25. Rest 1-30 minutes, default 5. Values integer-clamped.",
+            "Running timer uses absolute target to avoid interval drift, stops at zero, no auto-phase switch or notification. Only durations persist/sync, countdown resets when view reloads."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "Timer symbol, countdown/progress bar"
+          ],
+          "tests": {
+            "existing": [],
+            "requiredNative": [
+              "Pause/resume/reset, phase/config change, zero guard, background elapsed drift and intended reset on remount.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [],
+          "widget": {
+            "id": "pomodoro",
+            "category": "personal",
+            "defaultSize": {
+              "w": 4,
+              "h": 2
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 6,
+              "h": 4
+            },
+            "multiple": false,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "0",
+              "intervalMs": "null"
+            },
+            "configFields": [
+              "work: 25 default, min 5, max 90",
+              "rest: 5 default, min 1, max 30"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.notes",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/notes/index.ts",
+            "resources/js/Pages/Board/_widgets/notes/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Editable RTL plain-text note, maximum 4000 characters, placeholder and whole-body editor.",
+            "400ms debounce commits text into config. Adopt remote config only without pending local edit. Multiple notes allowed."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "StickyNote symbol and plain text editor"
+          ],
+          "tests": {
+            "existing": [],
+            "requiredNative": [
+              "Typing, Arabic IME, limit, remote adoption without clobbering, unmount/background flush and relaunch.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [
+            "Source clears debounce on unmount without flushing final edit. Native must avoid losing last 400ms."
+          ],
+          "widget": {
+            "id": "notes",
+            "category": "personal",
+            "defaultSize": {
+              "w": 6,
+              "h": 3
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 12,
+              "h": 6
+            },
+            "multiple": true,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "0",
+              "intervalMs": "null"
+            },
+            "configFields": [
+              "text: body-edited, default empty, max 4000"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.todo",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/todo/index.ts",
+            "resources/js/Pages/Board/_widgets/todo/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Draft input submits on Enter, trim and max 200 characters, up to 50 items, completed toggle, delete and remaining count.",
+            "Hide-completed config, single scroll list, empty/full states. Draft never persisted until submit.",
+            "400ms config commit for item mutations. Adopt remote list only when no pending edit. Multiple task lists supported."
+          ],
+          "endpoints": [],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "ListTodo symbol,completed styling and remaining count"
+          ],
+          "tests": {
+            "existing": [],
+            "requiredNative": [
+              "Add/blank/limit, IME submit, complete/undo, hide filter, delete, pending flush and login merge.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [
+            "Source clears pending debounce on unmount. Native must flush accepted edits."
+          ],
+          "widget": {
+            "id": "todo",
+            "category": "personal",
+            "defaultSize": {
+              "w": 4,
+              "h": 4
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 12,
+              "h": 8
+            },
+            "multiple": true,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "0",
+              "intervalMs": "null"
+            },
+            "configFields": [
+              "hideCompleted: false default",
+              "items: body-edited {id,text,done} array, cap 50, text max 200"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.rss",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/rss/index.ts",
+            "resources/js/Pages/Board/_widgets/rss/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Curated source picker only: jard, sana, halab-today, syrian-observer.",
+            "Headline rows with optional publication DD/MM date and actual external article link. Source title, loading, error/retry and empty. No arbitrary URL input."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/feed?source={allowlisted}",
+              "auth": "public",
+              "notes": "Ten-minute stale,15-minute polling; no arbitrary feedURLs"
+            }
+          ],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "Rss symbol,headline/date rows"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/FeedTest.php"
+            ],
+            "requiredNative": [
+              "All four configs, missing link/date, failure retry, source change and external URL validation.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [
+            "Live 2026-11-14: Jard 200 with 15 items. SANA, Halab Today and Syrian Observer 502. Preserve retry and report service gap."
+          ],
+          "widget": {
+            "id": "rss",
+            "category": "community",
+            "defaultSize": {
+              "w": 6,
+              "h": 3
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 12,
+              "h": 6
+            },
+            "multiple": true,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "10 * 60_000",
+              "intervalMs": "15 * 60_000"
+            },
+            "configFields": [
+              "source: jard default, or four curated options"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.answers",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/answers/index.ts",
+            "resources/js/Pages/Board/_widgets/answers/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Latest question list, question title, tags, answer count and server-generated external permalink to sibling Answers site.",
+            "Limit config 3-20, default 8, singleton widget."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/answers?limit={3-20}",
+              "auth": "public",
+              "notes": "Five-minute stale,ten-minute poll"
+            }
+          ],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "MessageCircleQuestion symbol,tagchips,answercount"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/AnswersTest.php"
+            ],
+            "requiredNative": [
+              "Limit, empty/error, retry, tags/count and correct external permalink.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [],
+          "widget": {
+            "id": "answers",
+            "category": "community",
+            "defaultSize": {
+              "w": 6,
+              "h": 3
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 12,
+              "h": 6
+            },
+            "multiple": false,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "5 * 60_000",
+              "intervalMs": "10 * 60_000"
+            },
+            "configFields": [
+              "limit: 8 default, min 3, max 20"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.events-today",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/events-today/index.ts",
+            "resources/js/Pages/Board/_widgets/events-today/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Events happening today by governorate or all Syria, automatic all-Syria fallback banner when local empty.",
+            "Time or All day, name, online/address, free/paid/unknown price, category and external details URL. Multiple province widgets allowed."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/events/today?governorate={id|all}",
+              "auth": "public",
+              "notes": "Default today interval includes multi-day events. Ten-minute stale time and 15-minute polling."
+            }
+          ],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "CalendarDays,MapPin andExternalLink symbols,free/paidbadges"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/EventsTest.php"
+            ],
+            "requiredNative": [
+              "Today multi-day events, fallback banner, all-day, online, address, price/null and retry.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [],
+          "widget": {
+            "id": "events-today",
+            "category": "community",
+            "defaultSize": {
+              "w": 6,
+              "h": 3
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 12,
+              "h": 6
+            },
+            "multiple": true,
+            "seeded": false,
+            "refreshSource": {
+              "staleMs": "10 * 60_000",
+              "intervalMs": "15 * 60_000"
+            },
+            "configFields": [
+              "governorate: damascus default, 14 governorates or all"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.guides",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/guides/index.ts",
+            "resources/js/Pages/Board/_widgets/guides/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Community guide ranking, avatar or initial, name, approved contribution count and total saves.",
+            "Sort by submissions, saves or recent. Tap opens Mishwar filtered to guide user. Multiple differently sorted widgets supported."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/guides?sort={submissions|saves|recent}",
+              "auth": "public",
+              "notes": "Five-minute stale,no polling"
+            }
+          ],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "Users symbol,rank,avatar andmetrics"
+          ],
+          "tests": {
+            "existing": [],
+            "requiredNative": [
+              "All sorts, avatar failure, rank/count and tap matching guide filter.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [
+            "Current native Places query does not expose guide filter yet. Cross-feature contract needed."
+          ],
+          "widget": {
+            "id": "guides",
+            "category": "community",
+            "defaultSize": {
+              "w": 6,
+              "h": 3
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 12,
+              "h": 6
+            },
+            "multiple": true,
+            "seeded": false,
+            "refreshSource": {
+              "staleMs": "5 * 60_000",
+              "intervalMs": "null"
+            },
+            "configFields": [
+              "sort: submissions default, or saves, recent"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.places-nearby",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/places-nearby/index.ts",
+            "resources/js/Pages/Board/_widgets/places-nearby/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Requires shared Board location fix. Radius 1-25km, default 10. Nearby place name/category, distance in km to one decimal.",
+            "Tap opens actual Mishwar place. Location permission follows feature intent. Empty radius, error/retry and singleton."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/places/nearby?lat={lat}&lng={lng}&radius_km={1-25}",
+              "auth": "public",
+              "notes": "Five-minute stale,no polling"
+            }
+          ],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account.",
+            "Foreground location permission required."
+          ],
+          "graphics": [
+            "MapPin symbol,place/category/distance rows"
+          ],
+          "tests": {
+            "existing": [],
+            "requiredNative": [
+              "Location denial/retry, radius clamp, coordinate order, distance format, empty and exact place navigation.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [
+            "Native API baseline has nearby transit stops, but not nearby places. Extend shared client."
+          ],
+          "widget": {
+            "id": "places-nearby",
+            "category": "places",
+            "defaultSize": {
+              "w": 6,
+              "h": 3
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 12,
+              "h": 6
+            },
+            "multiple": false,
+            "seeded": false,
+            "refreshSource": {
+              "staleMs": "5 * 60_000",
+              "intervalMs": "null"
+            },
+            "configFields": [
+              "radius_km: 10 default, min 1, max 25"
+            ]
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.transit-cities",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/transit-cities/index.ts",
+            "resources/js/Pages/Board/_widgets/transit-cities/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "Published transit city name and route count, source stale time 30 minutes.",
+            "City tap opens corresponding native TransitCity. No config, singleton, gallery-only by default."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/transit/cities",
+              "auth": "public",
+              "notes": "Thirty-minute stale,no polling"
+            }
+          ],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "Bus symbol,cityandroutecount rows"
+          ],
+          "tests": {
+            "existing": [
+              "ios-app/src/api.test.ts"
+            ],
+            "requiredNative": [
+              "Route counts, empty/error/retry and exact city navigation.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [],
+          "widget": {
+            "id": "transit-cities",
+            "category": "places",
+            "defaultSize": {
+              "w": 6,
+              "h": 3
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 12,
+              "h": 6
+            },
+            "multiple": false,
+            "seeded": false,
+            "refreshSource": {
+              "staleMs": "30 * 60_000",
+              "intervalMs": "null"
+            },
+            "configFields": []
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        },
+        {
+          "id": "board.widget.recipe",
+          "sourceFiles": [
+            "resources/js/Pages/Board/_widgets/recipe/index.ts",
+            "resources/js/Pages/Board/_widgets/recipe/View.tsx",
+            "resources/js/Pages/Board/_lib/sources.ts"
+          ],
+          "features": [
+            "One server-selected daily recipe, name, optional image, city, first preparation time, difficulty and up to three tags.",
+            "Image failure hides only thumbnail. Body remains. Tap opens actual food.syrian.zone recipe, no fabricated native detail."
+          ],
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/v1/recipes/today",
+              "auth": "public",
+              "notes": "Canonical alias of web /api/recipe-of-the-day. Daily selection, six-hour stale time, no polling."
+            }
+          ],
+          "authRequirements": [
+            "Guest widget. Optional board-document sync requires account."
+          ],
+          "graphics": [
+            "ChefHat,Clock,MapPin symbols",
+            "Recipephotograph andtags"
+          ],
+          "tests": {
+            "existing": [
+              "tests/Feature/RecipeTest.php"
+            ],
+            "requiredNative": [
+              "Daily change, image failure, missing metadata, tag limit, empty/retry and actual recipe URL.",
+              "Exercise actual widget content and config, not just gallery entry, on standard iPhone 17."
+            ]
+          },
+          "nativeTargets": [
+            "src/features/Board/widgets.tsx",
+            "src/features/Board/widget-model.ts",
+            "src/features/Board/query.ts"
+          ],
+          "gaps": [],
+          "widget": {
+            "id": "recipe",
+            "category": "food",
+            "defaultSize": {
+              "w": 4,
+              "h": 3
+            },
+            "minSize": {
+              "w": 3,
+              "h": 2
+            },
+            "maxSize": {
+              "w": 6,
+              "h": 5
+            },
+            "multiple": false,
+            "seeded": true,
+            "refreshSource": {
+              "staleMs": "6 * 60 * 60_000",
+              "intervalMs": "null"
+            },
+            "configFields": []
+          },
+          "implementationStatus": "Implemented, native interaction verification pending"
+        }
+      ]
+    }
+  ],
+  "sharedContractReview": {
+    "file": "ios-app/PORTING.md",
+    "reviewed": true,
+    "correctionsReported": [
+      "Do not persist all running timer state. Pomodoro intentionally stores only durations and resets countdown on reload.",
+      "Global audio and its timing/text requests survive feature navigation. Pause offscreen Board polls without stopping intended listening."
+    ],
+    "additionalEvidence": "Root verified a public read-only Inertia page adapter with version bootstrap/409 refresh. Shared sitePopup transport need not require a new backend endpoint."
+  },
+  "implementationCheckpoint": {
+    "checkedAt": "2026-11-14T18:38:55.394599+00:00",
+    "automatedEvidence": {
+      "tests": 42,
+      "assertions": 1537,
+      "failures": 0,
+      "log": "ios-app/.expo/faith-latest-tests.log",
+      "sourceGoldens": [
+        "All 604 Mushaf page models match unchanged source.",
+        "All 14 widget declaration fields, sizes, multiplicity and seeds match unchanged source.",
+        "Holiday names, dates and descriptions match source for 2026, 2027 and fixed-only 2030."
+      ],
+      "nativeTestsWritten": [
+        "SleepDeadlineTests3 +ListeningClockTests1 +AudioSessionQueueTests2 passed as6hostSwift cases by parent.",
+        "Asynchronous native audio session passed adapters-lifecycle-07 play/pause/resume/owner/background/sleep/release with0runtimewarnings."
+      ]
+    },
+    "nativeVerification": "Parent native tests passed public Muslim/prayer/radio/Roznama/Board landing plus Quran original WOFF2/ornaments on pages 1 and 2, next-page and focus. Broader interaction proof remains pending.",
+    "remainingProof": [
+      "Ayah selection/hit regions, spread/jumps/bookmarks and large text beyond the verified page1/page2/focus/toolbar bounds.",
+      "Integrated recitation/provider playback, lock-screen remote commands, headphone and interruption behavior. Bare owner background/native sleep passed, asynchronous session correction passed native lifecycle07 with0runtimewarnings.",
+      "Authenticated bookmarks/Board/usage against a non-production account and stale session switching.",
+      "Board02 created owned widgets and exercised actual drag/reorder before failing at a duplicate duration-slider selector. Autoscroll, complete config/resize, task/note durability and login recovery remain pending after the shared accessibility correction.",
+      "iPad/hinge safe regions and landscape after standard iPhone17 proof.",
+      "Native Apple reverse-geocoder timezone and legacy upstream wrong-day fallback; backend draft deployment remains unauthorised."
+    ],
+    "behavioralCorrections": [
+      "Optional word/text enrichment no longer blocks initial MP3 start.",
+      "Native listening observes buffering transitions instead of counting idle gaps.",
+      "Guest bookmark writes serialize across retained reader instances.",
+      "Device writes happen before accepted Board mutations are published; oversized server bodies remain saved locally and surface sync errors.",
+      "Pinned Board prayer city overrides GPS/IP, consistent with its described intent.",
+      "All personal stores are origin-scoped outside canonical production, allowing real local account/Board tests without touching original credentials or documents.",
+      "Native audio-session operations serialize across owner changes; iOS27 uses asynchronous activation/deactivation, older fallback and category setup run off main. Native lifecycle07 passed with0runtimewarnings."
+    ],
+    "timezoneAdaptation": {
+      "native": "Selected-zone IANA conversion, IP timezone.id, Apple reverse-geocoder cache and fail-closed countdowns implemented. Original source schedule goldens unchanged.",
+      "server": "Draft additive PrayerController date/timezone metadata and bounded selected-day input. Focused and legacy Pest22 cases and 103 assertions pass in local testing environment. No deployment.",
+      "tests": [
+        "Amsterdam phone viewing Damascus",
+        "Selected-location date rollover and stale API date",
+        "Europe/Amsterdam spring and autumn DST",
+        "Coalesced authoritative geocoder cache, no longitude-derived zone"
+      ]
+    },
+    "nativeEvidence": {
+      "resultBundle": "ios-app/.expo/verification/full-site/remaining-ui-01.xcresult",
+      "screenshots": "ios-app/.expo/verification/full-site/remaining-ui-01-attachments",
+      "passed": [
+        "testRemainingPublicSections",
+        "testQuranRenderingPagingAndFocus"
+      ],
+      "finding": "Shared NativeIconAction width57.33points reproduced red; root fixed controlSize regular and reran native bounds test green at48points or less, with no overlap.",
+      "adapterPassedByParent": {
+        "run": "ios-app/.expo/verification/adapters-lifecycle-07/result.xcresult",
+        "tests": [
+          "testBareAudioPlaybackOwnershipBackgroundAndNativeSleep",
+          "testHardwareKeyCommands",
+          "testDirectNativePNGAndJPEGEncoder",
+          "testNativeSVGPixelDimensions"
+        ],
+        "limitation": "4native cases passed,0runtimewarnings. That historical cohort failed at QuickLook; the later controls09 file case passed native preview/Done and SVG/PNG/ZIP share cancellation. Bare owner proof does not verify Quran provider/usage or remote media events."
+      },
+      "boardPartialByParent": {
+        "run": "account-sections-native02",
+        "result": "Failed after actual owned-board/widget creation and drag/reorder, at a duplicate duration-slider selector.",
+        "seconds": 82.456,
+        "retainedBoard": "مدني 7E8EFE",
+        "remaining": "Shared slider accessibility correction and the rest of widget configuration, scoped cleanup and full document sync require a native rerun."
+      }
+    }
+  },
+  "updatedAt": "2026-11-14T18:38:55.394599+00:00"
+}

@@ -1,0 +1,151 @@
+name: iOS app
+
+on:
+  pull_request:
+    paths:
+      - 'ios-app/**'
+      - 'resources/data/places.json'
+      - 'resources/data/transit.json'
+      - 'resources/data/search-fold.json'
+      - 'public/icons/**'
+      - '.github/workflows/ios.yml'
+  push:
+    branches: [ios]
+    paths:
+      - 'ios-app/**'
+      - 'resources/data/places.json'
+      - 'resources/data/transit.json'
+      - 'resources/data/search-fold.json'
+      - 'public/icons/**'
+      - '.github/workflows/ios.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: '1.3.11'
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, intl, zip
+          coverage: none
+      - name: Install PHP fixture dependencies
+        working-directory: .
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts --no-plugins
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bunx expo install --check
+      - run: bun audit
+      - run: bunx expo export --platform ios
+      - run: bun run benchmark
+
+  simulator:
+    runs-on: xcode-27
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: '1.3.11'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Select newest Duo-capable Xcode
+        run: |
+          node --input-type=module <<'NODE'
+          import { readdirSync, appendFileSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          import { assertSdkSupport } from './scripts/simulator.mjs';
+          const candidates = readdirSync('/Applications').filter(name => /^Xcode.*\.app$/.test(name)).flatMap(name => {
+            const directory = `/Applications/${name}/Contents/Developer`;
+            try {
+              const sdk = execFileSync('xcrun', ['--sdk', 'iphonesimulator', '--show-sdk-version'], { env: { ...process.env, DEVELOPER_DIR: directory }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+              assertSdkSupport(sdk);
+              return [{ directory, sdk }];
+            } catch { return []; }
+          }).sort((first, second) => second.sdk.localeCompare(first.sdk, undefined, { numeric: true }));
+          if (!candidates[0]) throw new Error('No installed Xcode provides iOS Simulator SDK 27.1 or later.');
+          appendFileSync(process.env.GITHUB_ENV, `DEVELOPER_DIR=${candidates[0].directory}\n`);
+          console.log(`Selected ${candidates[0].directory}, iOS SDK ${candidates[0].sdk}`);
+          NODE
+      - name: Inspect Apple SDKs
+        run: xcodebuild -version && xcodebuild -showsdks
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, intl, zip
+          coverage: none
+      - name: Install PHP fixture dependencies
+        working-directory: .
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts --no-plugins
+      - run: bun install --frozen-lockfile
+      - name: Check source and Mac Swift host integrations
+        run: bun run check
+      - name: Require Duo SDK and prepare native project
+        run: bun run ios:prepare
+      - name: Install native dependencies
+        run: pod install --project-directory=ios
+      - name: Build universal simulator app
+        run: >-
+          xcodebuild -jobs 2 -workspace ios/SyrianZone.xcworkspace
+          -scheme SyrianZone -configuration Release -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath .expo/build
+          CODE_SIGNING_ALLOWED=NO build
+      - name: Verify startup and Home search on a disposable iPhone 17
+        timeout-minutes: 60
+        shell: bash
+        env:
+          # Exercise the bundled catalogue without live services.
+          EXPO_PUBLIC_API_ORIGIN: https://127.0.0.1:9443
+        run: |
+          ruby scripts/prepare-ui-tests.rb
+          device="$(xcrun simctl list --json | node --input-type=module -e '
+            import { execFileSync } from "node:child_process";
+            import { readFileSync } from "node:fs";
+            import { selectSimulator } from "./scripts/simulator.mjs";
+            const { type, runtime } = selectSimulator(JSON.parse(readFileSync(0, "utf8")), "iPhone 17");
+            process.stdout.write(execFileSync("xcrun", ["simctl", "create", "Syrian Zone Home CI", type.identifier, runtime.identifier], { encoding: "utf8" }).trim());
+          ')"
+          [[ "$device" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$ ]]
+          trap 'status=$?; xcrun simctl shutdown "$device" || true; xcrun simctl delete "$device" || status=1; exit "$status"' EXIT
+          xcrun simctl boot "$device"
+          bun run ios:smoke --device "$device"
+          xcrun simctl terminate "$device" zone.syrian.ios
+          home_case=SyrianZoneUITests/SyrianZoneUITests/testHomeSearchOpensMishwar
+          result="$RUNNER_TEMP/home-ui.xcresult"
+          xcode_args=(-jobs 2 -workspace ios/SyrianZone.xcworkspace
+            -scheme SyrianZoneVerification -configuration Release -sdk iphonesimulator \
+            -destination "id=$device" -derivedDataPath .expo/build CODE_SIGNING_ALLOWED=NO)
+          xcodebuild "${xcode_args[@]}" build-for-testing
+          xcrun simctl bootstatus "$device" -b
+          xcodebuild "${xcode_args[@]}" -parallel-testing-enabled NO -testLanguage en -testRegion US \
+            -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 1200 \
+            -only-testing:"$home_case" -resultBundlePath "$result" test-without-building
+          xcrun xcresulttool get test-results tests --path "$result" --format json | node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { assertSelectedTestsPassed } from "./scripts/native-test-results.mjs";
+            assertSelectedTestsPassed([process.argv[1]], JSON.parse(readFileSync(0, "utf8")));
+          ' "$home_case"
+      - name: Save Home XCTest results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: home-ui-xcresult
+          path: ${{ runner.temp }}/home-ui.xcresult
+          if-no-files-found: ignore

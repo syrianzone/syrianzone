@@ -1,0 +1,146 @@
+diff --git a/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm b/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm
+--- a/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm
++++ b/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm
+@@ -900,8 +900,21 @@
+   if (shouldFallbackToBareTextComparison) {
+     return [newText.string isEqualToString:oldText.string];
+   } else {
++    // Typed text carries attributes a state built from props (a controlled `value`) does not: the input's
++    // `defaultTextAttributes` (the first character typed into an empty field also gets their background color and
++    // event emitter) and a paragraph style, which is UIKit's default one or the one in its initial typing attributes
++    // (another line break strategy). Both are accepted.
++    const auto &props = static_cast<const TextInputProps &>(*_props);
++    NSMutableDictionary<NSAttributedStringKey, id> *defaultAttributes =
++        [_originalTypingAttributes mutableCopy] ?: [NSMutableDictionary new];
++    [defaultAttributes addEntriesFromDictionary:_backedTextInputView.defaultTextAttributes];
++    defaultAttributes[NSParagraphStyleAttributeName] =
++        _backedTextInputView.defaultTextAttributes[NSParagraphStyleAttributeName]
++        ?: NSParagraphStyle.defaultParagraphStyle;
+     return RCTIsAttributedStringEffectivelySame(
+-        newText, oldText, _originalTypingAttributes, static_cast<const TextInputProps &>(*_props).textAttributes);
++               newText, oldText, defaultAttributes, props.textAttributes, !props.multiline) ||
++        RCTIsAttributedStringEffectivelySame(
++               newText, oldText, _originalTypingAttributes, props.textAttributes, !props.multiline);
+   }
+ }
+ 
+diff --git a/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.h b/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.h
+--- a/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.h
++++ b/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.h
+@@ -63,6 +63,18 @@
+     NSDictionary<NSAttributedStringKey, id> *insensitiveAttributes,
+     const facebook::react::TextAttributes &baseTextAttributes);
+ 
++/*
++ * The same, where `singleLine` says the control is a single-line text field: it lays its line out with its own line
++ * break mode and writing direction and without a line height (UIKit sets them in the text it shows), so those are not
++ * compared.
++ */
++BOOL RCTIsAttributedStringEffectivelySame(
++    NSAttributedString *text1,
++    NSAttributedString *text2,
++    NSDictionary<NSAttributedStringKey, id> *insensitiveAttributes,
++    const facebook::react::TextAttributes &baseTextAttributes,
++    BOOL singleLine);
++
+ static inline NSData *RCTWrapEventEmitter(const std::shared_ptr<const facebook::react::EventEmitter> &eventEmitter)
+ {
+   auto eventEmitterPtr = new std::weak_ptr<const facebook::react::EventEmitter>(eventEmitter);
+diff --git a/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.mm b/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.mm
+--- a/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.mm
++++ b/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTAttributedTextUtils.mm
+@@ -525,7 +525,8 @@
+ static BOOL RCTIsParagraphStyleEffectivelySame(
+     NSParagraphStyle *style1,
+     NSParagraphStyle *style2,
+-    const TextAttributes &baseTextAttributes)
++    const TextAttributes &baseTextAttributes,
++    BOOL singleLine)
+ {
+   if (style1 == nil || style2 == nil) {
+     return style1 == nil && style2 == nil;
+@@ -568,6 +569,17 @@
+     }
+   }
+ 
++  // A single-line text field lays its line out with its own line break mode and writing direction and without a line
++  // height (UIKit sets them in the text it shows): those are not compared.
++  if (singleLine) {
++    NSMutableParagraphStyle *mutableStyle2 = [style2 mutableCopy];
++    style2 = mutableStyle2;
++    mutableStyle2.lineBreakMode = style1.lineBreakMode;
++    mutableStyle2.baseWritingDirection = style1.baseWritingDirection;
++    mutableStyle2.minimumLineHeight = style1.minimumLineHeight;
++    mutableStyle2.maximumLineHeight = style1.maximumLineHeight;
++  }
++
+   return [style1 isEqual:style2];
+ }
+ 
+@@ -576,14 +588,20 @@
+     NSDictionary<NSAttributedStringKey, id> *attributes1,
+     NSDictionary<NSAttributedStringKey, id> *attributes2,
+     NSDictionary<NSAttributedStringKey, id> *insensitiveAttributes,
+-    const TextAttributes &baseTextAttributes)
+-{
++    const TextAttributes &baseTextAttributes,
++    BOOL singleLine)
++{
++  // Event emitter metadata does not affect the text a TextInput shows.
++  if ([attributeKey isEqualToString:RCTAttributedStringEventEmitterKey]) {
++    return YES;
++  }
++
+   id attribute1 = attributes1[attributeKey] ?: insensitiveAttributes[attributeKey];
+   id attribute2 = attributes2[attributeKey] ?: insensitiveAttributes[attributeKey];
+ 
+   // Normalize attributes which can inexact but still effectively the same
+   if ([attributeKey isEqualToString:NSParagraphStyleAttributeName]) {
+-    return RCTIsParagraphStyleEffectivelySame(attribute1, attribute2, baseTextAttributes);
++    return RCTIsParagraphStyleEffectivelySame(attribute1, attribute2, baseTextAttributes, singleLine);
+   }
+ 
+   // Otherwise rely on built-in comparison
+@@ -594,7 +612,8 @@
+     NSAttributedString *text1,
+     NSAttributedString *text2,
+     NSDictionary<NSAttributedStringKey, id> *insensitiveAttributes,
+-    const TextAttributes &baseTextAttributes)
++    const TextAttributes &baseTextAttributes,
++    BOOL singleLine)
+ {
+   if (![text1.string isEqualToString:text2.string]) {
+     return NO;
+@@ -631,7 +650,8 @@
+                                                               text1Attributes,
+                                                               text2Attributes,
+                                                               insensitiveAttributes,
+-                                                              baseTextAttributes)) {
++                                                              baseTextAttributes,
++                                                              singleLine)) {
+                                                         areAttributesSame = NO;
+                                                         *text1Stop = YES;
+                                                         *text2Stop = YES;
+@@ -653,7 +673,8 @@
+                                                               text1Attributes,
+                                                               text2Attributes,
+                                                               insensitiveAttributes,
+-                                                              baseTextAttributes)) {
++                                                              baseTextAttributes,
++                                                              singleLine)) {
+                                                         areAttributesSame = NO;
+                                                         *text1Stop = YES;
+                                                         *text2Stop = YES;
+@@ -665,3 +686,12 @@
+ 
+   return areAttributesSame;
+ }
++
++BOOL RCTIsAttributedStringEffectivelySame(
++    NSAttributedString *text1,
++    NSAttributedString *text2,
++    NSDictionary<NSAttributedStringKey, id> *insensitiveAttributes,
++    const TextAttributes &baseTextAttributes)
++{
++  return RCTIsAttributedStringEffectivelySame(text1, text2, insensitiveAttributes, baseTextAttributes, NO);
++}

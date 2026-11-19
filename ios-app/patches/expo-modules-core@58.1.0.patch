@@ -1,0 +1,12 @@
+diff --git a/ios/Fabric/ExpoFabricViewObjC.mm b/ios/Fabric/ExpoFabricViewObjC.mm
+--- a/ios/Fabric/ExpoFabricViewObjC.mm
++++ b/ios/Fabric/ExpoFabricViewObjC.mm
+@@ -32,7 +32,7 @@
+  watchdog kills it. Updates over the budget are coalesced locally and committed
+  asynchronously on the next turn, so a non-convergent layout settles across frames instead.
+  */
+-constexpr NSUInteger kImmediateSizeUpdateBudgetPerTurn = 2;
++constexpr NSUInteger kImmediateSizeUpdateBudgetPerTurn = 0;
+ 
+ /**
+  Size deltas below this threshold (in points) are considered noise (e.g. rounding jitter

@@ -160,9 +160,11 @@ async function uploadPendingSave(): Promise<boolean> {
     if (isCurrent()) throw error;
     return false;
   }
-  if (!isCurrent()) return false;
-  localStorage.removeItem(KEY_PENDING_SAVE);
-  updateLocalResult(result.id, { id: saved?.id ?? result.id, savedToAccount: true });
+  if (isCurrent()) localStorage.removeItem(KEY_PENDING_SAVE);
+  const pending = safeParse<{ id?: string | number } | null>(readPendingSave(), null);
+  if (String(pending?.id) !== String(result.id)) {
+    updateLocalResult(result.id, { id: saved?.id ?? result.id, savedToAccount: true });
+  }
   return true;
 }
 

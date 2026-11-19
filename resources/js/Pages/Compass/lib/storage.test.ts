@@ -98,8 +98,19 @@ it('an upload cannot clear an identical result queued again while the request wa
   const { resolve, upload } = startUpload();
   setPendingAccountSave(result);
   resolve({ ...result, id: 42 });
-  await expect(upload).resolves.toBe(false);
+  await expect(upload).resolves.toBe(true);
   expect(localStorage.getItem(pendingKey)).toBe(JSON.stringify(result));
+  expect(localStorage.getItem(resultsKey)).toBe(JSON.stringify([result]));
+});
+
+it('a successful upload updates its local result and preserves a different queued result', async () => {
+  const { resolve, upload } = startUpload();
+  const newer = { ...result, id: 'local:two' };
+  setPendingAccountSave(newer);
+  resolve({ ...result, id: 42 });
+  await expect(upload).resolves.toBe(true);
+  expect(localStorage.getItem(pendingKey)).toBe(JSON.stringify(newer));
+  expect(localStorage.getItem(resultsKey)).toBe(JSON.stringify([{ ...result, id: 42, savedToAccount: true }]));
 });
 
 it('only the current attempt submits and clears the queued result', async () => {

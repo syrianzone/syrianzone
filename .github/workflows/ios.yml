@@ -107,22 +107,36 @@ jobs:
           -destination 'generic/platform=iOS Simulator'
           -derivedDataPath .expo/build
           CODE_SIGNING_ALLOWED=NO build
-      - name: Catch native startup crashes
-        run: bun run ios:smoke
-      - name: Search Home and open Mishwar on iPhone 17
+      - name: Verify startup and Home search on a disposable iPhone 17
+        timeout-minutes: 60
         shell: bash
         env:
           # Exercise the bundled catalogue without live services.
           EXPO_PUBLIC_API_ORIGIN: https://127.0.0.1:9443
         run: |
           ruby scripts/prepare-ui-tests.rb
+          device="$(xcrun simctl list --json | node --input-type=module -e '
+            import { execFileSync } from "node:child_process";
+            import { readFileSync } from "node:fs";
+            import { selectSimulator } from "./scripts/simulator.mjs";
+            const { type, runtime } = selectSimulator(JSON.parse(readFileSync(0, "utf8")), "iPhone 17");
+            process.stdout.write(execFileSync("xcrun", ["simctl", "create", "Syrian Zone Home CI", type.identifier, runtime.identifier], { encoding: "utf8" }).trim());
+          ')"
+          [[ "$device" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$ ]]
+          trap 'status=$?; xcrun simctl shutdown "$device" || true; xcrun simctl delete "$device" || status=1; exit "$status"' EXIT
+          xcrun simctl boot "$device"
+          bun run ios:smoke --device "$device"
+          xcrun simctl terminate "$device" zone.syrian.ios
           home_case=SyrianZoneUITests/SyrianZoneUITests/testHomeSearchOpensMishwar
           result="$RUNNER_TEMP/home-ui.xcresult"
-          xcodebuild -jobs 2 -workspace ios/SyrianZone.xcworkspace \
+          xcode_args=(-jobs 2 -workspace ios/SyrianZone.xcworkspace
             -scheme SyrianZoneVerification -configuration Release -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
-            -derivedDataPath .expo/build -parallel-testing-enabled NO \
-            -only-testing:"$home_case" -resultBundlePath "$result" CODE_SIGNING_ALLOWED=NO test
+            -destination "id=$device" -derivedDataPath .expo/build CODE_SIGNING_ALLOWED=NO)
+          xcodebuild "${xcode_args[@]}" build-for-testing
+          xcrun simctl bootstatus "$device" -b
+          xcodebuild "${xcode_args[@]}" -parallel-testing-enabled NO -testLanguage en -testRegion US \
+            -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 1200 \
+            -only-testing:"$home_case" -resultBundlePath "$result" test-without-building
           xcrun xcresulttool get test-results tests --path "$result" --format json | node --input-type=module -e '
             import { readFileSync } from "node:fs";
             import { assertSelectedTestsPassed } from "./scripts/native-test-results.mjs";

@@ -79,6 +79,7 @@ final class ModuleCapabilityGuard
         'polls_admin' => 'polls',
         'compass_admin' => 'compass',
         'promises_admin' => 'promises',
+        'govtcvs_admin' => 'govtcvs',
         'govapps_admin' => 'govapps',
         'users_admin' => 'users',
         'guesswho_admin' => 'guesswho',

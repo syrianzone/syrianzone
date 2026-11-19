@@ -47,6 +47,8 @@ class UpdateSyOfficialEntityTool extends SyOfficialTool
 
             'description_ar' => $schema->string()->description('New Arabic description. Pass null to clear it.'),
 
+            'image_url' => $schema->string()->description('Optional remote HTTP(S) image URL to download, convert to a 200x200 square WebP, and store on R2.'),
+
             'socials' => $schema->object($this->socialProperties($schema))
                 ->description('Replace the link map. Omit to leave it alone; pass an empty object to clear every link. Keys are the platforms in the schema; a value set to an empty string is dropped. A plain list is refused because it loses the platform.'),
         ];
@@ -61,6 +63,7 @@ class UpdateSyOfficialEntityTool extends SyOfficialTool
             'name_ar' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
+            'image_url' => 'sometimes|nullable|url|max:2048',
             'socials' => 'sometimes|array',
             'socials.*' => 'nullable|string|max:2048',
         ]);

@@ -77,13 +77,13 @@ final class NativeLocalFilesUITests: XCTestCase {
       attach("local-files-owned-file-and-empty-folder-removed", app: files)
       app.activate()
     } catch {
-      if journal == nil {
+      if let journal {
+        attachFailure(journal: journal)
+      } else {
         let note = XCTAttachment(string: "The pre-journal Files preflight refused. No Files tree, screenshot, foreign query or file contents were captured. No new recovery record or user-file creation was attempted.")
         note.name = "local-files-pre-journal-refusal"; note.lifetime = .keepAlways; add(note)
-      } else {
-        attachFailure(app: app, files: files, journal: journal)
       }
-      // Unknown UI or unexpected contents are retained with the recovery record.
+      // Leave the file state in place for recovery.
       throw error
     }
   }
@@ -1279,12 +1279,8 @@ final class NativeLocalFilesUITests: XCTestCase {
   }
 
   @MainActor
-  private func attachFailure(app: XCUIApplication, files: XCUIApplication, journal: LocalFilesJournal?) {
-    for (name, target) in [("adapter", app), ("files", files)] {
-      let tree = XCTAttachment(string: target.debugDescription); tree.name = "local-files-failure-\(name)-AX"; tree.lifetime = .keepAlways; add(tree)
-      attach("local-files-failure-\(name)", app: target)
-    }
-    if let journal, let data = try? journal.recoveryData(), let text = String(data: data, encoding: .utf8) {
+  private func attachFailure(journal: LocalFilesJournal) {
+    if let data = try? journal.recoveryData(), let text = String(data: data, encoding: .utf8) {
       let record = XCTAttachment(string: text); record.name = "local-files-own-recovery-record"; record.lifetime = .keepAlways; add(record)
     }
   }

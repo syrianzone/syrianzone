@@ -22,6 +22,7 @@ final readonly class Preview
      * @param  \DateTimeInterface|null  $published  when the record first became
      *                                              public, for structured data
      * @param  \DateTimeInterface|null  $modified  when its content last changed
+     * @param  array<string, mixed>|null  $mainEntity  Schema.org mainEntity node (e.g. Person on ProfilePage)
      */
     public function __construct(
         public string $title,
@@ -36,5 +37,6 @@ final readonly class Preview
         public ?string $shareTitle = null,
         public ?\DateTimeInterface $published = null,
         public ?\DateTimeInterface $modified = null,
+        public ?array $mainEntity = null,
     ) {}
 }

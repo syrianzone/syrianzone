@@ -77,15 +77,18 @@ export function HomeScreen(): React.JSX.Element {
   const columns = fontScale >= 1.8 ? 1 : fontScale >= 1.3 ? 2 : width >= 700 ? 6 : 3;
   const tileWidth = `${100 / columns - (columns > 1 ? 2 : 0)}%` as const;
   const perform = async (action: () => Promise<unknown>) => { setNotice(null); try { await action(); } catch (reason) { setNotice(reason instanceof Error ? reason.message : 'تعذر إكمال الإجراء.'); } };
-  function open(item: NavigationItem, params: Record<string, string> = {}): void {
-    if (item.external) void perform(() => openExternal(item.href));
-    else navigation.open(item.id, params);
+  function open(item: NavigationItem): void {
+    void perform(() => item.external ? openExternal(item.href) : navigation.openCatalogueLink(item.href, item.id));
   }
   const groups = useMemo(() => {
-    const result: { title: string; items: SearchResult[] }[] = [];
+    type HomeResult = SearchResult & { catalogueItem?: NavigationItem };
+    const result: { title: string; items: HomeResult[] }[] = [];
     const allow = (...values: Scope[]) => values.includes(scope);
-    const add = (title: string, items: SearchResult[]) => { if (items.length) result.push({ title, items }); };
-    if (allow('all', 'tools')) add('الأقسام', catalogueItems.filter(item => matchesSearch(query, item.title, item.subtitle, item.href)).map(item => ({ id: item.id, title: item.title, subtitle: item.subtitle, section: item.id, params: {} })));
+    const add = (title: string, items: HomeResult[]) => {
+      const available = items.filter(item => item.catalogueItem || item.url || navigation.canOpen(item.section, item.params));
+      if (available.length) result.push({ title, items: available });
+    };
+    if (allow('all', 'tools')) add('الأقسام', catalogueItems.filter(item => matchesSearch(query, item.title, item.subtitle, item.href)).map(item => ({ id: item.id, title: item.title, subtitle: item.subtitle, section: item.id, params: {}, catalogueItem: item })));
     if (allow('all', 'transit')) add('مدن النقل', (cities.data ?? []).filter(city => matchesSearch(query, city.nameAr, city.name, String(city.id), 'ترانزيت سرفيس باص محافظة مدينة')).slice(0, scope === 'transit' && !query.trim() ? undefined : 8).map(city => ({ id: String(city.id), title: city.nameAr, subtitle: city.comingSoon ? 'قريباً' : 'خطوط النقل', section: 'transit', params: { cityId: String(city.id) } })));
     if (allow('all', 'muslim')) {
       add('الركن الإسلامي', [{ id: 'prayer', title: 'مواقيت الصلاة' }, { id: 'quran', title: 'قارئ القرآن' }, { id: 'radio', title: 'إذاعة القرآن' }].filter(tool => matchesSearch(query, tool.title, tool.id, 'صلاة قرآن اذاعة قبلة')).map(tool => ({ id: tool.id, title: tool.title, subtitle: '', section: `muslim_${tool.id}`, params: {} })));
@@ -100,7 +103,7 @@ export function HomeScreen(): React.JSX.Element {
       if (allow('all', 'tools', 'directory')) add('التطبيقات الحكومية', remote.data.govapps);
     }
     return result;
-  }, [catalogueItems, cities.data, remote.data, query, debounced, scope]);
+  }, [catalogueItems, cities.data, navigation, remote.data, query, debounced, scope]);
   const event = events.data?.event;
   const reload = () => { catalogue.reload(); weather.reload(); prayer.reload(); events.reload(); };
   return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={contentStyle} refreshControl={<RefreshControl refreshing={catalogue.loading && catalogue.data !== null} onRefresh={reload} tintColor={colors.accent} />}>
@@ -123,7 +126,10 @@ export function HomeScreen(): React.JSX.Element {
     {isSearching ? <View style={{ gap: 16 }}>{remote.error ? <Label secondary>تعذر تحميل نتائج الموقع. نتائج البحث المحلية متاحة.</Label> : null}
       {groups.map(group => <View key={group.title} style={{ gap: 8 }}><Label style={{ fontWeight: '700' }}>{group.title}</Label>{group.items.map(item => <Row key={item.id} title={item.title} subtitle={item.subtitle} onPress={() => {
         const entry = catalogueItems.find(candidate => candidate.id === item.section);
-        if (item.url) void perform(() => openExternal(item.url ?? '')); else if (entry) open(entry, item.params); else if (item.subtitle !== 'قريباً') navigation.open(item.section, item.params);
+        if (item.url) void perform(() => openExternal(item.url ?? ''));
+        else if (item.catalogueItem) open(item.catalogueItem);
+        else if (entry?.external) open(entry);
+        else if (entry || item.subtitle !== 'قريباً') navigation.open(item.section, item.params);
       }} />)}</View>)}{groups.length === 0 ? <EmptyState title="لا توجد نتائج" /> : null}
     </View> : <>
       {([true, false] as const).map(internal => <View key={String(internal)} style={{ gap: 16 }}>{!internal ? <Heading>روابط خارجية وشقيقة</Heading> : null}
@@ -139,8 +145,8 @@ export function HomeScreen(): React.JSX.Element {
       {preferences.value.customLinks.map(link => <View key={link.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><CustomArtwork link={link} /><View style={{ flex: 1 }}><Row title={link.name} subtitle={editMode ? 'تعديل الرابط' : new URL(link.url).hostname} onPress={() => { if (editMode) setEditor(link); else void perform(() => openExternal(link.url)); }} /></View></View>)}
       <NativeAction title="إضافة رابط" systemImage="plus" disabled={!preferences.ready || preferences.busy || preferences.value.customLinks.length >= 50} onPress={() => setEditor('new')} />
     </Section>
-    <Row title={account.user?.name ?? 'تسجيل الدخول'} subtitle={account.user ? 'الحساب والإعدادات' : 'مزامنة إعداداتك مع حسابك'} symbol="person.crop.circle" onPress={() => navigation.open('account')} />
-    <View style={{ gap: 8 }}>{[['about', 'عن المنصة'], ['stats', 'الإحصائيات'], ['privacy', 'سياسة الخصوصية'], ['terms', 'الشروط والأحكام']].map(([section, title]) => <Row key={section} title={title ?? ''} onPress={() => navigation.open(section ?? '')} />)}</View>
+    {navigation.canOpen('account') ? <Row title={account.user?.name ?? 'تسجيل الدخول'} subtitle={account.user ? 'الحساب والإعدادات' : 'مزامنة إعداداتك مع حسابك'} symbol="person.crop.circle" onPress={() => navigation.open('account')} /> : null}
+    <View style={{ gap: 8 }}>{([['about', 'عن المنصة'], ['stats', 'الإحصائيات'], ['privacy', 'سياسة الخصوصية'], ['terms', 'الشروط والأحكام']] as const).map(([section, title]) => <Row key={section} title={title} onPress={() => { void perform(() => navigation.openCatalogueLink(`/${section}`, section)); }} />)}</View>
     {settings ? <HomeSettings close={() => setSettings(false)} preferences={preferences.value} save={preferences.save} disabled={!preferences.ready || preferences.busy} /> : null}
     {editor ? <LinkEditor link={editor === 'new' ? null : editor} close={() => setEditor(null)} save={link => preferences.save({ ...preferences.value, customLinks: editor === 'new' ? [...preferences.value.customLinks, link] : preferences.value.customLinks.map(item => item.id === link.id ? link : item) })} remove={id => preferences.save({ ...preferences.value, customLinks: preferences.value.customLinks.filter(item => item.id !== id) })} /> : null}
   </ScrollView>;

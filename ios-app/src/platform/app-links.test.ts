@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { StackRouter } from '@react-navigation/routers';
 import inventory from '../../parity/routes-and-shell.json';
-import { appPathFromState, appStateFromPath, featureRouteId, parseAppLink, resolveTransitLink, targetForSection } from './app-links';
+import { appPathFromState, appStateFromPath, catalogueDestination, featureRouteId, parseAppLink, resolveTransitLink, targetForSection } from './app-links';
 import { websiteRoutes, websiteRedirects, filamentNativeRoutes } from './website-routes.generated';
 import { decodeRouteMetadata } from './transit-model';
 
@@ -9,6 +9,21 @@ const features = [...new Set([...websiteRoutes.map(route => route.section), ...f
 const parse = (path: string) => parseAppLink(path, features);
 const state = (path: string) => appStateFromPath(path, features);
 const sample = (path: string) => path.replaceAll('{roomCode}', 'room-123').replaceAll('{shareId}', 'shared-123').replaceAll('{routeId}', 'route-123').replaceAll('{number}', '123').replaceAll('{record}', '101').replaceAll('{slug}', 'test-poll').replaceAll('{id}', path.startsWith('/transit/') ? 'damascus' : 'existing-123').replaceAll('{any}', 'old/path');
+
+test('catalogue destinations retain saved filters for registered native screens', () => {
+  expect(catalogueDestination('/tierlist/leaderboard?period=week', ['tierlist'])).toMatchObject({
+    kind: 'feature', section: 'tierlist', params: { period: 'week' }
+  });
+  expect(catalogueDestination('/mishwar?category=market', [])).toEqual({ kind: 'tab', tab: 'Places', params: { category: 'market' } });
+});
+
+test('catalogue destinations open on the website when the app cannot apply them', () => {
+  for (const href of ['/games', '/govtcvs', '/mishwar?guide=207', '/mishwar?category=unknown']) {
+    expect(catalogueDestination(href, [], 'https://example.test')).toEqual({ kind: 'website', url: `https://example.test${href}` });
+  }
+  expect(catalogueDestination('/mishwar', [])).toEqual({ kind: 'tab', tab: 'Places', params: {} });
+  expect(() => catalogueDestination('//example.invalid/games', [])).toThrow();
+});
 
 test('native child page names are preserved alongside numeric reader pages', () => {
   for (const page of ['overview', 'colors', 'fonts', 'flag', 'icons', 'map']) {

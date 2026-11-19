@@ -151,9 +151,9 @@ test('the snapshot reports the requesting player own view', function () {
     $this->getJson("/guesswho/room/{$room->room_code}/state?sender_session=qa-A")
         ->assertOk()
         ->assertJson([
-            'self' => 'qa-A',
+            'self' => 'player_1',
             'status' => 'playing',
-            'turn' => 'qa-A',
+            'turn' => 'player_1',
             'myCharacterId' => $room->character_ids[0],
             'myEliminated' => [$room->character_ids[0]],
             'opponentRemaining' => 3,

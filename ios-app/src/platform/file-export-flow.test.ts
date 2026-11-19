@@ -86,3 +86,27 @@ test('failed writes never invoke the encoder and an abort during encoding remove
   expect(removedSource).toBe(2);
   expect(removedOutput).toBe(1);
 });
+
+test('a source cleanup failure removes the encoded output before rejecting the export', async () => {
+  const failure = new Error('source deletion failed');
+  const outputs = new Set<string>();
+  await expect(
+    prepareExportFile(
+      {
+        write: async () => {},
+        encode: async () => {
+          outputs.add('image');
+          return 'image';
+        },
+        removeSource: () => {
+          throw failure;
+        },
+        removeOutput: (output) => {
+          outputs.delete(output);
+        },
+      },
+      () => false,
+    ),
+  ).rejects.toBe(failure);
+  expect(outputs.size).toBe(0);
+});

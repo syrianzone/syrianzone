@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { Deferred } from '../node_modules/@react-navigation/bottom-tabs/src/unstable/Deferred';
 import * as links from './platform/app-links';
+import type { FeatureNavigation } from './platform/features';
 import type { RootRoutes, TabRoutes } from './navigation';
 
 const requireFromApp = createRequire(import.meta.url);
@@ -34,8 +35,11 @@ const colors = { background: '#fff', surface: '#fff', text: '#000', accent: '#08
 function harness() {
   const SelectionContext = createContext(initial), RouteContext = createContext(initial.stack);
   const evaluated: string[] = [], cache = new Map<string, unknown>(), stackOptions = new Map<string, unknown>();
+  const navigations: unknown[][] = [], browserUrls: string[] = [];
+  let featureNavigation: FeatureNavigation | undefined;
   let current = initial, containerProps: Record<string, unknown> = {};
-  const navigation = { isReady: () => true, getCurrentRoute: () => current.stack.name === 'Main' ? current.tab : current.stack, canGoBack: () => false, goBack() {}, navigate() {}, replace() {} };
+  const navigation = { isReady: () => true, getCurrentRoute: () => current.stack.name === 'Main' ? current.tab : current.stack, canGoBack: () => false, goBack() {},
+    navigate: (...args: unknown[]) => { navigations.push(args); }, replace() {} };
   const useRoute = () => useContext(RouteContext);
   function StackNavigator({ children }: NavigatorProps): ReactNode {
     const selection = useContext(SelectionContext);
@@ -88,13 +92,17 @@ function harness() {
       if (name === '@react-navigation/native-stack') return { createNativeStackNavigator: () => ({ Navigator: StackNavigator, Screen: () => null }) };
       if (name === '@react-navigation/bottom-tabs/unstable') return { createNativeBottomTabNavigator: () => ({ Navigator: TabNavigator, Screen: () => null }) };
       if (name === 'react-native-safe-area-context') return { SafeAreaProvider: passthrough };
+      if (name === 'expo-web-browser') return { openBrowserAsync: async (url: string) => { browserUrls.push(url); } };
       if (name === './components') return { AdaptivePanes: ({ primary }: { primary: ReactNode }) => primary, contentStyle: {}, EmptyState: 'empty', Heading: 'heading', Label: 'label', RequestStatus: 'status', Section: 'section' };
       if (name === './state') return { StateProvider: passthrough, useAppState: () => ({ ready: true, storageAvailable: true }), useNativeAppearance() {} };
       if (name === './ui/native') return { NativeAction: 'action', NativeSegmented: 'segments', NativeSymbol: 'symbol' };
       if (name === './ui/theme') return { ThemeProvider: passthrough, themeColors: { light: colors }, useTheme: () => ({ colors, mode: 'light' }) };
       if (name === './transit' || name === './places') return exportsFor(name);
       if (name === './features/Home/Index') return { HomeScreen: () => createElement('home') };
-      if (name === './platform/features') return { FeatureNavigationProvider: passthrough };
+      if (name === './platform/features') return { FeatureNavigationProvider: ({ value, children }: { value: FeatureNavigation; children: ReactNode }) => {
+        featureNavigation = value;
+        return children;
+      } };
       if (name === './platform/storage') return { writeDocument: async () => {} };
       if (name === './platform/account') return { AccountProvider: passthrough };
       if (name === './platform/audio') return { AudioProvider: passthrough, useQuranPlayer: () => ({ source: 'continuous', current: null }) };
@@ -114,7 +122,8 @@ function harness() {
   let renderer: ReactTestRenderer | undefined;
   const element = () => createElement(SelectionContext.Provider, { value: current }, createElement(App));
   return {
-    evaluated, stackOptions,
+    evaluated, stackOptions, navigations, browserUrls,
+    get featureNavigation() { if (!featureNavigation) throw new Error('Render the App first.'); return featureNavigation; },
     get renderer() { if (!renderer) throw new Error('Render the App first.'); return renderer; },
     get container() { return containerProps; },
     render(selection = initial) {
@@ -145,6 +154,24 @@ test('Home evaluates neither map route module and keeps the navigation ref and c
   expect(app.container.ref).toBeDefined();
   const linking = app.container.linking as { getStateFromPath(path: string): unknown };
   expect(linking.getStateFromPath('place/201')).toEqual(links.appStateFromPath('place/201', []));
+}));
+
+test('catalogue actions use saved destinations independently of their item identifiers', async () => checked(async () => {
+  const app = harness();
+  app.render();
+  await act(async () => {
+    await app.featureNavigation.openCatalogueLink('/mishwar?category=market', 'markets');
+    await app.featureNavigation.openCatalogueLink('/mishwar?guide=207', 'local-guide');
+  });
+  expect(app.navigations).toEqual([['Main', { screen: 'Places', params: { category: 'market' } }]]);
+  expect(app.browserUrls).toEqual(['https://syrian.zone/mishwar?guide=207']);
+}));
+
+test('the foundation exposes native actions only for implemented screens', async () => checked(async () => {
+  const app = harness();
+  app.render();
+  expect(app.featureNavigation.canOpen('mishwar')).toBe(true);
+  expect(app.featureNavigation.canOpen('account')).toBe(false);
 }));
 
 test('first Transit access shows accessible loading then reuses its module and local tab state', async () => checked(async () => {

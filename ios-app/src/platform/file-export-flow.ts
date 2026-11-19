@@ -7,16 +7,25 @@ export async function prepareExportFile<T>(
   },
   cancelled: () => boolean,
 ): Promise<T> {
+  let output: { value: T } | undefined;
   try {
-    await port.write();
-    if (cancelled()) throw new Error('تم إلغاء تجهيز الصورة.');
-    const output = await port.encode();
-    if (cancelled()) {
-      port.removeOutput(output);
-      throw new Error('تم إلغاء تجهيز الصورة.');
+    try {
+      await port.write();
+      if (cancelled()) throw new Error('تم إلغاء تجهيز الصورة.');
+      output = { value: await port.encode() };
+      if (cancelled()) throw new Error('تم إلغاء تجهيز الصورة.');
+      return output.value;
+    } finally {
+      port.removeSource();
     }
-    return output;
-  } finally {
-    port.removeSource();
+  } catch (error) {
+    if (output) {
+      try {
+        port.removeOutput(output.value);
+      } catch {
+        // Preserve the failure that prevented the caller from receiving the file.
+      }
+    }
+    throw error;
   }
 }

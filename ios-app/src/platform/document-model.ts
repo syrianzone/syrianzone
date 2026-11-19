@@ -46,17 +46,23 @@ export function safeArchivePath(path: string): string {
 }
 export function validateArchiveEntries(files: readonly { filename: string }[], maxFiles = 200): void {
   if (!files.length || files.length > maxFiles) throw new Error('قائمة الملفات غير صالحة.');
-  const seen = new Set<string>();
-  for (const file of files) {
-    const name = safeArchivePath(file.filename).normalize('NFC').toLocaleLowerCase('en-US');
-    if (seen.has(name)) throw new Error('تتعارض أسماء بعض الملفات. نزّلها منفردة للحفاظ عليها.');
-    seen.add(name);
+  const names = new Set(files.map(file => safeArchivePath(file.filename).normalize('NFC').toLocaleLowerCase('en-US')));
+  const conflict = 'تتعارض أسماء بعض الملفات. نزّلها منفردة للحفاظ عليها.';
+  if (names.size !== files.length) throw new Error(conflict);
+  for (const name of names) {
+    for (let slash = name.indexOf('/'); slash !== -1; slash = name.indexOf('/', slash + 1)) {
+      if (names.has(name.slice(0, slash))) throw new Error(conflict);
+    }
   }
 }
-class ArchiveBudgetError extends Error {}
+export class ArchiveBudgetError extends Error {
+  constructor() {
+    super('لا توجد مساحة كافية لتجميع الملفات. نزّل مجموعة أصغر.');
+  }
+}
 export async function collectArchive<T extends { filename: string }>(
   files: readonly T[],
-  port: { download(item: T): Promise<number>; remove(item: T): Promise<void> },
+  port: { download(item: T, remaining: number): Promise<number>; remove(item: T): Promise<void> },
   options: { allowPartial: boolean; maxBytes: number; onProgress?(percent: number): void },
 ): Promise<{ failed: string[]; completed: number; bytes: number }> {
   const failed: string[] = [];
@@ -65,10 +71,10 @@ export async function collectArchive<T extends { filename: string }>(
     attempted = 0;
   for (const item of files) {
     try {
-      const size = await port.download(item);
+      const remaining = options.maxBytes - bytes;
+      const size = await port.download(item, remaining);
+      if (size > remaining) throw new ArchiveBudgetError();
       bytes += size;
-      if (bytes > options.maxBytes)
-        throw new ArchiveBudgetError('لا توجد مساحة كافية لتجميع الملفات. نزّل مجموعة أصغر.');
       completed++;
     } catch (error) {
       await port.remove(item);

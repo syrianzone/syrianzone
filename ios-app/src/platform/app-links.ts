@@ -1,5 +1,5 @@
 import type { InitialState, NavigationState } from '@react-navigation/native';
-import { isEntityId, type City } from '../domain';
+import { isEntityId, placeCategories, type City } from '../domain';
 import type { RootRoutes } from '../navigation';
 import { featureParameters } from './feature-location';
 import { canonicalHttpsOrigin, configuredSiteOrigin } from './site-origin';
@@ -152,6 +152,16 @@ export function parseAppLink(input: string, features: readonly string[] = source
     return targetForSection(route.section, params, features);
   }
   return null;
+}
+
+export function catalogueDestination(href: string, features: readonly string[], origin = configuredSiteOrigin): AppLinkTarget | { kind: 'website'; url: string } {
+  const url = new URL(href, origin);
+  if (url.origin !== origin || url.username || url.password) throw new Error('الرابط غير صالح.');
+  const target = parseAppLink(href, features, origin);
+  if (target?.kind === 'tab' && target.tab === 'Places' && Object.keys(target.params ?? {}).some(
+    key => key !== 'category' || !placeCategories.some(category => category.key === target.params?.category)
+  )) return { kind: 'website', url: url.href };
+  return target ?? { kind: 'website', url: url.href };
 }
 
 export function stateForTarget(target: AppLinkTarget): InitialState {

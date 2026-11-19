@@ -24,6 +24,13 @@ test('archive paths preserve nested folders without traversal, duplicate-normali
     expect(() => safeArchivePath(path)).toThrow();
   expect(() => validateArchiveEntries([{ filename: 'A/x.png' }, { filename: 'a/X.png' }], 10)).toThrow();
 });
+test('archive entries cannot use a file as a directory in either order', () => {
+  const paths = ['Maps', 'maps/tiles/tile.png'];
+  for (const filenames of [paths, [...paths].reverse()]) {
+    expect(() => validateArchiveEntries(filenames.map(filename => ({ filename })))).toThrow();
+  }
+  validateArchiveEntries([{ filename: 'maps/roads.png' }, { filename: 'maps/tiles/tile.png' }]);
+});
 test('native file exports support real asset names and extensionless documents without path injection', () => {
   for (const name of ['README', 'نسخة نهائية (2)!.pdf', 'asset.svg']) expect(exportFilename(name)).toBe(true);
   for (const name of ['..', '../file', 'a\\file', 'a\nfile', 'a:b', 'x'.repeat(256)])

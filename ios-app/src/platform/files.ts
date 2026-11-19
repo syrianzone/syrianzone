@@ -1,8 +1,9 @@
-import { Directory, File, Paths } from 'expo-file-system';
+import { Directory, File, FileMode, Paths, type FileHandle } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { requireNativeModule } from 'expo';
+import { fetch as expoFetch } from 'expo/fetch';
 import { randomUUID } from 'expo-crypto';
-import { collectArchive, exportFilename, safeArchivePath, validateArchiveEntries } from './document-model';
+import { ArchiveBudgetError, collectArchive, exportFilename, safeArchivePath, validateArchiveEntries } from './document-model';
 import { imageExportPlan } from './image-export-model';
 import { prepareExportFile } from './file-export-flow';
 import { namedExportLocation } from './export-location';
@@ -38,6 +39,53 @@ export async function downloadImageDataUri(url: string): Promise<string> {
     return await nativeFiles().imageDataUri(file.uri);
   } finally {
     if (file.exists) file.delete();
+  }
+}
+
+async function stageArchiveFile(url: string, file: File, remaining: number): Promise<number> {
+  const controller = new AbortController();
+  const timeout = new Error('انتهت مهلة تنزيل ملف الأرشيف.');
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
+  function refreshIdleTimer(): void {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => controller.abort(timeout), 60_000);
+  }
+  let reader: ReadableStreamDefaultReader<Uint8Array<ArrayBuffer>> | undefined;
+  let handle: FileHandle | undefined;
+  try {
+    refreshIdleTimer();
+    const response = await expoFetch(downloadUrl(url), { signal: controller.signal });
+    if (controller.signal.aborted) throw timeout;
+    refreshIdleTimer();
+    if (!response.ok) throw new Error('تعذّر تنزيل ملف الأرشيف.');
+    if (response.url) downloadUrl(response.url);
+    reader = response.body?.getReader();
+    file.create();
+    if (!reader) return 0;
+    handle = file.open(FileMode.WriteOnly);
+
+    let size = 0;
+    for (;;) {
+      const chunk = await reader.read();
+      if (controller.signal.aborted) throw timeout;
+      if (chunk.done) break;
+      const bytes = chunk.value.byteLength;
+      if (bytes > remaining - size) throw new ArchiveBudgetError();
+      if (bytes > 0) refreshIdleTimer();
+      await handle.writeBytes(chunk.value);
+      size += bytes;
+    }
+    handle.close();
+    return size;
+  } catch (error) {
+    const failure = controller.signal.aborted ? timeout : error;
+    controller.abort();
+    try { handle?.close(); } catch { /* Keep the download error. */ }
+    await reader?.cancel().catch(() => {});
+    throw failure;
+  } finally {
+    clearTimeout(idleTimer);
+    reader?.releaseLock();
   }
 }
 
@@ -77,9 +125,10 @@ export async function shareZipFiles(
   const directory = new Directory(staging, archiveName.slice(0, -4));
   let archive: File | null = null;
   let sharedDirectory: Directory | null = null;
+  let completed = false;
   staging.create();
-  directory.create();
   try {
+    directory.create();
     function target(filename: string): File {
       const parts = safeArchivePath(filename).split('/'),
         name = parts.pop();
@@ -91,8 +140,7 @@ export async function shareZipFiles(
     const result = await collectArchive(
       files,
       {
-        download: async (item) =>
-          (await File.downloadFileAsync(downloadUrl(item.url), target(item.filename))).size,
+        download: (item, remaining) => stageArchiveFile(item.url, target(item.filename), remaining),
         remove: async (item) => {
           const file = target(item.filename);
           if (file.exists) file.delete();
@@ -111,11 +159,18 @@ export async function shareZipFiles(
     sharedDirectory = shared.directory;
     await archive.move(shared.file);
     await Sharing.shareAsync(archive.uri, { mimeType: 'application/zip', dialogTitle: archiveName });
+    completed = true;
     if (options) return result;
   } finally {
-    if (archive?.exists) archive.delete();
-    if (sharedDirectory?.exists) sharedDirectory.delete();
-    if (staging.exists) staging.delete();
+    let cleanupFailure: { error: unknown } | undefined;
+    for (const entry of [archive, sharedDirectory, staging]) {
+      try {
+        if (entry?.exists) entry.delete();
+      } catch (error) {
+        cleanupFailure ??= { error };
+      }
+    }
+    if (completed && cleanupFailure) throw cleanupFailure.error;
   }
 }
 

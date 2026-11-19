@@ -4,6 +4,9 @@ namespace App\Services\Users;
 
 use App\Exceptions\Users\UserModerationException;
 use App\Models\User;
+use App\Support\Agents\TokenIssuer;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * User moderation: banning and unbanning.
@@ -48,9 +51,36 @@ class UserModerationService
         if ((bool) $target->is_banned !== $isBanned) {
             $target->is_banned = $isBanned;
             $target->save();
+
+            if ($isBanned) {
+                $this->endAccess($target);
+            }
         }
 
         return $target;
+    }
+
+    /**
+     * Cut off every credential a banned user already holds.
+     *
+     * Login refuses banned users, but tokens, open sessions and the
+     * remember-me cookie were issued before the ban and outlived it. Tokens
+     * are deleted rather than suspended, so lifting a ban does not revive them.
+     */
+    private function endAccess(User $target): void
+    {
+        app(TokenIssuer::class)->revokeAllFor($target);
+
+        if (config('session.driver') === 'database') {
+            DB::connection(config('session.connection'))
+                ->table(config('session.table', 'sessions'))
+                ->where('user_id', $target->getKey())
+                ->delete();
+        }
+
+        // Rotating the remember token invalidates every remember-me cookie.
+        $target->setRememberToken(Str::random(60));
+        $target->save();
     }
 
     /**

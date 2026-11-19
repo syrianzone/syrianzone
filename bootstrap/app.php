@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // before HandleInertiaRequests renders the response.
         $middleware->web(append: [
             \App\Http\Middleware\AutoLoginDevUser::class,
+            \App\Http\Middleware\EndBannedSession::class,
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
@@ -38,12 +39,20 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \App\Http\Middleware\AutoLoginDevUser::class,
         ]);
+        $middleware->api(append: [
+            \App\Http\Middleware\EndBannedSession::class,
+        ]);
 
         // Ensure AutoLoginDevUser runs after StartSession and before Authenticate
-        // on auth-guarded web and API routes.
+        // on auth-guarded web and API routes, and that a banned user's session
+        // is ended before Authenticate accepts it.
         $middleware->prependToPriorityList(
             \Illuminate\Auth\Middleware\Authenticate::class,
             \App\Http\Middleware\AutoLoginDevUser::class
+        );
+        $middleware->prependToPriorityList(
+            \Illuminate\Auth\Middleware\Authenticate::class,
+            \App\Http\Middleware\EndBannedSession::class
         );
 
         // Every module guard alias resolves to the one parameterised guard; the
@@ -59,6 +68,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'compass_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // Promises tracker: promises, review queue, speakers and sectors.
             'promises_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            // Government officials CVs & movements tracker.
+            'govtcvs_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // Gov Apps admin group. ModuleCapabilityGuard needs the alias so a
             // per-route capability can be passed through.
             'govapps_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,

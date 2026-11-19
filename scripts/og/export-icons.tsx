@@ -23,6 +23,7 @@ const GLYPHS = [
     'Hourglass', 'Wrench', 'AlarmClock', 'BadgeCheck', 'CircleDashed', 'XCircle', 'CalendarClock', 'Undo2',
     'Calendar', 'MapPin', 'Bus', 'Users', 'Vote', 'Route', 'Plane', 'Ship', 'Car', 'Globe', 'Hash', 'ArrowLeft',
     'Image', 'Landmark', 'TreePine', 'Utensils', 'Store', 'Mountain', 'Church', 'Eye', 'Building2', 'Gamepad2',
+    'LogOut', 'HelpCircle', 'MinusCircle',
 ] as const;
 
 type Theme = 'light' | 'dark';

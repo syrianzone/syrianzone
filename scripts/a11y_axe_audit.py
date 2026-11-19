@@ -42,6 +42,7 @@ PUBLIC_ROUTES = [
     "/games", "/games/2048", "/games/solitare", "/games/tarneeb", "/games/trix", "/board",
     "/mishwar", "/transit", "/transit/studio",
     "/promises", "/promises/suggest",
+    "/govtcvs", "/govtcvs/movements",
 ]
 ADMIN_ROUTES = [
     "/dashboard", "/admin/govapps", "/admin/phonebook", "/admin/syofficial",
@@ -50,6 +51,7 @@ ADMIN_ROUTES = [
     "/admin/compass", "/admin/compass/figures", "/admin/compass/personas",
     "/admin/promises", "/admin/promises/new", "/admin/promises/review",
     "/admin/promises/speakers", "/admin/promises/sectors",
+    "/admin/govtcvs", "/admin/govtcvs/new", "/admin/govtcvs/slots",
 ]
 
 AXE_AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"]

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\GovtOfficial;
 use App\Models\Poll;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
@@ -60,9 +61,55 @@ test('canonical /api/v1/search/global and legacy /api/v1/global-search both serv
     $canonical = $this->getJson('/api/v1/search/global?q=a')->assertOk()->json();
     $legacy = $this->getJson('/api/v1/global-search?q=a')->assertOk()->json();
 
-    $keys = ['routes', 'places', 'phonebook', 'officials', 'govapps'];
+    $keys = ['routes', 'places', 'phonebook', 'officials', 'govapps', 'govtcvs'];
     expect($canonical)->toHaveKeys($keys)
         ->and($legacy)->toHaveKeys($keys);
+});
+
+test('global search returns published government officials by name, alias, and role while hiding drafts', function () {
+    $published = GovtOfficial::create([
+        'slug' => 'ahmad-rawwad-ramadan',
+        'full_name_ar' => 'أحمد رواد رمضان',
+        'display_name_ar' => 'رواد رمضان',
+        'full_name_en' => 'Ahmad Rawwad Ramadan',
+        'honorific_ar' => 'المهندس',
+        'office_status' => 'in_office',
+        'highest_tier' => 'minister',
+        'publish_status' => 'published',
+    ]);
+    $published->aliases()->create(['alias_ar' => 'أحمد رمضان']);
+    $published->tenures()->create([
+        'role_title_ar' => 'وزير الاقتصاد والتجارة الخارجية',
+        'institution_name_ar' => 'وزارة الاقتصاد والتجارة الخارجية',
+        'tier' => 'minister',
+        'status' => 'current',
+        'started_at' => '2026-11-18',
+    ]);
+
+    GovtOfficial::create([
+        'slug' => 'draft-minister',
+        'full_name_ar' => 'رواد مسودة',
+        'display_name_ar' => 'رواد مسودة',
+        'office_status' => 'in_office',
+        'highest_tier' => 'minister',
+        'publish_status' => 'draft',
+    ]);
+
+    // Arabic name search
+    $byName = $this->getJson('/api/v1/global-search?q='.urlencode('رواد'))->assertOk()->json();
+    expect($byName['govtcvs'])->toHaveCount(1)
+        ->and($byName['govtcvs'][0]['slug'])->toBe('ahmad-rawwad-ramadan')
+        ->and($byName['govtcvs'][0]['roleTitleAr'])->toBe('وزير الاقتصاد والتجارة الخارجية');
+
+    // Folded alias search (without hamza)
+    $byAlias = $this->getJson('/api/v1/search/global?q='.urlencode('احمد رمضان'))->assertOk()->json();
+    expect($byAlias['govtcvs'])->toHaveCount(1)
+        ->and($byAlias['govtcvs'][0]['slug'])->toBe('ahmad-rawwad-ramadan');
+
+    // Role title search
+    $byRole = $this->getJson('/api/v1/global-search?q='.urlencode('وزير الاقتصاد'))->assertOk()->json();
+    expect($byRole['govtcvs'])->toHaveCount(1)
+        ->and($byRole['govtcvs'][0]['slug'])->toBe('ahmad-rawwad-ramadan');
 });
 
 test('canonical /api/v1/polls/{idOrSlug}/ballots and /api/v1/polls/{idOrSlug}/leaderboard work alongside legacy poll endpoints', function () {

@@ -59,10 +59,11 @@ class AuthController extends Controller
     /**
      * Stateless Google OAuth token exchange for Flutter / mobile clients.
      *
-     * Accepts either a Google `id_token` (verified against Google's tokeninfo
-     * endpoint + audience check) OR a Google `access_token` (verified against
-     * Google's userinfo endpoint + optional audience check), and resolves the
-     * user against the exact same `users` table / account pool as the web app.
+     * Accepts either a Google `id_token` or a Google `access_token`. Either way
+     * the token's audience must be one of our own client ids
+     * (`services.google.allowed_client_ids`), checked against Google's
+     * tokeninfo endpoint; anything that cannot be verified is refused. The
+     * user is resolved against the same `users` table as the web app.
      */
     public function googleToken(Request $request)
     {
@@ -77,6 +78,13 @@ class AuthController extends Controller
         $name = null;
         $avatar = null;
         $allowedClientIds = config('services.google.allowed_client_ids', []);
+
+        // Without a list of our own client ids there is nothing to check the
+        // token's audience against, and a Google token minted for any other
+        // app would be accepted as a login. Refuse rather than fail open.
+        if (empty($allowedClientIds)) {
+            return response()->json(['message' => 'Google sign-in is not configured.'], 503);
+        }
 
         if (! empty($validated['id_token'])) {
             try {
@@ -100,7 +108,7 @@ class AuthController extends Controller
             }
 
             $aud = (string) ($payload['aud'] ?? '');
-            if (! empty($allowedClientIds) && ! in_array($aud, $allowedClientIds, true)) {
+            if (! in_array($aud, $allowedClientIds, true)) {
                 return response()->json(['message' => 'Invalid Google token audience.'], 401);
             }
 
@@ -111,6 +119,28 @@ class AuthController extends Controller
                 : explode('@', $email)[0];
             $avatar = isset($payload['picture']) ? (string) $payload['picture'] : null;
         } else {
+            // An access token says nothing about which app it was issued to,
+            // so its audience is established first, from tokeninfo, and any
+            // failure to establish it is a refusal. userinfo alone would accept
+            // a token that some unrelated app obtained for the same user.
+            try {
+                $tokenInfoResponse = Http::timeout(8)->get('https://oauth2.googleapis.com/tokeninfo', [
+                    'access_token' => $validated['access_token'],
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json(['message' => 'Unable to verify Google access_token at this time.'], 503);
+            }
+
+            if (! $tokenInfoResponse->successful()) {
+                return response()->json(['message' => 'Invalid or expired Google access_token.'], 401);
+            }
+
+            $tokenInfo = $tokenInfoResponse->json();
+            $aud = is_array($tokenInfo) ? (string) ($tokenInfo['aud'] ?? $tokenInfo['azp'] ?? '') : '';
+            if (! in_array($aud, $allowedClientIds, true)) {
+                return response()->json(['message' => 'Invalid Google token audience.'], 401);
+            }
+
             try {
                 $userInfoResponse = Http::timeout(8)
                     ->withToken($validated['access_token'])
@@ -131,21 +161,10 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Google account does not contain a verified email.'], 401);
             }
 
-            if (! empty($allowedClientIds)) {
-                try {
-                    $tokenInfoResponse = Http::timeout(8)->get('https://oauth2.googleapis.com/tokeninfo', [
-                        'access_token' => $validated['access_token'],
-                    ]);
-                    if ($tokenInfoResponse->successful()) {
-                        $tokenInfo = $tokenInfoResponse->json();
-                        $aud = (string) ($tokenInfo['aud'] ?? $tokenInfo['azp'] ?? '');
-                        if ($aud !== '' && ! in_array($aud, $allowedClientIds, true)) {
-                            return response()->json(['message' => 'Invalid Google token audience.'], 401);
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    // Continue if optional tokeninfo check is unreachable after userinfo succeeded
-                }
+            // Both answers must describe the same Google account.
+            $tokenSub = (string) ($tokenInfo['sub'] ?? '');
+            if ($tokenSub !== '' && $tokenSub !== (string) ($payload['sub'] ?? '')) {
+                return response()->json(['message' => 'Invalid or expired Google access_token.'], 401);
             }
 
             $email = (string) $payload['email'];

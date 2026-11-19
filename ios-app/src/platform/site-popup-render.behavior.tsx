@@ -45,6 +45,39 @@ const popup = {
   buttonText: 'افتح صفحة الحملة للمزيد من التفاصيل', dismissText: 'لاحقاً', link: 'https://example.invalid/campaign'
 };
 
+test('a campaign load failure leaves the app unobstructed', async () => {
+  const page = spyOn(api, 'page').mockRejectedValue(new Error('Offline'));
+  let mounted: ReactTestRenderer | undefined;
+  try {
+    await act(async () => { mounted = create(createElement(SitePopupPublic, { pageKey: 'home' })); });
+    expect(mounted!.toJSON()).toBeNull();
+  } finally {
+    if (mounted) await act(async () => { mounted?.unmount(); });
+    page.mockRestore();
+  }
+});
+
+test('a touch before the campaign loads quiets it until the next page', async () => {
+  let resolvePage: (() => void) | undefined;
+  const page = spyOn(api, 'page').mockImplementation((_path, _component, decode) =>
+    new Promise(resolve => { resolvePage = () => resolve(decode({ sitePopup: { ...popup, version: 88 } })); })
+  );
+  const schedule = spyOn(globalThis, 'setTimeout');
+  let mounted: ReactTestRenderer | undefined;
+  try {
+    await act(async () => { mounted = create(createElement(SitePopupPublic, { pageKey: 'home' })); });
+    await act(async () => { mounted!.update(createElement(SitePopupPublic, { pageKey: 'home', interactionVersion: 1 })); });
+    await act(async () => { resolvePage!(); });
+    expect(schedule.mock.calls.filter(([, delay]) => delay === 2000)).toHaveLength(0);
+    await act(async () => { mounted!.update(createElement(SitePopupPublic, { pageKey: 'places', interactionVersion: 1 })); });
+    expect(schedule.mock.calls.filter(([, delay]) => delay === 2000)).toHaveLength(1);
+  } finally {
+    if (mounted) await act(async () => { mounted?.unmount(); });
+    schedule.mockRestore();
+    page.mockRestore();
+  }
+});
+
 test('long campaign copy retains a wrapping action group with separate link and persistent-dismissal bindings', async () => {
   const timers = new Map<number, () => void>(), ownedTimers = new Set<number>();
   let nextTimer = 1, mounted: ReactTestRenderer | undefined;

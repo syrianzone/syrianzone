@@ -29,10 +29,14 @@ interface GameProps {
   };
 }
 
+/** A presence entry. Players are identified by slot, never by session id. */
 interface PresenceMember {
-  session_id: string;
+  id: string;
+  player?: PlayerRole;
   name?: string | null;
 }
+
+type PlayerRole = 'player_1' | 'player_2';
 
 /** Payload of `GuessWhoStateEvent` (app/Events/GuessWhoStateEvent.php). */
 interface GameStateBroadcast {
@@ -207,12 +211,10 @@ export default function GameRoom({ game }: GameProps) {
 
   const [opponentRemaining, setOpponentRemaining] = useState(game.category.characters.length);
 
-  const [peerUuid, setPeerUuidState] = useState<string | null>(null);
-  const peerUuidRef = useRef<string | null>(null);
-  const setPeerUuid = (uuid: string | null) => {
-    peerUuidRef.current = uuid;
-    setPeerUuidState(uuid);
-  };
+  // This player's public slot. The session id stays private: it is the
+  // credential for moves, so the room only ever sees slots.
+  const myRoleRef = useRef<PlayerRole | null>(null);
+  const peerRoleRef = useRef<string | null>(null);
 
   const [myTurn, setMyTurn] = useState(false);
   const [winMessage, setWinMessage] = useState<string | null>(null);
@@ -234,7 +236,7 @@ export default function GameRoom({ game }: GameProps) {
 
     // The opponent's remaining count rides along with every state broadcast.
     if (state.remaining) {
-      const opponentCount = Object.entries(state.remaining).find(([sid]) => sid !== sessionUuid)?.[1];
+      const opponentCount = Object.entries(state.remaining).find(([role]) => role !== myRoleRef.current)?.[1];
       if (typeof opponentCount === 'number') setOpponentRemaining(opponentCount);
     }
 
@@ -242,7 +244,7 @@ export default function GameRoom({ game }: GameProps) {
       setMyTurn(false);
       setGameState('ended');
       const guessedId = state.guess?.characterId;
-      if (state.winner === sessionUuid) {
+      if (state.winner === myRoleRef.current) {
         setWinMessage(VICTORY_MESSAGE);
       } else if (guessedId) {
         const name = game.category.characters.find((c) => c.id === guessedId)?.name_ar;
@@ -255,7 +257,7 @@ export default function GameRoom({ game }: GameProps) {
 
     if (state.status === 'playing') {
       setGameState((prev) => (prev === 'ended' ? prev : 'playing'));
-      setMyTurn(state.turn === sessionUuid);
+      setMyTurn(state.turn === myRoleRef.current);
       return;
     }
 
@@ -267,7 +269,8 @@ export default function GameRoom({ game }: GameProps) {
     let active = true;
     const registerPlayer = async () => {
       try {
-        await guessWhoApi.join(game.room_code, sessionUuid);
+        const joined = await guessWhoApi.join(game.room_code, sessionUuid);
+        myRoleRef.current = joined.role;
         if (active) {
           setIsJoined(true);
           setLoadingJoin(false);
@@ -300,6 +303,7 @@ export default function GameRoom({ game }: GameProps) {
       try {
         const data = await guessWhoApi.state(game.room_code, sessionUuid);
         if (!active || !data) return;
+        if (data.self) myRoleRef.current = data.self;
 
         if (data.myCharacterId) {
           setMySecret(data.myCharacterId);
@@ -310,12 +314,12 @@ export default function GameRoom({ game }: GameProps) {
 
         if (data.status === 'playing') {
           setGameState('playing');
-          setMyTurn(data.turn === sessionUuid);
+          setMyTurn(data.turn === myRoleRef.current);
         } else if (data.status === 'finished') {
           setGameState('ended');
           setMyTurn(false);
           setWinMessage(
-            data.winner === sessionUuid ? VICTORY_MESSAGE : `لقد فاز ${opponentNameRef.current}!`,
+            data.winner === myRoleRef.current ? VICTORY_MESSAGE : `لقد فاز ${opponentNameRef.current}!`,
           );
         } else if (data.myCharacterId) {
           setGameState('selecting');
@@ -345,7 +349,7 @@ export default function GameRoom({ game }: GameProps) {
     const channelName = `guesswho.${game.room_code}`;
 
     const adoptPeer = (other: PresenceMember) => {
-      setPeerUuid(other.session_id);
+      peerRoleRef.current = other.player ?? other.id;
       setOpponentName(other.name || 'لاعب آخر');
       setPeerConnected(true);
       setPeerDisconnected(false);
@@ -353,7 +357,8 @@ export default function GameRoom({ game }: GameProps) {
         clearTimeout(peerReconnectTimer.current);
         peerReconnectTimer.current = null;
       }
-      setMyTurn(sessionUuid < other.session_id);
+      // Player 1 leads; the server's state broadcast confirms it.
+      setMyTurn(myRoleRef.current === 'player_1');
     };
 
     initEcho().then((echo) => {
@@ -362,12 +367,12 @@ export default function GameRoom({ game }: GameProps) {
 
       echo.join(channelName)
         .here((users: PresenceMember[]) => {
-          const other = users.find((u) => u.session_id !== sessionUuid);
+          const other = users.find((u) => (u.player ?? u.id) !== myRoleRef.current);
           if (other) adoptPeer(other);
         })
         .joining((user: PresenceMember) => adoptPeer(user))
         .leaving((user: PresenceMember) => {
-          if (user.session_id === peerUuidRef.current) {
+          if ((user.player ?? user.id) === peerRoleRef.current) {
             setPeerConnected(false);
             // A real grace period: a reload or a network blip drops the presence
             // entry for a few seconds and `.joining` clears this timer, so the

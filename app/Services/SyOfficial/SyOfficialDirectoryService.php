@@ -180,6 +180,10 @@ class SyOfficialDirectoryService
 
         if (array_key_exists('category_id', $attributes)) {
             $this->assertCategoryExists($attributes['category_id']);
+            if ($entity->category_id !== $attributes['category_id']) {
+                $entity->category_id = $attributes['category_id'];
+                $entity->order_column = (int) (OfficialEntity::where('category_id', $attributes['category_id'])->max('order_column') ?? 0) + 1;
+            }
         }
 
         $entity->name = $attributes['name'] ?? $entity->name;
@@ -199,6 +203,17 @@ class SyOfficialDirectoryService
             // ever points at the current one, and other rows may share nothing
             // but an R2 lifecycle policy should own the orphan.
             $entity->image = $this->images->storeSquareWebp($image, self::IMAGE_DIR, $entity->id);
+        } elseif (! empty($attributes['image_url']) && self::isHttpUrl($attributes['image_url'])) {
+            $response = \Illuminate\Support\Facades\Http::timeout(15)
+                ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
+                ->get(trim((string) $attributes['image_url']));
+
+            if ($response->successful() && $response->body() !== '') {
+                $stored = $this->images->storeSquareWebpFromBytes($response->body(), self::IMAGE_DIR, $entity->id);
+                if ($stored !== null) {
+                    $entity->image = $stored;
+                }
+            }
         }
 
         $entity->save();

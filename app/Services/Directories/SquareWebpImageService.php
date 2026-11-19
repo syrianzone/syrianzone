@@ -32,18 +32,35 @@ class SquareWebpImageService
      */
     public function storeSquareWebp(UploadedFile $file, string $directory, string $basename): string
     {
-        $disk = $this->resolveDisk();
-        $fileName = trim($directory, '/')."/{$basename}_".time().'.webp';
+        $contents = @file_get_contents($file->getRealPath());
 
-        $webp = $this->encodeSquareWebp($file);
+        if ($contents !== false) {
+            $stored = $this->storeSquareWebpFromBytes($contents, $directory, $basename);
+            if ($stored !== null) {
+                return $stored;
+            }
+        }
+
+        $disk = $this->resolveDisk();
+        $path = $file->storeAs(trim($directory, '/'), "{$basename}_".time().'.'.$file->getClientOriginalExtension(), $disk);
+
+        return Storage::disk($disk)->url($path);
+    }
+
+    /**
+     * Store raw image bytes as a square WebP under "<directory>/<basename>_<ts>.webp",
+     * returning the public URL or null if the bytes cannot be decoded by GD.
+     */
+    public function storeSquareWebpFromBytes(string $contents, string $directory, string $basename): ?string
+    {
+        $webp = $this->encodeSquareWebpBytes($contents);
 
         if ($webp === null) {
-            // No GD, or undecodable bytes: keep the original rather than
-            // blocking the save.
-            $path = $file->storeAs(trim($directory, '/'), "{$basename}_".time().'.'.$file->getClientOriginalExtension(), $disk);
-
-            return Storage::disk($disk)->url($path);
+            return null;
         }
+
+        $disk = $this->resolveDisk();
+        $fileName = trim($directory, '/')."/{$basename}_".time().'.webp';
 
         Storage::disk($disk)->put($fileName, $webp, 'public');
 
@@ -55,13 +72,14 @@ class SquareWebpImageService
      */
     protected function encodeSquareWebp(UploadedFile $file): ?string
     {
-        if (! function_exists('imagecreatefromstring') || ! function_exists('imagewebp')) {
-            return null;
-        }
-
         $contents = @file_get_contents($file->getRealPath());
 
-        if ($contents === false) {
+        return $contents === false ? null : $this->encodeSquareWebpBytes($contents);
+    }
+
+    protected function encodeSquareWebpBytes(string $contents): ?string
+    {
+        if (! function_exists('imagecreatefromstring') || ! function_exists('imagewebp')) {
             return null;
         }
 

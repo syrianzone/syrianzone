@@ -16,6 +16,29 @@ final class SyrianZoneUITests: XCTestCase {
   }
 
   @MainActor
+  func testHomeSearchOpensMishwar() {
+    let app = XCUIApplication(bundleIdentifier: "zone.syrian.ios")
+    app.launch()
+
+    let scroll = app.scrollViews.firstMatch
+    let search = app.textFields["ابحث في المساحة السورية"]
+    XCTAssertTrue(search.waitForExistence(timeout: 15))
+    for _ in 0..<4 where !search.isHittable { scroll.swipeUp() }
+    search.tap()
+    search.typeText("Mishwar\n")
+    XCTAssertEqual((search.value as? String)?.lowercased(), "mishwar")
+    XCTAssertTrue(app.staticTexts["الأقسام"].waitForExistence(timeout: 5))
+
+    let result = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "مشوار،")).firstMatch
+    XCTAssertTrue(result.waitForExistence(timeout: 5))
+    for _ in 0..<4 where !result.isHittable { scroll.swipeUp() }
+    result.tap()
+
+    XCTAssertTrue(app.staticTexts["أماكن تستحق المشوار في سوريا"].waitForExistence(timeout: 10))
+    attach("home-search-mishwar", app: app)
+  }
+
+  @MainActor
   func testHomepageToolbarThemesAndSearch() throws {
     let app = XCUIApplication(bundleIdentifier: "zone.syrian.ios")
     app.launch()

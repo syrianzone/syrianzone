@@ -20,5 +20,5 @@ Broadcast::channel('guesswho.{roomCode}', function (?object $user, $roomCode) {
         return false;
     }
 
-    return RoomChannel::member($sessionId, $user instanceof User ? $user : null);
+    return RoomChannel::member(RoomChannel::role($game, $sessionId), $user instanceof User ? $user : null);
 });

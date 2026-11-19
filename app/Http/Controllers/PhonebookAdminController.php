@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Directories\DirectorySuggestionService;
 use App\Services\Phonebook\PhonebookDirectoryService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -24,6 +25,7 @@ class PhonebookAdminController extends Controller
         return inertia('Admin/Phonebook/Index', [
             'categories' => $this->directory->categories(),
             'entries' => $this->directory->entries(),
+            'pendingSuggestionsCount' => app(DirectorySuggestionService::class)->pendingCount('phonebook'),
         ]);
     }
 

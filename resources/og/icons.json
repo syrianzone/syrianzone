@@ -125,6 +125,11 @@
    "light": "<g fill=\"none\"><rect x=\"8\" y=\"3\" width=\"16\" height=\"26\" rx=\"3\" stroke-width=\"2\" fill=\"#475569\" fill-opacity=\"0.15\" stroke=\"#334155\"></rect><path d=\"M14 6h4\" stroke-width=\"2\" stroke-linecap=\"round\" stroke=\"#64748B\"></path><rect x=\"11\" y=\"10\" width=\"4\" height=\"4\" rx=\"1\" fill=\"#3DDC84\"></rect><rect x=\"17\" y=\"10\" width=\"4\" height=\"4\" rx=\"1\" fill=\"#3B82F6\"></rect><rect x=\"11\" y=\"16\" width=\"4\" height=\"4\" rx=\"1\" fill=\"#F59E0B\"></rect><rect x=\"17\" y=\"16\" width=\"4\" height=\"4\" rx=\"1\" fill=\"hsl(var(--primary))\"></rect><circle cx=\"16\" cy=\"24\" r=\"1.5\" fill=\"#64748B\"></circle></g>",
    "dark": "<g fill=\"none\"><rect x=\"8\" y=\"3\" width=\"16\" height=\"26\" rx=\"3\" stroke-width=\"2\" fill=\"#94A3B8\" stroke=\"#94A3B8\" fill-opacity=\"0.2\"></rect><path d=\"M14 6h4\" stroke-width=\"2\" stroke-linecap=\"round\" stroke=\"#CBD5E1\"></path><rect x=\"11\" y=\"10\" width=\"4\" height=\"4\" rx=\"1\" fill=\"#4ADE80\"></rect><rect x=\"17\" y=\"10\" width=\"4\" height=\"4\" rx=\"1\" fill=\"#60A5FA\"></rect><rect x=\"11\" y=\"16\" width=\"4\" height=\"4\" rx=\"1\" fill=\"#FBBF24\"></rect><rect x=\"17\" y=\"16\" width=\"4\" height=\"4\" rx=\"1\" fill=\"hsl(var(--primary))\"></rect><circle cx=\"16\" cy=\"24\" r=\"1.5\" fill=\"#94A3B8\"></circle></g>"
   },
+  "govtcvs": {
+   "viewBox": "0 0 32 32",
+   "light": "<g fill=\"none\"><rect x=\"5\" y=\"3\" width=\"22\" height=\"26\" rx=\"3\" stroke-width=\"2\" stroke-linejoin=\"round\" fill=\"#3B82F6\" fill-opacity=\"0.15\" stroke=\"#2563EB\"></rect><circle cx=\"16\" cy=\"11\" r=\"3.2\" fill=\"#10B981\"></circle><path d=\"M11 18.5c0-2.2 2.2-3.5 5-3.5s5 1.3 5 3.5\" stroke-width=\"2\" stroke-linecap=\"round\" stroke=\"#059669\"></path><path d=\"M10 22.5h12M10 25.5h8\" stroke-width=\"2\" stroke-linecap=\"round\" stroke=\"#475569\"></path></g>",
+   "dark": "<g fill=\"none\"><rect x=\"5\" y=\"3\" width=\"22\" height=\"26\" rx=\"3\" stroke-width=\"2\" stroke-linejoin=\"round\" fill=\"#60A5FA\" stroke=\"#60A5FA\" fill-opacity=\"0.25\"></rect><circle cx=\"16\" cy=\"11\" r=\"3.2\" fill=\"#34D399\"></circle><path d=\"M11 18.5c0-2.2 2.2-3.5 5-3.5s5 1.3 5 3.5\" stroke-width=\"2\" stroke-linecap=\"round\" stroke=\"#34D399\"></path><path d=\"M10 22.5h12M10 25.5h8\" stroke-width=\"2\" stroke-linecap=\"round\" stroke=\"#CBD5E1\"></path></g>"
+  },
   "party": {
    "viewBox": "0 0 32 32",
    "light": "<g fill=\"none\"><circle cx=\"11\" cy=\"11\" r=\"4\" stroke-width=\"2\" fill=\"#8B5CF6\" fill-opacity=\"0.25\" stroke=\"#7C3AED\"></circle><circle cx=\"21\" cy=\"11\" r=\"4\" stroke-width=\"2\" fill=\"#F97316\" fill-opacity=\"0.25\" stroke=\"#EA580C\"></circle><path d=\"M4 25c0-3.9 3.1-7 7-7s7 3.1 7 7\" stroke-width=\"2\" stroke-linecap=\"round\" stroke=\"#7C3AED\"></path><path d=\"M17 25c0-3.1 2.2-5.7 5.2-6.6M14 25h14\" stroke-width=\"2\" stroke-linecap=\"round\" stroke=\"#EA580C\"></path><circle cx=\"16\" cy=\"18\" r=\"2\" fill=\"hsl(var(--primary))\"></circle></g>",
@@ -321,6 +326,18 @@
   "Gamepad2": {
    "viewBox": "0 0 24 24",
    "body": "<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"6\" x2=\"10\" y1=\"11\" y2=\"11\"></line><line x1=\"8\" x2=\"8\" y1=\"9\" y2=\"13\"></line><line x1=\"15\" x2=\"15.01\" y1=\"12\" y2=\"12\"></line><line x1=\"18\" x2=\"18.01\" y1=\"10\" y2=\"10\"></line><path d=\"M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z\"></path></g>"
+  },
+  "LogOut": {
+   "viewBox": "0 0 24 24",
+   "body": "<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m16 17 5-5-5-5\"></path><path d=\"M21 12H9\"></path><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"></path></g>"
+  },
+  "HelpCircle": {
+   "viewBox": "0 0 24 24",
+   "body": "<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3\"></path><path d=\"M12 17h.01\"></path></g>"
+  },
+  "MinusCircle": {
+   "viewBox": "0 0 24 24",
+   "body": "<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M8 12h8\"></path></g>"
   }
  }
 }

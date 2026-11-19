@@ -29,16 +29,17 @@ export function SitePopupPublic({
   const [popup, setPopup] = useState<PublicPopup | null>(null),
     [dismissals, setDismissals] = useState<number[] | null>(null),
     [visible, setVisible] = useState(false);
-  const [storageError, setStorageError] = useState<string | null>(null),
-    [networkError, setNetworkError] = useState<string | null>(null),
-    [actionError, setActionError] = useState<string | null>(null);
-  const error = storageError ?? networkError ?? actionError;
-  const [revision, setRevision] = useState(0),
-    [pending, setPending] = useState<PopupSession | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PopupSession | null>(null);
   const session = useRef<PopupSession | null>(null),
     alive = useRef(true),
     writes = useRef(Promise.resolve());
-  const interaction = useRef({ pageKey, version: interactionVersion });
+  const interaction = useRef({ pageKey, version: interactionVersion, quiet: false });
+  const storageReady = dismissals !== null;
+  const quietVisit = useCallback(() => {
+    interaction.current.quiet = true;
+    session.current?.quiet();
+  }, []);
   useEffect(() => {
     alive.current = true;
     const listener = AppState.addEventListener('change', (value) => setActive(value === 'active'));
@@ -48,37 +49,24 @@ export function SitePopupPublic({
     };
   }, []);
   useEffect(() => {
+    if (storageReady) return;
     let current = true;
     void readDocument(DISMISSALS, decodePopupDismissals, [])
-      .then((value) => {
-        if (current) {
-          setDismissals(value);
-          setStorageError(null);
-        }
-      })
-      .catch(() => {
-        if (current) setStorageError('تعذّر قراءة التنبيهات المغلقة. أعد المحاولة.');
-      });
+      .then((value) => { if (current) setDismissals(value); })
+      .catch(() => {});
     return () => {
       current = false;
     };
-  }, [revision]);
+  }, [pageKey, storageReady]);
   useEffect(() => {
     if (!active || suppressed) return;
     const controller = new AbortController();
     void api
       .page('/', 'Home', (value) => decodePublicPopup(record(value).sitePopup), { signal: controller.signal })
-      .then((value) => {
-        if (!controller.signal.aborted) {
-          setPopup(value);
-          setNetworkError(null);
-        }
-      })
-      .catch((reason) => {
-        if (!controller.signal.aborted) setNetworkError(reason instanceof Error ? reason.message : 'تعذّر قراءة تنبيه الموقع.');
-      });
+      .then((value) => { if (!controller.signal.aborted) setPopup(value); })
+      .catch(() => { if (!controller.signal.aborted) setPopup(null); });
     return () => controller.abort();
-  }, [active, suppressed, pageKey, revision]);
+  }, [active, suppressed, pageKey]);
   const persist = useCallback((version: number): Promise<void> => {
     const next = writes.current
       .catch(() => {})
@@ -91,9 +79,17 @@ export function SitePopupPublic({
     writes.current = next;
     return next;
   }, []);
-  const version = popup?.version,
-    dismissed = version !== undefined && (dismissals?.includes(version) ?? false),
-    storageReady = dismissals !== null;
+  const version = popup?.version, dismissed = version !== undefined && (dismissals?.includes(version) ?? false);
+  useEffect(() => {
+    const previous = interaction.current;
+    if (previous.pageKey !== pageKey) {
+      interaction.current = { pageKey, version: interactionVersion, quiet: false };
+      setActionError(null);
+    } else if (previous.version !== interactionVersion) {
+      previous.version = interactionVersion;
+      quietVisit();
+    }
+  }, [pageKey, interactionVersion, quietVisit]);
   useEffect(() => {
     setVisible(false);
     if (version === undefined || !storageReady) return;
@@ -106,6 +102,7 @@ export function SitePopupPublic({
       }
     });
     session.current = current;
+    if (interaction.current.quiet) current.quiet();
     return () => {
       current.dispose();
       if (session.current === current) session.current = null;
@@ -115,14 +112,9 @@ export function SitePopupPublic({
     session.current?.setEligible(active && !suppressed && popup?.enabled === true);
   }, [active, suppressed, popup?.enabled, version, dismissed, storageReady, pageKey]);
   useEffect(() => {
-    const previous = interaction.current;
-    interaction.current = { pageKey, version: interactionVersion };
-    if (previous.pageKey === pageKey && previous.version !== interactionVersion) session.current?.quiet();
-  }, [pageKey, interactionVersion]);
-  useEffect(() => {
-    const listener = Keyboard.addListener('keyboardWillShow', () => session.current?.quiet());
+    const listener = Keyboard.addListener('keyboardWillShow', quietVisit);
     return () => listener.remove();
-  }, []);
+  }, [quietVisit]);
   useEffect(() => {
     if (visible && popup) AccessibilityInfo.announceForAccessibility(`${popup.title}. ${popup.description}`);
   }, [visible, popup]);
@@ -139,25 +131,7 @@ export function SitePopupPublic({
       if (alive.current) setPending((previous) => (previous === current ? null : previous));
     }
   };
-  if (suppressed || !active) return null;
-  if (error && !visible)
-    return (
-      <PopupSurface>
-        <Section>
-          <Label secondary>{error}</Label>
-          <NativeAction
-            title="إعادة قراءة تنبيه الموقع"
-            onPress={() => {
-              setStorageError(null);
-              setNetworkError(null);
-              setActionError(null);
-              setRevision((value) => value + 1);
-            }}
-          />
-        </Section>
-      </PopupSurface>
-    );
-  if (!visible || !popup?.enabled) return null;
+  if (suppressed || !active || !visible || !popup?.enabled) return null;
   const busy = pending === session.current;
   return (
     <PopupSurface>
@@ -169,10 +143,10 @@ export function SitePopupPublic({
           </View>
           <NativeIconAction title="إغلاق إشعار الموقع" systemImage="xmark" disabled={busy} onPress={() => void dismiss()} />
         </View>
-        <Pressable testID="إخفاء التنبيه لهذه الزيارة" accessibilityRole="button" accessibilityLabel={`${popup.description}، إخفاء التنبيه لهذه الزيارة`} onPress={() => session.current?.quiet()}>
+        <Pressable testID="إخفاء التنبيه لهذه الزيارة" accessibilityRole="button" accessibilityLabel={`${popup.description}، إخفاء التنبيه لهذه الزيارة`} onPress={quietVisit}>
           <Label>{popup.description}</Label>
         </Pressable>
-        {error ? <Label style={{ color: colors.danger }}>{error}</Label> : null}
+        {actionError ? <Label style={{ color: colors.danger }}>{actionError}</Label> : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <NativeAction
             title={popup.buttonText}

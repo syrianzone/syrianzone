@@ -109,15 +109,36 @@ export function setPendingAccountSave(result: CompassResult) {
   } catch {}
 }
 
-/** Read and clear the queued result, if any. */
-export function takePendingAccountSave(): CompassResult | null {
+interface PendingSave {
+  result: CompassResult;
+  queued: string;
+  marker: string;
+}
+
+function claimPendingAccountSave(): PendingSave | null {
   if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem(KEY_PENDING_SAVE);
-  if (!raw) return null;
   try {
-    localStorage.removeItem(KEY_PENDING_SAVE);
-  } catch {}
-  return safeParse<CompassResult | null>(raw, null);
+    const queued = localStorage.getItem(KEY_PENDING_SAVE);
+    const result = safeParse<CompassResult | { attempt: string } | null>(queued, null);
+    if (!queued || !result || typeof result !== 'object' || 'attempt' in result) return null;
+    // Keep only the result ID and attempt ID so deletion can cancel a later retry.
+    const marker = JSON.stringify({ id: result.id, attempt: crypto.randomUUID?.() ?? Math.random().toString() });
+    localStorage.setItem(KEY_PENDING_SAVE, marker);
+    return { result, queued, marker };
+  } catch {
+    return null;
+  }
+}
+
+function finishPendingAccountSave(marker: string, retry: string | null): boolean {
+  try {
+    if (localStorage.getItem(KEY_PENDING_SAVE) !== marker) return false;
+    if (retry === null) localStorage.removeItem(KEY_PENDING_SAVE);
+    else localStorage.setItem(KEY_PENDING_SAVE, retry);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function fetchAccountResults(): Promise<CompassResult[]> {
@@ -129,6 +150,22 @@ export async function saveResultToAccount(result: CompassResult): Promise<Compas
   type SavedBody = { data?: CompassResult };
   const json = await client.post<CompassResult | SavedBody>(`${API_V1}/compass/results`, result);
   return 'version' in json ? json : (json.data ?? null);
+}
+
+export async function savePendingResultToAccount(): Promise<boolean> {
+  const pending = claimPendingAccountSave();
+  if (!pending) return false;
+  const { result, queued, marker } = pending;
+  let saved: CompassResult | null;
+  try {
+    saved = await saveResultToAccount(result);
+  } catch (error) {
+    if (!finishPendingAccountSave(marker, queued)) return false;
+    throw error;
+  }
+  if (!finishPendingAccountSave(marker, null)) return false;
+  updateLocalResult(result.id, { id: saved?.id ?? result.id, savedToAccount: true });
+  return true;
 }
 
 export function deleteAccountResults(): Promise<void> {

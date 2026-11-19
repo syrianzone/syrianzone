@@ -112,7 +112,7 @@ const studioMethod='SyrianZoneUITests/NativeTransitStudioUITests/testTwoSegments
 test('ambient input trace is stripped by default without altering ordinary restoration',()=>{
  const value=runRunner({account:true}); assert.equal(value.exitCode,0); assert.equal(value.embedFlag,null); assert.equal(value.privateFlag,'0'); assert.equal(value.status.restoredProduct,true);
 });
-test('one exact Poll or preserved Studio diagnostic sets both explicit flags and retains cleanup',()=>{
+test('one exact Poll or preserved Studio diagnostic sets both explicit flags and retains cleanup',{ timeout: 25_000 },()=>{
  for(const [selection,preserveStudio] of [[pollMethod,false],[studioMethod,true]]) {
   const value=runRunner({account:true,trace:true,selection,preserveStudio}); assert.equal(value.exitCode,0,value.stderr);
   assert.equal(value.embedFlag,'1'); assert.equal(value.privateFlag,'1'); assert.equal(value.status.restoredProduct,true); assert.equal(value.status.localCleanup.passed,true);

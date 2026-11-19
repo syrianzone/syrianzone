@@ -91,7 +91,7 @@ export function PromiseScreen(): React.JSX.Element {
   const { error, perform } = usePromiseAction();
   const promise = resource.data?.number === params.number ? resource.data : null;
   const counter = promise ? promiseCounterLabel(promise.counter) : null;
-  const url = `${promisesUrl}/${params.number}`;
+  const canonicalUrl = `${promisesUrl}/${params.number}`;
   const open = (link: string): void => perform(() => Linking.openURL(link), 'تعذّر فتح الرابط. حاول مرة أخرى.');
 
   return <AdaptivePanes primary={<View style={{ flex: 1 }}>
@@ -157,9 +157,9 @@ export function PromiseScreen(): React.JSX.Element {
           <Heading>توقّعات الجمهور</Heading>
           <Label>{`يتوقّعون تحقّق الوعد ${promise.votes.yes} · لا يتوقّعون تحقّقه ${promise.votes.no}`}</Label>
           <NativeAction title={promise.votingOpen ? 'التصويت أو الإبلاغ عبر الموقع' : 'فتح الوعد على الموقع'}
-            systemImage="arrow.up.forward.square" onPress={() => open(url)} />
+            systemImage="arrow.up.forward.square" onPress={() => open(canonicalUrl)} />
           <NativeAction title="مشاركة الوعد" systemImage="square.and.arrow.up"
-            onPress={() => perform(() => Share.share({ message: promise.title, url }), 'تعذّرت المشاركة. حاول مرة أخرى.')} />
+            onPress={() => perform(() => Share.share({ message: promise.title, url: canonicalUrl }), 'تعذّرت المشاركة. حاول مرة أخرى.')} />
         </Section>
       </> : null}
     </ScrollView>

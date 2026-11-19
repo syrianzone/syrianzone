@@ -131,6 +131,7 @@ test('public pages return 200 with expected Inertia components and props while h
             ->where('stats.full_cv', 1)
             ->where('stats.total_movements', 1)
             ->has('institutions', 1)
+            ->missing('options')
         );
 
     $this->get('/govtcvs/movements')
@@ -141,6 +142,7 @@ test('public pages return 200 with expected Inertia components and props while h
             ->where('movements.0.official_slug', 'mohammed-al-bashir')
             ->has('stats')
             ->has('institutions', 1)
+            ->missing('options')
         );
 
     $this->get('/govtcvs/mohammed-al-bashir')
@@ -151,6 +153,7 @@ test('public pages return 200 with expected Inertia components and props while h
             ->has('related_promises', 1)
             ->where('related_promises.0.number', $promise->number)
             ->where('tierlist_link.candidate_id', $candidate->id)
+            ->missing('options')
         );
 
     $this->get('/govtcvs/draft-official')->assertNotFound();
@@ -694,11 +697,45 @@ test('GovtOfficialPreview resolves SEO preview for published officials and sitem
         ->and($meta['canonical'])->toEndWith('/govtcvs/murhaf-abu-qasra')
         ->and($meta['robots'])->toBe('index, follow');
 
+    $profilePage = collect(json_decode($meta['json_ld'], true)['@graph'])->firstWhere('@type', 'ProfilePage');
+    expect($profilePage['mainEntity'])->toMatchArray([
+        '@type' => 'Person',
+        '@id' => $meta['canonical'].'#person',
+        'name' => 'اللواء مرهف أبو قصرة',
+        'jobTitle' => 'وزير الدفاع',
+        'worksFor' => [
+            '@type' => 'GovernmentOrganization',
+            'name' => 'وزارة الدفاع',
+        ],
+    ]);
+
+    // Advance only a published official's tenure updated_at (and advance a draft's even further)
+    $tenureUpdatedAt = now()->addDays(2)->startOfSecond();
+    $published->tenures()->first()->forceFill(['updated_at' => $tenureUpdatedAt])->saveQuietly();
+    $draftOfficial = GovtOfficial::where('slug', 'unpublished-draft-official')->firstOrFail();
+    $draftTenure = GovtTenure::create([
+        'official_id' => $draftOfficial->id,
+        'role_title_ar' => 'منصب مسودة',
+        'tier' => 'minister',
+        'status' => 'current',
+    ]);
+    $draftTenure->forceFill(['updated_at' => now()->addDays(10)])->saveQuietly();
+
     $xml = $this->get('/sitemap.xml')->assertOk()->getContent();
     expect($xml)->toContain('/govtcvs</loc>')
         ->toContain('/govtcvs/movements</loc>')
         ->toContain('/govtcvs/murhaf-abu-qasra</loc>')
         ->not->toContain('/govtcvs/unpublished-draft-official</loc>');
+
+    $parsed = simplexml_load_string($xml);
+    $lastmods = [];
+    foreach ($parsed->url as $url) {
+        $lastmods[(string) $url->loc] = (string) $url->lastmod;
+    }
+
+    $base = rtrim((string) config('seo.base_url'), '/');
+    expect($lastmods[$base.'/govtcvs'])->toBe($tenureUpdatedAt->toAtomString())
+        ->and($lastmods[$base.'/govtcvs/movements'])->toBe($tenureUpdatedAt->toAtomString());
 });
 
 test('GovtCvImportService is idempotent when importing the same fixture payload twice', function () {

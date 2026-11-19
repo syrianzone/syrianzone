@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, router, usePage, useRemember } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Badge } from '@/Components/ui/badge';
@@ -43,6 +43,9 @@ import {
     visibleMovements,
 } from './_lib/movementFilters';
 
+const INITIAL_VISIBLE_COUNT = 40;
+const LOAD_MORE_STEP = 40;
+
 interface Props {
     movements: GovtMovementItem[];
     stats?: GovtCvsStats;
@@ -75,9 +78,12 @@ export default function GovtCvsMovements({
         initialValue,
         'govtcvs.movements.filters',
     );
+    const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE_COUNT);
 
     const base = useMemo(() => filterMovements(movements, value), [movements, value]);
     const visible = useMemo(() => visibleMovements(base, value), [base, value]);
+    const displayed = useMemo(() => visible.slice(0, visibleLimit), [visible, visibleLimit]);
+    const remaining = Math.max(0, visible.length - displayed.length);
     const kindFacet = useMemo(() => facets.find((facet) => facet.key === 'kind'), [facets]);
     const searchFacets = useMemo(() => facets.filter((facet) => facet.key !== 'kind'), [facets]);
 
@@ -96,6 +102,7 @@ export default function GovtCvsMovements({
     function changeFilters(next: SmartFilterValue) {
         const previousUrl = movementsListUrl(value);
         setValue(next);
+        setVisibleLimit(INITIAL_VISIBLE_COUNT);
         const url = movementsListUrl(next);
         if (url === previousUrl) return;
         router.replace({ url, preserveState: true, preserveScroll: true });
@@ -246,177 +253,194 @@ export default function GovtCvsMovements({
                         </CardContent>
                     </Card>
                 ) : (
-                    <ol className="relative space-y-4 border-s border-border ps-6">
-                        {visible.map((movement, idx) => {
-                            const kindMeta =
-                                MOVEMENT_KIND_META[movement.movement_kind] ??
-                                MOVEMENT_KIND_META.appointment;
-                            const endMeta = movement.end_reason
-                                ? END_REASON_META[movement.end_reason as GovtEndReason]
-                                : null;
-                            const sourceHref = safeHref(movement.source_url);
-                            const fullName = [
-                                movement.official_honorific_ar,
-                                movement.official_name_ar,
-                            ]
-                                .filter(Boolean)
-                                .join(' ');
+                    <>
+                        <ol className="relative space-y-4 border-s border-border ps-6">
+                            {displayed.map((movement, idx) => {
+                                const kindMeta =
+                                    MOVEMENT_KIND_META[movement.movement_kind] ??
+                                    MOVEMENT_KIND_META.appointment;
+                                const endMeta = movement.end_reason
+                                    ? END_REASON_META[movement.end_reason as GovtEndReason]
+                                    : null;
+                                const sourceHref = safeHref(movement.source_url);
+                                const fullName = [
+                                    movement.official_honorific_ar,
+                                    movement.official_name_ar,
+                                ]
+                                    .filter(Boolean)
+                                    .join(' ');
 
-                            return (
-                                <li
-                                    key={`${movement.tenure_id}-${movement.movement_kind}-${idx}`}
-                                    className="relative"
-                                >
-                                    <span
-                                        className="absolute -start-[calc(1.875rem+0.5px)] top-5 h-3 w-3 rounded-full border-2 border-primary bg-background"
-                                        aria-hidden="true"
-                                    />
-                                    <Card>
-                                        <CardContent className="space-y-3 p-4 sm:p-5">
-                                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <Badge variant={kindMeta.variant}>
-                                                        {kindMeta.label}
-                                                    </Badge>
-                                                    <TierBadge tier={movement.tier} short />
-                                                    <PhaseBadge
-                                                        phase={movement.government_phase}
-                                                        short
-                                                    />
-                                                    {endMeta && (
-                                                        <Badge variant={endMeta.variant}>
-                                                            {endMeta.label}
+                                return (
+                                    <li
+                                        key={`${movement.tenure_id}-${movement.movement_kind}-${idx}`}
+                                        className="relative"
+                                    >
+                                        <span
+                                            className="absolute -start-[calc(1.875rem+0.5px)] top-5 h-3 w-3 rounded-full border-2 border-primary bg-background"
+                                            aria-hidden="true"
+                                        />
+                                        <Card>
+                                            <CardContent className="space-y-3 p-4 sm:p-5">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <Badge variant={kindMeta.variant}>
+                                                            {kindMeta.label}
                                                         </Badge>
+                                                        <TierBadge tier={movement.tier} short />
+                                                        <PhaseBadge
+                                                            phase={movement.government_phase}
+                                                            short
+                                                        />
+                                                        {endMeta && (
+                                                            <Badge variant={endMeta.variant}>
+                                                                {endMeta.label}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+
+                                                    {movement.date && (
+                                                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                            <CalendarDays
+                                                                className="h-3.5 w-3.5"
+                                                                aria-hidden="true"
+                                                            />
+                                                            <span className="tabular-nums font-medium text-foreground">
+                                                                {formatGovtDate(
+                                                                    movement.date,
+                                                                    movement.date_precision,
+                                                                )}
+                                                            </span>
+                                                        </span>
                                                     )}
                                                 </div>
 
-                                                {movement.date && (
-                                                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                        <CalendarDays
-                                                            className="h-3.5 w-3.5"
-                                                            aria-hidden="true"
+                                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <OfficialAvatar
+                                                            name={movement.official_name_ar}
+                                                            portraitUrl={movement.official_portrait_url}
+                                                            size={44}
                                                         />
-                                                        <span className="tabular-nums font-medium text-foreground">
-                                                            {formatGovtDate(
-                                                                movement.date,
-                                                                movement.date_precision,
-                                                            )}
-                                                        </span>
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <div className="flex items-center gap-3">
-                                                    <OfficialAvatar
-                                                        name={movement.official_name_ar}
-                                                        portraitUrl={movement.official_portrait_url}
-                                                        size={44}
-                                                    />
-                                                    <div>
-                                                        <Link
-                                                            href={`/govtcvs/${movement.official_slug}`}
-                                                            className="text-base font-bold text-foreground hover:text-primary hover:underline"
-                                                        >
-                                                            {fullName}
-                                                        </Link>
-                                                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                                                            <span className="font-medium text-foreground">
-                                                                {movement.role_title_ar}
-                                                            </span>
-                                                            {movement.institution_name_ar && (
-                                                                <span className="inline-flex items-center gap-1 text-xs">
-                                                                    <span>·</span>
-                                                                    <Building2
-                                                                        className="h-3.5 w-3.5"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                    {movement.institution_name_ar}
+                                                        <div>
+                                                            <Link
+                                                                href={`/govtcvs/${movement.official_slug}`}
+                                                                className="text-base font-bold text-foreground hover:text-primary hover:underline"
+                                                            >
+                                                                {fullName}
+                                                            </Link>
+                                                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                                                <span className="font-medium text-foreground">
+                                                                    {movement.role_title_ar}
                                                                 </span>
-                                                            )}
+                                                                {movement.institution_name_ar && (
+                                                                    <span className="inline-flex items-center gap-1 text-xs">
+                                                                        <span>·</span>
+                                                                        <Building2
+                                                                            className="h-3.5 w-3.5"
+                                                                            aria-hidden="true"
+                                                                        />
+                                                                        {movement.institution_name_ar}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
+
+                                                    <OfficeStatusBadge
+                                                        status={movement.official_office_status}
+                                                    />
                                                 </div>
 
-                                                <OfficeStatusBadge
-                                                    status={movement.official_office_status}
-                                                />
-                                            </div>
-
-                                            {/* Predecessor -> Successor transition bar */}
-                                            {(movement.predecessor || movement.successor) && (
-                                                <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 px-3 py-2 text-xs">
-                                                    {movement.predecessor && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-muted-foreground">
-                                                                السلف:
-                                                            </span>
-                                                            <Link
-                                                                href={`/govtcvs/${movement.predecessor.official_slug}`}
-                                                                className="font-semibold text-primary hover:underline"
-                                                            >
-                                                                {movement.predecessor.official_name_ar}
-                                                            </Link>
-                                                        </div>
-                                                    )}
-                                                    {movement.predecessor && movement.successor && (
-                                                        <ArrowLeft
-                                                            className="h-3.5 w-3.5 text-muted-foreground"
-                                                            aria-hidden="true"
-                                                        />
-                                                    )}
-                                                    {movement.successor && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-muted-foreground">
-                                                                الخلف:
-                                                            </span>
-                                                            <Link
-                                                                href={`/govtcvs/${movement.successor.official_slug}`}
-                                                                className="font-semibold text-primary hover:underline"
-                                                            >
-                                                                {movement.successor.official_name_ar}
-                                                            </Link>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {(movement.decree_ref || sourceHref) && (
-                                                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2.5 text-xs">
-                                                    {movement.decree_ref ? (
-                                                        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                                                            <FileSignature
-                                                                className="h-3.5 w-3.5"
+                                                {/* Predecessor -> Successor transition bar */}
+                                                {(movement.predecessor || movement.successor) && (
+                                                    <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 px-3 py-2 text-xs">
+                                                        {movement.predecessor && (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-muted-foreground">
+                                                                    السلف:
+                                                                </span>
+                                                                <Link
+                                                                    href={`/govtcvs/${movement.predecessor.official_slug}`}
+                                                                    className="font-semibold text-primary hover:underline"
+                                                                >
+                                                                    {movement.predecessor.official_name_ar}
+                                                                </Link>
+                                                            </div>
+                                                        )}
+                                                        {movement.predecessor && movement.successor && (
+                                                            <ArrowLeft
+                                                                className="h-3.5 w-3.5 text-muted-foreground"
                                                                 aria-hidden="true"
                                                             />
-                                                            <span>المرجع: {movement.decree_ref}</span>
-                                                        </span>
-                                                    ) : (
-                                                        <span />
-                                                    )}
+                                                        )}
+                                                        {movement.successor && (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-muted-foreground">
+                                                                    الخلف:
+                                                                </span>
+                                                                <Link
+                                                                    href={`/govtcvs/${movement.successor.official_slug}`}
+                                                                    className="font-semibold text-primary hover:underline"
+                                                                >
+                                                                    {movement.successor.official_name_ar}
+                                                                </Link>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
 
-                                                    {sourceHref && (
-                                                        <a
-                                                            href={sourceHref}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
-                                                        >
-                                                            <ExternalLink
-                                                                className="h-3.5 w-3.5"
-                                                                aria-hidden="true"
-                                                            />
-                                                            <span>المصدر الرسمي</span>
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </li>
-                            );
-                        })}
-                    </ol>
+                                                {(movement.decree_ref || sourceHref) && (
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2.5 text-xs">
+                                                        {movement.decree_ref ? (
+                                                            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                                                                <FileSignature
+                                                                    className="h-3.5 w-3.5"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                <span>المرجع: {movement.decree_ref}</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span />
+                                                        )}
+
+                                                        {sourceHref && (
+                                                            <a
+                                                                href={sourceHref}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+                                                            >
+                                                                <ExternalLink
+                                                                    className="h-3.5 w-3.5"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                <span>المصدر الرسمي</span>
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </li>
+                                );
+                            })}
+                        </ol>
+
+                        {remaining > 0 && (
+                            <div className="flex justify-center pt-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="lg"
+                                    onClick={() =>
+                                        setVisibleLimit((prev) => prev + LOAD_MORE_STEP)
+                                    }
+                                >
+                                    عرض المزيد (تبقّى {remaining})
+                                </Button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </MainLayout>

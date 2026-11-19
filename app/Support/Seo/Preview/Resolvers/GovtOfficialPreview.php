@@ -53,6 +53,9 @@ final class GovtOfficialPreview implements CardSource, PreviewResolver
         $displayName = $official->display_name_ar ?: $official->full_name_ar;
         $primaryTenure = $official->tenures->firstWhere('status', 'current') ?? $official->tenures->first();
         $roleTitle = $primaryTenure?->role_title_ar;
+        $institutionName = $primaryTenure?->institution?->name_ar
+            ?: $primaryTenure?->institution?->name
+            ?: $primaryTenure?->institution_name_ar;
 
         $titleParts = array_filter([$displayName, $roleTitle]);
         $pageTitle = implode(' — ', $titleParts).' | السير الذاتية للمسؤولين';
@@ -61,13 +64,14 @@ final class GovtOfficialPreview implements CardSource, PreviewResolver
             ?: implode(' · ', array_filter([
                 $official->full_name_ar,
                 $roleTitle,
-                $primaryTenure?->institution?->name_ar ?: $primaryTenure?->institution_name_ar,
+                $institutionName,
             ]));
+        $description = Arabic::excerpt($descriptionSource);
 
         return new Preview(
             title: $pageTitle,
             shareTitle: implode(' — ', $titleParts),
-            description: Arabic::excerpt($descriptionSource),
+            description: $description,
             canonicalPath: '/govtcvs/'.$official->slug,
             image: $this->describe($official)->url(),
             type: 'profile',
@@ -75,6 +79,7 @@ final class GovtOfficialPreview implements CardSource, PreviewResolver
             parent: ['/govtcvs', 'السير الذاتية للمسؤولين'],
             published: $official->published_at,
             modified: $official->updated_at,
+            mainEntity: $this->personEntity($official, $displayName, $roleTitle, $institutionName, $description),
         );
     }
 
@@ -93,8 +98,70 @@ final class GovtOfficialPreview implements CardSource, PreviewResolver
     {
         return GovtOfficial::published()
             ->where('slug', $slug)
-            ->with(['tenures.institution', 'candidate', 'officialEntity', 'promiseSpeaker'])
+            ->with(['tenures.institution', 'aliases', 'candidate', 'officialEntity', 'promiseSpeaker', 'houseMember'])
             ->first();
+    }
+
+    /**
+     * Build the Schema.org `Person` node for `ProfilePage.mainEntity`.
+     *
+     * @return array<string, mixed>
+     */
+    private function personEntity(
+        GovtOfficial $official,
+        string $displayName,
+        ?string $roleTitle,
+        ?string $institutionName,
+        string $description,
+    ): array {
+        $primaryName = trim((string) ($official->full_name_ar ?: $displayName));
+
+        $alternateCandidates = [];
+        if (filled($official->display_name_ar)) {
+            $alternateCandidates[] = trim((string) $official->display_name_ar);
+        }
+        if (filled($official->full_name_en)) {
+            $alternateCandidates[] = trim((string) $official->full_name_en);
+        }
+        if ($official->relationLoaded('aliases')) {
+            foreach ($official->aliases->take(5) as $alias) {
+                if (filled($alias->alias_ar)) {
+                    $alternateCandidates[] = trim((string) $alias->alias_ar);
+                }
+            }
+        }
+
+        $alternateNames = array_values(array_unique(array_filter(
+            $alternateCandidates,
+            fn (string $name): bool => $name !== '' && $name !== $primaryName,
+        )));
+
+        $sameAs = [];
+        foreach ($official->resolvedSocials() as $url) {
+            if (! is_string($url)) {
+                continue;
+            }
+            $trimmed = trim($url);
+            if ((str_starts_with($trimmed, 'https://') || str_starts_with($trimmed, 'http://'))
+                && filter_var($trimmed, FILTER_VALIDATE_URL) !== false) {
+                $sameAs[] = $trimmed;
+            }
+        }
+        $sameAs = array_values(array_unique($sameAs));
+
+        return array_filter([
+            '@type' => 'Person',
+            'name' => $primaryName,
+            'alternateName' => $alternateNames !== [] ? $alternateNames : null,
+            'jobTitle' => filled($roleTitle) ? $roleTitle : null,
+            'worksFor' => filled($institutionName) ? [
+                '@type' => 'GovernmentOrganization',
+                'name' => $institutionName,
+            ] : null,
+            'description' => $description !== '' ? $description : null,
+            'image' => $official->resolvedPortrait(),
+            'sameAs' => $sameAs !== [] ? $sameAs : null,
+        ], fn (mixed $value): bool => $value !== null && $value !== '' && $value !== []);
     }
 
     private function describe(GovtOfficial $official): RecordCard

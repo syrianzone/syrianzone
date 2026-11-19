@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\GovtCvs;
 use App\Exceptions\GovtCvActionException;
 use App\Mcp\Tools\AuditedTool;
 use App\Models\GovtCvEntry;
+use App\Models\GovtEvidenceLink;
 use App\Models\GovtOfficeSlot;
 use App\Models\GovtOfficial;
 use App\Models\GovtTenure;
@@ -81,6 +82,11 @@ abstract class GovtCvsTool extends AuditedTool
     protected function findCvEntry(string $id, ?GovtOfficial $official = null): GovtCvEntry
     {
         return app(GovtOfficialEditor::class)->findCvEntry($id, $official);
+    }
+
+    protected function findEvidenceLink(string $id, ?GovtOfficial $official = null): GovtEvidenceLink
+    {
+        return app(GovtOfficialEditor::class)->findEvidenceLink($id, $official);
     }
 
     protected function findSlot(string $id): GovtOfficeSlot
@@ -294,6 +300,67 @@ abstract class GovtCvsTool extends AuditedTool
 
             'auto_close_incumbent' => $schema->boolean()
                 ->description('When true (default) and office_slot_id is a single-seat slot with status="current", automatically closes any prior current incumbent on that slot.'),
+        ];
+    }
+
+    /**
+     * Shared field schema for add-govt-evidence and update-govt-evidence.
+     *
+     * @return array<string, mixed>
+     */
+    protected function evidenceFieldsSchema(JsonSchema $schema, bool $partial = false): array
+    {
+        $evidenceType = $schema->string()
+            ->description('Evidence type key (from get-govtcv-options).'.($partial ? '' : ' Required.'))
+            ->enum(GovtCvVocabulary::evidenceTypes());
+
+        $sourceTitleAr = $schema->string()
+            ->description('Source title in Arabic.'.($partial ? '' : ' Required.').' Max 255 characters.')
+            ->max(255);
+
+        if (! $partial) {
+            $evidenceType->required();
+            $sourceTitleAr->required();
+        }
+
+        return [
+            'tenure_id' => $schema->string()
+                ->description('Optional UUID of the tenure on this official that this evidence supports.'),
+
+            'evidence_type' => $evidenceType,
+
+            'paperless_record_id' => $schema->integer()
+                ->description('Optional Paperless archive record ID.')
+                ->min(1),
+
+            'paperless_channel_id' => $schema->string()
+                ->description('Optional Paperless source channel ID.')
+                ->max(100),
+
+            'paperless_message_id' => $schema->integer()
+                ->description('Optional Paperless message ID.')
+                ->min(1),
+
+            'chunk_type' => $schema->string()
+                ->description('Optional Paperless chunk type.')
+                ->max(24),
+
+            'source_title_ar' => $sourceTitleAr,
+
+            'source_channel_ar' => $schema->string()
+                ->description('Optional publishing channel or outlet name in Arabic. Max 255 characters.')
+                ->max(255),
+
+            'source_url' => $schema->string()
+                ->description('Optional source URL (http or https). Max 500 characters.')
+                ->max(500),
+
+            'published_date' => $schema->string()
+                ->description('Optional publication date (YYYY-MM-DD).'),
+
+            'excerpt_ar' => $schema->string()
+                ->description('Optional Arabic quote or excerpt from the source. Max 5000 characters.')
+                ->max(5000),
         ];
     }
 }

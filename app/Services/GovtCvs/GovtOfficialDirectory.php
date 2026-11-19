@@ -36,9 +36,9 @@ final class GovtOfficialDirectory
      * Public listing with filters and summary statistics.
      *
      * @param  array<string, mixed>  $filters
-     * @return array{officials: array<int, array<string, mixed>>, stats: array<string, int>, filters: array<string, mixed>, options: array<string, mixed>}
+     * @return array<string, mixed>
      */
-    public function index(array $filters = []): array
+    public function index(array $filters = [], bool $includeOptions = true): array
     {
         $query = GovtOfficial::published()
             ->with(GovtCvPresenter::PUBLIC_CARD_WITH)
@@ -47,15 +47,20 @@ final class GovtOfficialDirectory
         $this->applyFilters($query, $filters);
 
         $officials = $this->sortOfficials($query->get());
-        $options = $this->options();
+        $options = $includeOptions ? $this->options() : null;
 
-        return [
+        $payload = [
             'officials' => $officials->map(fn (GovtOfficial $o) => $this->presenter->publicCard($o))->values()->all(),
             'stats' => $this->stats(),
-            'institutions' => $options['institutions'],
+            'institutions' => $options !== null ? $options['institutions'] : $this->institutions(),
             'filters' => $this->cleanFilters($filters),
-            'options' => $options,
         ];
+
+        if ($options !== null) {
+            $payload['options'] = $options;
+        }
+
+        return $payload;
     }
 
     /**
@@ -108,9 +113,9 @@ final class GovtOfficialDirectory
      * Chronological movements feed (appointments and departures/changes) across published officials.
      *
      * @param  array<string, mixed>  $filters
-     * @return array{movements: array<int, array<string, mixed>>, stats: array<string, int>, institutions: array<int, array<string, mixed>>, filters: array<string, mixed>, options: array<string, mixed>}
+     * @return array<string, mixed>
      */
-    public function movements(array $filters = []): array
+    public function movements(array $filters = [], bool $includeOptions = true, bool $compact = false): array
     {
         $query = GovtTenure::query()
             ->with([
@@ -184,7 +189,7 @@ final class GovtOfficialDirectory
 
             if ($eventKindFilter === 'ended') {
                 if ($hasEnd) {
-                    $events[] = $this->presenter->movementItem($tenure, 'ended', $lineage);
+                    $events[] = $this->presenter->movementItem($tenure, 'ended', $lineage, $compact);
                 }
 
                 continue;
@@ -192,22 +197,22 @@ final class GovtOfficialDirectory
 
             if ($eventKindFilter === 'appointed') {
                 if ($hasStart || ! $hasEnd) {
-                    $events[] = $this->presenter->movementItem($tenure, 'appointed', $lineage);
+                    $events[] = $this->presenter->movementItem($tenure, 'appointed', $lineage, $compact);
                 }
 
                 continue;
             }
 
             // Default: include appointment event, and if the tenure ended, also emit the departure/change event
-            $events[] = $this->presenter->movementItem($tenure, 'appointed', $lineage);
+            $events[] = $this->presenter->movementItem($tenure, 'appointed', $lineage, $compact);
             if ($hasEnd) {
-                $events[] = $this->presenter->movementItem($tenure, 'ended', $lineage);
+                $events[] = $this->presenter->movementItem($tenure, 'ended', $lineage, $compact);
             }
         }
 
         usort($events, function (array $a, array $b): int {
-            $dateA = (string) ($a['event_date'] ?? '0000-00-00');
-            $dateB = (string) ($b['event_date'] ?? '0000-00-00');
+            $dateA = (string) ($a['event_date'] ?? $a['date'] ?? '0000-00-00');
+            $dateB = (string) ($b['event_date'] ?? $b['date'] ?? '0000-00-00');
             if ($dateA !== $dateB) {
                 return $dateB <=> $dateA;
             }
@@ -221,25 +226,30 @@ final class GovtOfficialDirectory
             return strcmp((string) $a['id'], (string) $b['id']);
         });
 
-        $options = $this->options();
+        $options = $includeOptions ? $this->options() : null;
 
-        return [
+        $payload = [
             'movements' => array_values($events),
             'stats' => $this->stats(),
-            'institutions' => $options['institutions'],
+            'institutions' => $options !== null ? $options['institutions'] : $this->institutions(),
             'filters' => $this->cleanFilters($filters),
-            'options' => $options,
         ];
+
+        if ($options !== null) {
+            $payload['options'] = $options;
+        }
+
+        return $payload;
     }
 
     /**
-     * Form and filter options for both public pages and admin editor.
+     * Institution filter/select options (non-people OfficialEntity records).
      *
-     * @return array<string, mixed>
+     * @return array<int, array{id: string, name_ar: string, category_id: string}>
      */
-    public function options(bool $forAdmin = false): array
+    public function institutions(bool $forAdmin = false): array
     {
-        $institutions = OfficialEntity::query()
+        return OfficialEntity::query()
             ->whereNotIn('category_id', SpeakerDirectory::PEOPLE_CATEGORIES)
             ->when(! $forAdmin, fn ($q) => $q->where('is_active', true))
             ->orderBy('category_id')
@@ -252,6 +262,16 @@ final class GovtOfficialDirectory
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * Form and filter options for both public pages and admin editor.
+     *
+     * @return array<string, mixed>
+     */
+    public function options(bool $forAdmin = false): array
+    {
+        $institutions = $this->institutions($forAdmin);
 
         $slots = GovtOfficeSlot::query()
             ->orderBy('title_ar')

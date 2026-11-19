@@ -6,6 +6,7 @@ use App\Models\Candidate;
 use App\Models\City;
 use App\Models\GovApp;
 use App\Models\GovtOfficial;
+use App\Models\GovtTenure;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
 use App\Models\PhonebookCategory;
@@ -92,6 +93,10 @@ class SitemapBuilder
     private function contentLastmod(): array
     {
         $tierListPoll = Poll::where('slug', Poll::coreSlug())->first();
+        $govtCvsLastmod = $this->latestOf([
+            GovtOfficial::published()->max('updated_at'),
+            GovtTenure::whereHas('official', fn ($q) => $q->published())->max('updated_at'),
+        ]);
 
         return array_filter([
             '/govapps' => $this->latestOf([GovApp::max('updated_at')]),
@@ -112,8 +117,8 @@ class SitemapBuilder
             // Only published promises are public, so the review queue must not
             // move this page's lastmod.
             '/promises' => $this->latestOf([Promise::published()->max('updated_at')]),
-            '/govtcvs' => $this->latestOf([GovtOfficial::published()->max('updated_at')]),
-            '/govtcvs/movements' => $this->latestOf([GovtOfficial::published()->max('updated_at')]),
+            '/govtcvs' => $govtCvsLastmod,
+            '/govtcvs/movements' => $govtCvsLastmod,
             '/tierlist' => $tierListPoll ? $this->pollLastmod($tierListPoll) : null,
             '/tierlist/leaderboard' => $tierListPoll ? $this->leaderboardLastmod($tierListPoll->id) : null,
             // Sheet-backed pages: last successful fetch time, not a deploy stamp.

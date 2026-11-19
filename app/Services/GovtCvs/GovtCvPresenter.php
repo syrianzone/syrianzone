@@ -291,7 +291,7 @@ final class GovtCvPresenter
      *
      * @return array<string, mixed>
      */
-    public function movementItem(GovtTenure $tenure, ?string $eventKind = null, ?array $lineage = null): array
+    public function movementItem(GovtTenure $tenure, ?string $eventKind = null, ?array $lineage = null, bool $compact = false): array
     {
         $tenure->loadMissing(['official.candidate', 'official.officialEntity', 'official.promiseSpeaker', 'institution', 'officeSlot', 'evidenceLinks']);
 
@@ -326,6 +326,37 @@ final class GovtCvPresenter
         $officialName = $official ? ($official->display_name_ar ?: $official->full_name_ar) : '';
         $officialPortrait = $official?->resolvedPortrait();
         $sourceUrl = $tenure->evidenceLinks->first(fn (GovtEvidenceLink $e) => filled($e->source_url))?->source_url;
+
+        if ($compact) {
+            return [
+                'id' => $tenure->id.':'.$kind,
+                'tenure_id' => $tenure->id,
+                'movement_kind' => $movementKind,
+                'date' => $eventDate,
+                'date_precision' => $eventPrecision,
+                'decree_ref' => $decreeRef,
+                'end_reason' => $tenure->end_reason,
+                'role_title_ar' => $tenure->role_title_ar,
+                'tier' => $tenure->tier,
+                'government_phase' => $tenure->government_phase,
+                'institution_id' => $tenure->institution_id,
+                'institution_name_ar' => $institutionName,
+                'official_slug' => $official?->slug ?? '',
+                'official_name_ar' => $officialName,
+                'official_honorific_ar' => $official?->honorific_ar,
+                'official_portrait_url' => $officialPortrait,
+                'official_office_status' => $official?->office_status ?? 'uncertain',
+                'source_url' => $sourceUrl,
+                'predecessor' => $predecessor ? [
+                    'official_slug' => $predecessor['official_slug'],
+                    'official_name_ar' => $predecessor['official_name_ar'],
+                ] : null,
+                'successor' => $successor ? [
+                    'official_slug' => $successor['official_slug'],
+                    'official_name_ar' => $successor['official_name_ar'],
+                ] : null,
+            ];
+        }
 
         return [
             'id' => $tenure->id.':'.$kind,

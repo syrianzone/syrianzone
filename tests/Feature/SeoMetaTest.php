@@ -1,5 +1,10 @@
 <?php
 
+use App\Models\GovtOfficial;
+use App\Models\GovtOfficialAlias;
+use App\Models\GovtTenure;
+use App\Models\OfficialCategory;
+use App\Models\OfficialEntity;
 use App\Models\Poll;
 use App\Support\Seo\Og\StaticCards;
 use App\Support\Seo\SeoMeta;
@@ -202,4 +207,75 @@ test('a fixed page keeps dates out of its structured data', function () {
 
     expect($page['headline'])->toBe('المجلس التشريعي السوري 2026')
         ->and($page)->not->toHaveKeys(['datePublished', 'dateModified']);
+});
+
+test('govtcvs official profile emits ProfilePage JSON-LD with Person mainEntity', function () {
+    $category = OfficialCategory::create([
+        'id' => 'public_figures',
+        'label_ar' => 'الشخصيات العامة',
+        'label_en' => 'Public Figures',
+        'is_active' => true,
+    ]);
+    $entity = OfficialEntity::create([
+        'id' => 'pf-asaad-shaibani',
+        'category_id' => $category->id,
+        'name' => 'Asaad Al-Shaibani',
+        'name_ar' => 'أسعد الشيباني',
+        'socials' => [
+            'twitter' => 'https://x.com/AsaadHShaibani',
+            'facebook' => 'https://facebook.com/AsaadHShaibani',
+            'invalid' => 'not-a-url',
+        ],
+        'is_active' => true,
+    ]);
+
+    $official = GovtOfficial::create([
+        'slug' => 'asaad-al-shaibani',
+        'full_name_ar' => 'أسعد حسن الشيباني',
+        'display_name_ar' => 'أسعد الشيباني',
+        'full_name_en' => 'Asaad Al-Shaibani',
+        'bio_summary_ar' => 'وزير الخارجية والمغتربين في الحكومة السورية الانتقالية.',
+        'portrait_url' => '/storage/images/govtcvs/portraits/asaad.webp',
+        'official_entity_id' => $entity->id,
+        'office_status' => 'in_office',
+        'highest_tier' => 'minister',
+        'cv_completeness' => 'full_cv',
+        'publish_status' => 'published',
+        'published_at' => now(),
+    ]);
+    GovtOfficialAlias::create([
+        'official_id' => $official->id,
+        'alias_ar' => 'زيد العطار',
+        'alias_type' => 'kunya',
+    ]);
+    GovtTenure::create([
+        'official_id' => $official->id,
+        'role_title_ar' => 'وزير الخارجية والمغتربين',
+        'institution_name_ar' => 'وزارة الخارجية والمغتربين',
+        'tier' => 'minister',
+        'status' => 'current',
+        'started_at' => '2024-12-21',
+    ]);
+
+    $head = seoHeadTags($this->get('/govtcvs/asaad-al-shaibani')->assertOk()->getContent());
+    $profilePage = collect($head['json_ld'][0]['@graph'])->firstWhere('@type', 'ProfilePage');
+
+    expect($profilePage)->not->toBeNull()
+        ->and($profilePage['mainEntity'])->toMatchArray([
+            '@type' => 'Person',
+            '@id' => 'https://syrian.zone/govtcvs/asaad-al-shaibani#person',
+            'name' => 'أسعد حسن الشيباني',
+            'jobTitle' => 'وزير الخارجية والمغتربين',
+            'worksFor' => [
+                '@type' => 'GovernmentOrganization',
+                'name' => 'وزارة الخارجية والمغتربين',
+            ],
+            'description' => 'وزير الخارجية والمغتربين في الحكومة السورية الانتقالية.',
+            'image' => 'https://syrian.zone/storage/images/govtcvs/portraits/asaad.webp',
+        ])
+        ->and($profilePage['mainEntity']['alternateName'])->toBe(['أسعد الشيباني', 'Asaad Al-Shaibani', 'زيد العطار'])
+        ->and($profilePage['mainEntity']['sameAs'])->toBe([
+            'https://x.com/AsaadHShaibani',
+            'https://facebook.com/AsaadHShaibani',
+        ]);
 });

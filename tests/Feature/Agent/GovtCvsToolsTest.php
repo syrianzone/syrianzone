@@ -5,6 +5,7 @@ use App\Mcp\Tools\GovtCvs\AddGovtTenureTool;
 use App\Mcp\Tools\GovtCvs\ArchiveGovtOfficialTool;
 use App\Mcp\Tools\GovtCvs\CreateGovtOfficialTool;
 use App\Mcp\Tools\GovtCvs\DeleteGovtCvEntryTool;
+use App\Mcp\Tools\GovtCvs\DeleteGovtEvidenceTool;
 use App\Mcp\Tools\GovtCvs\DeleteGovtOfficialTool;
 use App\Mcp\Tools\GovtCvs\DeleteGovtTenureTool;
 use App\Mcp\Tools\GovtCvs\GetGovtCvOptionsTool;
@@ -14,6 +15,7 @@ use App\Mcp\Tools\GovtCvs\ListGovtSlotsTool;
 use App\Mcp\Tools\GovtCvs\PublishGovtOfficialTool;
 use App\Mcp\Tools\GovtCvs\SaveGovtCvEntryTool;
 use App\Mcp\Tools\GovtCvs\SaveGovtSlotTool;
+use App\Mcp\Tools\GovtCvs\UpdateGovtEvidenceTool;
 use App\Mcp\Tools\GovtCvs\UpdateGovtOfficialTool;
 use App\Mcp\Tools\GovtCvs\UpdateGovtTenureTool;
 use App\Models\GovtCvEntry;
@@ -103,6 +105,12 @@ test('write tools enforce their capability gates on the token even when the user
         'section' => 'education',
         'title_ar' => 'إجازة جامعية',
     ]);
+    $evidence = GovtEvidenceLink::create([
+        'official_id' => $official->id,
+        'tenure_id' => $tenure->id,
+        'evidence_type' => 'cv_card',
+        'source_title_ar' => 'بطاقة رسمية',
+    ]);
 
     foreach ([
         [CreateGovtOfficialTool::class, ['full_name_ar' => 'مسؤول جديد']],
@@ -116,6 +124,8 @@ test('write tools enforce their capability gates on the token even when the user
         [SaveGovtCvEntryTool::class, ['official_id' => $official->id, 'section' => 'education', 'title_ar' => 'ماجستير']],
         [DeleteGovtCvEntryTool::class, ['entry_id' => $cvEntry->id]],
         [AddGovtEvidenceTool::class, ['official_id' => $official->id, 'evidence_type' => 'cv_card', 'source_title_ar' => 'بطاقة']],
+        [UpdateGovtEvidenceTool::class, ['evidence_id' => $evidence->id, 'official_id' => $official->id, 'source_title_ar' => 'بطاقة معدلة']],
+        [DeleteGovtEvidenceTool::class, ['evidence_id' => $evidence->id, 'official_id' => $official->id]],
         [SaveGovtSlotTool::class, ['title_ar' => 'منصب جديد', 'tier' => 'minister']],
     ] as [$tool, $arguments]) {
         $res = callTool($tool, $arguments);
@@ -124,7 +134,7 @@ test('write tools enforce their capability gates on the token even when the user
     }
 
     expect(GovtOfficial::count())->toBe(1)
-        ->and(McpToolCall::where('outcome', 'denied')->count())->toBe(12);
+        ->and(McpToolCall::where('outcome', 'denied')->count())->toBe(14);
 });
 
 test('create-govt-official, update-govt-official, publish-govt-official, archive-govt-official, and delete-govt-official mutate officials and check optimistic version lock', function () {
@@ -306,6 +316,57 @@ test('save-govt-slot, add-govt-tenure, update-govt-tenure, delete-govt-tenure, s
 
     expect($addedEvidence['added'])->toBeTrue()
         ->and(GovtEvidenceLink::where('official_id', $official->id)->count())->toBe(1);
+
+    $evidenceId = $addedEvidence['evidence']['id'];
+
+    // update-govt-evidence (partial update preserves untouched fields)
+    $updatedEvidence = toolPayload(callTool(UpdateGovtEvidenceTool::class, [
+        'official_id' => $official->id,
+        'evidence_id' => $evidenceId,
+        'source_url' => 'https://sana.sy/decree-2025-updated',
+        'excerpt_ar' => 'نص مقتبس من مرسوم التشكيل الوزاري.',
+        'paperless_record_id' => 4201,
+        'paperless_channel_id' => 'sana-official',
+        'paperless_message_id' => 987,
+        'chunk_type' => 'decree',
+    ]));
+
+    expect($updatedEvidence['updated'])->toBeTrue()
+        ->and($updatedEvidence['evidence']['source_title_ar'])->toBe('مرسوم تشكيل الحكومة الانتقالية')
+        ->and($updatedEvidence['evidence']['evidence_type'])->toBe('appointment_decree')
+        ->and($updatedEvidence['evidence']['source_url'])->toBe('https://sana.sy/decree-2025-updated')
+        ->and($updatedEvidence['evidence']['excerpt_ar'])->toBe('نص مقتبس من مرسوم التشكيل الوزاري.')
+        ->and($updatedEvidence['evidence']['paperless_record_id'])->toBe(4201)
+        ->and($updatedEvidence['evidence']['paperless_channel_id'])->toBe('sana-official')
+        ->and($updatedEvidence['evidence']['paperless_message_id'])->toBe(987)
+        ->and($updatedEvidence['evidence']['chunk_type'])->toBe('decree');
+
+    // Mismatched official_id is rejected on update and delete
+    $otherOfficial = GovtOfficial::create([
+        'slug' => 'other-official',
+        'full_name_ar' => 'مسؤول آخر',
+        'display_name_ar' => 'مسؤول آخر',
+    ]);
+    expect(callTool(UpdateGovtEvidenceTool::class, [
+        'official_id' => $otherOfficial->id,
+        'evidence_id' => $evidenceId,
+        'source_title_ar' => 'محاولة تعديل خاطئة',
+    ])->isError())->toBeTrue();
+    expect(callTool(DeleteGovtEvidenceTool::class, [
+        'official_id' => $otherOfficial->id,
+        'evidence_id' => $evidenceId,
+    ])->isError())->toBeTrue();
+    expect(GovtEvidenceLink::find($evidenceId))->not->toBeNull();
+
+    // delete-govt-evidence
+    $deletedEvidence = toolPayload(callTool(DeleteGovtEvidenceTool::class, [
+        'official_id' => $official->id,
+        'evidence_id' => $evidenceId,
+    ]));
+
+    expect($deletedEvidence['deleted'])->toBeTrue()
+        ->and($deletedEvidence['evidence_id'])->toBe($evidenceId)
+        ->and(GovtEvidenceLink::find($evidenceId))->toBeNull();
 
     // delete-govt-cv-entry
     $deletedCv2 = toolPayload(callTool(DeleteGovtCvEntryTool::class, ['entry_id' => $cv2Id]));

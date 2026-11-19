@@ -373,12 +373,15 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
             ->name('api.v1.places.report.store');
     });
 
-    // Promises tracker (عداد الوعود): visitor input. Suggestions and reports
-    // need a signed-in account and land in the review queue; the "will it be
-    // kept?" vote is open to guests under its own `promise-voting` limiter.
-    Route::get('/promises/speakers', [PromiseController::class, 'speakers'])
-        ->middleware('throttle:public-api')
-        ->name('api.v1.promises.speakers');
+    // Promises tracker (عداد الوعود): published records and visitor input.
+    // Suggestions and reports require an account and enter the review queue.
+    // Guests can vote under the dedicated `promise-voting` limiter.
+    Route::middleware('throttle:public-api')->group(function () {
+        Route::get('/promises', [PromiseController::class, 'apiIndex'])->name('api.v1.promises.index');
+        Route::get('/promises/speakers', [PromiseController::class, 'speakers'])->name('api.v1.promises.speakers');
+        Route::get('/promises/{number}', [PromiseController::class, 'apiShow'])
+            ->where('number', '[0-9]{1,9}')->name('api.v1.promises.show');
+    });
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/promises', [PromiseController::class, 'storeSuggestion'])
             ->middleware('throttle:10,60')

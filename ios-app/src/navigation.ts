@@ -7,5 +7,7 @@ export type RootRoutes = {
   Main: NavigatorScreenParams<TabRoutes> | undefined;
   TransitCity: { city: City };
   Place: { id: number; snapshot?: Place };
+  Promises: undefined;
+  Promise: { number: number };
 };
 export type RootNavigation = NativeStackNavigationProp<RootRoutes>;

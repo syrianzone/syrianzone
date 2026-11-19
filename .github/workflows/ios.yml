@@ -5,6 +5,7 @@ on:
     paths:
       - 'ios-app/**'
       - 'resources/data/places.json'
+      - 'resources/data/promises.json'
       - 'resources/data/transit.json'
       - 'resources/data/search-fold.json'
       - 'public/icons/**'
@@ -14,6 +15,7 @@ on:
     paths:
       - 'ios-app/**'
       - 'resources/data/places.json'
+      - 'resources/data/promises.json'
       - 'resources/data/transit.json'
       - 'resources/data/search-fold.json'
       - 'public/icons/**'

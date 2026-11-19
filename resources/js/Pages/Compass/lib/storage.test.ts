@@ -86,7 +86,7 @@ it('a rejected upload leaves an unchanged result queued when storage refuses wri
 });
 
 it('an upload skips the request when another tab owns the Web Lock', async () => {
-  const request = vi.fn(async (_key: string, _options: LockOptions, callback: LockGrantedCallback) => callback(null));
+  const request = vi.fn(async (_key: string, _options: LockOptions, callback: LockGrantedCallback<boolean>) => callback(null));
   vi.stubGlobal('navigator', { locks: { request } });
   const post = vi.spyOn(api, 'post').mockResolvedValue(result);
   await expect(savePendingResultToAccount()).resolves.toBe(false);

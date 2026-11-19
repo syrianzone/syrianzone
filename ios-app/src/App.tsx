@@ -17,7 +17,7 @@ import { AccountProvider } from './platform/account';
 import { featureScreens } from './feature-registry';
 import { featureParameters } from './platform/feature-location';
 import { SitePopupPublic } from './platform/SitePopupPublic';
-import { appPathFromState, appStateFromPath, featureRouteId, parameterIdentity, resolveTransitLink, targetForSection } from './platform/app-links';
+import { appPathFromState, appStateFromPath, catalogueDestination, featureRouteId, parameterIdentity, resolveTransitLink, targetForSection, type AppLinkTarget } from './platform/app-links';
 import { configuredSiteOrigin } from './platform/site-origin';
 import { transitClient } from './platform/transit-client';
 import { useResource } from './resource';
@@ -131,23 +131,32 @@ function Navigation(): React.JSX.Element {
     setPopupPage({ key: `${section}:${route?.key ?? ''}`, suppressed: section === 'Transit' || section === 'TransitCity' || section === 'TransitLink'
       || section === 'transit' || section === 'transit_studio' || section === 'transit_admin' });
   };
-  const open = useCallback((section: string, params: Record<string, string> = {}) => {
-    const run = async () => {
-      setError(null);
-      if (!navigation.isReady()) return;
-      const target = targetForSection(section, params, Object.keys(featureScreens));
-      if (!target) throw new Error('الرابط غير صالح. افتح القسم من الرئيسية.');
-      if (target.kind === 'place') navigation.navigate('Place', { id: target.id });
-      else if (target.kind === 'transit') navigation.navigate('TransitLink', target.params);
-      else if (target.kind === 'tab') {
-        if (target.tab === 'Places') navigation.navigate('Main', { screen: 'Places', params: target.params ?? {} });
-        else navigation.navigate('Main', { screen: target.tab });
-      } else navigation.navigate('Feature', { section: target.section, params: target.params });
-      await writeDocument('last-visited.v1', section);
-    };
-    void run().catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'تعذر فتح القسم.'));
+  const openTarget = useCallback(async (target: AppLinkTarget, id: string) => {
+    setError(null);
+    if (!navigation.isReady()) return;
+    if (target.kind === 'place') navigation.navigate('Place', { id: target.id });
+    else if (target.kind === 'transit') navigation.navigate('TransitLink', target.params);
+    else if (target.kind === 'tab') {
+      if (target.tab === 'Places') navigation.navigate('Main', { screen: 'Places', params: target.params ?? {} });
+      else navigation.navigate('Main', { screen: target.tab });
+    } else navigation.navigate('Feature', { section: target.section, params: target.params });
+    await writeDocument('last-visited.v1', id);
   }, [navigation]);
-  const featureNavigation = useMemo(() => ({ open, back: () => { if (navigation.canGoBack()) navigation.goBack(); } }), [open, navigation]);
+  const open = useCallback((section: string, params: Record<string, string> = {}) => {
+    const target = targetForSection(section, params, Object.keys(featureScreens));
+    if (!target) { setError('الرابط غير صالح. افتح القسم من الرئيسية.'); return; }
+    void openTarget(target, section).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'تعذر فتح القسم.'));
+  }, [openTarget]);
+  const openCatalogueLink = useCallback(async (href: string, id: string) => {
+    const target = catalogueDestination(href, Object.keys(featureScreens));
+    if (target.kind === 'website') {
+      const { openBrowserAsync } = await import('expo-web-browser');
+      await openBrowserAsync(target.url);
+    } else await openTarget(target, id);
+  }, [openTarget]);
+  const featureNavigation = useMemo(() => ({
+    open, openCatalogueLink, back: () => { if (navigation.canGoBack()) navigation.goBack(); }
+  }), [open, openCatalogueLink, navigation]);
   const linking = useMemo(() => ({ prefixes: [...new Set(['syrianzone://', 'https://syrian.zone/', `${configuredSiteOrigin}/`])],
     config: { initialRouteName: 'Main' as const, screens: { Main: { path: '', screens: { Home: '', Transit: 'transit', Places: 'places', Saved: 'saved', Settings: 'settings' } }, Feature: 'feature/:section', Place: 'place/:id', TransitLink: 'transit/city/:cityId' } },
     getStateFromPath: (path: string) => appStateFromPath(path, Object.keys(featureScreens)),

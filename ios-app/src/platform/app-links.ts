@@ -154,6 +154,15 @@ export function parseAppLink(input: string, features: readonly string[] = source
   return null;
 }
 
+export function catalogueDestination(href: string, features: readonly string[], origin = configuredSiteOrigin): AppLinkTarget | { kind: 'website'; url: string } {
+  const url = new URL(href, origin);
+  if (url.origin !== origin || url.username || url.password) throw new Error('الرابط غير صالح.');
+  const target = parseAppLink(href, features, origin);
+  // The native Places tab cannot apply catalogue query filters.
+  if (target?.kind === 'tab' && target.tab === 'Places' && Object.keys(target.params ?? {}).length) return { kind: 'website', url: url.href };
+  return target ?? { kind: 'website', url: url.href };
+}
+
 export function stateForTarget(target: AppLinkTarget): InitialState {
   if (target.kind === 'tab') return { index: 0, routes: [{ name: 'Main', state: { index: 0, routes: [{ name: target.tab, ...(target.params ? { params: target.params } : {}) }] } }] };
   if (target.kind === 'feature') return { index: 1, routes: [{ name: 'Main' }, { name: 'Feature', params: { section: target.section, params: target.params } }] };

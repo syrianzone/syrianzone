@@ -68,6 +68,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'compass_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // Promises tracker: promises, review queue, speakers and sectors.
             'promises_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            // Government officials CVs & movements tracker.
+            'govtcvs_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // Gov Apps admin group. ModuleCapabilityGuard needs the alias so a
             // per-route capability can be passed through.
             'govapps_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,

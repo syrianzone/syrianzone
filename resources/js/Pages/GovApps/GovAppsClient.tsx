@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
-import { Smartphone, Globe, Pencil, Settings } from "lucide-react";
+import { Smartphone, Globe, MessageSquarePlus, Pencil, PencilLine, Settings } from "lucide-react";
 import { useCanAny, useCanModule } from '@/Lib/useCan';
 import type { GovApp } from '@/Domain/govapps/types';
+import type { SuggestionTargetOption } from '@/Domain/suggestions/types';
 import { DEFAULT_GOVAPP_ICON } from '@/Domain/govapps/media';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
 import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
+import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 
 const PLATFORMS = [
@@ -101,6 +104,33 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
     const canOpenPanel = canModule('govapps');
     const canEditEntries = canAny('govapps.edit');
 
+    const [suggestionOpen, setSuggestionOpen] = useState(false);
+    const [suggestionTarget, setSuggestionTarget] = useState<SuggestionTargetOption | null>(null);
+
+    const suggestionTargets = useMemo<SuggestionTargetOption[]>(
+        () =>
+            initialData.map((app) => ({
+                id: app.id,
+                label: app.name_ar || app.name,
+                subtitle: app.name_ar && app.name_ar !== app.name ? app.name : app.description ?? null,
+            })),
+        [initialData],
+    );
+
+    const openAddSuggestion = () => {
+        setSuggestionTarget(null);
+        setSuggestionOpen(true);
+    };
+
+    const openEditSuggestion = (app: GovApp) => {
+        setSuggestionTarget({
+            id: app.id,
+            label: app.name_ar || app.name,
+            subtitle: app.name_ar && app.name_ar !== app.name ? app.name : app.description ?? null,
+        });
+        setSuggestionOpen(true);
+    };
+
     return (
         <div className="min-h-screen bg-background" dir="rtl">
             <section className="bg-card py-10 shadow-sm border-b border-border">
@@ -120,6 +150,18 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                     <p className="text-lg text-muted-foreground">
                         دليل التطبيقات والخدمات الحكومية الإلكترونية الرسمية
                     </p>
+                    <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={openAddSuggestion}
+                            className="h-9 rounded-full gap-2 px-4 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
+                        >
+                            <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
+                            <span>إضافة / اقتراح تعديل</span>
+                        </Button>
+                    </div>
                 </div>
             </section>
 
@@ -156,6 +198,15 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                             <span className="hidden sm:inline">تعديل</span>
                                         </a>
                                     )}
+                                    <button
+                                        type="button"
+                                        onClick={() => openEditSuggestion(app)}
+                                        aria-label={`اقتراح تعديل — ${app.name_ar || app.name}`}
+                                        title="اقتراح تعديل"
+                                        className="absolute top-2 end-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-background/85 text-muted-foreground backdrop-blur-md border border-border/60 shadow-xs transition-all duration-200 opacity-80 hover:opacity-100 hover:bg-background hover:text-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
+                                    </button>
                                     <AppIcon
                                         app={app}
                                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -216,6 +267,15 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                     </div>
                 )}
             </div>
+
+            <DirectorySuggestionDialog
+                module="govapps"
+                open={suggestionOpen}
+                onOpenChange={setSuggestionOpen}
+                defaultKind={suggestionTarget ? 'edit' : 'add'}
+                fixedTarget={suggestionTarget}
+                targets={suggestionTargets}
+            />
         </div>
     );
 }

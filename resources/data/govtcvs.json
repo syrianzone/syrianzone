@@ -1,0 +1,524 @@
+{
+  "cutoff_date": "2024-12-08",
+  "office_statuses": [
+    {
+      "key": "in_office",
+      "label": "على رأس عمله",
+      "glyph": "BadgeCheck",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "out_of_office",
+      "label": "خارج المنصب",
+      "glyph": "LogOut",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "uncertain",
+      "label": "غير مؤكد",
+      "glyph": "HelpCircle",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "deceased",
+      "label": "متوفى",
+      "glyph": "MinusCircle",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "tiers": [
+    {
+      "key": "presidency",
+      "label": "رئاسة الجمهورية",
+      "rank": 1,
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "minister",
+      "label": "وزير",
+      "rank": 2,
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "governor",
+      "label": "محافظ",
+      "rank": 3,
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "agency_head",
+      "label": "رئيس هيئة أو مؤسسة",
+      "rank": 4,
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "deputy_minister",
+      "label": "معاون وزير",
+      "rank": 5,
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "judicial",
+      "label": "سلطة قضائية أو دستورية",
+      "rank": 6,
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "advisory",
+      "label": "مستشار أو مبعوث",
+      "rank": 7,
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "military_security",
+      "label": "قيادة عسكرية أو أمنية",
+      "rank": 8,
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "diplomat",
+      "label": "سفير أو ممثل دبلوماسي",
+      "rank": 9,
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "director",
+      "label": "مدير عام أو مسؤول تنفيذي",
+      "rank": 10,
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "government_phases": [
+    {
+      "key": "caretaker_2024",
+      "label": "حكومة تسيير الأعمال (2024)",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "transitional_2025",
+      "label": "الحكومة الانتقالية (2025)",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "reshuffle_2026",
+      "label": "تعديلات وتعيينات (2026)",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "other",
+      "label": "مرحلة أخرى",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "tenure_statuses": [
+    {
+      "key": "current",
+      "label": "حالي",
+      "glyph": "BadgeCheck",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "ended",
+      "label": "انتهت ولايته",
+      "glyph": "History",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "uncertain",
+      "label": "غير مؤكد",
+      "glyph": "HelpCircle",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    }
+  ],
+  "end_reasons": [
+    {
+      "key": "replaced",
+      "label": "تعيين خلف له",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "reassigned",
+      "label": "نقل إلى منصب آخر",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "promoted",
+      "label": "ترقية إلى منصب أعلى",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "dismissed",
+      "label": "إعفاء من المنصب",
+      "badge_variant": "destructive",
+      "card_tone": "destructive",
+      "tone": "text-destructive"
+    },
+    {
+      "key": "resigned",
+      "label": "استقالة",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "post_abolished",
+      "label": "إلغاء المنصب",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "ministry_merged",
+      "label": "دمج الوزارة أو الهيئة",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "cabinet_transition",
+      "label": "انتهاء مهام الحكومة",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "deceased",
+      "label": "وفاة",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "cv_sections": [
+    {
+      "key": "education",
+      "label": "المؤهلات العلمية",
+      "glyph": "GraduationCap",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "career_history",
+      "label": "المسيرة المهنية والإدارية",
+      "glyph": "Briefcase",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "military_revolutionary",
+      "label": "المسيرة الثورية والعسكرية",
+      "glyph": "Shield",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "civic_social",
+      "label": "النشاط المدني والمجتمعي",
+      "glyph": "Users",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "certification",
+      "label": "الشهادات والزمالات المهنية",
+      "glyph": "Award",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "publication",
+      "label": "الأبحاث والمؤلفات",
+      "glyph": "BookOpen",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    }
+  ],
+  "cv_completeness": [
+    {
+      "key": "full_cv",
+      "label": "سيرة ذاتية كاملة",
+      "glyph": "FileCheck2",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "partial_bio",
+      "label": "نبذة جزئية",
+      "glyph": "FileText",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "positions_only",
+      "label": "مناصب فقط",
+      "glyph": "Briefcase",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "evidence_types": [
+    {
+      "key": "cv_card",
+      "label": "بطاقة سيرة ذاتية رسمية",
+      "glyph": "IdCard",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "appointment_decree",
+      "label": "مرسوم أو قرار تعيين",
+      "glyph": "FileSignature",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "dismissal_decree",
+      "label": "مرسوم أو قرار إعفاء",
+      "glyph": "FileX",
+      "badge_variant": "destructive",
+      "card_tone": "destructive",
+      "tone": "text-destructive"
+    },
+    {
+      "key": "handover_farewell",
+      "label": "استلام وتسليم أو تكريم",
+      "glyph": "ArrowLeftRight",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "operational_mention",
+      "label": "ظهور رسمي بممارسة المهام",
+      "glyph": "Newspaper",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "video_interview",
+      "label": "مقابلة مصورة أو تصريح",
+      "glyph": "Video",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "external_source",
+      "label": "مصدر خارجي موثق",
+      "glyph": "ExternalLink",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "publish_statuses": [
+    {
+      "key": "draft",
+      "label": "مسودة",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "published",
+      "label": "منشور",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "archived",
+      "label": "مؤرشف",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "verification_levels": [
+    {
+      "key": "decree_verified",
+      "label": "موثق بمرسوم أو قرار رسمي",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "cv_card_verified",
+      "label": "موثق ببطاقة سيرة ذاتية رسمية",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "operational_verified",
+      "label": "موثق من أخبار ومهام رسمية",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "editorial",
+      "label": "رصد تحريري",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "alias_types": [
+    {
+      "key": "patronymic_short",
+      "label": "اسم مختصر (بدون اسم الأب)",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "kunya",
+      "label": "كنية أو لقب",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "ocr_variant",
+      "label": "صيغة بديلة في المصادر",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "english",
+      "label": "الاسم بالإنكليزية",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "former_spelling",
+      "label": "تهجئة سابقة",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "date_precisions": [
+    {
+      "key": "exact",
+      "label": "تاريخ دقيق",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "month",
+      "label": "بالشهر والسنة",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "year",
+      "label": "بالسنة فقط",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "first_seen",
+      "label": "أول ظهور رُصد في المنصب",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "inferred_successor",
+      "label": "مُستنتج من تعيين الخلف",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "slot_statuses": [
+    {
+      "key": "active",
+      "label": "قائم",
+      "badge_variant": "default",
+      "card_tone": "primary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "merged",
+      "label": "مُدمج",
+      "badge_variant": "secondary",
+      "card_tone": "soft",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "abolished",
+      "label": "مُلغى",
+      "badge_variant": "outline",
+      "card_tone": "outline",
+      "tone": "text-muted-foreground"
+    }
+  ]
+}

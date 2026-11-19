@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Directories\DirectorySuggestionService;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -24,6 +25,7 @@ class SyOfficialAdminController extends Controller
         return inertia('Admin/SyOfficial/Index', [
             'categories' => $this->directory->categories(),
             'entities' => $this->directory->entities(),
+            'pendingSuggestionsCount' => app(DirectorySuggestionService::class)->pendingCount('syofficial'),
         ]);
     }
 

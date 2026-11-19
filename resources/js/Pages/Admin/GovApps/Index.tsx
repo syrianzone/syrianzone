@@ -6,13 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Plus, Edit3, Trash2, Smartphone, ArrowUpDown, Globe } from 'lucide-react';
+import { Plus, Edit3, Trash2, Smartphone, ArrowUpDown, Globe, Inbox } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import AppDialog from './_components/AppDialog';
 import SortableList from '@/Components/directory/SortableList';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import SuggestionsReviewPanel from '@/Domain/suggestions/SuggestionsReviewPanel';
 import { useDirectory } from '@/Components/directory/useDirectory';
 import { useCan } from '@/Lib/useCan';
 import { DEFAULT_GOVAPP_ICON } from '@/Domain/govapps/media';
@@ -20,11 +21,15 @@ import type { GovApp } from '@/Domain/govapps/types';
 
 interface AdminGovAppsProps {
     apps: GovApp[];
+    pendingSuggestionsCount?: number;
 }
 
 const appSearchText = (app: GovApp) => `${app.name} ${app.name_ar ?? ''} ${app.id}`;
 
-export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
+export default function GovAppsAdminIndex({
+    apps,
+    pendingSuggestionsCount: initialPendingSuggestionsCount = 0,
+}: AdminGovAppsProps) {
 
     // Each control is gated on the capability its route requires (routes/web.php).
     const can = useCan();
@@ -32,6 +37,13 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
     const canEdit = can('govapps.edit');
     const canDelete = can('govapps.delete');
     const canReorder = can('govapps.reorder');
+
+    const [activeTab, setActiveTab] = useState('list');
+    const [pendingSuggestionsCount, setPendingSuggestionsCount] = useState(initialPendingSuggestionsCount);
+
+    useEffect(() => {
+        setPendingSuggestionsCount(initialPendingSuggestionsCount);
+    }, [initialPendingSuggestionsCount]);
 
     // The public listing's search, so «احمد» finds «أحمد» here too.
     const directory = useDirectory<GovApp>({ items: apps, searchText: appSearchText });
@@ -51,6 +63,17 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
             }
         }
     }, [apps]);
+
+    const handleEditTarget = (targetId: string) => {
+        const target = apps.find((e) => e.id === targetId);
+        if (!target) {
+            notify.error('لم يتم العثور على التطبيق المطلوب');
+            return;
+        }
+        setActiveTab('list');
+        setSelectedApp(target);
+        setAppDialogOpen(true);
+    };
 
     const handleDeleteApp = async (appId: string) => {
         const ok = await confirmDialog({ title: 'حذف هذا التطبيق الحكومي؟', destructive: true, confirmText: 'حذف' });
@@ -94,12 +117,21 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
                     </div>
                 </div>
 
-                <Tabs defaultValue="list" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 max-w-md bg-muted/60 p-1 rounded-xl">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 max-w-xl bg-muted/60 p-1 rounded-xl">
                         <TabsTrigger value="list" className="rounded-lg font-bold">قائمة التطبيقات</TabsTrigger>
                         <TabsTrigger value="reorder" className="rounded-lg font-bold flex items-center gap-1.5">
                             <ArrowUpDown className="w-4 h-4" />
                             <span>ترتيب العرض</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="suggestions" className="rounded-lg font-bold flex items-center gap-1.5">
+                            <Inbox className="w-4 h-4" />
+                            <span>الاقتراحات</span>
+                            {pendingSuggestionsCount > 0 && (
+                                <Badge variant="default" className="h-5 min-w-5 px-1.5 text-[11px] tabular-nums">
+                                    {pendingSuggestionsCount}
+                                </Badge>
+                            )}
                         </TabsTrigger>
                     </TabsList>
 
@@ -215,6 +247,15 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
                             endpoint="/api/v1/admin/govapps/reorder"
                             capability="govapps.reorder"
                             canReorder={canReorder}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="suggestions" className="mt-6">
+                        <SuggestionsReviewPanel
+                            module="govapps"
+                            canReview={can('govapps.edit')}
+                            onPendingCountChange={setPendingSuggestionsCount}
+                            onEditTarget={handleEditTarget}
                         />
                     </TabsContent>
                 </Tabs>

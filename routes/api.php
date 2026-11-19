@@ -14,8 +14,10 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\ContributorController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DirectorySuggestionController;
 use App\Http\Controllers\EventsController;
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\GovtCvController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\PlaceController;
@@ -390,6 +392,26 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
     Route::post('/promises/{number}/vote', [PromiseController::class, 'vote'])
         ->where('number', '[0-9]{1,9}')->middleware('throttle:promise-voting')
         ->name('api.v1.promises.vote');
+
+    // Government officials CVs & office movements (السير الذاتية للمسؤولين)
+    Route::middleware('throttle:public-api')->prefix('govtcvs')->group(function () {
+        Route::get('/', [GovtCvController::class, 'apiIndex'])
+            ->name('api.v1.govtcvs.index');
+        Route::get('/options', [GovtCvController::class, 'apiOptions'])
+            ->name('api.v1.govtcvs.options');
+        Route::get('/movements', [GovtCvController::class, 'apiMovements'])
+            ->name('api.v1.govtcvs.movements');
+        Route::get('/{slug}', [GovtCvController::class, 'apiShow'])
+            ->where('slug', '[a-z0-9-]+')
+            ->name('api.v1.govtcvs.show');
+    });
+
+    // Public add / suggest-change submissions across directory modules
+    Route::middleware(['auth:sanctum', 'throttle:15,60'])->group(function () {
+        Route::post('/suggestions/{module}', [DirectorySuggestionController::class, 'store'])
+            ->whereIn('module', ['govtcvs', 'syofficial', 'govapps', 'phonebook'])
+            ->name('api.v1.suggestions.store');
+    });
 
     // Never exposes voter identifiers (voter_key, ip_hash, user_agent) or polls.user_id.
     Route::middleware('throttle:public-api')->group(function () use ($pollLeaderboardRoutes) {

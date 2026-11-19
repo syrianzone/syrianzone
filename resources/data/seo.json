@@ -248,6 +248,25 @@
             "changefreq": "monthly"
         },
         {
+            "path": "/govtcvs",
+            "title": "السير الذاتية للمسؤولين",
+            "description": "دليل موثّق لأسماء المسؤولين السوريين وسيرهم الذاتية وتنقلاتهم في المناصب الرسمية منذ 8 كانون الأول 2024 حتى اليوم.",
+            "card": "govtcvs",
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "daily"
+        },
+        {
+            "path": "/govtcvs/movements",
+            "title": "سجل التعيينات والتنقلات — السير الذاتية للمسؤولين",
+            "description": "الجدول الزمني الموثّق للتعيينات والتنقلات الوزارية والإعفاءات للمسؤولين السوريين منذ يوم التحرير 8 كانون الأول 2024.",
+            "card": "govtcvs-movements",
+            "parent": "/govtcvs",
+            "schema": "CollectionPage",
+            "priority": 0.8,
+            "changefreq": "daily"
+        },
+        {
             "path": "/compass/stats",
             "title": "إحصاءات بوصلة سوريا",
             "description": "إحصاءات مجمّعة ومجهولة الهوية عن نتائج بوصلة سوريا عبر المحاور والفئات والمشاركات.",

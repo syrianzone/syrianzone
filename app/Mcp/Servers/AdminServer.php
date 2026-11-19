@@ -11,6 +11,22 @@ use App\Mcp\Tools\GovApps\ReorderGovAppsTool;
 use App\Mcp\Tools\GovApps\RestoreGovAppTool;
 use App\Mcp\Tools\GovApps\ToggleGovAppTool;
 use App\Mcp\Tools\GovApps\UpdateGovAppTool;
+use App\Mcp\Tools\GovtCvs\AddGovtEvidenceTool;
+use App\Mcp\Tools\GovtCvs\AddGovtTenureTool;
+use App\Mcp\Tools\GovtCvs\ArchiveGovtOfficialTool;
+use App\Mcp\Tools\GovtCvs\CreateGovtOfficialTool;
+use App\Mcp\Tools\GovtCvs\DeleteGovtCvEntryTool;
+use App\Mcp\Tools\GovtCvs\DeleteGovtOfficialTool;
+use App\Mcp\Tools\GovtCvs\DeleteGovtTenureTool;
+use App\Mcp\Tools\GovtCvs\GetGovtCvOptionsTool;
+use App\Mcp\Tools\GovtCvs\GetGovtOfficialTool;
+use App\Mcp\Tools\GovtCvs\ListGovtOfficialsTool;
+use App\Mcp\Tools\GovtCvs\ListGovtSlotsTool;
+use App\Mcp\Tools\GovtCvs\PublishGovtOfficialTool;
+use App\Mcp\Tools\GovtCvs\SaveGovtCvEntryTool;
+use App\Mcp\Tools\GovtCvs\SaveGovtSlotTool;
+use App\Mcp\Tools\GovtCvs\UpdateGovtOfficialTool;
+use App\Mcp\Tools\GovtCvs\UpdateGovtTenureTool;
 use App\Mcp\Tools\Places\ApprovePlaceTool;
 use App\Mcp\Tools\Places\DeletePlacePhotoTool;
 use App\Mcp\Tools\Places\DeletePlaceTool;
@@ -160,6 +176,10 @@ class AdminServer extends Server
         GetPromiseReviewQueueTool::class,
         ListPromiseSpeakersTool::class,
         ListPromiseSectorsTool::class,
+        GetGovtCvOptionsTool::class,
+        ListGovtOfficialsTool::class,
+        GetGovtOfficialTool::class,
+        ListGovtSlotsTool::class,
 
         ToolSearch::class => [
             ApprovePlaceTool::class,
@@ -217,6 +237,19 @@ class AdminServer extends Server
             TogglePromiseSectorTool::class,
             DeletePromiseSectorTool::class,
             ReorderPromiseSectorsTool::class,
+
+            CreateGovtOfficialTool::class,
+            UpdateGovtOfficialTool::class,
+            PublishGovtOfficialTool::class,
+            ArchiveGovtOfficialTool::class,
+            DeleteGovtOfficialTool::class,
+            AddGovtTenureTool::class,
+            UpdateGovtTenureTool::class,
+            DeleteGovtTenureTool::class,
+            SaveGovtCvEntryTool::class,
+            DeleteGovtCvEntryTool::class,
+            AddGovtEvidenceTool::class,
+            SaveGovtSlotTool::class,
 
             SetUserBanTool::class,
         ],

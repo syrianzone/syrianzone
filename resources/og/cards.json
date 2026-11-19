@@ -8,6 +8,8 @@
     { "slug": "polls", "title": "استطلاعات الرأي", "subtitle": "شارك برأيك في القضايا والشؤون السورية", "icon": "tierlist" },
     { "slug": "promises", "title": "عداد الوعود", "subtitle": "وعود المسؤولين العلنية ومواعيدها وما تحقق منها", "icon": "promises" },
     { "slug": "promises-suggest", "title": "اقترح وعداً", "subtitle": "أرسل وعداً علنياً مع مصدره ليراجعه المحررون", "icon": "promises" },
+    { "slug": "govtcvs", "title": "السير الذاتية للمسؤولين", "subtitle": "أسماء المسؤولين وسيرهم الذاتية وتنقلاتهم منذ 8 كانون الأول 2024", "icon": "govtcvs" },
+    { "slug": "govtcvs-movements", "title": "سجل التعيينات والتنقلات", "subtitle": "توثيق زمني للتعيينات والتعديلات الحكومية منذ يوم التحرير", "icon": "govtcvs" },
     { "slug": "priorities", "title": "أولويات سوريا", "subtitle": "رتّب أولوياتك لسوريا المستقبل وشاركها", "icon": "priorities" },
     { "slug": "compass", "title": "بوصلة سوريا", "subtitle": "اكتشف موقعك السياسي على أحد عشر محوراً", "icon": "compass" },
     { "slug": "compass-stats", "title": "إحصاءات البوصلة", "subtitle": "نتائج مجمّعة ومجهولة الهوية لاختبار بوصلة سوريا", "icon": "compass" },

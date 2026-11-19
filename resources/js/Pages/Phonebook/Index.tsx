@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
-    Phone, MessageSquare, Copy, Check, ExternalLink, Search, Info, Settings
+    Phone, MessageSquare, MessageSquarePlus, Copy, Check, ExternalLink, Search, Info, Settings, PencilLine
 } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
@@ -19,10 +19,12 @@ import { useCanAny } from '@/Lib/useCan';
 import { copyText } from '@/Lib/copy';
 import { matchesFilterText } from '@/Lib/smartFilterSearch';
 import type { PhonebookCategory, PhonebookEntry } from '@/Domain/phonebook/types';
+import type { SuggestionCategoryOption, SuggestionTargetOption } from '@/Domain/suggestions/types';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
 import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
 import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 
@@ -127,6 +129,38 @@ export default function Index({ initialData, categories: serverCategories = [] }
         return `https://wa.me/${cleaned}`;
     };
 
+    const [suggestionOpen, setSuggestionOpen] = useState(false);
+    const [suggestionTarget, setSuggestionTarget] = useState<SuggestionTargetOption | null>(null);
+
+    const suggestionTargets = useMemo<SuggestionTargetOption[]>(
+        () =>
+            initialData.map((item) => ({
+                id: item.id,
+                label: item.name_ar,
+                subtitle: item.number,
+            })),
+        [initialData],
+    );
+
+    const suggestionCategories = useMemo<SuggestionCategoryOption[]>(
+        () => serverCategories.map((cat) => ({ id: cat.id, label: cat.label_ar })),
+        [serverCategories],
+    );
+
+    const openAddSuggestion = () => {
+        setSuggestionTarget(null);
+        setSuggestionOpen(true);
+    };
+
+    const openEditSuggestion = (item: PhonebookEntry) => {
+        setSuggestionTarget({
+            id: item.id,
+            label: item.name_ar,
+            subtitle: item.number,
+        });
+        setSuggestionOpen(true);
+    };
+
     return (
         <MainLayout>
             
@@ -151,9 +185,22 @@ export default function Index({ initialData, categories: serverCategories = [] }
                             </div>
                         )}
                         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">دليل الهاتف والواتساب</h1>
-                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
                             أرقام التواصل والشكاوى والطوارئ للجهات الرسمية والخدمية السورية.
                         </p>
+
+                        <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={openAddSuggestion}
+                                className="h-9 rounded-full gap-2 px-4 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
+                            >
+                                <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
+                                <span>إضافة / اقتراح تعديل</span>
+                            </Button>
+                        </div>
 
                         <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
                             <DirectorySearch
@@ -205,15 +252,28 @@ export default function Index({ initialData, categories: serverCategories = [] }
                             {directory.results.map(item => (
                                 <Card key={item.id} className="overflow-hidden hover:shadow-md transition-all border border-border bg-card flex flex-col justify-between">
                                     <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                                        <div>
-                                            <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2 mb-1">
-                                                {item.name_ar}
-                                            </h3>
-                                            {item.name_en && (
-                                                <p className="text-[11px] text-muted-foreground font-normal truncate">
-                                                    {item.name_en}
-                                                </p>
-                                            )}
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2 mb-1">
+                                                    {item.name_ar}
+                                                </h3>
+                                                {item.name_en && (
+                                                    <p className="text-[11px] text-muted-foreground font-normal truncate">
+                                                        {item.name_en}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => openEditSuggestion(item)}
+                                                aria-label={`اقتراح تعديل — ${item.name_ar}`}
+                                                title="اقتراح تعديل"
+                                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-primary"
+                                            >
+                                                <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
+                                            </Button>
                                         </div>
 
                                         <div className="space-y-2">
@@ -375,6 +435,18 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                             </a>
                                                         </Button>
                                                     )}
+
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => openEditSuggestion(item)}
+                                                        aria-label={`اقتراح تعديل — ${item.name_ar}`}
+                                                        title="اقتراح تعديل"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                    >
+                                                        <PencilLine className="h-4 w-4" aria-hidden="true" />
+                                                    </Button>
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -397,6 +469,16 @@ export default function Index({ initialData, categories: serverCategories = [] }
                 </div>
 
             </div>
+
+            <DirectorySuggestionDialog
+                module="phonebook"
+                open={suggestionOpen}
+                onOpenChange={setSuggestionOpen}
+                defaultKind={suggestionTarget ? 'edit' : 'add'}
+                fixedTarget={suggestionTarget}
+                targets={suggestionTargets}
+                categories={suggestionCategories}
+            />
         </MainLayout>
     );
 }

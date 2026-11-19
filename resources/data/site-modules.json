@@ -232,6 +232,30 @@
    "description": "وعود المسؤولين العلنية ومواعيدها وما تحقق منها"
   },
   {
+   "id": "govtcvs",
+   "title": "السير الذاتية للمسؤولين",
+   "subtitle": "أسماء المسؤولين وسيرهم الذاتية وتنقلاتهم منذ 8 كانون الأول 2024",
+   "href": "/govtcvs",
+   "type": "web",
+   "target": "/govtcvs",
+   "iconKey": "govtcvs",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [
+    {
+     "id": "govtcvs_movements",
+     "title": "سجل التعيينات والتنقلات",
+     "subtitle": "التعديلات الحكومية والتنقلات الزمنية منذ يوم التحرير",
+     "href": "/govtcvs/movements",
+     "type": "web",
+     "target": "/govtcvs/movements",
+     "iconKey": "govtcvs",
+     "iconUrl": null
+    }
+   ],
+   "description": "أسماء المسؤولين وسيرهم الذاتية وتنقلاتهم في المناصب منذ 8 كانون الأول 2024"
+  },
+  {
    "id": "priorities",
    "title": "أولويات سوريا",
    "subtitle": "استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا",
@@ -542,6 +566,14 @@
    "href": "/admin/promises",
    "gate": {
     "module": "promises"
+   }
+  },
+  {
+   "id": "govtcvs",
+   "label": "السير الذاتية للمسؤولين",
+   "href": "/admin/govtcvs",
+   "gate": {
+    "module": "govtcvs"
    }
   },
   {

@@ -1,5 +1,5 @@
 {
-  "recipe": "18bc6b274761191f",
+  "recipe": "4ce79f23d74d6a21",
   "cards": {
     "home": "a1a1048328",
     "tierlist": "03ef938c8c",
@@ -7,6 +7,8 @@
     "polls": "9c02acc5ee",
     "promises": "518366604e",
     "promises-suggest": "7195e4d381",
+    "govtcvs": "67cb2a60fb",
+    "govtcvs-movements": "f651af5029",
     "priorities": "9c8f95cbda",
     "compass": "9c96f24bda",
     "compass-stats": "3bde952057",

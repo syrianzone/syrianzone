@@ -85,7 +85,7 @@ jobs:
           NODE
       - name: Inspect Apple SDKs
         run: xcodebuild -version && xcodebuild -showsdks
-      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.4'
           extensions: mbstring, pdo_sqlite, intl, zip
@@ -109,3 +109,29 @@ jobs:
           CODE_SIGNING_ALLOWED=NO build
       - name: Catch native startup crashes
         run: bun run ios:smoke
+      - name: Search Home and open Mishwar on iPhone 17
+        shell: bash
+        env:
+          # Exercise the bundled catalogue without live services.
+          EXPO_PUBLIC_API_ORIGIN: https://127.0.0.1:9443
+        run: |
+          ruby scripts/prepare-ui-tests.rb
+          home_case=SyrianZoneUITests/SyrianZoneUITests/testHomeSearchOpensMishwar
+          result="$RUNNER_TEMP/home-ui.xcresult"
+          xcodebuild -jobs 2 -workspace ios/SyrianZone.xcworkspace \
+            -scheme SyrianZoneVerification -configuration Release -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -derivedDataPath .expo/build -parallel-testing-enabled NO \
+            -only-testing:"$home_case" -resultBundlePath "$result" CODE_SIGNING_ALLOWED=NO test
+          xcrun xcresulttool get test-results tests --path "$result" --format json | node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { assertSelectedTestsPassed } from "./scripts/native-test-results.mjs";
+            assertSelectedTestsPassed([process.argv[1]], JSON.parse(readFileSync(0, "utf8")));
+          ' "$home_case"
+      - name: Save Home XCTest results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: home-ui-xcresult
+          path: ${{ runner.temp }}/home-ui.xcresult
+          if-no-files-found: ignore

@@ -1,4 +1,5 @@
 import { isCoordinate, isEntityId, parseCities, parseNearbyStops, parsePlaceDetail, parsePlacePage, parseTransitMap, placeCategories, type City, type EntityId, type Page, type Place, type PlaceDetail, type TransitMap, type TransitStop } from './domain';
+import { isPromiseNumber, parsePromiseDetail, parsePromiseIndex, type PromiseDetail, type PromiseIndex } from './domain';
 
 export type FetchImplementation = (input: string, init?: RequestInit) => Promise<Response>;
 export interface PlacesQuery { query?: string; category?: string; sort?: 'newest' | 'popular'; page?: number }
@@ -8,6 +9,8 @@ export interface ApiClient {
   places(query?: PlacesQuery, signal?: AbortSignal): Promise<Page<Place>>;
   place(placeId: number, signal?: AbortSignal): Promise<PlaceDetail>;
   nearbyStops(location: { latitude: number; longitude: number }, signal?: AbortSignal): Promise<TransitStop[]>;
+  promises(signal?: AbortSignal): Promise<PromiseIndex>;
+  promise(number: number, signal?: AbortSignal): Promise<PromiseDetail>;
 }
 
 export class ApiError extends Error {
@@ -83,6 +86,15 @@ export function createApiClient({ origin = process.env.EXPO_PUBLIC_API_ORIGIN ??
       if (!isCoordinate(location)) invalidInput();
       const params = new URLSearchParams({ lat: String(location.latitude), lng: String(location.longitude) });
       return request(`transit/stops/nearby?${params}`, parseNearbyStops, signal);
+    },
+    promises: signal => request('promises', parsePromiseIndex, signal),
+    async promise(number, signal) {
+      if (!isPromiseNumber(number)) invalidInput();
+      return request(`promises/${number}`, value => {
+        const detail = parsePromiseDetail(value);
+        if (detail.number !== number) throw new Error('Mismatched promise number');
+        return detail;
+      }, signal);
     },
   };
 }

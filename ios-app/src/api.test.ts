@@ -74,3 +74,34 @@ test('reports connection failures without displaying transport internals', async
   const client = createApiClient({ fetch: async () => { throw new Error('private endpoint detail'); } });
   await expect(client.cities()).rejects.toMatchObject({ code: 'network', message: 'تعذر الاتصال. تحقق من الإنترنت وحاول مرة أخرى.' });
 });
+
+test('reads the promises catalogue and details from the versioned API', async () => {
+  const published = {
+    number: 42, title: 'وعد حكومي', state: 'overdue', speaker: { name: 'المسؤول', title: null },
+    coSpeakers: [], tags: [], statementDate: '2025-01-01', deadlineDate: '2025-02-01',
+    counter: { mode: 'overdue', value: 5 },
+  };
+  const detail = {
+    ...published, quote: 'نص الوعد', quoteIsVerbatim: true, statementVenue: 'speech', isNational: true,
+    sources: [{ id: 1, type: 'news_article', url: 'http://example.test/news', archiveUrl: 'https://archive.example.test/news' }],
+    updates: [{ id: 1, type: 'progress', happenedOn: '2025-02-05', sourceUrl: 'syrianzone://settings', archiveUrl: 'https://user@example.test' }],
+    relatedPromises: [], votes: { yes: 5, no: 2 }, votingOpen: true,
+  };
+  const paths: string[] = [];
+  const client = createApiClient({ fetch: async input => {
+    const path = new URL(input).pathname;
+    paths.push(path);
+    return path === '/api/v1/promises' ? json({ promises: [published], stats: { total: 1, fulfilled: 0, overdue: 1 } })
+      : json({ promise: detail });
+  } });
+
+  expect(await client.promises()).toMatchObject({ promises: [{ number: 42, state: 'overdue', counter: { mode: 'overdue', value: 5 } }] });
+  expect(await client.promise(42)).toMatchObject({
+    quote: 'نص الوعد', votes: { yes: 5, no: 2 },
+    sources: [{ url: 'http://example.test/news', archiveUrl: 'https://archive.example.test/news' }],
+    updates: [{ sourceUrl: null, archiveUrl: null }],
+  });
+  expect(paths).toEqual(['/api/v1/promises', '/api/v1/promises/42']);
+  await expect(client.promise(1_000_000_000)).rejects.toMatchObject({ code: 'invalid_input' });
+  await expect(client.promise(43)).rejects.toMatchObject({ code: 'invalid_response' });
+});

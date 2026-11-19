@@ -1,6 +1,6 @@
 # Syrian Zone for iOS
 
-An Arabic native iOS client for Syrian Zone's transit network and Mishwar places, built with the React Native, Expo, and SwiftUI stack used by [T3 Code](https://github.com/pingdotgg/t3code/tree/629242b8d3ab6f1c626c5098bf932345d7926285/apps/mobile).
+An Arabic native iOS client for Syrian Zone's transit network, Mishwar places, and government promises tracker, built with the React Native, Expo, and SwiftUI stack used by [T3 Code](https://github.com/pingdotgg/t3code/tree/629242b8d3ab6f1c626c5098bf932345d7926285/apps/mobile).
 
 ## Contract
 
@@ -10,14 +10,17 @@ An Arabic native iOS client for Syrian Zone's transit network and Mishwar places
 - FR-004: Use Arabic product copy, RTL layout, accessible native controls, Dynamic Type, and the system's reduced motion preference. Keep map coordinates and paths in their original order.
 - FR-005: Resize for compact phones, iPhone Duo folded and unfolded, and iPad windows. Read native hinge reservations on supported SDKs. Keep controls outside occluded regions, and preserve selections while resizing.
 - FR-006: Ship an iOS-only application with pinned dependencies, type checks, lint, behavior tests, a repeatable simulator command, and measured performance evidence. Do not claim device support before running the device matrix.
+- FR-007: Browse, search, and filter published government promises from the home screen. Open a promise to see its deadline, evidence, and progress, and share it using the system share sheet. Links to the website provide voting, suggestions, and reports.
 
-This first slice covers the two sections on the Flutter application's home screen. Account sign-in, server-synced saves, submissions, moderation, and Transit Studio editing remain in the existing apps.
+Account sign-in, server-synced saves, submissions, moderation, and Transit Studio editing remain in the existing apps.
 
 ## Architecture decision
 
 ADR-IOS-001 uses Expo SDK 58, React Native 0.88, TypeScript, React Navigation native stacks, Expo UI SwiftUI controls, and Apple Maps. This follows T3 Code's iOS stack without importing its unrelated agent services or private native navigation fork. Flutter remains unchanged. A separate `ios-app/` package keeps installation and releases independent of the web monolith.
 
 Screens depend on typed domain and API modules. A single HTTPS API client validates server responses, bounds request time, and exposes Arabic errors. API data comes from `/api/v1/transit/*` and `/api/v1/places*`, the same routes the Flutter app calls. SQLite stores device-local preferences and saved place records. Native geometry observations supply window traits and hinge reservations, rather than inferring hardware from screen width.
+
+The promises tracker reads `/api/v1/promises` and `/api/v1/promises/{number}`. The Laravel server must expose these endpoints before distributing the app with the tracker enabled.
 
 ## Trust boundaries
 

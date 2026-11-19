@@ -14,6 +14,7 @@ import { NativeAction, NativeSegmented, NativeSymbol } from './ui/native';
 import { ThemeProvider, themeColors, useTheme } from './ui/theme';
 import { TransitCityScreen, TransitScreen } from './transit';
 import { PlaceScreen, PlacesScreen, SavedScreen } from './places';
+import { PromiseScreen, PromisesScreen } from './promises';
 import type { RootNavigation, RootRoutes, TabRoutes } from './navigation';
 import logo from '../../public/icons/icon-180.png';
 
@@ -41,6 +42,9 @@ function HomeScreen(): React.JSX.Element {
     </Section>
     <Section><NativeSymbol name="map.fill" size={32} /><Heading subtitle="زوايا سورية من اقتراحات المجتمع.">مشوار</Heading>
       <NativeAction title="اكتشف الأماكن" systemImage="arrow.up.forward" onPress={() => navigation.navigate('Places')} />
+    </Section>
+    <Section><NativeSymbol name="checklist" size={32} /><Heading subtitle="تابع مواعيد الوعود الحكومية وما تحقق منها.">عداد الوعود</Heading>
+      <NativeAction title="تصفّح الوعود الحكومية" systemImage="arrow.up.forward" onPress={() => navigation.navigate('Promises')} />
     </Section>
     <Row title="المحفوظات" subtitle={`${saved.length} مكان محفوظ على هذا الجهاز`} symbol="bookmark.fill" onPress={() => navigation.navigate('Saved')} />
     <RequestStatus resource={cities} /><RequestStatus resource={places} />
@@ -105,11 +109,15 @@ function Navigation(): React.JSX.Element {
   return <NavigationContainer<RootRoutes> linking={{ prefixes: ['syrianzone://'], config: { screens: {
     Main: { path: '', screens: { Home: '', Transit: 'transit', Places: 'places', Saved: 'saved', Settings: 'settings' } },
     Place: { path: 'place/:id', parse: { id: value => /^\d{1,10}$/.test(value) ? Number(value) : 0 } },
+    Promises: 'promises',
+    Promise: { path: 'promises/:number', parse: { number: value => /^\d{1,9}$/.test(value) ? Number(value) : 0 } },
   } } }} theme={{ ...base, colors: { ...base.colors, background: colors.background, card: colors.surface, text: colors.text, primary: colors.accent, border: colors.separator } }}>
     <Stack.Navigator screenOptions={{ headerTintColor: colors.accent, headerBackTitle: 'رجوع', statusBarStyle: mode === 'dark' ? 'light' : 'dark', contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false, title: 'المساحة السورية' }} />
       <Stack.Screen name="TransitCity" component={TransitCityScreen} options={({ route }) => ({ title: route.params.city.nameAr })} />
       <Stack.Screen name="Place" component={PlaceScreen} options={{ title: 'تفاصيل المكان' }} />
+      <Stack.Screen name="Promises" component={PromisesScreen} options={{ title: 'الوعود الحكومية' }} />
+      <Stack.Screen name="Promise" component={PromiseScreen} options={{ title: 'تفاصيل الوعد' }} />
     </Stack.Navigator>
   </NavigationContainer>;
 }

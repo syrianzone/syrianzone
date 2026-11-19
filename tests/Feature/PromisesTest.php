@@ -66,6 +66,34 @@ test('the detail page renders published promises and 404s otherwise', function (
     $this->get('/promises/424242')->assertNotFound();
 });
 
+test('the mobile API returns published promises, evidence and public tallies only', function () {
+    $published = Promise::factory()->published()->overdue()->create();
+    $draft = Promise::factory()->create(['number' => $published->number + 1]);
+    $deleted = Promise::factory()->published()->create(['number' => $published->number + 2]);
+    $deleted->delete();
+    $this->postJson("/api/v1/promises/{$published->number}/vote", [
+        'believes' => true,
+        'device_id' => 'promises-api-test',
+    ])->assertOk();
+
+    $this->getJson('/api/v1/promises')
+        ->assertOk()
+        ->assertJsonCount(1, 'promises')
+        ->assertJsonPath('promises.0.number', $published->number)
+        ->assertJsonPath('promises.0.state', 'overdue')
+        ->assertJsonPath('stats.overdue', 1);
+
+    $this->getJson("/api/v1/promises/{$published->number}")
+        ->assertOk()
+        ->assertJsonPath('promise.number', $published->number)
+        ->assertJsonPath('promise.sources.0.url', 'https://example.com/source/'.$published->id)
+        ->assertJsonPath('promise.votes', ['yes' => 1, 'no' => 0])
+        ->assertJsonMissingPath('promise.votes.voter_key');
+
+    $this->getJson("/api/v1/promises/{$draft->number}")->assertNotFound();
+    $this->getJson("/api/v1/promises/{$deleted->number}")->assertNotFound();
+});
+
 test('suggesting a promise requires sign-in', function () {
     $this->postJson('/api/v1/promises', [])->assertUnauthorized();
 });

@@ -43,6 +43,18 @@ class PromiseController extends Controller
         ]);
     }
 
+    public function apiIndex(): JsonResponse
+    {
+        return response()->json($this->presenter->index());
+    }
+
+    public function apiShow(int $number): JsonResponse
+    {
+        return response()->json([
+            'promise' => $this->presenter->detail($this->findPublished($number)),
+        ]);
+    }
+
     public function suggest(): Response
     {
         return inertia('Promises/Suggest', [

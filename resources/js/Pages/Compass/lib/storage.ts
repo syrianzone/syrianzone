@@ -6,6 +6,8 @@ import type { AnswerMap, CompassResult, QuizVersion } from '@/Domain/compass/typ
 const KEY_PROGRESS = 'sz-compass-v2-progress';
 const KEY_RESULTS = 'sz-compass-v2-results';
 const KEY_PENDING_SAVE = 'sz-compass-v2-pending-save';
+let pendingSaveActive = false;
+let pendingSaveRevision = 0;
 
 export interface Progress {
   version: QuizVersion;
@@ -97,7 +99,10 @@ export function removeLocalResult(id: string | number | undefined | null): Compa
 
 function removePendingResult(id?: string | number | null): void {
   const pending = safeParse<{ id?: string | number } | null>(localStorage.getItem(KEY_PENDING_SAVE), null);
-  if (id == null || (pending && String(pending.id) === String(id))) localStorage.removeItem(KEY_PENDING_SAVE);
+  if (id == null || (pending && String(pending.id) === String(id))) {
+    localStorage.removeItem(KEY_PENDING_SAVE);
+    pendingSaveRevision++;
+  }
 }
 
 /** Queue a completed result to be saved to the account once the user is
@@ -106,38 +111,15 @@ export function setPendingAccountSave(result: CompassResult) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(KEY_PENDING_SAVE, JSON.stringify(result));
+    pendingSaveRevision++;
   } catch {}
 }
 
-interface PendingSave {
-  result: CompassResult;
-  queued: string;
-  marker: string;
-}
-
-function claimPendingAccountSave(): PendingSave | null {
-  if (typeof window === 'undefined') return null;
+function readPendingSave(): string | null {
   try {
-    const queued = localStorage.getItem(KEY_PENDING_SAVE);
-    const result = safeParse<CompassResult | { attempt: string } | null>(queued, null);
-    if (!queued || !result || typeof result !== 'object' || 'attempt' in result) return null;
-    // Keep only the result ID and attempt ID so deletion can cancel a later retry.
-    const marker = JSON.stringify({ id: result.id, attempt: crypto.randomUUID?.() ?? Math.random().toString() });
-    localStorage.setItem(KEY_PENDING_SAVE, marker);
-    return { result, queued, marker };
+    return localStorage.getItem(KEY_PENDING_SAVE);
   } catch {
     return null;
-  }
-}
-
-function finishPendingAccountSave(marker: string, retry: string | null): boolean {
-  try {
-    if (localStorage.getItem(KEY_PENDING_SAVE) !== marker) return false;
-    if (retry === null) localStorage.removeItem(KEY_PENDING_SAVE);
-    else localStorage.setItem(KEY_PENDING_SAVE, retry);
-    return true;
-  } catch {
-    return false;
   }
 }
 
@@ -153,17 +135,33 @@ export async function saveResultToAccount(result: CompassResult): Promise<Compas
 }
 
 export async function savePendingResultToAccount(): Promise<boolean> {
-  const pending = claimPendingAccountSave();
-  if (!pending) return false;
-  const { result, queued, marker } = pending;
+  if (typeof window === 'undefined' || pendingSaveActive) return false;
+  pendingSaveActive = true;
+  try {
+    const locks = globalThis.navigator?.locks;
+    if (locks) return await locks.request(KEY_PENDING_SAVE, { ifAvailable: true }, lock => lock ? uploadPendingSave() : false);
+    return await uploadPendingSave();
+  } finally {
+    pendingSaveActive = false;
+  }
+}
+
+async function uploadPendingSave(): Promise<boolean> {
+  // Keep the payload in storage so rejection needs no write and cannot undo deletion.
+  const queued = readPendingSave();
+  const result = safeParse<CompassResult | { attempt: string } | null>(queued, null);
+  if (!result || typeof result !== 'object' || 'attempt' in result) return false;
+  const revision = pendingSaveRevision;
+  const isCurrent = () => revision === pendingSaveRevision && readPendingSave() === queued;
   let saved: CompassResult | null;
   try {
     saved = await saveResultToAccount(result);
   } catch (error) {
-    if (!finishPendingAccountSave(marker, queued)) return false;
-    throw error;
+    if (isCurrent()) throw error;
+    return false;
   }
-  if (!finishPendingAccountSave(marker, null)) return false;
+  if (!isCurrent()) return false;
+  localStorage.removeItem(KEY_PENDING_SAVE);
   updateLocalResult(result.id, { id: saved?.id ?? result.id, savedToAccount: true });
   return true;
 }

@@ -23,6 +23,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   for (const [key, descriptor] of [['window', descriptors.window], ['localStorage', descriptors.storage]] as const) {
     if (descriptor) Object.defineProperty(globalThis, key, descriptor);
     else Reflect.deleteProperty(globalThis, key);
@@ -74,11 +75,30 @@ it('a rejected upload preserves a newer queue entry for the same result', async 
   expect(localStorage.getItem(pendingKey)).toBe(JSON.stringify(newer));
 });
 
-it('a rejected upload requeues an unchanged result for a later visit', async () => {
+it('a rejected upload leaves an unchanged result queued when storage refuses writes', async () => {
   const { reject, upload } = startUpload();
+  const write = vi.spyOn(localStorage, 'setItem').mockImplementation(() => { throw new Error('quota'); });
   const error = new Error('offline');
   reject(error);
   await expect(upload).rejects.toBe(error);
+  expect(write).not.toHaveBeenCalled();
+  expect(localStorage.getItem(pendingKey)).toBe(JSON.stringify(result));
+});
+
+it('an upload skips the request when another tab owns the Web Lock', async () => {
+  const request = vi.fn(async (_key: string, _options: LockOptions, callback: LockGrantedCallback) => callback(null));
+  vi.stubGlobal('navigator', { locks: { request } });
+  const post = vi.spyOn(api, 'post').mockResolvedValue(result);
+  await expect(savePendingResultToAccount()).resolves.toBe(false);
+  expect(request).toHaveBeenCalledWith(pendingKey, { ifAvailable: true }, expect.any(Function));
+  expect(post).not.toHaveBeenCalled();
+});
+
+it('an upload cannot clear an identical result queued again while the request was pending', async () => {
+  const { resolve, upload } = startUpload();
+  setPendingAccountSave(result);
+  resolve({ ...result, id: 42 });
+  await expect(upload).resolves.toBe(false);
   expect(localStorage.getItem(pendingKey)).toBe(JSON.stringify(result));
 });
 

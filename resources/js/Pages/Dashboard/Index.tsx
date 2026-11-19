@@ -32,6 +32,7 @@ import { apiFieldErrors } from '@/Lib/api';
 import {
   TierlistIcon,
   PromisesIcon,
+  GovtCvsIcon,
   TransitIcon,
   MishwarIcon,
   SyOfficialIcon,
@@ -188,6 +189,7 @@ const ADMIN_SECTION_ICONS: Record<string, React.ComponentType<{ className?: stri
   phonebook: PhonebookIcon,
   compass: Compass,
   promises: PromisesIcon,
+  govtcvs: GovtCvsIcon,
   assets: CloudUpload,
   site_popup: Megaphone,
   site_navigation: LayoutGrid,

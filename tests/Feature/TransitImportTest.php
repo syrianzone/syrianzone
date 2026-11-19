@@ -208,7 +208,9 @@ test('a studio edit submission busts the public cities cache as well as the map 
     Cache::put($cache->mapDataKey('homs'), 'stale', 600);
     Cache::put($cache->routesKey(['homs']), 'stale', 600);
 
-    $this->actingAs(User::factory()->create())
+    // A transit editor's edit takes the live route offline (an ordinary
+    // user's suggestion does not), which is what busts the caches.
+    $this->actingAs(moduleStaff('transit'))
         ->postJson('/api/v1/studio/routes', [
             'city_id' => 'homs',
             'name_ar' => 'تعديل مقترح على الخط المنشور',

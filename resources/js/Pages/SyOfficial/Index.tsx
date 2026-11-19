@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Globe, Pencil, Send, Settings } from 'lucide-react';
+import { Globe, MessageSquarePlus, Pencil, PencilLine, Send, Settings } from 'lucide-react';
 import { Twitter } from '@/Components/ui/icons';
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
@@ -10,10 +10,12 @@ import { useCanAny, useCanModule } from '@/Lib/useCan';
 import { formatEntityImage } from '@/Lib/entityImage';
 import { socialPlatformLabel, socialVisual } from '@/Domain/syofficial/social';
 import type { OfficialCategory, OfficialEntity } from '@/Domain/syofficial/types';
+import type { SuggestionCategoryOption, SuggestionTargetOption } from '@/Domain/suggestions/types';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
 import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
 import DirectoryViewToggle, { type DirectoryView } from '@/Components/directory/DirectoryViewToggle';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 
@@ -166,6 +168,38 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
         return cat ? (language === 'ar' ? cat.label_ar : cat.label_en) : key;
     };
 
+    const [suggestionOpen, setSuggestionOpen] = useState(false);
+    const [suggestionTarget, setSuggestionTarget] = useState<SuggestionTargetOption | null>(null);
+
+    const suggestionTargets = useMemo<SuggestionTargetOption[]>(
+        () =>
+            initialData.map((item) => ({
+                id: item.id,
+                label: item.name_ar || item.name,
+                subtitle: item.name && item.name !== item.name_ar ? item.name : null,
+            })),
+        [initialData],
+    );
+
+    const suggestionCategories = useMemo<SuggestionCategoryOption[]>(
+        () => categories.map((cat) => ({ id: cat.id, label: cat.label_ar })),
+        [categories],
+    );
+
+    const openAddSuggestion = () => {
+        setSuggestionTarget(null);
+        setSuggestionOpen(true);
+    };
+
+    const openEditSuggestion = (item: OfficialEntity) => {
+        setSuggestionTarget({
+            id: item.id,
+            label: item.name_ar || item.name,
+            subtitle: item.name && item.name !== item.name_ar ? item.name : getCategoryLabel(item.category),
+        });
+        setSuggestionOpen(true);
+    };
+
     return (
         <MainLayout>
             
@@ -208,7 +242,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                         ))}
                     </div>
 
-                    <div className="flex justify-center gap-4 mb-8">
+                    <div className="flex flex-wrap justify-center gap-3 mb-8">
                         <a
                             href="https://x.com/i/lists/1906101934660174006"
                             target="_blank"
@@ -227,6 +261,16 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                             <Send className="h-4 w-4 text-sky-500" />
                             <span>قائمة تلغرام</span>
                         </a>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={openAddSuggestion}
+                            className="h-9 rounded-full gap-2 px-3.5 shadow-2xs border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
+                        >
+                            <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
+                            <span>إضافة / اقتراح تعديل</span>
+                        </Button>
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
@@ -297,6 +341,15 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                 <span className="hidden sm:inline">تعديل</span>
                                                             </a>
                                                         )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openEditSuggestion(item)}
+                                                            aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
+                                                            title="اقتراح تعديل"
+                                                            className="absolute top-2 end-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-background/85 text-muted-foreground backdrop-blur-md border border-border/60 shadow-xs transition-all duration-200 opacity-80 hover:opacity-100 hover:bg-background hover:text-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                        >
+                                                            <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
+                                                        </button>
                                                         <img
                                                             src={formatEntityImage(item.image)}
                                                             alt=""
@@ -356,7 +409,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                             <TableHead className="text-start font-bold">{t.tableCategory}</TableHead>
                                             <TableHead className="text-start font-bold">{t.tableDesc}</TableHead>
                                             <TableHead className="text-start font-bold">{t.tableSocial}</TableHead>
-                                            {canEditEntries && <TableHead className="text-end font-bold">إجراءات الإدارة</TableHead>}
+                                            <TableHead className="text-end font-bold">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -406,17 +459,30 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                         })}
                                                     </div>
                                                 </TableCell>
-                                                {canEditEntries && (
-                                                    <TableCell className="text-end">
-                                                        <a
-                                                            href={`/admin/syofficial?edit=${item.id}`}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-colors"
+                                                <TableCell className="text-end">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => openEditSuggestion(item)}
+                                                            aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
+                                                            title="اقتراح تعديل"
+                                                            className="h-8 w-8 text-muted-foreground hover:text-primary"
                                                         >
-                                                            <Pencil className="w-3.5 h-3.5" />
-                                                            تعديل
-                                                        </a>
-                                                    </TableCell>
-                                                )}
+                                                            <PencilLine className="h-4 w-4" aria-hidden="true" />
+                                                        </Button>
+                                                        {canEditEntries && (
+                                                            <a
+                                                                href={`/admin/syofficial?edit=${item.id}`}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-colors"
+                                                            >
+                                                                <Pencil className="w-3.5 h-3.5" />
+                                                                تعديل
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -426,6 +492,16 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                     </>
                 )}
             </div>
+
+            <DirectorySuggestionDialog
+                module="syofficial"
+                open={suggestionOpen}
+                onOpenChange={setSuggestionOpen}
+                defaultKind={suggestionTarget ? 'edit' : 'add'}
+                fixedTarget={suggestionTarget}
+                targets={suggestionTargets}
+                categories={suggestionCategories}
+            />
         </MainLayout>
     );
 }

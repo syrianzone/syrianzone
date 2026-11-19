@@ -12,9 +12,12 @@ use App\Http\Controllers\CompassAdminController;
 use App\Http\Controllers\CompassController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevController;
+use App\Http\Controllers\DirectorySuggestionAdminController;
 use App\Http\Controllers\ExternalDataController;
 use App\Http\Controllers\GovAppController;
 use App\Http\Controllers\GovAppsAdminController;
+use App\Http\Controllers\GovtCvAdminController;
+use App\Http\Controllers\GovtCvController;
 use App\Http\Controllers\GuessWhoAdminController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
@@ -89,6 +92,10 @@ Route::get('/compass/s/{shareId}', [CompassController::class, 'shared']);
 Route::get('/promises', [PromiseController::class, 'index']);
 Route::get('/promises/suggest', [PromiseController::class, 'suggest']);
 Route::get('/promises/{number}', [PromiseController::class, 'show'])->where('number', '[0-9]{1,9}');
+// Government officials CVs & movements (السير الذاتية للمسؤولين).
+Route::get('/govtcvs', [GovtCvController::class, 'index']);
+Route::get('/govtcvs/movements', [GovtCvController::class, 'movements']);
+Route::get('/govtcvs/{slug}', [GovtCvController::class, 'show'])->where('slug', '[a-z0-9-]+');
 Route::get('/priorities', function () {
     return Inertia::render('Priorities/Index');
 });
@@ -583,6 +590,19 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/entities/{id}', [SyOfficialAdminController::class, 'destroyEntity'])
                 ->middleware('syofficial_admin:syofficial.delete')
                 ->name('api.v1.admin.syofficial.entities.destroy');
+
+            Route::get('/suggestions', [DirectorySuggestionAdminController::class, 'index'])
+                ->defaults('module', 'syofficial')
+                ->middleware('syofficial_admin:any')
+                ->name('api.v1.admin.syofficial.suggestions.index');
+            Route::post('/suggestions/{id}/accept', [DirectorySuggestionAdminController::class, 'accept'])
+                ->whereNumber('id')->defaults('module', 'syofficial')
+                ->middleware('syofficial_admin:syofficial.edit')
+                ->name('api.v1.admin.syofficial.suggestions.accept');
+            Route::post('/suggestions/{id}/dismiss', [DirectorySuggestionAdminController::class, 'dismiss'])
+                ->whereNumber('id')->defaults('module', 'syofficial')
+                ->middleware('syofficial_admin:syofficial.edit')
+                ->name('api.v1.admin.syofficial.suggestions.dismiss');
         });
     });
 
@@ -597,6 +617,18 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::post('/reorder', [GovAppsAdminController::class, 'reorder'])
                 ->middleware('govapps_admin:govapps.reorder')
                 ->name('api.v1.admin.govapps.reorder');
+            Route::get('/suggestions', [DirectorySuggestionAdminController::class, 'index'])
+                ->defaults('module', 'govapps')
+                ->middleware('govapps_admin:any')
+                ->name('api.v1.admin.govapps.suggestions.index');
+            Route::post('/suggestions/{id}/accept', [DirectorySuggestionAdminController::class, 'accept'])
+                ->whereNumber('id')->defaults('module', 'govapps')
+                ->middleware('govapps_admin:govapps.edit')
+                ->name('api.v1.admin.govapps.suggestions.accept');
+            Route::post('/suggestions/{id}/dismiss', [DirectorySuggestionAdminController::class, 'dismiss'])
+                ->whereNumber('id')->defaults('module', 'govapps')
+                ->middleware('govapps_admin:govapps.edit')
+                ->name('api.v1.admin.govapps.suggestions.dismiss');
             Route::post('/{id}', [GovAppsAdminController::class, 'update'])
                 ->middleware('govapps_admin:govapps.edit');
             Route::put('/{id}', [GovAppsAdminController::class, 'update'])
@@ -647,6 +679,19 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/entries/{id}', [PhonebookAdminController::class, 'destroyEntry'])
                 ->middleware('phonebook_admin:phonebook.delete')
                 ->name('api.v1.admin.phonebook.entries.destroy');
+
+            Route::get('/suggestions', [DirectorySuggestionAdminController::class, 'index'])
+                ->defaults('module', 'phonebook')
+                ->middleware('phonebook_admin:any')
+                ->name('api.v1.admin.phonebook.suggestions.index');
+            Route::post('/suggestions/{id}/accept', [DirectorySuggestionAdminController::class, 'accept'])
+                ->whereNumber('id')->defaults('module', 'phonebook')
+                ->middleware('phonebook_admin:phonebook.edit')
+                ->name('api.v1.admin.phonebook.suggestions.accept');
+            Route::post('/suggestions/{id}/dismiss', [DirectorySuggestionAdminController::class, 'dismiss'])
+                ->whereNumber('id')->defaults('module', 'phonebook')
+                ->middleware('phonebook_admin:phonebook.edit')
+                ->name('api.v1.admin.phonebook.suggestions.dismiss');
         });
     });
 
@@ -813,6 +858,106 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/sectors/{id}', [PromisesAdminController::class, 'destroySector'])
                 ->middleware('promises_admin:promises.speakers')
                 ->name('api.v1.admin.promises.sectors.destroy');
+        });
+    });
+
+    // 9. GovtCvs Admin Panel (السير الذاتية للمسؤولين): officials, tenures,
+    // CVs, official sources, and government office slots.
+    Route::middleware('govtcvs_admin')->group(function () {
+        Route::get('/admin/govtcvs', [GovtCvAdminController::class, 'renderIndex'])
+            ->middleware('govtcvs_admin:any');
+        Route::get('/admin/govtcvs/new', [GovtCvAdminController::class, 'renderEditor'])
+            ->middleware('govtcvs_admin:govtcvs.create');
+        Route::get('/admin/govtcvs/slots', [GovtCvAdminController::class, 'renderSlots'])
+            ->middleware('govtcvs_admin:any');
+        Route::get('/admin/govtcvs/officials/{id}', [GovtCvAdminController::class, 'renderEditor'])
+            ->whereUuid('id')
+            ->middleware('govtcvs_admin:any');
+
+        Route::prefix('api/v1/admin/govtcvs')->middleware('throttle:120,1')->group(function () {
+            Route::get('/options', [GovtCvAdminController::class, 'options'])
+                ->middleware('govtcvs_admin:any')
+                ->name('api.v1.admin.govtcvs.options');
+            Route::get('/officials', [GovtCvAdminController::class, 'listOfficials'])
+                ->middleware('govtcvs_admin:any')
+                ->name('api.v1.admin.govtcvs.officials.index');
+            Route::get('/officials/{id}', [GovtCvAdminController::class, 'getOfficial'])
+                ->whereUuid('id')->middleware('govtcvs_admin:any')
+                ->name('api.v1.admin.govtcvs.officials.show');
+            Route::post('/officials', [GovtCvAdminController::class, 'storeOfficial'])
+                ->middleware('govtcvs_admin:govtcvs.create')
+                ->name('api.v1.admin.govtcvs.officials.store');
+            Route::put('/officials/{id}', [GovtCvAdminController::class, 'updateOfficial'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.officials.update');
+            Route::delete('/officials/{id}', [GovtCvAdminController::class, 'destroyOfficial'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.delete')
+                ->name('api.v1.admin.govtcvs.officials.destroy');
+            Route::patch('/officials/{id}/publish', [GovtCvAdminController::class, 'publishOfficial'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.publish')
+                ->name('api.v1.admin.govtcvs.officials.publish');
+            Route::patch('/officials/{id}/archive', [GovtCvAdminController::class, 'archiveOfficial'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.publish')
+                ->name('api.v1.admin.govtcvs.officials.archive');
+            Route::post('/officials/{id}/portrait', [GovtCvAdminController::class, 'uploadPortrait'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.officials.portrait');
+
+            Route::post('/officials/{id}/tenures', [GovtCvAdminController::class, 'storeTenure'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.tenures.store');
+            Route::put('/tenures/{tenureId}', [GovtCvAdminController::class, 'updateTenure'])
+                ->whereUuid('tenureId')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.tenures.update');
+            Route::delete('/tenures/{tenureId}', [GovtCvAdminController::class, 'destroyTenure'])
+                ->whereUuid('tenureId')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.tenures.destroy');
+
+            Route::post('/officials/{id}/cv-entries', [GovtCvAdminController::class, 'storeCvEntry'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.cv-entries.store');
+            Route::put('/cv-entries/{entryId}', [GovtCvAdminController::class, 'updateCvEntry'])
+                ->whereUuid('entryId')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.cv-entries.update');
+            Route::delete('/cv-entries/{entryId}', [GovtCvAdminController::class, 'destroyCvEntry'])
+                ->whereUuid('entryId')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.cv-entries.destroy');
+            Route::post('/officials/{id}/cv-entries/reorder', [GovtCvAdminController::class, 'reorderCvEntries'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.cv-entries.reorder');
+
+            Route::post('/officials/{id}/evidence', [GovtCvAdminController::class, 'storeEvidence'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.evidence.store');
+            Route::delete('/evidence/{evidenceId}', [GovtCvAdminController::class, 'destroyEvidence'])
+                ->whereUuid('evidenceId')->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.evidence.destroy');
+
+            Route::get('/slots', [GovtCvAdminController::class, 'listSlots'])
+                ->middleware('govtcvs_admin:any')
+                ->name('api.v1.admin.govtcvs.slots.index');
+            Route::post('/slots', [GovtCvAdminController::class, 'storeSlot'])
+                ->middleware('govtcvs_admin:govtcvs.slots')
+                ->name('api.v1.admin.govtcvs.slots.store');
+            Route::put('/slots/{id}', [GovtCvAdminController::class, 'updateSlot'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.slots')
+                ->name('api.v1.admin.govtcvs.slots.update');
+            Route::delete('/slots/{id}', [GovtCvAdminController::class, 'destroySlot'])
+                ->whereUuid('id')->middleware('govtcvs_admin:govtcvs.slots')
+                ->name('api.v1.admin.govtcvs.slots.destroy');
+
+            Route::get('/suggestions', [DirectorySuggestionAdminController::class, 'index'])
+                ->defaults('module', 'govtcvs')
+                ->middleware('govtcvs_admin:any')
+                ->name('api.v1.admin.govtcvs.suggestions.index');
+            Route::post('/suggestions/{id}/accept', [DirectorySuggestionAdminController::class, 'accept'])
+                ->whereNumber('id')->defaults('module', 'govtcvs')
+                ->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.suggestions.accept');
+            Route::post('/suggestions/{id}/dismiss', [DirectorySuggestionAdminController::class, 'dismiss'])
+                ->whereNumber('id')->defaults('module', 'govtcvs')
+                ->middleware('govtcvs_admin:govtcvs.edit')
+                ->name('api.v1.admin.govtcvs.suggestions.dismiss');
         });
     });
 });

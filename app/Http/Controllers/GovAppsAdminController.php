@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Directories\DirectorySuggestionService;
 use App\Services\GovApps\GovAppService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -21,6 +22,7 @@ class GovAppsAdminController extends Controller
     {
         return inertia('Admin/GovApps/Index', [
             'apps' => $this->apps->apps(),
+            'pendingSuggestionsCount' => app(DirectorySuggestionService::class)->pendingCount('govapps'),
         ]);
     }
 

@@ -133,6 +133,19 @@ it('leaves socials untouched on update when none are supplied', function () {
         ->and($entity->fresh()->name)->toBe('Renamed');
 });
 
+it('moves an entity to a new category on update and appends it to the destination ordering', function () {
+    $source = OfficialCategory::factory()->create(['id' => 'other']);
+    $destination = OfficialCategory::factory()->create(['id' => 'governors']);
+
+    OfficialEntity::factory()->inCategory($destination)->create(['order_column' => 4]);
+    $entity = OfficialEntity::factory()->inCategory($source)->create(['order_column' => 1]);
+
+    $updated = $this->service->updateEntity($entity->id, ['category_id' => 'governors']);
+
+    expect($updated->category_id)->toBe('governors')
+        ->and($updated->order_column)->toBe(5);
+});
+
 it('toggles activity without touching the other fields', function () {
     $entity = OfficialEntity::factory()->inactive()->create(['name' => 'Original']);
 

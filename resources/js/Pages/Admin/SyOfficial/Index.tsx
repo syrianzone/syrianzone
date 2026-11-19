@@ -6,11 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Plus, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Eye, EyeOff, Inbox } from 'lucide-react';
 import CategoryDialog from '@/Components/directory/CategoryDialog';
 import SortableList from '@/Components/directory/SortableList';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import SuggestionsReviewPanel from '@/Domain/suggestions/SuggestionsReviewPanel';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import EntityDialog from './_components/EntityDialog';
 import type { AdminOfficialEntity, OfficialCategory } from '@/Domain/syofficial/types';
@@ -22,12 +23,17 @@ import { confirmDialog } from '@/Lib/confirm';
 interface AdminSyOfficialProps {
     categories: OfficialCategory[];
     entities: AdminOfficialEntity[];
+    pendingSuggestionsCount?: number;
 }
 
 const entitySearchText = (entity: AdminOfficialEntity) =>
     `${entity.name} ${entity.name_ar} ${entity.id}`;
 
-export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOfficialProps) {
+export default function SyOfficialAdminIndex({
+    categories,
+    entities,
+    pendingSuggestionsCount: initialPendingSuggestionsCount = 0,
+}: AdminSyOfficialProps) {
 
     // Each control is gated on the capability its route requires (routes/web.php).
     const can = useCan();
@@ -35,6 +41,13 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
     const canEdit = can('syofficial.edit');
     const canDelete = can('syofficial.delete');
     const canReorder = can('syofficial.reorder');
+
+    const [activeTab, setActiveTab] = useState('entities');
+    const [pendingSuggestionsCount, setPendingSuggestionsCount] = useState(initialPendingSuggestionsCount);
+
+    useEffect(() => {
+        setPendingSuggestionsCount(initialPendingSuggestionsCount);
+    }, [initialPendingSuggestionsCount]);
 
     // The public directory's search and category filter, shared by both tabs.
     const categoryFacet = useMemo<DirectoryFacet<AdminOfficialEntity>>(() => ({
@@ -70,6 +83,17 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
             }
         }
     }, [entities]);
+
+    const handleEditTarget = (targetId: string) => {
+        const target = entities.find((e) => e.id === targetId);
+        if (!target) {
+            notify.error('لم يتم العثور على الجهة المطلوبة');
+            return;
+        }
+        setActiveTab('entities');
+        setSelectedEntity(target);
+        setEntityDialogOpen(true);
+    };
 
     const handleDeleteCategory = async (catId: string) => {
         const ok = await confirmDialog({ title: 'حذف هذه الفئة؟', description: 'سيتم حذف جميع الحسابات التابعة لها.', destructive: true, confirmText: 'حذف' });
@@ -144,7 +168,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                         )}
                     </div>
 
-                    <Tabs defaultValue="entities" className="space-y-6">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                         <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-wrap h-auto max-w-full">
                             <TabsTrigger value="entities" className="gap-2 text-sm">
                                 <Globe className="w-4 h-4" />
@@ -157,6 +181,15 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                             <TabsTrigger value="sorting" className="gap-2 text-sm">
                                 <ArrowUpDown className="w-4 h-4" />
                                 <span>إعادة الترتيب (Drag & Drop)</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="suggestions" className="gap-2 text-sm">
+                                <Inbox className="w-4 h-4" />
+                                <span>الاقتراحات</span>
+                                {pendingSuggestionsCount > 0 && (
+                                    <Badge variant="default" className="h-5 min-w-5 px-1.5 text-[11px] tabular-nums">
+                                        {pendingSuggestionsCount}
+                                    </Badge>
+                                )}
                             </TabsTrigger>
                         </TabsList>
 
@@ -426,6 +459,15 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                     </CardContent>
                                 </Card>
                             </div>
+                        </TabsContent>
+
+                        <TabsContent value="suggestions" className="space-y-4">
+                            <SuggestionsReviewPanel
+                                module="syofficial"
+                                canReview={can('syofficial.edit')}
+                                onPendingCountChange={setPendingSuggestionsCount}
+                                onEditTarget={handleEditTarget}
+                            />
                         </TabsContent>
                     </Tabs>
                 </div>

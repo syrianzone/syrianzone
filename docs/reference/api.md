@@ -47,7 +47,7 @@ Used by native mobile clients (Flutter iOS/Android):
    Accept: application/json
    ```
    No cookies or CSRF tokens are required when authenticating with `Authorization: Bearer <token>`.
-4. **Scope Isolation**: Mobile login tokens are minted with the `mobile` ability. Any token whose abilities include `mobile` authenticates every user-facing endpoint (`auth:sanctum` / `auth:web,sanctum`), is **rejected (`403`)** on the automated `/mcp/admin` agent endpoint, and is excluded from the MCP agent token table (`/admin/api-tokens`). Membership decides it, not array identity (`App\Support\Agents\TokenAbilities`).
+4. **Scope Isolation**: Mobile login tokens are minted with the `mobile` ability. Any token whose abilities include `mobile` authenticates every user-facing endpoint (`auth:sanctum` / `auth:web,sanctum`), is **rejected (`403`)** on the automated `/mcp/admin` agent endpoint, and is excluded from the MCP agent token table (`/admin/api-tokens`). Membership decides it, not array identity (`App\Support\Agents\TokenAbilities`). Agent tokens (capability-scoped, minted on `/admin/api-tokens`) authenticate **only** on `/mcp/*`, where their capability ceiling is enforced; on every other endpoint they are `401`. A banned owner's tokens authenticate nowhere.
 
 #### Auth Endpoints Summary
 

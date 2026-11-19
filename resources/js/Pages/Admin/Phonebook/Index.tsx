@@ -1,16 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 import {
-    Plus, Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Settings, Check, X, Phone, MessageSquare, ExternalLink, ArrowRight
+    Plus, Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Settings, Check, X, Phone, MessageSquare, ExternalLink, ArrowRight, Inbox
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Badge } from "@/Components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/Components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import CategoryDialog from '@/Components/directory/CategoryDialog';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import SuggestionsReviewPanel from '@/Domain/suggestions/SuggestionsReviewPanel';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import { Label } from "@/Components/ui/label";
 import { Switch } from "@/Components/ui/switch";
@@ -24,18 +26,30 @@ import type { PhonebookCategory, PhonebookEntry } from '@/Domain/phonebook/types
 interface AdminPhonebookProps {
     categories: PhonebookCategory[];
     entries: PhonebookEntry[];
+    pendingSuggestionsCount?: number;
 }
 
 const entrySearchText = (entry: PhonebookEntry) =>
     `${entry.name_ar} ${entry.name_en ?? ''} ${entry.number}`;
 
-export default function PhonebookAdminIndex({ categories, entries }: AdminPhonebookProps) {
+export default function PhonebookAdminIndex({
+    categories,
+    entries,
+    pendingSuggestionsCount: initialPendingSuggestionsCount = 0,
+}: AdminPhonebookProps) {
     // Each control is gated on the capability its route requires (routes/web.php).
     const can = useCan();
     const canCreate = can('phonebook.create');
     const canEdit = can('phonebook.edit');
     const canToggle = can('phonebook.toggle');
     const canDelete = can('phonebook.delete');
+
+    const [activeTab, setActiveTab] = useState('entries');
+    const [pendingSuggestionsCount, setPendingSuggestionsCount] = useState(initialPendingSuggestionsCount);
+
+    useEffect(() => {
+        setPendingSuggestionsCount(initialPendingSuggestionsCount);
+    }, [initialPendingSuggestionsCount]);
 
     // The same search and category filter the public directory runs on, so a
     // spelling that matches there matches here.
@@ -122,6 +136,16 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
         setEntryModalOpen(true);
     };
 
+    const handleEditTarget = (targetId: string) => {
+        const target = entries.find((e) => e.id === targetId);
+        if (!target) {
+            notify.error('لم يتم العثور على الرقم المطلوب');
+            return;
+        }
+        setActiveTab('entries');
+        openEditEntry(target);
+    };
+
     const handleSaveEntry = (e: React.FormEvent) => {
         e.preventDefault();
         const options = {
@@ -188,6 +212,24 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         </div>
                     </div>
 
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-wrap h-auto w-fit max-w-full">
+                            <TabsTrigger value="entries" className="gap-2 text-sm">
+                                <Phone className="w-4 h-4" />
+                                <span>الأرقام ({entries.length})</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="suggestions" className="gap-2 text-sm">
+                                <Inbox className="w-4 h-4" />
+                                <span>الاقتراحات</span>
+                                {pendingSuggestionsCount > 0 && (
+                                    <Badge variant="default" className="h-5 min-w-5 px-1.5 text-[11px] tabular-nums">
+                                        {pendingSuggestionsCount}
+                                    </Badge>
+                                )}
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="entries" className="space-y-6">
                     <div className="flex items-center gap-2 overflow-x-auto pb-2">
                         <Button
                             variant={selectedCategory === 'all' ? 'default' : 'outline'}
@@ -356,6 +398,17 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                             </TableBody>
                         </Table>
                     </div>
+                        </TabsContent>
+
+                        <TabsContent value="suggestions" className="space-y-4">
+                            <SuggestionsReviewPanel
+                                module="phonebook"
+                                canReview={can('phonebook.edit')}
+                                onPendingCountChange={setPendingSuggestionsCount}
+                                onEditTarget={handleEditTarget}
+                            />
+                        </TabsContent>
+                    </Tabs>
 
                     <Dialog open={entryModalOpen} onOpenChange={setEntryModalOpen}>
                         <DialogContent className="max-w-lg" dir="rtl">

@@ -16,14 +16,17 @@ class SyOfficialSeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['id' => 'governorates', 'label_ar' => 'المحافظات', 'label_en' => 'Governorates', 'order_column' => 1],
+            ['id' => 'presidency_sovereign', 'label_ar' => 'الرئاسة والجهات السيادية', 'label_en' => 'Presidency & Sovereign Bodies', 'order_column' => 1],
             ['id' => 'ministries', 'label_ar' => 'الوزارات', 'label_en' => 'Ministries', 'order_column' => 2],
             ['id' => 'ministers', 'label_ar' => 'الوزراء', 'label_en' => 'Ministers', 'order_column' => 3],
-            ['id' => 'public_figures', 'label_ar' => 'الشخصيات العامة', 'label_en' => 'Public Figures', 'order_column' => 4],
-            ['id' => 'syndicates', 'label_ar' => 'النقابات', 'label_en' => 'Syndicates', 'order_column' => 5],
-            ['id' => 'universities', 'label_ar' => 'الجامعات', 'label_en' => 'Universities', 'order_column' => 6],
-            ['id' => 'embassies', 'label_ar' => 'السفارات', 'label_en' => 'Embassies', 'order_column' => 7],
-            ['id' => 'other', 'label_ar' => 'أخرى', 'label_en' => 'Other', 'order_column' => 8],
+            ['id' => 'governors', 'label_ar' => 'المحافظون', 'label_en' => 'Governors', 'order_column' => 4],
+            ['id' => 'public_figures', 'label_ar' => 'الشخصيات العامة والمسؤولون', 'label_en' => 'Public Figures & Officials', 'order_column' => 5],
+            ['id' => 'governorates', 'label_ar' => 'المحافظات والمديريات المحلية', 'label_en' => 'Governorates & Local Directorates', 'order_column' => 6],
+            ['id' => 'authorities_agencies', 'label_ar' => 'الهيئات والمؤسسات العامة', 'label_en' => 'Public Authorities & Agencies', 'order_column' => 7],
+            ['id' => 'media_organizations', 'label_ar' => 'الإعلام الرسمي والمنظمات الوطنية', 'label_en' => 'Official Media & National Organizations', 'order_column' => 8],
+            ['id' => 'universities', 'label_ar' => 'الجامعات', 'label_en' => 'Universities', 'order_column' => 9],
+            ['id' => 'embassies', 'label_ar' => 'السفارات والبعثات الدبلوماسية', 'label_en' => 'Embassies & Diplomatic Missions', 'order_column' => 10],
+            ['id' => 'syndicates', 'label_ar' => 'النقابات', 'label_en' => 'Syndicates', 'order_column' => 11],
         ];
 
         foreach ($categories as $cat) {

@@ -27,6 +27,7 @@ import {
     Signpost,
     Smartphone,
     Sparkles,
+    UserCheck,
     X,
 } from 'lucide-react';
 import {
@@ -76,6 +77,15 @@ export interface RemoteSearchResults {
     phonebook: Array<{ id: string; nameAr: string; nameEn?: string; number: string }>;
     officials: Array<{ id: string; nameAr: string; nameEn?: string; categoryId?: string }>;
     govapps: Array<{ id: string; nameAr: string; nameEn?: string }>;
+    govtcvs: Array<{
+        id: string;
+        slug: string;
+        nameAr: string;
+        honorificAr?: string | null;
+        roleTitleAr?: string | null;
+        institutionNameAr?: string | null;
+        officeStatus?: string | null;
+    }>;
 }
 
 export const EMPTY_REMOTE: RemoteSearchResults = {
@@ -84,6 +94,7 @@ export const EMPTY_REMOTE: RemoteSearchResults = {
     phonebook: [],
     officials: [],
     govapps: [],
+    govtcvs: [],
 };
 
 export type FilterScope = 'all' | 'tools' | 'transit' | 'muslim' | 'games' | 'directory';
@@ -133,6 +144,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
                         phonebook: Array.isArray(data.phonebook) ? data.phonebook : [],
                         officials: Array.isArray(data.officials) ? data.officials : [],
                         govapps: Array.isArray(data.govapps) ? data.govapps : [],
+                        govtcvs: Array.isArray(data.govtcvs) ? data.govtcvs : [],
                     });
                 })
                 .catch(() => {
@@ -163,6 +175,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
                 item.subtitle,
                 siteModule(item.id)?.description,
                 item.href,
+                ...(item.subCategories ?? []).flatMap((sub) => [sub.title, sub.subtitle, sub.href]),
             ),
         );
     }, [trimmedQuery, scope, allLinks]);
@@ -219,6 +232,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
     const showRemoteRoutes = (scope === 'all' || scope === 'transit') && remote.routes.length > 0;
     const showRemotePlaces = (scope === 'all' || scope === 'tools' || scope === 'directory') && remote.places.length > 0;
     const showRemotePhonebook = (scope === 'all' || scope === 'directory') && remote.phonebook.length > 0;
+    const showRemoteGovtCvs = (scope === 'all' || scope === 'directory') && remote.govtcvs.length > 0;
     const showRemoteOfficials = (scope === 'all' || scope === 'directory') && remote.officials.length > 0;
     const showRemoteGovApps = (scope === 'all' || scope === 'directory' || scope === 'tools') && remote.govapps.length > 0;
 
@@ -232,6 +246,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
         (showRemoteRoutes ? remote.routes.length : 0) +
         (showRemotePlaces ? remote.places.length : 0) +
         (showRemotePhonebook ? remote.phonebook.length : 0) +
+        (showRemoteGovtCvs ? remote.govtcvs.length : 0) +
         (showRemoteOfficials ? remote.officials.length : 0) +
         (showRemoteGovApps ? remote.govapps.length : 0);
 
@@ -248,6 +263,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
         showRemoteRoutes,
         showRemotePlaces,
         showRemotePhonebook,
+        showRemoteGovtCvs,
         showRemoteOfficials,
         showRemoteGovApps,
         totalVisibleResults,
@@ -328,6 +344,7 @@ export function SearchResultsContent({
         showRemoteRoutes,
         showRemotePlaces,
         showRemotePhonebook,
+        showRemoteGovtCvs,
         showRemoteOfficials,
         showRemoteGovApps,
         totalVisibleResults,
@@ -767,7 +784,59 @@ export function SearchResultsContent({
                 </GroupWrapper>
             )}
 
-            {/* 9. Live Official Entities */}
+            {/* 9. Live Government Officials (CVs & Tenures) */}
+            {showRemoteGovtCvs && (
+                <GroupWrapper heading="السير الذاتية للمسؤولين">
+                    {remote.govtcvs.map((person) => {
+                        const fullDisplay = person.honorificAr
+                            ? `${person.honorificAr} ${person.nameAr}`
+                            : person.nameAr;
+                        const statusLabel =
+                            person.officeStatus === 'in_office'
+                                ? 'في المنصب'
+                                : person.officeStatus === 'deceased'
+                                  ? 'متوفى'
+                                  : 'سابق';
+                        return (
+                            <ItemRow
+                                key={`govtcv-${person.id}`}
+                                value={`govtcv-${person.id}-${person.nameAr}-${person.roleTitleAr ?? ''}`}
+                                onSelect={() => navigateTo(`/govtcvs/${encodeURIComponent(person.slug)}`)}
+                                className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/50 text-primary">
+                                        <UserCheck className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <span className="font-semibold text-sm text-foreground block truncate">
+                                            {fullDisplay}
+                                        </span>
+                                        {person.roleTitleAr && (
+                                            <span className="text-xs text-muted-foreground block truncate">
+                                                {person.roleTitleAr}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        'text-[10px] shrink-0',
+                                        person.officeStatus === 'in_office'
+                                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                            : 'border-border text-muted-foreground',
+                                    )}
+                                >
+                                    {statusLabel}
+                                </Badge>
+                            </ItemRow>
+                        );
+                    })}
+                </GroupWrapper>
+            )}
+
+            {/* 10. Live Official Entities */}
             {showRemoteOfficials && (
                 <GroupWrapper heading="الحسابات والجهات الرسمية">
                     {remote.officials.map((official) => (
@@ -795,7 +864,7 @@ export function SearchResultsContent({
                 </GroupWrapper>
             )}
 
-            {/* 10. Live Government Apps */}
+            {/* 11. Live Government Apps */}
             {showRemoteGovApps && (
                 <GroupWrapper heading="تطبيقات الحكومة">
                     {remote.govapps.map((app) => (
@@ -853,7 +922,7 @@ export function MobileMenuSearchSection({
                         className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-muted-foreground"
                     >
                         <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span>ابحث في: الأقسام · المدن وخطوط السرفيس · سور القرآن · المعابر · دليل الهاتف</span>
+                        <span>ابحث في: الأقسام · المسؤولين · المدن وخطوط السرفيس · سور القرآن · المعابر · دليل الهاتف</span>
                     </label>
 
                     <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-muted/30 px-3 py-2.5 transition-all focus-within:border-primary focus-within:bg-muted/50 focus-within:ring-2 focus-within:ring-primary/20">
@@ -970,7 +1039,7 @@ export function HomeInlineSearchSection({
                         className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground"
                     >
                         <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span>ابحث في: الأقسام · المدن وخطوط السرفيس · سور القرآن · المعابر · دليل الهاتف</span>
+                        <span>ابحث في: الأقسام · المسؤولين · المدن وخطوط السرفيس · سور القرآن · المعابر · دليل الهاتف</span>
                     </label>
                     {isSearching && (
                         <button
@@ -999,7 +1068,7 @@ export function HomeInlineSearchSection({
                                 setScope('all');
                             }
                         }}
-                        placeholder="ابحث عن أداة، مدينة، خط سرفيس، سورة، معبر، أو رقم طوارئ..."
+                        placeholder="ابحث عن أداة، مسؤول، مدينة، خط سرفيس، سورة، معبر، أو رقم طوارئ..."
                         className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
                     />
                     {data.loadingRemote && (

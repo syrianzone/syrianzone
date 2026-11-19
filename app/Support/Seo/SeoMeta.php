@@ -272,6 +272,20 @@ class SeoMeta
             $page['dateModified'] = $about->modified->format(DATE_ATOM);
         }
 
+        if ($about->mainEntity !== null) {
+            $entity = $about->mainEntity;
+            if (! isset($entity['@id'])) {
+                $id = $canonical.'#'.strtolower((string) ($entity['@type'] ?? 'entity'));
+                $entity = isset($entity['@type'])
+                    ? ['@type' => $entity['@type'], '@id' => $id] + $entity
+                    : ['@id' => $id] + $entity;
+            }
+            if (isset($entity['image']) && is_string($entity['image']) && $entity['image'] !== '') {
+                $entity['image'] = self::absolute($entity['image'], $base);
+            }
+            $page['mainEntity'] = $entity;
+        }
+
         if ($path !== '/') {
             $page['breadcrumb'] = ['@id' => $breadcrumbId];
             $graph[] = $page;

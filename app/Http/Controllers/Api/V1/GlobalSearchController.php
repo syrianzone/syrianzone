@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\GovApp;
+use App\Models\GovtOfficial;
 use App\Models\OfficialEntity;
 use App\Models\PhonebookEntry;
 use App\Models\Place;
@@ -23,6 +24,7 @@ class GlobalSearchController extends Controller
                 'phonebook' => [],
                 'officials' => [],
                 'govapps' => [],
+                'govtcvs' => [],
             ]);
         }
 
@@ -30,9 +32,9 @@ class GlobalSearchController extends Controller
         // Arabic text is compared folded to folded (`*_fold` columns); the
         // English and numeric columns keep the raw pattern. Both escape the
         // LIKE wildcards so a query containing % or _ stays a literal.
-        $like = '%' . addcslashes($q, '%_\\') . '%';
+        $like = '%'.addcslashes($q, '%_\\').'%';
         $folded = ArabicSearch::fold($q);
-        $foldLike = '%' . addcslashes($folded === '' ? $q : $folded, '%_\\') . '%';
+        $foldLike = '%'.addcslashes($folded === '' ? $q : $folded, '%_\\').'%';
 
         $routes = Route::query()
             ->where('status', 'published')
@@ -118,12 +120,41 @@ class GlobalSearchController extends Controller
             ])
             ->values();
 
+        $govtcvs = GovtOfficial::published()
+            ->with(['tenures:id,official_id,role_title_ar,institution_name_ar,status,started_at'])
+            ->where(function ($query) use ($like, $foldLike) {
+                $query->where('display_name_ar_fold', 'like', $foldLike)
+                    ->orWhere('full_name_ar_fold', 'like', $foldLike)
+                    ->orWhere('full_name_en', 'like', $like)
+                    ->orWhereHas('aliases', fn ($a) => $a->where('alias_ar_fold', 'like', $foldLike))
+                    ->orWhereHas('tenures', fn ($t) => $t->where('role_title_ar_fold', 'like', $foldLike));
+            })
+            ->orderByRaw("CASE WHEN office_status = 'in_office' THEN 0 ELSE 1 END")
+            ->orderBy('display_name_ar')
+            ->limit(6)
+            ->get(['id', 'slug', 'display_name_ar', 'full_name_ar', 'honorific_ar', 'office_status'])
+            ->map(function (GovtOfficial $official) {
+                $primaryTenure = $official->tenures->first();
+
+                return [
+                    'id' => $official->id,
+                    'slug' => $official->slug,
+                    'nameAr' => $official->display_name_ar ?: $official->full_name_ar,
+                    'honorificAr' => $official->honorific_ar,
+                    'roleTitleAr' => $primaryTenure?->role_title_ar,
+                    'institutionNameAr' => $primaryTenure?->institution_name_ar,
+                    'officeStatus' => $official->office_status,
+                ];
+            })
+            ->values();
+
         return response()->json([
             'routes' => $routes,
             'places' => $places,
             'phonebook' => $phonebook,
             'officials' => $officials,
             'govapps' => $govapps,
+            'govtcvs' => $govtcvs,
         ]);
     }
 }

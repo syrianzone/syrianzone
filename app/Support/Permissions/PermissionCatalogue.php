@@ -104,6 +104,18 @@ final class PermissionCatalogue
 
     public const PROMISES_DELETE = 'promises.delete';
 
+    public const GOVTCVS_VIEW = 'govtcvs.view';
+
+    public const GOVTCVS_CREATE = 'govtcvs.create';
+
+    public const GOVTCVS_EDIT = 'govtcvs.edit';
+
+    public const GOVTCVS_PUBLISH = 'govtcvs.publish';
+
+    public const GOVTCVS_SLOTS = 'govtcvs.slots';
+
+    public const GOVTCVS_DELETE = 'govtcvs.delete';
+
     public const USERS_BAN = 'users.ban';
 
     public const GUESSWHO_MANAGE = 'guesswho.manage';
@@ -175,6 +187,14 @@ final class PermissionCatalogue
                 self::PROMISES_SPEAKERS => 'إدارة قائمة أصحاب التصريحات والقطاعات',
                 self::PROMISES_DELETE => 'حذف الوعود',
             ],
+            'govtcvs' => [
+                self::GOVTCVS_VIEW => 'عرض لوحة السير الذاتية للمسؤولين ومسودّاتها',
+                self::GOVTCVS_CREATE => 'إضافة مسؤولين جدد',
+                self::GOVTCVS_EDIT => 'تعديل السير الذاتية والمناصب والمصادر ورفع الصور',
+                self::GOVTCVS_PUBLISH => 'نشر ملفات المسؤولين وأرشفتها',
+                self::GOVTCVS_SLOTS => 'إدارة المناصب والشواغر الحكومية',
+                self::GOVTCVS_DELETE => 'حذف ملفات المسؤولين',
+            ],
             'users' => [
                 self::USERS_BAN => 'حظر المستخدمين ومنعهم من تقديم مسارات',
             ],
@@ -207,6 +227,7 @@ final class PermissionCatalogue
             'polls' => ['label' => 'الاستبيانات', 'icon' => 'polls'],
             'compass' => ['label' => 'بوصلة سوريا', 'icon' => 'compass'],
             'promises' => ['label' => 'عداد الوعود', 'icon' => 'promises'],
+            'govtcvs' => ['label' => 'السير الذاتية للمسؤولين', 'icon' => 'govtcvs'],
             'users' => ['label' => 'المستخدمون', 'icon' => 'users'],
             'guesswho' => ['label' => 'لعبة مَنْ هُوَ؟', 'icon' => 'games'],
             'assets' => ['label' => 'ملفات الاستضافة', 'icon' => 'assets'],

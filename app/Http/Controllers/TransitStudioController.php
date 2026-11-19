@@ -6,6 +6,8 @@ use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
+use App\Models\User;
+use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitCache;
 use App\Services\Transit\TransitRules;
 use App\Support\Permissions\PermissionCatalogue;
@@ -95,10 +97,11 @@ class TransitStudioController extends Controller
             'status' => 'pending',
         ]);
 
-        // If this submission is an edit suggestion for an already-published route,
-        // unpublish that route immediately so the live map reflects the pending
-        // state.
-        if ($draft->route_id) {
+        // A transit editor's edit to a published route takes it off the map
+        // until the edit is reviewed. A suggestion from anyone else leaves the
+        // live route alone: otherwise any signed-in account could take every
+        // route in a city offline by filing edits.
+        if ($draft->route_id && $this->mayWithdrawLiveRoute($user, $draft->city_id)) {
             $this->unpublishLinkedRoute($draft->route_id, $draft->id, $user?->id);
         }
 
@@ -215,14 +218,14 @@ class TransitStudioController extends Controller
 
         // Any edit submission is a resubmission for review: the draft always goes
         // back to the pending queue (even when an admin edits someone else's draft
-        // or an anonymous submission). If the draft is linked to a published route
-        // we also take that live route offline until the edit is reviewed.
+        // or an anonymous submission). If a transit editor's draft is linked to a
+        // published route we also take that live route offline until review.
         if ($draft->status !== 'pending' || $draft->route_id) {
             $updateData['status'] = 'pending';
             $updateData['rejection_reason'] = null;
         }
 
-        if ($draft->route_id) {
+        if ($draft->route_id && $this->mayWithdrawLiveRoute($user, $draft->city_id)) {
             $this->unpublishLinkedRoute($draft->route_id, $draft->id, $user?->id);
         }
 
@@ -304,9 +307,30 @@ class TransitStudioController extends Controller
             abort(422, 'لا يمكن سحب إلا المسودة التي ما زالت قيد المراجعة.');
         }
 
-        $draft->delete();
+        DB::transaction(function () use ($draft, $request) {
+            // Withdrawing an edit ends its review, exactly as rejecting it
+            // does, so a route it took offline goes back on the map.
+            if ($draft->route_id) {
+                app(TransitAdminService::class)->restoreLinkedRoute($draft, $request->user()?->id);
+            }
+
+            $draft->delete();
+        });
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Whether submitting an edit may take the live route off the map.
+     *
+     * Only a transit editor acting within their governorate scope may: their
+     * edit is as good as a status change they could make directly.
+     */
+    private function mayWithdrawLiveRoute(?User $user, ?string $cityId): bool
+    {
+        return $user instanceof User
+            && $user->hasPermission(PermissionCatalogue::TRANSIT_EDIT_ROUTES)
+            && ($user->isSuperAdmin() || $this->canActInTransitCity($user, $cityId));
     }
 
     /**
@@ -329,6 +353,8 @@ class TransitStudioController extends Controller
         }
 
         $route->status = 'disapproved';
+        // Only this draft's review may put the route back (see Route::booted).
+        $route->withdrawn_for_draft_id = (int) $draftId;
         $route->save();
 
         TransitRouteLog::create([

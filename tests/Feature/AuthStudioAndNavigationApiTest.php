@@ -189,8 +189,9 @@ test('GET /api/v1/transit/studio/routes lists authenticated user drafts and stud
     $draftId = $createResp->json('id');
     expect($draftId)->not->toBeEmpty();
 
-    // Live route is immediately hidden (status = disapproved) until approved
-    expect($liveRoute->fresh()->status)->toBe('disapproved');
+    // An ordinary user's suggestion leaves the live route on the map until
+    // it is reviewed; only a transit editor's edit withdraws it.
+    expect($liveRoute->fresh()->status)->toBe('published');
 
     // GET /api/v1/transit/studio/routes returns only $user's drafts
     $listResp = $this->withHeader('Authorization', 'Bearer '.$mobileToken)

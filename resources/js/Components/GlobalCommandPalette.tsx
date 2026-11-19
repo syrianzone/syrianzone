@@ -56,7 +56,7 @@ export default function GlobalCommandPalette() {
             >
                 <DialogTitle className="sr-only">بحث شامل في المساحة السورية</DialogTitle>
                 <DialogDescription className="sr-only">
-                    ابحث في أقسام المنصة، خطوط ومدن ترانزيت، سور القرآن الكريم، الألعاب، المعابر الحدودية، ودليل الهاتف
+                    ابحث في أقسام المنصة، السير الذاتية للمسؤولين، خطوط ومدن ترانزيت، سور القرآن الكريم، الألعاب، المعابر الحدودية، ودليل الهاتف
                 </DialogDescription>
 
                 <Command
@@ -86,7 +86,7 @@ export default function GlobalCommandPalette() {
                                 e.preventDefault();
                                 first.click();
                             }}
-                            placeholder="ابحث عن أداة، مدينة، خط سرفيس، سورة، معبر، أو رقم طوارئ..."
+                            placeholder="ابحث عن أداة، مسؤول، مدينة، خط سرفيس، سورة، معبر، أو رقم طوارئ..."
                             aria-label="ابحث في المنصة"
                             autoFocus
                             className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none"

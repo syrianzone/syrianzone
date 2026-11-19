@@ -30,6 +30,10 @@ final class SearchFold
         'phonebook_entries' => ['name_ar'],
         'official_entities' => ['name_ar', 'description_ar'],
         'gov_apps' => ['name_ar', 'description_ar'],
+        'govt_officials' => ['full_name_ar', 'display_name_ar', 'bio_summary_ar'],
+        'govt_official_aliases' => ['alias_ar'],
+        'govt_office_slots' => ['title_ar'],
+        'govt_tenures' => ['role_title_ar'],
     ];
 
     /** The fold column that stores `$column`. */

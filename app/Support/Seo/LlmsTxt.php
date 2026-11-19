@@ -20,7 +20,7 @@ class LlmsTxt
      */
     private const SECTIONS = [
         'بيانات وأدلة' => [
-            '/promises', '/syofficial', '/phonebook', '/govapps', '/sites',
+            '/promises', '/govtcvs', '/syofficial', '/phonebook', '/govapps', '/sites',
             '/party', '/house', '/justice', '/crossings', '/atlas',
         ],
         'خدمات يومية' => ['/transit', '/mishwar', '/roznama', '/muslim/prayer'],
@@ -54,7 +54,8 @@ class LlmsTxt
             '',
             '> '.config('seo.default_description'),
             '',
-            'الموقع باللغة العربية. لكل وعد في عداد الوعود صفحة على '.$base.'/promises/{number}، '
+            'الموقع باللغة العربية. لكل مسؤول في السير الذاتية صفحة على '.$base.'/govtcvs/{slug}، '
+                .'ولكل وعد في عداد الوعود صفحة على '.$base.'/promises/{number}، '
                 .'ولكل مدينة في ترانزيت صفحة على '.$base.'/transit/city/{id}. '
                 .'القائمة الكاملة بالصفحات في [sitemap.xml]('.$base.'/sitemap.xml).',
         ];

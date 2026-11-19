@@ -150,14 +150,15 @@ test('a banned owner is rejected even with a live token', function () {
 
     $admin->update(['is_banned' => true]);
 
+    // A banned owner's token no longer authenticates at all, so the request
+    // is refused before it reaches the agent gate.
     $this->withHeader('Authorization', 'Bearer '.$token->plainTextToken)
         ->postJson('/mcp/admin', [
             'jsonrpc' => '2.0',
             'id' => 1,
             'method' => 'tools/list',
         ])
-        ->assertForbidden()
-        ->assertJsonPath('error', 'This account is banned.');
+        ->assertUnauthorized();
 });
 
 test('an expired token is rejected by sanctum', function () {

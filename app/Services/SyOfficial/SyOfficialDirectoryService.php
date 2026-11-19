@@ -180,6 +180,10 @@ class SyOfficialDirectoryService
 
         if (array_key_exists('category_id', $attributes)) {
             $this->assertCategoryExists($attributes['category_id']);
+            if ($entity->category_id !== $attributes['category_id']) {
+                $entity->category_id = $attributes['category_id'];
+                $entity->order_column = (int) (OfficialEntity::where('category_id', $attributes['category_id'])->max('order_column') ?? 0) + 1;
+            }
         }
 
         $entity->name = $attributes['name'] ?? $entity->name;

@@ -31,7 +31,7 @@ use Illuminate\Support\Collection;
 class SpeakerDirectory
 {
     /** Officials-directory categories that hold people rather than bodies. */
-    public const PEOPLE_CATEGORIES = ['ministers', 'public_figures'];
+    public const PEOPLE_CATEGORIES = ['ministers', 'governors', 'public_figures'];
 
     private const PER_SOURCE = 8;
 

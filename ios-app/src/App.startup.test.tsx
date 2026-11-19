@@ -160,11 +160,18 @@ test('catalogue actions use saved destinations independently of their item ident
   const app = harness();
   app.render();
   await act(async () => {
-    await app.featureNavigation.openCatalogueLink('/mishwar', 'markets');
     await app.featureNavigation.openCatalogueLink('/mishwar?category=market', 'markets');
+    await app.featureNavigation.openCatalogueLink('/mishwar?guide=207', 'local-guide');
   });
-  expect(app.navigations).toEqual([['Main', { screen: 'Places', params: {} }]]);
-  expect(app.browserUrls).toEqual(['https://syrian.zone/mishwar?category=market']);
+  expect(app.navigations).toEqual([['Main', { screen: 'Places', params: { category: 'market' } }]]);
+  expect(app.browserUrls).toEqual(['https://syrian.zone/mishwar?guide=207']);
+}));
+
+test('the foundation exposes native actions only for implemented screens', async () => checked(async () => {
+  const app = harness();
+  app.render();
+  expect(app.featureNavigation.canOpen('mishwar')).toBe(true);
+  expect(app.featureNavigation.canOpen('account')).toBe(false);
 }));
 
 test('first Transit access shows accessible loading then reuses its module and local tab state', async () => checked(async () => {

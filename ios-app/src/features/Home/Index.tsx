@@ -84,7 +84,10 @@ export function HomeScreen(): React.JSX.Element {
     type HomeResult = SearchResult & { catalogueItem?: NavigationItem };
     const result: { title: string; items: HomeResult[] }[] = [];
     const allow = (...values: Scope[]) => values.includes(scope);
-    const add = (title: string, items: HomeResult[]) => { if (items.length) result.push({ title, items }); };
+    const add = (title: string, items: HomeResult[]) => {
+      const available = items.filter(item => item.catalogueItem || item.url || navigation.canOpen(item.section, item.params));
+      if (available.length) result.push({ title, items: available });
+    };
     if (allow('all', 'tools')) add('الأقسام', catalogueItems.filter(item => matchesSearch(query, item.title, item.subtitle, item.href)).map(item => ({ id: item.id, title: item.title, subtitle: item.subtitle, section: item.id, params: {}, catalogueItem: item })));
     if (allow('all', 'transit')) add('مدن النقل', (cities.data ?? []).filter(city => matchesSearch(query, city.nameAr, city.name, String(city.id), 'ترانزيت سرفيس باص محافظة مدينة')).slice(0, scope === 'transit' && !query.trim() ? undefined : 8).map(city => ({ id: String(city.id), title: city.nameAr, subtitle: city.comingSoon ? 'قريباً' : 'خطوط النقل', section: 'transit', params: { cityId: String(city.id) } })));
     if (allow('all', 'muslim')) {
@@ -100,7 +103,7 @@ export function HomeScreen(): React.JSX.Element {
       if (allow('all', 'tools', 'directory')) add('التطبيقات الحكومية', remote.data.govapps);
     }
     return result;
-  }, [catalogueItems, cities.data, remote.data, query, debounced, scope]);
+  }, [catalogueItems, cities.data, navigation, remote.data, query, debounced, scope]);
   const event = events.data?.event;
   const reload = () => { catalogue.reload(); weather.reload(); prayer.reload(); events.reload(); };
   return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={contentStyle} refreshControl={<RefreshControl refreshing={catalogue.loading && catalogue.data !== null} onRefresh={reload} tintColor={colors.accent} />}>
@@ -142,8 +145,8 @@ export function HomeScreen(): React.JSX.Element {
       {preferences.value.customLinks.map(link => <View key={link.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><CustomArtwork link={link} /><View style={{ flex: 1 }}><Row title={link.name} subtitle={editMode ? 'تعديل الرابط' : new URL(link.url).hostname} onPress={() => { if (editMode) setEditor(link); else void perform(() => openExternal(link.url)); }} /></View></View>)}
       <NativeAction title="إضافة رابط" systemImage="plus" disabled={!preferences.ready || preferences.busy || preferences.value.customLinks.length >= 50} onPress={() => setEditor('new')} />
     </Section>
-    <Row title={account.user?.name ?? 'تسجيل الدخول'} subtitle={account.user ? 'الحساب والإعدادات' : 'مزامنة إعداداتك مع حسابك'} symbol="person.crop.circle" onPress={() => navigation.open('account')} />
-    <View style={{ gap: 8 }}>{[['about', 'عن المنصة'], ['stats', 'الإحصائيات'], ['privacy', 'سياسة الخصوصية'], ['terms', 'الشروط والأحكام']].map(([section, title]) => <Row key={section} title={title ?? ''} onPress={() => navigation.open(section ?? '')} />)}</View>
+    {navigation.canOpen('account') ? <Row title={account.user?.name ?? 'تسجيل الدخول'} subtitle={account.user ? 'الحساب والإعدادات' : 'مزامنة إعداداتك مع حسابك'} symbol="person.crop.circle" onPress={() => navigation.open('account')} /> : null}
+    <View style={{ gap: 8 }}>{([['about', 'عن المنصة'], ['stats', 'الإحصائيات'], ['privacy', 'سياسة الخصوصية'], ['terms', 'الشروط والأحكام']] as const).map(([section, title]) => <Row key={section} title={title} onPress={() => { void perform(() => navigation.openCatalogueLink(`/${section}`, section)); }} />)}</View>
     {settings ? <HomeSettings close={() => setSettings(false)} preferences={preferences.value} save={preferences.save} disabled={!preferences.ready || preferences.busy} /> : null}
     {editor ? <LinkEditor link={editor === 'new' ? null : editor} close={() => setEditor(null)} save={link => preferences.save({ ...preferences.value, customLinks: editor === 'new' ? [...preferences.value.customLinks, link] : preferences.value.customLinks.map(item => item.id === link.id ? link : item) })} remove={id => preferences.save({ ...preferences.value, customLinks: preferences.value.customLinks.filter(item => item.id !== id) })} /> : null}
   </ScrollView>;

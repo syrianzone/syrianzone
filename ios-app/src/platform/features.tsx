@@ -4,6 +4,7 @@ export interface FeatureScreenProps { readonly params: Readonly<Record<string, s
 export interface FeatureNavigation {
   open(section: string, params?: Record<string, string>): void;
   openCatalogueLink(href: string, id: string): Promise<void>;
+  canOpen(section: string, params?: Record<string, string>): boolean;
   back(): void;
 }
 const Context = createContext<FeatureNavigation | null>(null);

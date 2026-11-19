@@ -8,7 +8,7 @@ import { matchesSearch, placeCategories, type Page, type Place } from './domain'
 import { AdaptivePanes, EmptyState, Heading, Label, Photo, RequestStatus, Row, SearchField, Section, contentStyle } from './components';
 import { MapView, type MapPin } from './MapView';
 import { directionsUrl } from './map-data';
-import type { RootNavigation, RootRoutes } from './navigation';
+import type { RootNavigation, RootRoutes, TabRoutes } from './navigation';
 import { useResource, type Resource } from './resource';
 import { useAppState } from './state';
 import { NativeAction, NativeSegmented, NativeThemeHost } from './ui/native';
@@ -77,10 +77,11 @@ function placesPins(places: readonly Place[]): MapPin[] {
 
 export function PlacesScreen(): React.JSX.Element {
   const navigation = useNavigation<RootNavigation>();
+  const { params } = useRoute<RouteProp<TabRoutes, 'Places'>>();
   const { colors } = useTheme();
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(() => placeCategories.find(item => item.key === params?.category)?.key ?? '');
   const [sort, setSort] = useState<'newest' | 'popular'>('newest');
   const [display, setDisplay] = useState<'list' | 'map'>('list');
   useEffect(() => { const timer = setTimeout(() => setDebounced(search), 300); return () => clearTimeout(timer); }, [search]);

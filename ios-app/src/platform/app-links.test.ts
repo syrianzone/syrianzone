@@ -14,10 +14,11 @@ test('catalogue destinations retain saved filters for registered native screens'
   expect(catalogueDestination('/tierlist/leaderboard?period=week', ['tierlist'])).toMatchObject({
     kind: 'feature', section: 'tierlist', params: { period: 'week' }
   });
+  expect(catalogueDestination('/mishwar?category=market', [])).toEqual({ kind: 'tab', tab: 'Places', params: { category: 'market' } });
 });
 
 test('catalogue destinations open on the website when the app cannot apply them', () => {
-  for (const href of ['/games', '/mishwar?category=market']) {
+  for (const href of ['/games', '/govtcvs', '/mishwar?guide=207', '/mishwar?category=unknown']) {
     expect(catalogueDestination(href, [], 'https://example.test')).toEqual({ kind: 'website', url: `https://example.test${href}` });
   }
   expect(catalogueDestination('/mishwar', [])).toEqual({ kind: 'tab', tab: 'Places', params: {} });

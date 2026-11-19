@@ -155,7 +155,9 @@ function Navigation(): React.JSX.Element {
     } else await openTarget(target, id);
   }, [openTarget]);
   const featureNavigation = useMemo(() => ({
-    open, openCatalogueLink, back: () => { if (navigation.canGoBack()) navigation.goBack(); }
+    open, openCatalogueLink,
+    canOpen: (section: string, params?: Record<string, string>) => targetForSection(section, params, Object.keys(featureScreens)) !== null,
+    back: () => { if (navigation.canGoBack()) navigation.goBack(); }
   }), [open, openCatalogueLink, navigation]);
   const linking = useMemo(() => ({ prefixes: [...new Set(['syrianzone://', 'https://syrian.zone/', `${configuredSiteOrigin}/`])],
     config: { initialRouteName: 'Main' as const, screens: { Main: { path: '', screens: { Home: '', Transit: 'transit', Places: 'places', Saved: 'saved', Settings: 'settings' } }, Feature: 'feature/:section', Place: 'place/:id', TransitLink: 'transit/city/:cityId' } },

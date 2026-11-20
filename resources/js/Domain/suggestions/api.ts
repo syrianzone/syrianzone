@@ -3,11 +3,16 @@ import type {
     DirectorySuggestionInput,
     DirectorySuggestionItem,
     DirectorySuggestionListResponse,
+    IncomingSuggestionsOverview,
     SuggestionModule,
     SuggestionStatus,
 } from './types';
 
 export const suggestionsApi = {
+    overview(): Promise<IncomingSuggestionsOverview> {
+        return client.get(`${API_V1}/admin/suggestions/overview`);
+    },
+
     submit(
         module: SuggestionModule,
         input: DirectorySuggestionInput,

@@ -21,6 +21,7 @@ use App\Http\Controllers\GovtCvController;
 use App\Http\Controllers\GuessWhoAdminController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\IncomingSuggestionsAdminController;
 use App\Http\Controllers\PhonebookAdminController;
 use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\OgCardController;
@@ -276,6 +277,12 @@ Route::middleware('auth:web,sanctum')->group(function () {
     });
 
     Route::middleware(['auth:web,sanctum', 'superadmin'])->group(function () {
+        // Cross-section incoming suggestions overview for superadmins.
+        Route::get('/admin/suggestions', [IncomingSuggestionsAdminController::class, 'renderIndex'])
+            ->name('admin.suggestions.index');
+        Route::get('/api/v1/admin/suggestions/overview', [IncomingSuggestionsAdminController::class, 'index'])
+            ->name('api.v1.admin.suggestions.overview');
+
         // Revoking every token of a user is superadmin-only: it also ends that
         // user's mobile sessions, so it is a leak response, not self-service.
         // The page, minting and single revocation are in the agent_tokens

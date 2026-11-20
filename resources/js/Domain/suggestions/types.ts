@@ -68,3 +68,56 @@ export interface DirectorySuggestionListResponse {
     suggestions: DirectorySuggestionItem[];
     counts: DirectorySuggestionCounts;
 }
+
+export type IncomingSectionId =
+    | 'govtcvs'
+    | 'syofficial'
+    | 'govapps'
+    | 'phonebook'
+    | 'promises'
+    | 'places'
+    | 'transit';
+
+export type IncomingItemType =
+    | 'directory_add'
+    | 'directory_edit'
+    | 'promise_suggestion'
+    | 'promise_speaker'
+    | 'promise_report_progress'
+    | 'promise_report_error'
+    | 'place_submission'
+    | 'place_report'
+    | 'transit_new_route'
+    | 'transit_route_edit';
+
+export interface IncomingSectionSummary {
+    id: IncomingSectionId;
+    label: string;
+    admin_url: string;
+    pending_count: number;
+    breakdown: Array<{ label: string; count: number }>;
+}
+
+export interface IncomingSuggestionItem {
+    uid: string;
+    section: IncomingSectionId;
+    item_type: IncomingItemType;
+    record_id: string | number;
+    title: string;
+    subtitle: string | null;
+    details: string | null;
+    payload: Record<string, string | number | boolean | null | undefined>;
+    source_url: string | null;
+    submitter_name: string;
+    created_at: string | null;
+    section_admin_url: string;
+    item_admin_url: string | null;
+    action_meta: Record<string, string | number | boolean | null | undefined>;
+}
+
+export interface IncomingSuggestionsOverview {
+    total_pending: number;
+    sections: IncomingSectionSummary[];
+    items: IncomingSuggestionItem[];
+    generated_at: string;
+}

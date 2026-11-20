@@ -25,6 +25,7 @@ import {
   X,
   Save,
   Compass,
+  Inbox,
 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
@@ -87,6 +88,7 @@ interface DashboardProps {
     };
   };
   role: string;
+  incomingSuggestionsCount?: number;
   /** The studio's own rule, resolved server-side: any account that is not banned may submit. */
   canSubmitTransit: boolean;
   myDrafts?: RouteDraftRow[];
@@ -207,6 +209,7 @@ const statusBadge = (status: DraftStatus) => {
 export default function Dashboard({
   auth,
   role,
+  incomingSuggestionsCount = 0,
   canSubmitTransit,
   myDrafts = [],
   polls = []
@@ -562,6 +565,23 @@ export default function Dashboard({
           <div className="flex flex-col lg:flex-row gap-8">
             <aside className="w-full lg:w-64 shrink-0">
               <nav aria-label="أقسام لوحة التحكم" className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0">
+                {role === 'superadmin' && (
+                  <Link
+                    href="/admin/suggestions"
+                    className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-primary/10 text-primary hover:bg-primary/15 border border-primary/20"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Inbox className="h-5 w-5" aria-hidden="true" />
+                      الاقتراحات الواردة
+                    </span>
+                    {incomingSuggestionsCount > 0 && (
+                      <Badge variant="default" className="tabular-nums" dir="ltr">
+                        {incomingSuggestionsCount}
+                      </Badge>
+                    )}
+                  </Link>
+                )}
+
                 {showTransitSubmissions && (
                   <button type="button" aria-pressed={activeTab === 'submissions'} onClick={() => setActiveTab('submissions')} className={navItemClass(activeTab === 'submissions')}>
                     <TransitIcon className="h-5 w-5" />

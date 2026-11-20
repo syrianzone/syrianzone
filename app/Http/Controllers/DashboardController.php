@@ -6,6 +6,7 @@ use App\Models\Poll;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\User;
+use App\Services\Admin\IncomingSuggestionsOverviewService;
 use App\Services\AvatarService;
 use App\Services\Users\UserModerationService;
 use Illuminate\Http\Request;
@@ -43,11 +44,14 @@ class DashboardController extends Controller
         return false;
     }
 
-    public function index(Request $request)
+    public function index(Request $request, IncomingSuggestionsOverviewService $incomingSuggestions)
     {
         $user = $request->user();
         $data = [
             'role' => $user->role,
+            'incomingSuggestionsCount' => $user->isSuperAdmin()
+                ? $incomingSuggestions->totalPendingCount()
+                : 0,
             // Studio submissions are open to every account (the endpoint takes
             // anonymous drafts too), so the rule is "not banned", not a role.
             // The dashboard's submissions tab follows this flag instead of

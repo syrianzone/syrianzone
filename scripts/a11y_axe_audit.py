@@ -52,6 +52,7 @@ ADMIN_ROUTES = [
     "/admin/promises", "/admin/promises/new", "/admin/promises/review",
     "/admin/promises/speakers", "/admin/promises/sectors",
     "/admin/govtcvs", "/admin/govtcvs/new", "/admin/govtcvs/slots",
+    "/admin/suggestions",
 ]
 
 AXE_AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"]

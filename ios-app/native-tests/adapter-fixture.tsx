@@ -10,11 +10,12 @@ import {
   ScrollView,
   Text,
   View,
+  PixelRatio,
   type NativeSyntheticEvent,
   type ViewProps,
 } from 'react-native';
 import Svg, { Circle, Rect } from 'react-native-svg';
-
+import { createSvgImageFile, shareFile, shareSvgPng } from '../src/platform/files';
 import { imagePixelSize } from './image-header';
 interface NativeAudioStatus { token: number; seconds: number; duration: number; listenedSeconds: number; playing: boolean; loading: boolean; loaded: boolean; ended: boolean; error: string | null; sleepUntil: number | null }
 interface NativeAudioPort {
@@ -34,7 +35,7 @@ import { ArabicInputFixture } from './arabic-input-fixture';
 import { SearchFieldFixture } from './search-field-fixture';
 import { IconActionHitFixture } from './icon-action-hit-fixture';
 
-
+import { useSaveControllerProbe } from './save-controller-probe';
 
 type AudioEvents = {
   onStatus: (status: NativeAudioStatus) => void;
@@ -90,8 +91,8 @@ export function AdapterFixture(): React.JSX.Element {
   const [toggleEvents, setToggleEvents] = useState<string[]>([]);
   const [pickerValue, setPickerValue] = useState<'first' | 'second'>('first'), [pickerChanges, setPickerChanges] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
-  
-  
+  const [localFilesId] = useState(randomUUID);
+  const localFilesFilename = `native-files-${localFilesId}.png`;
   const [native] = useState(() => requireNativeModule<AudioBridge>('SyrianAudio'));
   const [files] = useState(() => requireNativeModule<FilesBridge>('SyrianFiles'));
   const [tab, setTab] = useState('files'),
@@ -128,7 +129,7 @@ export function AdapterFixture(): React.JSX.Element {
     backgroundStart = useRef<number | null>(null),
     backgroundArmed = useRef(false);
   const svg = useRef<Svg>(null);
-  
+  const saveController = useSaveControllerProbe(svg, localFilesId);
   function result(id: string, value: string): void {
     if (!cancelled.current) setResults((current) => ({ ...current, [id]: value }));
   }
@@ -263,11 +264,107 @@ export function AdapterFixture(): React.JSX.Element {
       }
     });
   }
-  
-  
-  
-  
-  
+  function checkSvg(): void {
+    void run('svg', async () => {
+      const view = svg.current;
+      requireCheck(view, 'Native SVG ref unavailable');
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const base64 = await new Promise<string>((resolve, reject) => {
+        timer = setTimeout(() => reject(new Error('Native SVG export timeout')), 10_000);
+        view.toDataURL(resolve, { width: 80, height: 40 });
+      }).finally(() => {
+        if (timer) clearTimeout(timer);
+      });
+      const image = new File(Paths.cache, `sz-svg-verification-${randomUUID()}.png`);
+      try {
+        image.create();
+        await image.write(base64, { encoding: 'base64' });
+        const raw = imagePixelSize(await image.bytes(), 'png');
+        const defaultBase64 = await new Promise<string>((resolve, reject) => {
+          timer = setTimeout(() => reject(new Error('Default SVG export timeout')), 10_000);
+          view.toDataURL(resolve);
+        }).finally(() => {
+          if (timer) clearTimeout(timer);
+        });
+        await image.write(defaultBase64, { encoding: 'base64' });
+        const original = imagePixelSize(await image.bytes(), 'png');
+        requireCheck(
+          original.width === 80 * PixelRatio.get() && original.height === 40 * PixelRatio.get(),
+          'Default native SVG scale changed',
+        );
+        const exact = await createSvgImageFile(view, { width: 160, height: 80 });
+        try {
+          const dimensions = imagePixelSize(await exact.file.bytes(), 'png');
+          requireCheck(
+            dimensions.width === 160 && dimensions.height === 80,
+            `Expected160x80 PNG, received${dimensions.width}x${dimensions.height}`,
+          );
+          const evidence = new File(Paths.cache, 'sz-adapter-svg-geometry.png');
+          if (evidence.exists) evidence.delete();
+          await exact.file.copy(evidence);
+          requireCheck(evidence.exists && evidence.size > 0, 'PNG evidence copy incomplete');
+          result(
+            'svg',
+            `SVG PASS explicit=${raw.width}x${raw.height} default=${original.width}x${original.height} exact=${dimensions.width}x${dimensions.height} PNG`,
+          );
+        } finally {
+          if (exact.file.exists) exact.file.delete();
+        }
+      } finally {
+        if (image.exists) image.delete();
+      }
+    });
+  }
+  function checkJpeg(): void {
+    void run('jpeg', async () => {
+      const view = svg.current;
+      requireCheck(view, 'Native SVG ref unavailable');
+      const rendered = await createSvgImageFile(view, {
+        width: 160,
+        height: 80,
+        format: 'jpg',
+        quality: 0.9,
+      });
+      try {
+        const dimensions = imagePixelSize(await rendered.file.bytes(), 'jpg');
+        requireCheck(
+          rendered.mimeType === 'image/jpeg' && dimensions.width === 160 && dimensions.height === 80,
+          'JPEG MIME/pixels mismatch',
+        );
+        result('jpeg', `JPEG PASS real image/jpeg exact=${dimensions.width}x${dimensions.height}`);
+      } finally {
+        if (rendered.file.exists) rendered.file.delete();
+      }
+    });
+  }
+  function svgShare(): void {
+    void run('svgShare', async () => {
+      const view = svg.current;
+      requireCheck(view, 'Native SVG ref unavailable');
+      result('svgShare', 'SVG SHARE PRESENTING');
+      await shareSvgPng(view, { width: 80, height: 40, filename: 'native-svg-verification.png' });
+      result('svgShare', 'SVG SHARE PASS exact-pixel shipping PNG path dismissed');
+    });
+  }
+  function localFilesShare(): void {
+    void run('localFiles', async () => {
+      const view = svg.current;
+      requireCheck(view, 'Native SVG ref unavailable');
+      result('localFiles', `LOCAL FILES PRESENTING ${localFilesFilename}`);
+      await shareSvgPng(view, { width: 80, height: 40, filename: localFilesFilename });
+      result('localFiles', `LOCAL FILES RETURNED ${localFilesFilename}`);
+    });
+  }
+  function pngShare(): void {
+    if (!prepared) return;
+    void run('png', async () => {
+      result('png', 'PNG SHARE PRESENTING');
+      const base64 = prepared.encoded.split(',')[1];
+      requireCheck(base64, 'PNG content absent');
+      await shareFile({ base64, filename: 'native-verification.png', mimeType: 'image/png' });
+      result('png', 'PNG SHARE PASS native share completed or cancelled');
+    });
+  }
   function zipShare(): void {
     if (!prepared) return;
     void run('zip', async () => {
@@ -408,18 +505,33 @@ export function AdapterFixture(): React.JSX.Element {
             <Rect x={2} y={2} width={10} height={6} fill="#FF0000" />
             <Rect x={2} y={32} width={10} height={6} fill="#0000FF" />
           </Svg>
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
+          <Button
+            testID="adapter.svg"
+            title="Verify native SVG PNG80x40"
+            disabled={busy}
+            onPress={checkSvg}
+          />
+          <Status id="svg" value={results.svg ?? ''} />
+          <Button testID="adapter.jpeg" title="Verify real JPEG80x40" disabled={busy} onPress={checkJpeg} />
+          <Status id="jpeg" value={results.jpeg ?? ''} />
+          <Button testID="adapter.svg-share" title="Share exact SVG PNG" disabled={busy} onPress={svgShare} />
+          <Status id="svgShare" value={results.svgShare ?? ''} />
+          <Status
+            id="local-files-metadata"
+            value={`LOCAL FILES METADATA ${JSON.stringify({ version: 1, id: localFilesId, filename: localFilesFilename })}`}
+          />
+          <Button
+            testID="adapter.local-files-share"
+            title="Share uniquely named PNG to local Files"
+            disabled={busy}
+            onPress={localFilesShare}
+          />
+          <Status id="localFiles" value={results.localFiles ?? ''} />
+          <Button testID="adapter.save-controller-prepare" title="Prepare generated PNG for Save controller probe" disabled={busy || saveController.ready}
+            onPress={() => { void run('saveController', saveController.prepare); }} />
+          <Button testID="adapter.save-controller-probe" title="Observe native Save to Files, then cancel" disabled={busy || !saveController.ready}
+            onPress={() => { void run('saveController', saveController.open); }} />
+          <Status id="save-controller" value={saveController.status} />
           <Button testID="adapter.prepare" title="Prepare bounded files" disabled={busy} onPress={prepare} />
           <Status id="files" value={results.files ?? ''} />
           <Button
@@ -429,8 +541,13 @@ export function AdapterFixture(): React.JSX.Element {
             onPress={preview}
           />
           <Status id="preview" value={results.preview ?? ''} />
-          
-          
+          <Button
+            testID="adapter.png-share"
+            title="Share native PNG"
+            disabled={busy || !prepared}
+            onPress={pngShare}
+          />
+          <Status id="png" value={results.png ?? ''} />
           <Button
             testID="adapter.zip-share"
             title="Share nested ZIP"

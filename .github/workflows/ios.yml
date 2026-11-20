@@ -149,3 +149,47 @@ jobs:
           name: home-ui-xcresult
           path: ${{ runner.temp }}/home-ui.xcresult
           if-no-files-found: ignore
+      - name: Verify native image export and Files on iPhone 17
+        timeout-minutes: 60
+        shell: bash
+        run: |
+          cases=(
+            SyrianZoneUITests/NativeAdaptersUITests/testNativeSVGPixelDimensions
+            SyrianZoneUITests/NativeAdaptersUITests/testDirectNativePNGAndJPEGEncoder
+            SyrianZoneUITests/NativeAdaptersUITests/testGeneratedFilesQuickLookAndCancelledShares
+            SyrianZoneUITests/NativeLocalFilesUITests/testGeneratedPNGSaveToOnMyiPhonePreviewAndOwnedCleanup
+          )
+          result="$RUNNER_TEMP/files-ui.xcresult"
+          device="$(xcrun simctl list --json | node --input-type=module -e '
+            import { execFileSync } from "node:child_process";
+            import { readFileSync } from "node:fs";
+            import { selectSimulator } from "./scripts/simulator.mjs";
+            const { type, runtime } = selectSimulator(JSON.parse(readFileSync(0, "utf8")), "iPhone 17");
+            process.stdout.write(execFileSync("xcrun", ["simctl", "create", "Syrian Zone Files CI", type.identifier, runtime.identifier], { encoding: "utf8" }).trim());
+          ')"
+          [[ "$device" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$ ]]
+          trap 'status=$?; xcrun simctl shutdown "$device" || true; xcrun simctl delete "$device" || status=1; exit "$status"' EXIT
+          xcode_args=(-jobs 2 -workspace ios/SyrianZone.xcworkspace
+            -scheme SyrianZoneVerification -configuration Release -sdk iphonesimulator
+            -destination "id=$device" -derivedDataPath .expo/build
+            ENTRY_FILE="$PWD/native-tests/adapter-fixture.tsx" CODE_SIGNING_ALLOWED=NO)
+          xcodebuild "${xcode_args[@]}" build-for-testing
+          xcrun simctl boot "$device"
+          xcrun simctl bootstatus "$device" -b
+          xcodebuild "${xcode_args[@]}" -parallel-testing-enabled NO \
+            -testLanguage en -testRegion US \
+            -test-timeouts-enabled YES -default-test-execution-time-allowance 900 \
+            -maximum-test-execution-time-allowance 1200 \
+            "${cases[@]/#/-only-testing:}" -resultBundlePath "$result" test-without-building
+          xcrun xcresulttool get test-results tests --path "$result" --format json | node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            import { assertSelectedTestsPassed } from "./scripts/native-test-results.mjs";
+            assertSelectedTestsPassed(process.argv.slice(1), JSON.parse(readFileSync(0, "utf8")));
+          ' "${cases[@]}"
+      - name: Save Files XCTest results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: files-ui-xcresult
+          path: ${{ runner.temp }}/files-ui.xcresult
+          if-no-files-found: ignore

@@ -4,6 +4,8 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Resources\AgentPermissionsResource;
 use App\Mcp\Resources\AgentTokenResource;
+use App\Mcp\Tools\Compass\ListCompassFiguresTool;
+use App\Mcp\Tools\Compass\ListCompassPersonasTool;
 use App\Mcp\Tools\GovApps\CreateGovAppTool;
 use App\Mcp\Tools\GovApps\DeleteGovAppTool;
 use App\Mcp\Tools\GovApps\ListGovAppsTool;
@@ -29,14 +31,20 @@ use App\Mcp\Tools\GovtCvs\SaveGovtSlotTool;
 use App\Mcp\Tools\GovtCvs\UpdateGovtEvidenceTool;
 use App\Mcp\Tools\GovtCvs\UpdateGovtOfficialTool;
 use App\Mcp\Tools\GovtCvs\UpdateGovtTenureTool;
+use App\Mcp\Tools\GuessWho\ListGuessWhoCategoriesTool;
+use App\Mcp\Tools\GuessWho\ListGuessWhoCharactersTool;
+use App\Mcp\Tools\Phonebook\ListPhonebookCategoriesTool;
+use App\Mcp\Tools\Phonebook\ListPhonebookEntriesTool;
 use App\Mcp\Tools\Places\ApprovePlaceTool;
 use App\Mcp\Tools\Places\DeletePlacePhotoTool;
 use App\Mcp\Tools\Places\DeletePlaceTool;
 use App\Mcp\Tools\Places\GetPlaceTool;
+use App\Mcp\Tools\Places\ListPlaceReportsTool;
 use App\Mcp\Tools\Places\ListPlacesTool;
 use App\Mcp\Tools\Places\RejectPlaceTool;
 use App\Mcp\Tools\Places\RotatePlacePhotoTool;
 use App\Mcp\Tools\Places\UpdatePlaceTool;
+use App\Mcp\Tools\Polls\ListPollsTool;
 use App\Mcp\Tools\Promises\AcceptPromiseReportTool;
 use App\Mcp\Tools\Promises\AddPromiseUpdateTool;
 use App\Mcp\Tools\Promises\ApprovePromiseSpeakerTool;
@@ -67,6 +75,7 @@ use App\Mcp\Tools\Promises\UnpublishPromiseTool;
 use App\Mcp\Tools\Promises\UpdatePromiseSectorTool;
 use App\Mcp\Tools\Promises\UpdatePromiseSpeakerTool;
 use App\Mcp\Tools\Promises\UpdatePromiseTool;
+use App\Mcp\Tools\Suggestions\ListDirectorySuggestionsTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialEntityTool;
 use App\Mcp\Tools\SyOfficial\DeleteSyOfficialCategoryTool;
@@ -164,9 +173,18 @@ class AdminServer extends Server
     protected array $tools = [
         ListPlacesTool::class,
         GetPlaceTool::class,
+        ListPlaceReportsTool::class,
         ListSyOfficialCategoriesTool::class,
         ListSyOfficialEntitiesTool::class,
         ListGovAppsTool::class,
+        ListPhonebookCategoriesTool::class,
+        ListPhonebookEntriesTool::class,
+        ListDirectorySuggestionsTool::class,
+        ListPollsTool::class,
+        ListCompassFiguresTool::class,
+        ListCompassPersonasTool::class,
+        ListGuessWhoCategoriesTool::class,
+        ListGuessWhoCharactersTool::class,
         ListTransitDraftsTool::class,
         GetTransitDraftGeometryTool::class,
         ListTransitRoutesTool::class,

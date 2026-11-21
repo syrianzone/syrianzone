@@ -171,6 +171,7 @@ Route::get('/party', [ExternalDataController::class, 'party']);
 Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
 Route::get('/govapps', [GovAppController::class, 'index']);
+Route::get('/govapps/{id}', [GovAppController::class, 'show'])->where('id', '[a-z0-9-]+');
 Route::get('/atlas', [PopulationAtlasController::class, 'renderIndex']);
 Route::redirect('/population', '/atlas', 301);
 

@@ -5,6 +5,7 @@ namespace App\Support\Seo\Preview;
 use App\Support\Seo\Og\CardSource;
 use App\Support\Seo\Preview\Resolvers\CompassSharePreview;
 use App\Support\Seo\Preview\Resolvers\CrossingPreview;
+use App\Support\Seo\Preview\Resolvers\GovAppPreview;
 use App\Support\Seo\Preview\Resolvers\GovtOfficialPreview;
 use App\Support\Seo\Preview\Resolvers\GuessWhoRoomPreview;
 use App\Support\Seo\Preview\Resolvers\PlacePreview;
@@ -27,6 +28,7 @@ final class Previews
     public const RESOLVERS = [
         PromisePreview::class,
         GovtOfficialPreview::class,
+        GovAppPreview::class,
         PlacePreview::class,
         PollPreview::class,
         TransitRoutePreview::class, // before the city: same path, with ?route=

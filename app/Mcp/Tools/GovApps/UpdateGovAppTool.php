@@ -46,6 +46,8 @@ class UpdateGovAppTool extends GovAppsTool
 
             'links' => $schema->object($this->linkProperties($schema))
                 ->description('Replace the links object keyed by channel: {"official": "...", "android": "...", "apple": "..."}. Omit to leave existing links untouched; pass an empty object to clear every link. A plain list is refused.'),
+
+            ...$this->guideProperties($schema),
         ];
     }
 
@@ -59,6 +61,16 @@ class UpdateGovAppTool extends GovAppsTool
             'description_ar' => 'nullable|string',
             'links' => 'sometimes|array',
             'links.*' => 'nullable|string|max:2048',
+            'official_entity_id' => 'sometimes|nullable|string|max:128|exists:official_entities,id',
+            'overview_ar' => 'sometimes|nullable|string|max:10000',
+            'features' => 'sometimes|nullable|array|max:20',
+            'features.*' => 'nullable|string|max:500',
+            'requirements' => 'sometimes|nullable|array|max:20',
+            'requirements.*' => 'nullable|string|max:500',
+            'faqs' => 'sometimes|nullable|array|max:20',
+            'faqs.*.q' => 'required_with:faqs|string|max:500',
+            'faqs.*.a' => 'required_with:faqs|string|max:2000',
+            'verified_at' => 'sometimes|nullable|date',
         ]);
 
         return $this->attempt(function () use ($validated) {

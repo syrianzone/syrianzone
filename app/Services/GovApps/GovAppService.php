@@ -67,6 +67,12 @@ class GovAppService
         $app->name_ar = $attributes['name_ar'];
         $app->description = $attributes['description'] ?? null;
         $app->description_ar = $attributes['description_ar'] ?? null;
+        $app->official_entity_id = $attributes['official_entity_id'] ?? null;
+        $app->overview_ar = $attributes['overview_ar'] ?? null;
+        $app->features = array_key_exists('features', $attributes) ? $this->filterStringList($attributes['features']) : null;
+        $app->requirements = array_key_exists('requirements', $attributes) ? $this->filterStringList($attributes['requirements']) : null;
+        $app->faqs = array_key_exists('faqs', $attributes) ? $this->filterFaqs($attributes['faqs']) : null;
+        $app->verified_at = $attributes['verified_at'] ?? null;
         $app->icon = $icon !== null
             ? $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id)
             : null;
@@ -104,6 +110,24 @@ class GovAppService
         }
         if (array_key_exists('description_ar', $attributes)) {
             $app->description_ar = $attributes['description_ar'];
+        }
+        if (array_key_exists('official_entity_id', $attributes)) {
+            $app->official_entity_id = $attributes['official_entity_id'] ?: null;
+        }
+        if (array_key_exists('overview_ar', $attributes)) {
+            $app->overview_ar = $attributes['overview_ar'];
+        }
+        if (array_key_exists('features', $attributes)) {
+            $app->features = $this->filterStringList($attributes['features']);
+        }
+        if (array_key_exists('requirements', $attributes)) {
+            $app->requirements = $this->filterStringList($attributes['requirements']);
+        }
+        if (array_key_exists('faqs', $attributes)) {
+            $app->faqs = $this->filterFaqs($attributes['faqs']);
+        }
+        if (array_key_exists('verified_at', $attributes)) {
+            $app->verified_at = $attributes['verified_at'] ?: null;
         }
         if ($links !== null) {
             $app->links = $this->filterLinkMap($links);
@@ -218,6 +242,55 @@ class GovAppService
         }
 
         return $filtered;
+    }
+
+    /**
+     * @param  array<array-key, mixed>|null  $items
+     * @return array<int, string>|null
+     */
+    protected function filterStringList(?array $items): ?array
+    {
+        if ($items === null) {
+            return null;
+        }
+
+        $clean = [];
+        foreach ($items as $item) {
+            if (! is_string($item)) {
+                continue;
+            }
+            $trimmed = trim($item);
+            if ($trimmed !== '') {
+                $clean[] = $trimmed;
+            }
+        }
+
+        return $clean;
+    }
+
+    /**
+     * @param  array<array-key, mixed>|null  $faqs
+     * @return array<int, array{q: string, a: string}>|null
+     */
+    protected function filterFaqs(?array $faqs): ?array
+    {
+        if ($faqs === null) {
+            return null;
+        }
+
+        $clean = [];
+        foreach ($faqs as $faq) {
+            if (! is_array($faq)) {
+                continue;
+            }
+            $q = is_string($faq['q'] ?? null) ? trim($faq['q']) : '';
+            $a = is_string($faq['a'] ?? null) ? trim($faq['a']) : '';
+            if ($q !== '' && $a !== '') {
+                $clean[] = ['q' => $q, 'a' => $a];
+            }
+        }
+
+        return $clean;
     }
 
     protected function assertIdFree(?string $id): void

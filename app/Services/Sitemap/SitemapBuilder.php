@@ -36,6 +36,7 @@ class SitemapBuilder
             $this->pollUrls(),
             $this->promiseUrls(),
             $this->govtCvUrls(),
+            $this->govAppUrls(),
             $this->transitCityUrls(),
         );
 
@@ -136,6 +137,31 @@ class SitemapBuilder
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * One entry per active government app that has a rich guide populated.
+     * Apps without guide content stay out of the sitemap (and canonicalize to
+     * /govapps) so thin cards are never indexed as standalone pages.
+     *
+     * @return SitemapUrl[]
+     */
+    private function govAppUrls(): array
+    {
+        return GovApp::query()
+            ->where('is_active', true)
+            ->whereNotNull('overview_ar')
+            ->orderBy('order_column')
+            ->get()
+            ->filter(fn (GovApp $app) => $app->hasRichGuide())
+            ->map(fn (GovApp $app) => new SitemapUrl(
+                '/govapps/'.$app->id,
+                0.7,
+                'monthly',
+                $app->updated_at,
+            ))
+            ->values()
+            ->all();
     }
 
     /**

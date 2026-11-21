@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Link } from '@inertiajs/react';
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Smartphone, Globe, MessageSquarePlus, Pencil, PencilLine, Settings } from "lucide-react";
@@ -207,17 +208,21 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                     >
                                         <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
                                     </button>
-                                    <AppIcon
-                                        app={app}
-                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                        placeholderClassName="h-10 w-10 text-muted-foreground/30"
-                                    />
+                                    <Link href={`/govapps/${app.id}`} className="block w-full h-full">
+                                        <AppIcon
+                                            app={app}
+                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                            placeholderClassName="h-10 w-10 text-muted-foreground/30"
+                                        />
+                                    </Link>
                                 </div>
 
                                 <CardContent className="p-3.5 text-center flex-1 flex flex-col justify-between">
                                     <div>
                                         <h2 className="font-bold text-sm sm:text-base text-foreground mb-1.5 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-                                            {app.name}
+                                            <Link href={`/govapps/${app.id}`} className="hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
+                                                {app.name}
+                                            </Link>
                                         </h2>
                                         {app.description && (
                                             <DescriptionText description={app.description} />

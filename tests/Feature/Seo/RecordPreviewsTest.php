@@ -152,7 +152,7 @@ test('a transit city card shows its live number of published routes', function (
 
     $card = Previews::cardSource('city')->card('homs');
 
-    expect(seoMetaFor('/transit/city/homs')['title'])->toBe('مواصلات حمص | ترانزيت')
+    expect(seoMetaFor('/transit/city/homs')['title'])->toBe('مواصلات وسرافيس حمص | ترانزيت سوريا')
         ->and(seoMetaFor('/transit/city/homs')['image'])->toBe('https://syrian.zone/og/r/city/homs.png?v='.$card->version())
         ->and($card->model['art'])->toBe(['type' => 'figure', 'value' => 12, 'label' => 'خطاً'])
         ->and(Previews::cardSource('city')->card('idlib')->model['art'])->toBe(['type' => 'icon', 'icon' => 'transit'])

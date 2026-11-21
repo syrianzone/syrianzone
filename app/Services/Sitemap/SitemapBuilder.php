@@ -37,6 +37,8 @@ class SitemapBuilder
             $this->promiseUrls(),
             $this->govtCvUrls(),
             $this->govAppUrls(),
+            $this->crossingUrls(),
+            $this->prayerCityUrls(),
             $this->transitCityUrls(),
         );
 
@@ -137,6 +139,47 @@ class SitemapBuilder
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * One entry per border crossing or maritime port with a canonical slug.
+     *
+     * @return SitemapUrl[]
+     */
+    private function crossingUrls(): array
+    {
+        $data = \App\Support\Facts::json('crossings');
+        $asOf = ! empty($data['meta']['asOf']) ? Carbon::parse((string) $data['meta']['asOf']) : null;
+        $urls = [];
+
+        foreach ($data['crossings'] ?? [] as $crossing) {
+            $slug = trim((string) ($crossing['slug'] ?? ''));
+            if ($slug === '') {
+                continue;
+            }
+            $urls[] = new SitemapUrl('/crossings/'.$slug, 0.7, 'weekly', $asOf);
+        }
+
+        return $urls;
+    }
+
+    /**
+     * One daily-updated prayer-times landing page per Syrian governorate.
+     *
+     * @return SitemapUrl[]
+     */
+    private function prayerCityUrls(): array
+    {
+        $urls = [];
+        foreach (\App\Support\Facts::governorates() as $gov) {
+            $id = trim((string) ($gov['id'] ?? ''));
+            if ($id === '') {
+                continue;
+            }
+            $urls[] = new SitemapUrl('/muslim/prayer/'.$id, 0.7, 'daily', null);
+        }
+
+        return $urls;
     }
 
     /**

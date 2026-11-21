@@ -41,12 +41,20 @@ final class GovAppPreview implements CardSource, PreviewResolver
         $name = $app->name_ar ?: $app->name;
         $publisherName = $app->officialEntity?->name_ar ?: $app->officialEntity?->name;
 
-        $pageTitle = $name.' — دليل التحميل الرسمي | تطبيقات حكومية';
+        $pageTitle = $name.' — التحميل الرسمي | تطبيقات حكومية';
         $descriptionSource = $app->overview_ar
             ?: $app->description_ar
             ?: $app->description
             ?: $name;
         $description = Arabic::excerpt($descriptionSource);
+
+        $extraGraph = [];
+        if ($app->hasRichGuide()) {
+            $faqNode = $this->faqEntity($app, '/govapps/'.$app->id);
+            if ($faqNode !== null) {
+                $extraGraph[] = $faqNode;
+            }
+        }
 
         return new Preview(
             title: $pageTitle,
@@ -60,6 +68,7 @@ final class GovAppPreview implements CardSource, PreviewResolver
             parent: ['/govapps', 'تطبيقات حكومية'],
             modified: $app->updated_at,
             mainEntity: $this->softwareEntity($app, $name, $publisherName, $description),
+            extraGraph: $extraGraph,
         );
     }
 
@@ -122,6 +131,47 @@ final class GovAppPreview implements CardSource, PreviewResolver
                 'name' => $publisherName,
             ] : null,
         ], fn (mixed $value): bool => $value !== null && $value !== '' && $value !== []);
+    }
+
+    /**
+     * Build a Schema.org `FAQPage` node from the app's verified Arabic FAQs.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function faqEntity(GovApp $app, string $canonicalPath): ?array
+    {
+        $faqs = is_array($app->faqs) ? $app->faqs : [];
+        $questions = [];
+        foreach ($faqs as $faq) {
+            if (! is_array($faq)) {
+                continue;
+            }
+            $q = trim((string) ($faq['q'] ?? ''));
+            $a = trim((string) ($faq['a'] ?? ''));
+            if ($q === '' || $a === '') {
+                continue;
+            }
+            $questions[] = [
+                '@type' => 'Question',
+                'name' => $q,
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => $a,
+                ],
+            ];
+        }
+
+        if ($questions === []) {
+            return null;
+        }
+
+        $base = rtrim((string) config('seo.base_url'), '/');
+
+        return [
+            '@type' => 'FAQPage',
+            '@id' => $base.$canonicalPath.'#faq',
+            'mainEntity' => $questions,
+        ];
     }
 
     private function describe(GovApp $app): RecordCard

@@ -22,7 +22,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=36.2301042,36.69401527",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "bab-al-hawa"
     },
     {
       "n": 2,
@@ -48,7 +49,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=36.63344432,37.08497987",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "al-salama"
     },
     {
       "n": 3,
@@ -68,7 +70,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=36.63248625,37.47029444",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "al-rai"
     },
     {
       "n": 4,
@@ -88,7 +91,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=36.8299828,37.99965388",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "jarablus"
     },
     {
       "n": 5,
@@ -108,7 +112,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=35.90455784,36.00947114",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "kasab"
     },
     {
       "n": 6,
@@ -128,7 +133,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=36.70399512,38.95824492",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "tal-abyad"
     },
     {
       "n": 7,
@@ -143,7 +149,8 @@
       "windows": [],
       "mapsUrl": "https://maps.google.com/?q=37.06178471,41.21875143",
       "openingSoon": true,
-      "override": null
+      "override": null,
+      "slug": "qamishli"
     },
     {
       "n": 8,
@@ -162,7 +169,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=33.65850713,35.97769437",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "jdaydet-yabous"
     },
     {
       "n": 9,
@@ -177,7 +185,8 @@
       "windows": [],
       "mapsUrl": "https://maps.google.com/?q=34.64082113,36.11885228",
       "openingSoon": true,
-      "override": null
+      "override": null,
+      "slug": "dabbousieh"
     },
     {
       "n": 10,
@@ -197,7 +206,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=34.63558479,35.97584249",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "arida"
     },
     {
       "n": 11,
@@ -217,7 +227,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=34.42298411,36.54408282",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "jousieh"
     },
     {
       "n": 12,
@@ -237,7 +248,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=34.6636142,36.34999908",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "jisr-qamar"
     },
     {
       "n": 13,
@@ -256,7 +268,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=33.4354312,38.8356493",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "al-tanf"
     },
     {
       "n": 14,
@@ -276,7 +289,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=34.39828257,40.97607651",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "al-bukamal"
     },
     {
       "n": 15,
@@ -296,7 +310,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=36.80686585,42.07334095",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "al-yarubiyah"
     },
     {
       "n": 16,
@@ -322,7 +337,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=37.08973504,42.34836715",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "semalka"
     },
     {
       "n": 17,
@@ -341,7 +357,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=32.53975928,36.20253024",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "nassib"
     },
     {
       "n": 18,
@@ -360,7 +377,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=35.53310674,35.77514796",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "latakia-port"
     },
     {
       "n": 19,
@@ -379,7 +397,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=34.90770703,35.87430023",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "tartus-port"
     },
     {
       "n": 20,
@@ -398,7 +417,8 @@
       ],
       "mapsUrl": "https://maps.google.com/?q=35.1842823,35.94312937",
       "openingSoon": false,
-      "override": null
+      "override": null,
+      "slug": "banias-port"
     }
   ]
 }

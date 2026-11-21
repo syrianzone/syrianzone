@@ -10,6 +10,7 @@ use App\Support\Seo\Preview\Resolvers\GovtOfficialPreview;
 use App\Support\Seo\Preview\Resolvers\GuessWhoRoomPreview;
 use App\Support\Seo\Preview\Resolvers\PlacePreview;
 use App\Support\Seo\Preview\Resolvers\PollPreview;
+use App\Support\Seo\Preview\Resolvers\PrayerCityPreview;
 use App\Support\Seo\Preview\Resolvers\PrioritiesSharePreview;
 use App\Support\Seo\Preview\Resolvers\PromisePreview;
 use App\Support\Seo\Preview\Resolvers\TransitCityPreview;
@@ -34,6 +35,7 @@ final class Previews
         TransitRoutePreview::class, // before the city: same path, with ?route=
         TransitCityPreview::class,
         CrossingPreview::class,
+        PrayerCityPreview::class,
         GuessWhoRoomPreview::class,
         CompassSharePreview::class,
         PrioritiesSharePreview::class,

@@ -101,7 +101,9 @@ Route::get('/priorities', function () {
     return Inertia::render('Priorities/Index');
 });
 Route::get('/roznama', function () {
-    return Inertia::render('Roznama/Index');
+    return Inertia::render('Roznama/Index', [
+        'serverYear' => (int) now()->timezone(\App\Support\Facts::syria()['timezone'])->format('Y'),
+    ]);
 });
 // Muslim Corner hub: one real route per tool, like the games hub. Each tool is
 // a self-contained Inertia page under Pages/Muslim/. Legacy shared links that
@@ -115,8 +117,22 @@ Route::get('/muslim', function () {
     return Inertia::render('Muslim/Index');
 });
 Route::get('/muslim/prayer', function () {
-    return Inertia::render('Muslim/Prayer/Index');
+    return Inertia::render('Muslim/Prayer/Index', [
+        'initialCity' => null,
+        'initialCityName' => null,
+        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate('damascus'),
+    ]);
 });
+Route::get('/muslim/prayer/{city}', function (string $city) {
+    $gov = \App\Support\Facts::governorate($city);
+    abort_if($gov === null, 404);
+
+    return Inertia::render('Muslim/Prayer/Index', [
+        'initialCity' => (string) $gov['id'],
+        'initialCityName' => (string) $gov['name_ar'],
+        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate((string) $gov['id']),
+    ]);
+})->where('city', '[a-z0-9-]+');
 Route::get('/muslim/quran', function () {
     return Inertia::render('Muslim/Quran/Index');
 });
@@ -154,6 +170,15 @@ Route::get('/justice', function () {
 Route::get('/crossings', function () {
     return Inertia::render('Crossings/Index');
 });
+Route::get('/crossings/{slug}', function (string $slug) {
+    $data = \App\Support\Facts::json('crossings');
+    $found = collect($data['crossings'] ?? [])->firstWhere('slug', $slug);
+    abort_if($found === null, 404);
+
+    return Inertia::render('Crossings/Show', [
+        'slug' => $slug,
+    ]);
+})->where('slug', '[a-z0-9-]+');
 Route::get('/about', [AboutController::class, 'index']);
 Route::get('/stats', function () {
     return Inertia::render('Stats');

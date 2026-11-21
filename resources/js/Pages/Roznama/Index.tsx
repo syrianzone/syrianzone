@@ -138,7 +138,7 @@ function holidaysForYear(year: number): ActiveHoliday[] {
     return list.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
-export default function Index() {
+export default function Index({ serverYear }: { serverYear?: number }) {
     // One location preference, shared with Home, /muslim and the board.
     const location = useLocationPreference();
     // The calculation method is part of `Domain/settings/prefs`: the choice is
@@ -311,9 +311,41 @@ export default function Index() {
                     </div>
                 </section>
 
-                {/* Live dashboard is client-rendered: the clock, holiday and prayer
-                    values depend on the device time/zone and localStorage. The hero
-                    above renders server-side for crawlers. */}
+                {!mounted && (
+                <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
+                    <Card className="border-border bg-card/60 shadow-sm">
+                        <CardContent className="p-6">
+                            <h2 className="font-bold text-lg text-foreground flex items-center gap-2 mb-4 border-b border-border/60 pb-3">
+                                <Calendar className="h-5 w-5 text-primary" aria-hidden="true" />
+                                <span>العطل الرسمية في سوريا ({serverYear ?? 2026}م)</span>
+                            </h2>
+                            <ul className="divide-y divide-border/50 text-sm">
+                                {holidaysForYear(serverYear ?? 2026).map((h) => (
+                                    <li key={h.nameEn} className="py-2.5">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <span className="font-semibold text-foreground">{h.nameAr}</span>
+                                            <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">
+                                                {h.date.getFullYear()}-{String(h.date.getMonth() + 1).padStart(2, '0')}-{String(h.date.getDate()).padStart(2, '0')}
+                                            </span>
+                                        </div>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">{h.description}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-border bg-muted/20 shadow-sm p-5">
+                        <div className="flex gap-3.5 items-start text-xs text-muted-foreground leading-relaxed">
+                            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                            <div>
+                                <span className="font-bold text-foreground block mb-1">ملاحظات حول تعديلات العطل الرسمية (المرسوم 188 لعام 2025):</span>
+                                أعاد المرسوم تنظيم التقويم الوطني بإدراج أعياد جديدة (عيد الثورة السورية 18 آذار، وعيد التحرير الوطني 8 كانون الأول تخليداً لسقوط الاستبداد في 8 ديسمبر 2024). وفي المقابل، أُلغيت رسمياً عطل النظام البائد السابقة (انقلاب 8 آذار، ذكرى حرب تشرين 6 تشرين الأول، عيد الشهداء 6 أيار، وعطلة عيد المعلم كعطلة عامة للدولة) لتأسيس روزنامة وطنية جامعة بعيدة عن رموز عهد الاستبداد.
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+                )}
+
                 {mounted && (
                 <div className="container mx-auto px-4 py-8 max-w-7xl">
                     

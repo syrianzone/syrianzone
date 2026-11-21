@@ -8,6 +8,7 @@ export type Direction = 'north' | 'west' | 'east' | 'south' | 'sea';
 
 export type Crossing = {
     n: number;
+    slug: string;
     name: string;
     intl: string;
     category: 'crossing' | 'port';

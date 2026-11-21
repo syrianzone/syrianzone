@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { Clock, Globe2, MapPin, Share2, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/Lib/utils';
@@ -114,6 +115,12 @@ export function CrossingDetail({
                     مشاركة
                 </Button>
             </div>
+
+            <Button variant="ghost" size="sm" asChild className="mt-2 w-full text-xs text-muted-foreground hover:text-primary">
+                <Link href={`/crossings/${crossing.slug}`}>
+                    صفحة المنفذ والتفاصيل الكاملة
+                </Link>
+            </Button>
         </div>
     );
 }

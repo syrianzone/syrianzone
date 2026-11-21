@@ -21,7 +21,7 @@ class LlmsTxt
     private const SECTIONS = [
         'بيانات وأدلة' => [
             '/promises', '/govtcvs', '/syofficial', '/phonebook', '/govapps', '/sites',
-            '/party', '/house', '/justice', '/crossings', '/atlas',
+            '/house', '/justice', '/crossings', '/atlas',
         ],
         'خدمات يومية' => ['/transit', '/mishwar', '/roznama', '/muslim/prayer'],
         'رأي ومشاركة' => [
@@ -56,6 +56,9 @@ class LlmsTxt
             '',
             'الموقع باللغة العربية. لكل مسؤول في السير الذاتية صفحة على '.$base.'/govtcvs/{slug}، '
                 .'ولكل وعد في عداد الوعود صفحة على '.$base.'/promises/{number}، '
+                .'ولكل تطبيق حكومي دليل رسمي على '.$base.'/govapps/{id}، '
+                .'ولكل منفذ حدودي صفحة على '.$base.'/crossings/{slug}، '
+                .'ولمواقيت الصلاة لكل محافظة على '.$base.'/muslim/prayer/{city}، '
                 .'ولكل مدينة في ترانزيت صفحة على '.$base.'/transit/city/{id}. '
                 .'القائمة الكاملة بالصفحات في [sitemap.xml]('.$base.'/sitemap.xml).',
         ];

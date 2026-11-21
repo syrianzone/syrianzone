@@ -11,7 +11,7 @@ import {
     Wheat,
 } from 'lucide-react';
 import { projectIcon } from './projectIcons';
-import { NAVBAR_TOP_COUNT, SITE_MODULES } from './siteModules';
+import { NAVBAR_TOP_COUNT, SITE_MODULES, SITE_MODULE_GROUPS, type SiteModuleGroup } from './siteModules';
 
 /**
  * The navigation the browser renders, and the vocabulary that decorates it.
@@ -44,7 +44,11 @@ export interface SiteLink {
     icon?: React.ComponentType<{ className?: string }> | null;
     iconKey?: string | null;
     iconUrl?: string | null;
+    iconUrlDark?: string | null;
     image?: string;
+    imageDark?: string;
+    group?: string | null;
+    groupOrder?: number | null;
     isFlag?: boolean;
     external?: boolean;
     isInternal?: boolean;
@@ -66,7 +70,11 @@ export interface SiteNavigationItemData {
     target?: string;
     iconKey: string | null;
     iconUrl?: string | null;
+    iconUrlDark?: string | null;
     image: string | null;
+    imageDark?: string | null;
+    group?: string | null;
+    groupOrder?: number | null;
     isFlag: boolean;
     external: boolean;
     isInternal: boolean;
@@ -82,6 +90,7 @@ export interface SiteNavigationConfig {
     navbarTopCount: number;
     useSeparateNavbarOrder: boolean;
     navbarOrder: string[];
+    groups?: SiteModuleGroup[];
     items: SiteNavigationItemData[];
     version: number;
 }
@@ -188,6 +197,9 @@ interface SiteLinkFields {
     target: string;
     iconKey: string | null;
     iconUrl: string | null;
+    iconUrlDark?: string | null;
+    group?: string | null;
+    groupOrder?: number | null;
     isFlag?: boolean;
     external?: boolean;
     isInternal?: boolean;
@@ -202,6 +214,7 @@ interface SiteLinkFields {
 /** The web schema (`SiteLink`) for one catalog entry, from either source. */
 function toSiteLink(fields: SiteLinkFields): SiteLink {
     const imageUrl = fields.iconUrl ?? undefined;
+    const imageDarkUrl = fields.iconUrlDark ?? undefined;
     const enabled = fields.enabled !== false;
     const title = fields.title || fields.href;
 
@@ -216,7 +229,11 @@ function toSiteLink(fields: SiteLinkFields): SiteLink {
         icon: iconFor(fields.iconKey),
         iconKey: fields.iconKey,
         iconUrl: imageUrl ?? null,
+        iconUrlDark: imageDarkUrl ?? null,
         image: imageUrl,
+        imageDark: imageDarkUrl,
+        group: fields.group ?? null,
+        groupOrder: typeof fields.groupOrder === 'number' ? fields.groupOrder : null,
         isFlag: Boolean(fields.isFlag),
         external: Boolean(fields.external),
         isInternal: Boolean(fields.isInternal),
@@ -239,6 +256,9 @@ function hydrateSiteLink(raw: SiteNavigationItemData): SiteLink {
         target: raw.target || raw.href,
         iconKey: raw.iconKey,
         iconUrl: raw.iconUrl || raw.image || null,
+        iconUrlDark: raw.iconUrlDark || raw.imageDark || null,
+        group: raw.group ?? null,
+        groupOrder: typeof raw.groupOrder === 'number' ? raw.groupOrder : null,
         isFlag: raw.isFlag,
         external: raw.external,
         isInternal: raw.isInternal,
@@ -267,17 +287,73 @@ export const SITE_LINKS: SiteLink[] = SITE_MODULES.map((module) =>
         target: module.target,
         iconKey: module.iconKey,
         iconUrl: module.iconUrl,
+        iconUrlDark: module.iconUrlDark,
+        group: module.group,
+        groupOrder: module.groupOrder,
         isInternal: module.isInternal,
         external: module.type === 'external',
         subCategories: module.subCategories,
     }),
 );
 
+export interface GroupedSiteLinks {
+    id: string;
+    title: string;
+    links: SiteLink[];
+}
+
+/**
+ * Group a list of links by the canonical `groups` order, sorting items within
+ * each group by `groupOrder` (falling back to their input order). Any link
+ * without a matching group goes into an "أخرى" bucket only if needed.
+ */
+export function groupSiteLinks(
+    links: SiteLink[],
+    groups: readonly SiteModuleGroup[] = SITE_MODULE_GROUPS,
+): GroupedSiteLinks[] {
+    const byGroup = new Map<string, SiteLink[]>();
+    const ungrouped: SiteLink[] = [];
+    const validGroupIds = new Set(groups.map((g) => g.id));
+
+    for (const link of links) {
+        const gid = link.group ?? (link.isInternal === false ? 'external' : null);
+        if (gid && validGroupIds.has(gid)) {
+            const list = byGroup.get(gid) ?? [];
+            list.push(link);
+            byGroup.set(gid, list);
+        } else {
+            ungrouped.push(link);
+        }
+    }
+
+    const sortWithin = (items: SiteLink[]) =>
+        [...items].sort((a, b) => {
+            const ao = typeof a.groupOrder === 'number' ? a.groupOrder : Number.MAX_SAFE_INTEGER;
+            const bo = typeof b.groupOrder === 'number' ? b.groupOrder : Number.MAX_SAFE_INTEGER;
+            return ao - bo;
+        });
+
+    const result: GroupedSiteLinks[] = [];
+    for (const group of groups) {
+        const list = byGroup.get(group.id);
+        if (list && list.length > 0) {
+            result.push({ id: group.id, title: group.title, links: sortWithin(list) });
+        }
+    }
+    if (ungrouped.length > 0) {
+        result.push({ id: 'other', title: 'أدوات أخرى', links: ungrouped });
+    }
+    return result;
+}
+
 function resolveSiteNavigation(config?: SiteNavigationConfig | null) {
+    const groups = Array.isArray(config?.groups) && config.groups.length > 0 ? config.groups : SITE_MODULE_GROUPS;
+
     if (!config || !Array.isArray(config.items) || config.items.length === 0) {
         const navbarTopCount = NAVBAR_TOP_COUNT;
         return {
             navbarTopCount,
+            groups,
             homeLinks: SITE_LINKS,
             navbarLinks: SITE_LINKS,
             navbarTopLinks: SITE_LINKS.slice(0, navbarTopCount),
@@ -320,6 +396,7 @@ function resolveSiteNavigation(config?: SiteNavigationConfig | null) {
 
     return {
         navbarTopCount,
+        groups,
         homeLinks,
         navbarLinks,
         navbarTopLinks: navbarLinks.slice(0, navbarTopCount),

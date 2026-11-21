@@ -125,6 +125,28 @@ class SiteSetting extends Model
             $iconUrl = (string) $base['image'];
         }
 
+        $iconUrlDark = null;
+        if (array_key_exists('iconUrlDark', $raw)) {
+            $iconUrlDark = ! empty($raw['iconUrlDark']) ? trim((string) $raw['iconUrlDark']) : null;
+        } elseif (array_key_exists('imageDark', $raw)) {
+            $iconUrlDark = ! empty($raw['imageDark']) ? trim((string) $raw['imageDark']) : null;
+        } elseif (! empty($base['iconUrlDark'])) {
+            $iconUrlDark = (string) $base['iconUrlDark'];
+        } elseif (! empty($base['imageDark'])) {
+            $iconUrlDark = (string) $base['imageDark'];
+        }
+
+        $group = null;
+        if (array_key_exists('group', $raw) && is_string($raw['group']) && trim($raw['group']) !== '') {
+            $group = trim($raw['group']);
+        } elseif (! empty($base['group']) && is_string($base['group'])) {
+            $group = trim($base['group']);
+        }
+
+        $groupOrder = array_key_exists('groupOrder', $raw) && $raw['groupOrder'] !== null
+            ? (int) $raw['groupOrder']
+            : (isset($base['groupOrder']) ? (int) $base['groupOrder'] : null);
+
         $enabled = array_key_exists('enabled', $raw)
             ? (bool) $raw['enabled']
             : (bool) ($base['enabled'] ?? true);
@@ -209,7 +231,11 @@ class SiteSetting extends Model
             'target' => $target,
             'iconKey' => $iconKey,
             'iconUrl' => $iconUrl,
+            'iconUrlDark' => $iconUrlDark,
             'image' => $iconUrl,
+            'imageDark' => $iconUrlDark,
+            'group' => $group,
+            'groupOrder' => $groupOrder,
             'isFlag' => (bool) ($raw['isFlag'] ?? $base['isFlag'] ?? false),
             'external' => $external,
             'isInternal' => (bool) ($raw['isInternal'] ?? $base['isInternal'] ?? ! $external),
@@ -224,7 +250,29 @@ class SiteSetting extends Model
     }
 
     /**
-     * @return array{navbarTopCount: int, useSeparateNavbarOrder: bool, navbarOrder: array<int, string>, items: array<int, array<string, mixed>>, version: int}
+     * @return array<int, array{id: string, title: string}>
+     */
+    public static function navigationGroups(): array
+    {
+        $raw = Facts::siteModules()['groups'] ?? [];
+        $groups = [];
+        foreach ($raw as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+            $id = trim((string) ($entry['id'] ?? ''));
+            $title = trim((string) ($entry['title'] ?? ''));
+            if ($id === '' || $title === '') {
+                continue;
+            }
+            $groups[] = ['id' => $id, 'title' => $title];
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @return array{navbarTopCount: int, useSeparateNavbarOrder: bool, navbarOrder: array<int, string>, groups: array<int, array{id: string, title: string}>, items: array<int, array<string, mixed>>, version: int}
      */
     public static function navigationDefaults(): array
     {
@@ -234,6 +282,7 @@ class SiteSetting extends Model
             'navbarTopCount' => Facts::siteModules()['navbar']['topCount'],
             'useSeparateNavbarOrder' => false,
             'navbarOrder' => array_values(array_map(fn (array $item) => (string) $item['id'], $items)),
+            'groups' => static::navigationGroups(),
             'items' => $items,
             'version' => 1,
         ];
@@ -328,6 +377,7 @@ class SiteSetting extends Model
                     'navbarTopCount' => max(1, min(10, (int) ($stored['navbarTopCount'] ?? $defaults['navbarTopCount']))),
                     'useSeparateNavbarOrder' => (bool) ($stored['useSeparateNavbarOrder'] ?? false),
                     'navbarOrder' => $storedNavbarOrder,
+                    'groups' => $defaults['groups'],
                     'items' => $mergedItems,
                     'version' => (int) ($stored['version'] ?? 1),
                 ];

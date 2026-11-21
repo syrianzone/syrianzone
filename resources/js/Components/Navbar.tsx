@@ -32,12 +32,12 @@ import { Separator } from '@/Components/ui/separator';
 import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
 import { DesktopSearchTrigger, MobileMenuSearchSection } from './GlobalSearch';
-import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
+import { groupSiteLinks, useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { isActive, pathnameOf, routeFamily, routeSegment } from '@/Lib/routes';
-import { siteModule } from '@/Lib/siteModules';
+import { siteModule, type SiteModuleGroup } from '@/Lib/siteModules';
 
 /** Columns for the desktop mega menu, matching the homepage's tile grid. */
-const MEGA_GRID = 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-9';
+const MEGA_GRID = 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-10';
 
 /**
  * The page links the navbar shows twice — in the "more" panel and in the mobile
@@ -70,14 +70,17 @@ const NavTile = React.forwardRef<
     text: string;
     icon?: React.ComponentType<{ className?: string }>;
     image?: string;
+    imageDark?: string;
     isFlag?: boolean;
+    compact?: boolean;
     current?: boolean;
     external?: boolean;
     onNavigate?: () => void;
   }
->(function NavTile({ href, text, icon: Icon, image, isFlag, current, external, onNavigate, ...rest }, ref) {
+>(function NavTile({ href, text, icon: Icon, image, imageDark, isFlag, compact, current, external, onNavigate, ...rest }, ref) {
+  const iconSize = compact ? 'h-9 w-9' : 'h-12 w-12';
   const className =
-    'group flex h-full select-none flex-col items-center gap-2 rounded-lg px-1 py-2 text-center no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring';
+    'group flex h-full select-none flex-col items-center gap-1.5 rounded-lg px-1 py-2 text-center no-underline outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring';
   const body = (
     <>
       {isFlag ? (
@@ -86,20 +89,38 @@ const NavTile = React.forwardRef<
           alt=""
           loading="lazy"
           decoding="async"
-          className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
+          className={cn(iconSize, 'shrink-0 object-contain transition-transform group-hover:scale-110')}
         />
+      ) : image && imageDark ? (
+        <>
+          <img
+            src={image}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className={cn(iconSize, 'shrink-0 object-contain transition-transform group-hover:scale-110 dark:hidden')}
+          />
+          <img
+            src={imageDark}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className={cn(iconSize, 'hidden shrink-0 object-contain transition-transform group-hover:scale-110 dark:block')}
+          />
+        </>
       ) : image ? (
         <img
           src={image}
           alt=""
           loading="lazy"
           decoding="async"
-          className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
+          className={cn(iconSize, 'shrink-0 object-contain transition-transform group-hover:scale-110')}
         />
       ) : Icon ? (
         <Icon
           className={cn(
-            'h-12 w-12 shrink-0 transition-all group-hover:scale-110',
+            iconSize,
+            'shrink-0 transition-all group-hover:scale-110',
             current ? 'text-primary' : 'text-foreground group-hover:text-primary',
           )}
         />
@@ -144,17 +165,31 @@ const NavTile = React.forwardRef<
 });
 
 /** Columns of borderless tiles; the caller sets the breakpoint columns. */
-function TileGrid({ links, pathname, onNavigate, className }: { links: SiteLink[]; pathname: string; onNavigate?: () => void; className?: string }) {
+function TileGrid({
+  links,
+  pathname,
+  onNavigate,
+  className,
+  compact,
+}: {
+  links: SiteLink[];
+  pathname: string;
+  onNavigate?: () => void;
+  className?: string;
+  compact?: boolean;
+}) {
   return (
     <ul className={cn('grid grid-cols-3 gap-1', className)}>
-      {links.map(({ id, href, text, icon, image, isFlag, external }) => (
+      {links.map(({ id, href, text, icon, image, imageDark, isFlag, external }) => (
         <li key={id || href}>
           <NavTile
             href={href}
             text={text}
             icon={icon ?? undefined}
             image={image}
+            imageDark={imageDark}
             isFlag={isFlag}
+            compact={compact}
             external={external}
             current={isActive(href, pathname)}
             onNavigate={onNavigate}
@@ -167,34 +202,74 @@ function TileGrid({ links, pathname, onNavigate, className }: { links: SiteLink[
 
 /**
  * The "more" panel, shared by the desktop menu and the transit variant so the
- * two cannot drift apart. A wide mega menu of the site's tools, in the same
- * order as the homepage grid — one flat grid, no sections.
+ * two cannot drift apart. Grouped into the same canonical categories as the
+ * homepage so tools are quick to scan without scrolling.
  */
 function MorePanel({
   links,
+  groups,
   pathname,
   onNavigate,
   header,
   showAboutLinks,
 }: {
   links: SiteLink[];
+  groups: readonly SiteModuleGroup[];
   pathname: string;
   onNavigate?: () => void;
   header?: React.ReactNode;
   showAboutLinks: boolean;
 }) {
+  const grouped = groupSiteLinks(links, groups);
+  const wideGroups = grouped.filter((g) => g.links.length >= 5);
+  const compactGroups = grouped.filter((g) => g.links.length < 5);
+
   return (
     <div
       id="sz-more-panel"
       role="region"
       aria-label="المزيد من أقسام الموقع"
-      className="w-[min(1152px,92vw)] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow"
+      className="w-[min(1152px,92vw)] max-h-[calc(100vh-5.5rem)] overflow-y-auto rounded-xl border bg-popover text-popover-foreground shadow-lg"
     >
       {header}
-      <div className="p-4">
-        <TileGrid links={links} pathname={pathname} onNavigate={onNavigate} className={MEGA_GRID} />
+      <div className="p-4 space-y-4">
+        {wideGroups.map((group, idx) => (
+          <div key={group.id} className={idx > 0 ? 'border-t border-border/60 pt-3' : ''}>
+            <p className="mb-2 px-1 text-xs font-bold text-muted-foreground">{group.title}</p>
+            <TileGrid
+              links={group.links}
+              pathname={pathname}
+              onNavigate={onNavigate}
+              compact
+              className={MEGA_GRID}
+            />
+          </div>
+        ))}
 
-        <Separator className="my-4" />
+        {compactGroups.length > 0 && (
+          <div
+            className={cn(
+              'grid grid-cols-1 gap-4 sm:grid-cols-2',
+              compactGroups.length >= 3 && 'lg:grid-cols-3',
+              wideGroups.length > 0 && 'border-t border-border/60 pt-3',
+            )}
+          >
+            {compactGroups.map((group) => (
+              <div key={group.id} className="rounded-lg bg-muted/35 p-2.5">
+                <p className="mb-2 px-1 text-xs font-bold text-muted-foreground">{group.title}</p>
+                <TileGrid
+                  links={group.links}
+                  pathname={pathname}
+                  onNavigate={onNavigate}
+                  compact
+                  className={group.links.length >= 4 ? 'grid-cols-4 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-3'}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Separator className="my-3" />
         <div className="flex flex-wrap justify-center gap-4 py-1 text-xs text-muted-foreground">
           {FOOTER_LINKS.filter((link) => showAboutLinks || !link.about).map(
             (link, index) => (
@@ -219,6 +294,7 @@ function NavTopLink({
   label,
   icon: Icon,
   image,
+  imageDark,
   external,
   active,
 }: {
@@ -226,6 +302,7 @@ function NavTopLink({
   label: string;
   icon?: React.ComponentType<{ className?: string }>;
   image?: string;
+  imageDark?: string;
   external?: boolean;
   active?: boolean;
 }) {
@@ -236,7 +313,12 @@ function NavTopLink({
   );
   const content = (
     <>
-      {image ? (
+      {image && imageDark ? (
+        <>
+          <img src={image} alt="" className="h-4 w-4 me-2 object-contain dark:hidden" />
+          <img src={imageDark} alt="" className="hidden h-4 w-4 me-2 object-contain dark:block" />
+        </>
+      ) : image ? (
         <img src={image} alt="" className="h-4 w-4 me-2 object-contain" />
       ) : Icon ? (
         <Icon className="h-4 w-4 me-2" />
@@ -302,7 +384,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const isDark = useColorScheme() === 'dark';
   const { user } = useAuth();
-  const { navbarLinks, navbarTopLinks, navbarMoreLinks } = useSiteNavigation();
+  const { navbarLinks, navbarTopLinks, navbarMoreLinks, groups } = useSiteNavigation();
 
   // Where the mobile menu reveals from: the trigger's centre, in viewport
   // coordinates (the sheet is fixed to the viewport, so these line up).
@@ -519,12 +601,13 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
             </>
           ) : (
             <>
-              {navbarTopLinks.map(({ id, href, text, icon: Icon, image, external }) => (
+              {navbarTopLinks.map(({ id, href, text, icon: Icon, image, imageDark, external }) => (
                 <NavTopLink
                   key={id || href}
                   href={href}
                   icon={Icon ?? undefined}
                   image={image}
+                  imageDark={imageDark}
                   external={external}
                   label={text}
                   active={isActive(href, pathname)}
@@ -548,6 +631,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
             {isTransitPage ? (
               <MorePanel
                 links={navbarLinks}
+                groups={groups}
                 pathname={pathname}
                 showAboutLinks={false}
                 onNavigate={() => setMoreOpen(false)}
@@ -580,7 +664,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                 }
               />
             ) : (
-              <MorePanel links={navbarMoreLinks} pathname={pathname} showAboutLinks onNavigate={() => setMoreOpen(false)} />
+              <MorePanel links={navbarMoreLinks} groups={groups} pathname={pathname} showAboutLinks onNavigate={() => setMoreOpen(false)} />
             )}
           </div>
         </div>

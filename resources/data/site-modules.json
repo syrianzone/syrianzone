@@ -2,6 +2,28 @@
  "navbar": {
   "topCount": 5
  },
+ "groups": [
+  {
+   "id": "politics",
+   "title": "السياسة والحكومة"
+  },
+  {
+   "id": "utility",
+   "title": "أدوات وخدمات"
+  },
+  {
+   "id": "maps",
+   "title": "الخرائط والنقل"
+  },
+  {
+   "id": "community",
+   "title": "المجتمع"
+  },
+  {
+   "id": "external",
+   "title": "روابط خارجية وشقيقة"
+  }
+ ],
  "modules": [
   {
    "id": "roznama",
@@ -14,7 +36,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "التقويم السوري والهجري والمناسبات ومواقيت الصلاة"
+   "description": "التقويم السوري والهجري والمناسبات ومواقيت الصلاة",
+   "group": "utility",
+   "groupOrder": 8
   },
   {
    "id": "muslim",
@@ -59,7 +83,9 @@
     }
    ],
    "description": "مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن",
-   "navbarSticky": false
+   "navbarSticky": false,
+   "group": "utility",
+   "groupOrder": 1
   },
   {
    "id": "games",
@@ -124,7 +150,9 @@
     }
    ],
    "description": "ألعاب ورق وذكاء جماعية وفردية: تركس، طرنيب، مين، سوليتير، 2048",
-   "navbarSticky": false
+   "navbarSticky": false,
+   "group": "utility",
+   "groupOrder": 0
   },
   {
    "id": "transit",
@@ -153,7 +181,9 @@
     "/transit/studio",
     "/transit/admin",
     "/transit/city"
-   ]
+   ],
+   "group": "maps",
+   "groupOrder": 1
   },
   {
    "id": "mishwar",
@@ -166,7 +196,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "دليل الأماكن والمطاعم والمقاهي والفنادق في سوريا"
+   "description": "دليل الأماكن والمطاعم والمقاهي والفنادق في سوريا",
+   "group": "maps",
+   "groupOrder": 2
   },
   {
    "id": "board",
@@ -179,7 +211,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "لوحة أدوات ومعلومات سورية مخصصة قابلة للترتيب"
+   "description": "لوحة أدوات ومعلومات سورية مخصصة قابلة للترتيب",
+   "group": "utility",
+   "groupOrder": 6
   },
   {
    "id": "compass",
@@ -192,7 +226,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "اختبار البوصلة السياسية السورية وتحديد توجهاتك"
+   "description": "اختبار البوصلة السياسية السورية وتحديد توجهاتك",
+   "group": "politics",
+   "groupOrder": 0
   },
   {
    "id": "tierlist",
@@ -216,7 +252,9 @@
      "iconUrl": null
     }
    ],
-   "description": "تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب"
+   "description": "تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب",
+   "group": "politics",
+   "groupOrder": 2
   },
   {
    "id": "promises",
@@ -229,7 +267,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "وعود المسؤولين العلنية ومواعيدها وما تحقق منها"
+   "description": "وعود المسؤولين العلنية ومواعيدها وما تحقق منها",
+   "group": "politics",
+   "groupOrder": 3
   },
   {
    "id": "govtcvs",
@@ -253,7 +293,9 @@
      "iconUrl": null
     }
    ],
-   "description": "السير الذاتية للوزراء والمحافظين والمسؤولين الحكوميين وسجل التعيينات والتنقلات منذ 8 كانون الأول 2024"
+   "description": "السير الذاتية للوزراء والمحافظين والمسؤولين الحكوميين وسجل التعيينات والتنقلات منذ 8 كانون الأول 2024",
+   "group": "politics",
+   "groupOrder": 4
   },
   {
    "id": "priorities",
@@ -266,7 +308,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا"
+   "description": "استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا",
+   "group": "politics",
+   "groupOrder": 1
   },
   {
    "id": "crossings",
@@ -279,7 +323,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "حالة المعابر البرية والمطارات والمرافئ السورية لحظة بلحظة"
+   "description": "حالة المعابر البرية والمطارات والمرافئ السورية لحظة بلحظة",
+   "group": "maps",
+   "groupOrder": 3
   },
   {
    "id": "recipes",
@@ -292,7 +338,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "موسوعة وصفات المطبخ السوري التقليدي الأصيل"
+   "description": "موسوعة وصفات المطبخ السوري التقليدي الأصيل",
+   "group": "utility",
+   "groupOrder": 2
   },
   {
    "id": "answers",
@@ -305,7 +353,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "منصة الأسئلة والأجوبة المجتمعية حول سوريا"
+   "description": "منصة الأسئلة والأجوبة المجتمعية حول سوريا",
+   "group": "utility",
+   "groupOrder": 3
   },
   {
    "id": "syofficial",
@@ -318,7 +368,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "دليل الحسابات والصفحات الرسمية للوزارات والمؤسسات السورية"
+   "description": "دليل الحسابات والصفحات الرسمية للوزارات والمؤسسات السورية",
+   "group": "politics",
+   "groupOrder": 6
   },
   {
    "id": "phonebook",
@@ -331,7 +383,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "أرقام الطوارئ والاستعلامات والخدمات العامة في المحافظات"
+   "description": "أرقام الطوارئ والاستعلامات والخدمات العامة في المحافظات",
+   "group": "politics",
+   "groupOrder": 5
   },
   {
    "id": "sites",
@@ -344,7 +398,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "دليل المواقع والمنصات والمبادرات الرقمية السورية"
+   "description": "دليل المواقع والمنصات والمبادرات الرقمية السورية",
+   "group": "utility",
+   "groupOrder": 4
   },
   {
    "id": "contributors",
@@ -357,7 +413,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "لوحة المساهمين والمطورين في المشاريع السورية مفتوحة المصدر"
+   "description": "لوحة المساهمين والمطورين في المشاريع السورية مفتوحة المصدر",
+   "group": "community",
+   "groupOrder": 1
   },
   {
    "id": "govapps",
@@ -370,20 +428,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "دليل التطبيقات الحكومية والخدمية الرسمية في سوريا"
-  },
-  {
-   "id": "party",
-   "title": "دليل الأحزاب",
-   "subtitle": "دليل الأحزاب والتيارات والكيانات السياسية السورية",
-   "href": "/party",
-   "type": "web",
-   "target": "/party",
-   "iconKey": "party",
-   "iconUrl": null,
-   "isInternal": true,
-   "subCategories": [],
-   "description": "دليل الأحزاب والتيارات والكيانات السياسية السورية"
+   "description": "دليل التطبيقات الحكومية والخدمية الرسمية في سوريا",
+   "group": "politics",
+   "groupOrder": 7
   },
   {
    "id": "house",
@@ -396,7 +443,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء"
+   "description": "مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء",
+   "group": "politics",
+   "groupOrder": 8
   },
   {
    "id": "justice",
@@ -409,7 +458,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "العدالة الانتقالية والتوثيق والمحاسبة"
+   "description": "العدالة الانتقالية والتوثيق والمحاسبة",
+   "group": "politics",
+   "groupOrder": 9
   },
   {
    "id": "syid",
@@ -422,7 +473,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات"
+   "description": "دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات",
+   "group": "utility",
+   "groupOrder": 5
   },
   {
    "id": "atlas",
@@ -435,7 +488,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "أطلس السكان والخرائط الديمغرافية والتقسيمات الإدارية"
+   "description": "أطلس السكان والخرائط الديمغرافية والتقسيمات الإدارية",
+   "group": "maps",
+   "groupOrder": 0
   },
   {
    "id": "codex",
@@ -448,7 +503,9 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "مجتمع المبرمجين والمصممين السوريين على ديسكورد"
+   "description": "مجتمع المبرمجين والمصممين السوريين على ديسكورد",
+   "group": "community",
+   "groupOrder": 0
   },
   {
    "id": "flag_replacer",
@@ -461,7 +518,9 @@
    "iconUrl": "/flag-replacer/1f1f8-1f1fe.svg",
    "isInternal": true,
    "subCategories": [],
-   "description": "إضافة متصفح لاستبدال العلم القديم بالعلم السوري"
+   "description": "إضافة متصفح لاستبدال العلم القديم بالعلم السوري",
+   "group": "utility",
+   "groupOrder": 7
   },
   {
    "id": "joory",
@@ -474,7 +533,9 @@
    "iconUrl": "https://joory.chat/favicon.svg",
    "isInternal": false,
    "subCategories": [],
-   "description": "مساعد ذكي باللغة العربية"
+   "description": "مساعد ذكي باللغة العربية",
+   "group": "external",
+   "groupOrder": 0
   },
   {
    "id": "jard",
@@ -487,7 +548,10 @@
    "iconUrl": "https://jard.chat/images/logo-light.svg",
    "isInternal": false,
    "subCategories": [],
-   "description": "منصة جرد"
+   "description": "منصة جرد",
+   "group": "external",
+   "groupOrder": 1,
+   "iconUrlDark": "https://jard.chat/images/logo-dark.svg"
   },
   {
    "id": "news",
@@ -500,7 +564,9 @@
    "iconUrl": null,
    "isInternal": false,
    "subCategories": [],
-   "description": "متابعة آخر أخبار سوريا من المصادر الموثوقة"
+   "description": "متابعة آخر أخبار سوريا من المصادر الموثوقة",
+   "group": "external",
+   "groupOrder": 2
   }
  ],
  "adminSections": [

@@ -464,7 +464,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             عرض {sortedData.length} سجل
                         </p>
                     </div>
-                    {loading && <div className="text-sm text-primary font-medium animate-pulse">جاري التحميل...</div>}
+                    {loading && <div className="text-sm text-muted-foreground font-medium">جاري التحميل...</div>}
                 </div>
 
                 {loadError && sortedData.length === 0 && !loading && (

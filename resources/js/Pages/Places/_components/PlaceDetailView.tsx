@@ -56,14 +56,6 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        {!place && !error && (
-          <div className="animate-pulse space-y-3">
-            <div className="h-52 rounded-md bg-accent/50" />
-            <div className="h-5 w-2/3 rounded bg-accent/50" />
-            <div className="h-4 w-full rounded bg-accent/50" />
-            <div className="h-4 w-1/2 rounded bg-accent/50" />
-          </div>
-        )}
         {place && (
           <>
             <PhotoGallery photos={place.photos} name={place.name} />

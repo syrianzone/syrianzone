@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
-import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import {
     ArrowRight,
@@ -169,18 +168,6 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                             </div>
 
                             <div className="flex-1 min-w-0 space-y-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="secondary" className="gap-1.5 font-medium">
-                                        <ShieldCheck className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-                                        <span>تطبيق حكومي رسمي موثّق</span>
-                                    </Badge>
-                                    {verifiedLabel && (
-                                        <span className="text-xs text-muted-foreground">
-                                            آخر تحقق من الروابط: {verifiedLabel}
-                                        </span>
-                                    )}
-                                </div>
-
                                 <div>
                                     <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
                                         {app.name}

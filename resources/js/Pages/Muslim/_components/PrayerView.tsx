@@ -110,9 +110,7 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
           )}
 
           {loading ? (
-            <div className="space-y-3 py-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="h-10 animate-pulse rounded-lg bg-muted" />)}
-            </div>
+            <div className="min-h-[348px]" aria-hidden="true" />
           ) : error ? (
             <div className="flex flex-col items-center gap-2 py-8 text-sm text-red-500">
               <AlertCircle className="h-8 w-8" /><p>{error}</p>

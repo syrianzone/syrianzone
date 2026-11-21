@@ -356,7 +356,7 @@ export default function Index() {
                                                     </div>
                                                 </>
                                             ) : (
-                                                <div className="text-xs text-muted-foreground animate-pulse">جاري تحميل الطقس...</div>
+                                                <div className="h-9" aria-hidden="true" />
                                             )}
                                         </div>
                                         <Badge variant="outline" className="text-[10px] h-5 bg-card border-border/60">
@@ -488,11 +488,7 @@ export default function Index() {
                                         )}
 
                                         {loading ? (
-                                            <div className="space-y-3 py-6">
-                                                {[1, 2, 3, 4, 5, 6].map(i => (
-                                                    <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
-                                                ))}
-                                            </div>
+                                            <div className="min-h-[348px]" aria-hidden="true" />
                                         ) : error ? (
                                             <div className="text-center py-8 text-sm text-red-500 flex flex-col items-center gap-2">
                                                 <AlertCircle className="h-8 w-8 text-red-500" />
@@ -678,23 +674,7 @@ export default function Index() {
                                     </div>
 
                                     {loadingEvents ? (
-                                        <div className="space-y-3 py-1">
-                                            {[1, 2, 3, 4, 5].map(i => (
-                                                <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-muted/5 animate-pulse gap-4">
-                                                    <div className="space-y-2 min-w-0 flex-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="h-4 bg-muted rounded w-2/5" />
-                                                            <div className="h-3.5 bg-muted rounded w-12" />
-                                                        </div>
-                                                        <div className="h-3 bg-muted rounded w-3/5" />
-                                                    </div>
-                                                    <div className="flex items-center gap-3 shrink-0">
-                                                        <div className="h-5 bg-muted rounded w-14" />
-                                                        <div className="h-7 bg-muted rounded w-7" />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <div className="min-h-[340px]" aria-hidden="true" />
                                     ) : eventsError ? (
                                         <div className="text-center py-8 text-sm text-red-500 flex flex-col items-center gap-2">
                                             <AlertCircle className="h-8 w-8 text-red-500" />

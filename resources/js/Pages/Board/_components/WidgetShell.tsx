@@ -31,12 +31,6 @@ export function WidgetShell(props: {
 
   return (
     <div dir="rtl" aria-busy={props.loading || props.refreshing} className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
-      {/* background refetch is a hairline, not a spinner: a full-tile spinner
-          would blank the widget on every interval tick */}
-      {props.refreshing && (
-        <div className="absolute inset-x-0 top-0 h-0.5 animate-pulse bg-primary/60" aria-hidden="true" />
-      )}
-
       {(props.loading || props.refreshing) && (
         <span role="status" className="sr-only">
           {props.loading ? 'جارٍ التحميل' : 'جارٍ التحديث'}
@@ -50,8 +44,6 @@ export function WidgetShell(props: {
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        {props.loading && <WidgetSkeleton />}
-
         {!props.loading && props.error && (
           <div role="alert" className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
             <p className="text-sm text-destructive">{props.error}</p>
@@ -71,16 +63,6 @@ export function WidgetShell(props: {
 
         {showBody && (scroll ? <ScrollArea className="h-full">{props.children}</ScrollArea> : props.children)}
       </div>
-    </div>
-  );
-}
-
-function WidgetSkeleton() {
-  return (
-    <div className="space-y-2 p-3" aria-hidden="true">
-      <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
-      <div className="h-3 w-full animate-pulse rounded bg-muted" />
-      <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
     </div>
   );
 }

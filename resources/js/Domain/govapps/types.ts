@@ -17,10 +17,25 @@ export interface GovAppPublisher {
     category_id?: string | null;
 }
 
+export type GovAppAndroidSource =
+    | 'google_play'
+    | 'direct_apk'
+    | 'telegram'
+    | 'huawei_appgallery'
+    | 'website';
+
+export type GovAppAppleSource =
+    | 'app_store'
+    | 'testflight'
+    | 'telegram'
+    | 'website';
+
 export interface GovAppStoreIdentifiers {
     android_package: string | null;
+    android_source: GovAppAndroidSource | null;
     is_direct_apk: boolean;
     apple_id: string | null;
+    apple_source: GovAppAppleSource | null;
     official_host: string | null;
 }
 

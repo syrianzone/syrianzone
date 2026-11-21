@@ -5,6 +5,7 @@ use App\Models\GovApp;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
 use App\Models\User;
+use App\Services\GovApps\GovAppPresenter;
 use App\Services\Sitemap\SitemapBuilder;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -41,7 +42,9 @@ it('renders a dedicated gov app guide page with SoftwareApplication JSON-LD and 
         ->where('app.has_rich_guide', true)
         ->where('app.publisher.id', 'min-interior')
         ->where('app.store_identifiers.android_package', 'civilaffairs.moi.gov.sy.mica')
+        ->where('app.store_identifiers.android_source', 'google_play')
         ->where('app.store_identifiers.apple_id', 'id6804969787')
+        ->where('app.store_identifiers.apple_source', 'app_store')
         ->has('app.features', 3)
         ->has('app.faqs', 1)
     );
@@ -104,4 +107,55 @@ it('updates gov app guide fields via update-gov-app MCP tool', function () {
         ->and($payload['app']['has_rich_guide'])->toBeTrue()
         ->and($payload['app']['features'])->toHaveCount(3)
         ->and($payload['app']['faqs'])->toHaveCount(1);
+});
+
+it('classifies android and apple distribution sources accurately', function () {
+    $presenter = app(GovAppPresenter::class);
+
+    expect($presenter->extractStoreIdentifiers([
+        'android' => 'https://play.google.com/store/apps/details?id=sy.mofa.app',
+        'apple' => 'https://apps.apple.com/us/app/mofa-sy/id6755138946',
+    ]))->toMatchArray([
+        'android_source' => 'google_play',
+        'android_package' => 'sy.mofa.app',
+        'is_direct_apk' => false,
+        'apple_source' => 'app_store',
+        'apple_id' => 'id6755138946',
+    ]);
+
+    expect($presenter->extractStoreIdentifiers([
+        'android' => 'https://api-seg.moenergy.gov.sy/syrian-energy-gate.apk',
+    ]))->toMatchArray([
+        'android_source' => 'direct_apk',
+        'android_package' => null,
+        'is_direct_apk' => true,
+        'apple_source' => null,
+    ]);
+
+    expect($presenter->extractStoreIdentifiers([
+        'android' => 'https://t.me/GAdofCA/226',
+    ]))->toMatchArray([
+        'android_source' => 'telegram',
+        'android_package' => null,
+        'is_direct_apk' => false,
+    ]);
+
+    expect($presenter->extractStoreIdentifiers([
+        'android' => 'https://bunat.moad.gov.sy/download/?id=42',
+        'apple' => 'https://testflight.apple.com/join/abc123',
+    ]))->toMatchArray([
+        'android_source' => 'website',
+        'android_package' => null,
+        'is_direct_apk' => false,
+        'apple_source' => 'testflight',
+        'apple_id' => null,
+    ]);
+
+    expect($presenter->extractStoreIdentifiers([
+        'android' => 'https://appgallery.huawei.com/app/C123456',
+    ]))->toMatchArray([
+        'android_source' => 'huawei_appgallery',
+        'android_package' => null,
+        'is_direct_apk' => false,
+    ]);
 });

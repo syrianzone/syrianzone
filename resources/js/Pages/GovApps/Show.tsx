@@ -22,7 +22,12 @@ import {
     Smartphone,
 } from 'lucide-react';
 import { DEFAULT_GOVAPP_ICON } from '@/Domain/govapps/media';
-import type { GovApp, GovAppDetail } from '@/Domain/govapps/types';
+import type {
+    GovApp,
+    GovAppAndroidSource,
+    GovAppAppleSource,
+    GovAppDetail,
+} from '@/Domain/govapps/types';
 import { formatEntityImage } from '@/Lib/entityImage';
 import { useCanAny } from '@/Lib/useCan';
 import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
@@ -46,6 +51,51 @@ function AppleGlyph({ className }: { className?: string }) {
             <path d="M19.665 16.811a10.3 10.3 0 0 1-1.021 1.837q-.807 1.15-1.316 1.592q-.787.723-1.692.744q-.649.001-1.562-.373q-.914-.372-1.683-.371q-.805-.001-1.73.371q-.924.375-1.495.393q-.866.038-1.729-.764q-.55-.48-1.377-1.648q-.885-1.245-1.455-2.891q-.61-1.78-.611-3.447q0-1.91.826-3.292a4.86 4.86 0 0 1 1.73-1.751a4.65 4.65 0 0 1 2.34-.662q.69.001 1.81.422c1.12.421 1.227.422 1.436.422q.237 0 1.593-.498q1.279-.46 2.163-.384q2.4.192 3.6 1.895q-2.145 1.301-2.123 3.637q.02 1.82 1.317 3.023a4.3 4.3 0 0 0 1.315.863q-.159.46-.336.882M15.998 2.38q-.001 1.426-1.039 2.659c-.836.976-1.846 1.541-2.941 1.452a3 3 0 0 1-.021-.36c0-.913.396-1.889 1.103-2.688q.528-.606 1.343-1.009q.813-.397 1.536-.435q.02.192.019.381" />
         </svg>
     );
+}
+
+function TelegramGlyph({ className }: { className?: string }) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345c-.48.33-.913.49-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789c.027-.216.325-.437.893-.663c3.498-1.524 5.83-2.529 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635" />
+        </svg>
+    );
+}
+
+const ANDROID_CTA_LABELS: Record<GovAppAndroidSource, string> = {
+    google_play: 'تحميل من Google Play',
+    direct_apk: 'تحميل ملف APK الرسمي (أندرويد)',
+    telegram: 'تحميل لأندرويد عبر تيليجرام',
+    huawei_appgallery: 'تحميل من AppGallery',
+    website: 'تحميل لأندرويد من الموقع الرسمي',
+};
+
+const ANDROID_SOURCE_LABELS: Record<GovAppAndroidSource, string> = {
+    google_play: 'متجر Google Play',
+    direct_apk: 'ملف APK مباشر من الموقع الرسمي',
+    telegram: 'قناة تيليجرام الرسمية',
+    huawei_appgallery: 'متجر Huawei AppGallery',
+    website: 'صفحة التحميل على الموقع الرسمي',
+};
+
+const APPLE_CTA_LABELS: Record<GovAppAppleSource, string> = {
+    app_store: 'تحميل من App Store',
+    testflight: 'تحميل عبر TestFlight (آيفون)',
+    telegram: 'تحميل لآيفون عبر تيليجرام',
+    website: 'تحميل لآيفون من الموقع الرسمي',
+};
+
+function getAndroidButtonLabel(source: GovAppAndroidSource | null, isDirectApk: boolean): string {
+    if (source) {
+        return ANDROID_CTA_LABELS[source];
+    }
+    return isDirectApk ? ANDROID_CTA_LABELS.direct_apk : 'تحميل لأندرويد';
+}
+
+function getAppleButtonLabel(source: GovAppAppleSource | null): string {
+    if (source) {
+        return APPLE_CTA_LABELS[source];
+    }
+    return 'تحميل لآيفون';
 }
 
 function formatArabicDate(isoDate?: string | null): string | null {
@@ -77,7 +127,16 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
         .filter(Boolean);
 
     const verifiedLabel = formatArabicDate(app.verified_at || app.updated_at);
-    const hasIdentifiers = Boolean(ids.android_package || ids.apple_id || ids.official_host || ids.is_direct_apk);
+    const hasIdentifiers = Boolean(
+        ids.android_package
+        || ids.android_source
+        || ids.apple_id
+        || ids.apple_source
+        || ids.official_host
+        || ids.is_direct_apk,
+    );
+    const androidButtonLabel = getAndroidButtonLabel(ids.android_source, ids.is_direct_apk);
+    const appleButtonLabel = getAppleButtonLabel(ids.apple_source);
 
     return (
         <MainLayout>
@@ -144,8 +203,12 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                     {androidLink && (
                                         <Button asChild size="default" className="gap-2 font-bold rounded-xl shadow-xs">
                                             <a href={androidLink} target="_blank" rel="noopener noreferrer">
-                                                <AndroidGlyph className="w-4 h-4" />
-                                                <span>{ids.is_direct_apk ? 'تحميل APK الرسمي (أندرويد)' : 'تحميل من Google Play'}</span>
+                                                {ids.android_source === 'telegram' ? (
+                                                    <TelegramGlyph className="w-4 h-4" />
+                                                ) : (
+                                                    <AndroidGlyph className="w-4 h-4" />
+                                                )}
+                                                <span>{androidButtonLabel}</span>
                                                 <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
                                             </a>
                                         </Button>
@@ -153,8 +216,12 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                     {appleLink && (
                                         <Button asChild variant={androidLink ? 'secondary' : 'default'} size="default" className="gap-2 font-bold rounded-xl shadow-xs">
                                             <a href={appleLink} target="_blank" rel="noopener noreferrer">
-                                                <AppleGlyph className="w-4 h-4" />
-                                                <span>تحميل من App Store</span>
+                                                {ids.apple_source === 'telegram' ? (
+                                                    <TelegramGlyph className="w-4 h-4" />
+                                                ) : (
+                                                    <AppleGlyph className="w-4 h-4" />
+                                                )}
+                                                <span>{appleButtonLabel}</span>
                                                 <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
                                             </a>
                                         </Button>
@@ -380,6 +447,15 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                             <dt className="text-muted-foreground">التكلفة</dt>
                                             <dd className="font-semibold text-foreground">مجاني (خدمة حكومية)</dd>
                                         </div>
+
+                                        {ids.android_source && (
+                                            <div className="flex items-center justify-between gap-2 py-1.5 border-b border-border/50">
+                                                <dt className="text-muted-foreground">مصدر تحميل أندرويد</dt>
+                                                <dd className="font-semibold text-foreground">
+                                                    {ANDROID_SOURCE_LABELS[ids.android_source]}
+                                                </dd>
+                                            </div>
+                                        )}
 
                                         {ids.android_package && (
                                             <div className="py-1.5 border-b border-border/50 space-y-1">

@@ -81,11 +81,19 @@ class GovAppPresenter
     }
 
     /**
-     * Extract verifiable package / store / domain identifiers from official links
-     * so citizens can confirm they are installing the authentic app.
+     * Extract verifiable package / store / domain identifiers and distribution
+     * channels from official links so citizens can confirm they are installing
+     * the authentic app and download buttons match the real link destination.
      *
      * @param  array<string, mixed>  $links
-     * @return array{android_package: ?string, is_direct_apk: bool, apple_id: ?string, official_host: ?string}
+     * @return array{
+     *     android_package: ?string,
+     *     android_source: ?string,
+     *     is_direct_apk: bool,
+     *     apple_id: ?string,
+     *     apple_source: ?string,
+     *     official_host: ?string
+     * }
      */
     public function extractStoreIdentifiers(array $links): array
     {
@@ -93,18 +101,15 @@ class GovAppPresenter
         $apple = is_string($links['apple'] ?? null) ? trim($links['apple']) : null;
         $official = is_string($links['official'] ?? null) ? trim($links['official']) : null;
 
+        $androidSource = $this->classifyAndroidSource($android);
         $androidPackage = null;
-        $isDirectApk = false;
-        if ($android) {
-            if (preg_match('/[?&]id=([A-Za-z0-9._-]+)/', $android, $m)) {
-                $androidPackage = $m[1];
-            } elseif (str_ends_with(strtolower((string) parse_url($android, PHP_URL_PATH)), '.apk')) {
-                $isDirectApk = true;
-            }
+        if ($android && $androidSource === 'google_play' && preg_match('/[?&]id=([A-Za-z0-9._-]+)/', $android, $m)) {
+            $androidPackage = $m[1];
         }
 
+        $appleSource = $this->classifyAppleSource($apple);
         $appleId = null;
-        if ($apple && preg_match('/\/id(\d+)/', $apple, $m)) {
+        if ($apple && $appleSource === 'app_store' && preg_match('/\/id(\d+)/', $apple, $m)) {
             $appleId = 'id'.$m[1];
         }
 
@@ -118,10 +123,68 @@ class GovAppPresenter
 
         return [
             'android_package' => $androidPackage,
-            'is_direct_apk' => $isDirectApk,
+            'android_source' => $androidSource,
+            'is_direct_apk' => $androidSource === 'direct_apk',
             'apple_id' => $appleId,
+            'apple_source' => $appleSource,
             'official_host' => $officialHost,
         ];
+    }
+
+    private function classifyAndroidSource(?string $url): ?string
+    {
+        if ($url === null || $url === '') {
+            return null;
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $path = strtolower((string) parse_url($url, PHP_URL_PATH));
+
+        if ($host === 'play.google.com') {
+            return 'google_play';
+        }
+
+        if ($this->isTelegramHost($host)) {
+            return 'telegram';
+        }
+
+        if ($host === 'appgallery.huawei.com') {
+            return 'huawei_appgallery';
+        }
+
+        if (str_ends_with($path, '.apk')) {
+            return 'direct_apk';
+        }
+
+        return 'website';
+    }
+
+    private function classifyAppleSource(?string $url): ?string
+    {
+        if ($url === null || $url === '') {
+            return null;
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        if ($host === 'apps.apple.com' || $host === 'itunes.apple.com') {
+            return 'app_store';
+        }
+
+        if ($host === 'testflight.apple.com') {
+            return 'testflight';
+        }
+
+        if ($this->isTelegramHost($host)) {
+            return 'telegram';
+        }
+
+        return 'website';
+    }
+
+    private function isTelegramHost(string $host): bool
+    {
+        return in_array($host, ['t.me', 'telegram.me', 'telegram.dog', 'www.t.me'], true);
     }
 
     /**

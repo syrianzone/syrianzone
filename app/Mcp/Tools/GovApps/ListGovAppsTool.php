@@ -62,7 +62,7 @@ class ListGovAppsTool extends GovAppsTool
                     'description_ar' => $schema->string()->nullable(),
                     'icon' => $schema->string()->nullable(),
                     'images' => $schema->array()->items($schema->string()),
-                    'links' => $schema->array()->items($schema->string()),
+                    'links' => $schema->object($this->linkProperties($schema)),
                     'order_column' => $schema->integer(),
                     'is_active' => $schema->boolean(),
                 ])),

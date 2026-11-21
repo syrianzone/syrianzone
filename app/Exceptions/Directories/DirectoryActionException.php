@@ -29,6 +29,8 @@ class DirectoryActionException extends DomainActionException
 
     public const SOCIALS_NOT_KEYED = 'socials_not_keyed';
 
+    public const LINKS_NOT_KEYED = 'links_not_keyed';
+
     /**
      * @param  class-string  $label  Human noun for the message, e.g. 'Entity'.
      */
@@ -81,11 +83,26 @@ class DirectoryActionException extends DomainActionException
         );
     }
 
+    /**
+     * `gov_apps.links` is an object keyed by channel (`official`, `android`,
+     * `apple`), not a list of URLs: flattening it to a list strips the store
+     * keys so both the public page and the admin edit form read every link back
+     * as missing.
+     */
+    public static function linksNotKeyed(): self
+    {
+        return new self(
+            self::LINKS_NOT_KEYED,
+            'links must be an object keyed by platform, e.g. {"official": "https://...", "android": "https://play.google.com/...", "apple": "https://apps.apple.com/..."}. '
+            .'A plain list of links cannot say which store each belongs to; send a map instead.',
+        );
+    }
+
     public function httpStatus(): int
     {
         return match ($this->kind) {
             self::NOT_FOUND, self::CATEGORY_NOT_FOUND => 404,
-            self::ID_TAKEN, self::SOCIALS_NOT_KEYED => 422,
+            self::ID_TAKEN, self::SOCIALS_NOT_KEYED, self::LINKS_NOT_KEYED => 422,
             default => 422,
         };
     }

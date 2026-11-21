@@ -55,7 +55,7 @@ class GovAppService
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<int, string>  $links
+     * @param  array<string, string|null>  $links  Channel key (`official`, `android`, `apple`) => URL.
      */
     public function create(array $attributes, array $links = [], ?UploadedFile $icon = null): GovApp
     {
@@ -71,7 +71,7 @@ class GovAppService
             ? $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id)
             : null;
         $app->images = [];
-        $app->links = $this->filterUrls($links);
+        $app->links = $this->filterLinkMap($links);
         $app->order_column = (int) (GovApp::max('order_column') ?? 0) + 1;
         $app->is_active = $attributes['is_active'] ?? true;
 
@@ -90,7 +90,7 @@ class GovAppService
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<int, string>|null  $links  Null leaves the existing list alone.
+     * @param  array<string, string|null>|null  $links  Null leaves the existing map alone.
      */
     public function update(string $id, array $attributes, ?array $links = null, ?UploadedFile $icon = null): GovApp
     {
@@ -106,7 +106,7 @@ class GovAppService
             $app->description_ar = $attributes['description_ar'];
         }
         if ($links !== null) {
-            $app->links = $this->filterUrls($links);
+            $app->links = $this->filterLinkMap($links);
         }
         if ($icon !== null) {
             $app->icon = $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id);
@@ -184,30 +184,40 @@ class GovAppService
     }
 
     /**
-     * Keep only http(s) links and reindex, so the JSON column stays a list
-     * rather than becoming an object with gaps. `gov_apps.links` *is* a list;
-     * the entities' `socials` column is a platform-keyed map and uses its own
-     * filter in SyOfficialDirectoryService — copying this one there is what
-     * flattened the platform keys.
+     * Filter `gov_apps.links`, which is an object keyed by channel (`official`,
+     * `android`, `apple`) — both the public directory (`GovAppsClient.tsx`) and
+     * the admin edit dialog (`AppDialog.tsx`) read links by those keys.
      *
-     * @param  array<int, mixed>  $urls
-     * @return array<int, string>
+     * Calling `array_values()` previously stripped those keys into a numeric
+     * list `[0 => "https://..."]`, making every saved link disappear from both
+     * the public page and the edit dialog on reload. Empty values and non-http
+     * URLs are dropped while keeping the channel keys intact; a list is refused.
+     *
+     * @param  array<array-key, mixed>  $links
+     * @return array<string, string>
      */
-    protected function filterUrls(array $urls): array
+    protected function filterLinkMap(array $links): array
     {
-        return array_values(array_filter(
-            $urls,
-            static function ($url): bool {
-                if (! is_string($url)) {
-                    return false;
-                }
+        if ($links !== [] && array_is_list($links)) {
+            throw DirectoryActionException::linksNotKeyed();
+        }
 
-                $url = trim($url);
+        $filtered = [];
 
-                return $url !== ''
-                    && (str_starts_with($url, 'http://') || str_starts_with($url, 'https://'));
-            },
-        ));
+        foreach ($links as $channel => $url) {
+            if (! is_string($channel) || $channel === '' || ! is_string($url)) {
+                continue;
+            }
+
+            $trimmed = trim($url);
+            if ($trimmed === '' || (! str_starts_with($trimmed, 'http://') && ! str_starts_with($trimmed, 'https://'))) {
+                continue;
+            }
+
+            $filtered[$channel] = $trimmed;
+        }
+
+        return $filtered;
     }
 
     protected function assertIdFree(?string $id): void

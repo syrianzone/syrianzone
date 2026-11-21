@@ -44,9 +44,8 @@ class UpdateGovAppTool extends GovAppsTool
 
             'description_ar' => $schema->string()->description('New Arabic description. Pass null to clear it.'),
 
-            'links' => $schema->array()
-                ->description('Replace the link list. Omit to leave it alone; pass an empty array to clear every link.')
-                ->items($schema->string()->max(2048)),
+            'links' => $schema->object($this->linkProperties($schema))
+                ->description('Replace the links object keyed by channel: {"official": "...", "android": "...", "apple": "..."}. Omit to leave existing links untouched; pass an empty object to clear every link. A plain list is refused.'),
         ];
     }
 

@@ -231,3 +231,33 @@ it('tells the agent a deleted app id stays taken', function () {
 
     expect(toolText($response))->toContain('restore-gov-app');
 });
+
+it('refuses a list-shaped links argument from create-gov-app and keeps keyed links intact', function () {
+    agentToken($this->user, ['govapps.create']);
+
+    $refused = callTool(CreateGovAppTool::class, [
+        'id' => 'list-links-app',
+        'name' => 'List Links',
+        'name_ar' => 'قائمة',
+        'links' => ['https://apps.apple.com/us/app/test/id123'],
+    ]);
+
+    expect(toolText($refused))->toContain('links must be an object keyed by platform')
+        ->and(GovApp::where('id', 'list-links-app')->exists())->toBeFalse();
+
+    $created = toolPayload(callTool(CreateGovAppTool::class, [
+        'id' => 'keyed-links-app',
+        'name' => 'Keyed Links',
+        'name_ar' => 'روابط مصنفة',
+        'links' => [
+            'android' => 'https://play.google.com/store/apps/details?id=sy.test',
+            'apple' => 'https://apps.apple.com/us/app/test/id123',
+        ],
+    ]));
+
+    expect($created['created'])->toBeTrue()
+        ->and($created['app']['links'])->toBe([
+            'android' => 'https://play.google.com/store/apps/details?id=sy.test',
+            'apple' => 'https://apps.apple.com/us/app/test/id123',
+        ]);
+});

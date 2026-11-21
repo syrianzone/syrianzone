@@ -35,16 +35,30 @@ it('appends a new app to the end of the ordering', function () {
         ->and($created->icon)->toBeNull();
 });
 
-it('seeds an empty gallery and drops non-http links', function () {
+it('seeds an empty gallery, preserves channel keys, and drops non-http links', function () {
     $created = $this->service->create(
         ['id' => 'apps', 'name' => 'Apps', 'name_ar' => 'تطبيقات'],
-        ['https://example.com', 'javascript:alert(1)', 'data:text/html,x'],
+        [
+            'official' => 'https://example.com',
+            'android' => 'javascript:alert(1)',
+            'apple' => '  https://apps.apple.com/us/app/test/id123  ',
+            'broken' => 'data:text/html,x',
+        ],
     );
 
     expect($created->images)->toBe([])
-        ->and($created->links)->toBe(['https://example.com'])
-        ->and(array_is_list($created->links))->toBeTrue();
+        ->and($created->links)->toBe([
+            'official' => 'https://example.com',
+            'apple' => 'https://apps.apple.com/us/app/test/id123',
+        ]);
 });
+
+it('refuses a list-shaped links payload instead of flattening the map', function () {
+    $this->service->create(
+        ['id' => 'list-apps', 'name' => 'Apps', 'name_ar' => 'تطبيقات'],
+        ['https://example.com', 'https://apps.apple.com/us/app/test/id123'],
+    );
+})->throws(DirectoryActionException::class, 'links must be an object keyed by platform');
 
 it('refuses a duplicate id', function () {
     GovApp::factory()->create(['id' => 'services']);
@@ -80,21 +94,21 @@ it('restores a soft-deleted app and forgets the cache', function () {
 });
 
 it('toggles activity without touching the other fields', function () {
-    $app = GovApp::factory()->inactive()->create(['name' => 'Original', 'links' => ['https://keep.me']]);
+    $app = GovApp::factory()->inactive()->create(['name' => 'Original', 'links' => ['official' => 'https://keep.me']]);
 
     $toggled = $this->service->setActive($app->id, true);
 
     expect($toggled->is_active)->toBeTrue()
         ->and($toggled->name)->toBe('Original')
-        ->and($toggled->links)->toBe(['https://keep.me']);
+        ->and($toggled->links)->toBe(['official' => 'https://keep.me']);
 });
 
 it('leaves links untouched on update when none are supplied', function () {
-    $app = GovApp::factory()->create(['links' => ['https://keep.me']]);
+    $app = GovApp::factory()->create(['links' => ['official' => 'https://keep.me']]);
 
     $this->service->update($app->id, ['name' => 'Renamed']);
 
-    expect($app->fresh()->links)->toBe(['https://keep.me'])
+    expect($app->fresh()->links)->toBe(['official' => 'https://keep.me'])
         ->and($app->fresh()->name)->toBe('Renamed');
 });
 

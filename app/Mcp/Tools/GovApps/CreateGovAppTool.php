@@ -46,9 +46,8 @@ class CreateGovAppTool extends GovAppsTool
 
             'description_ar' => $schema->string()->description('Optional Arabic description.'),
 
-            'links' => $schema->array()
-                ->description('Optional store or official links. Only http and https are kept; anything else is dropped.')
-                ->items($schema->string()->max(2048)),
+            'links' => $schema->object($this->linkProperties($schema))
+                ->description('Optional store or official links as an object keyed by channel: {"official": "...", "android": "...", "apple": "..."}. Only http and https are kept; an empty value drops that key. A plain list is refused.'),
 
             'is_active' => $schema->boolean()
                 ->description('Defaults to true. Set false to add it hidden while you prepare it.')

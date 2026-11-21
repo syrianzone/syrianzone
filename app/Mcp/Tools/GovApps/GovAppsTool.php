@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\GovApps;
 
 use App\Exceptions\Directories\DirectoryActionException;
 use App\Mcp\Tools\AuditedTool;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 
@@ -15,6 +16,20 @@ use Laravel\Mcp\ResponseFactory;
  */
 abstract class GovAppsTool extends AuditedTool
 {
+    /**
+     * JSON Schema properties for the `gov_apps.links` object map.
+     *
+     * @return array<string, mixed>
+     */
+    protected function linkProperties(JsonSchema $schema): array
+    {
+        return [
+            'official' => $schema->string()->description('Official website URL (http or https).')->nullable(),
+            'android' => $schema->string()->description('Google Play Store or APK download URL (http or https).')->nullable(),
+            'apple' => $schema->string()->description('Apple App Store URL (http or https).')->nullable(),
+        ];
+    }
+
     /**
      * @param  callable(): (Response|ResponseFactory)  $callback
      */

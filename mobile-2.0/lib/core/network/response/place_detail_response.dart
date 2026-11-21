@@ -4,7 +4,6 @@ part 'place_detail_response.freezed.dart';
 part 'place_detail_response.g.dart';
 
 @freezed
-@JsonSerializable()
 sealed class PlaceDetailResponse with _$PlaceDetailResponse {
   const factory PlaceDetailResponse({
     required int id,

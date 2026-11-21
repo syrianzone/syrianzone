@@ -1,4 +1,3 @@
-import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:syrianzone/core/data/model/lng_lat.dart';
 import 'package:syrianzone/core/network/json_converter/geometry_converter.dart';
@@ -100,10 +99,4 @@ class TransitRouteGeometry {
       _$TransitRouteGeometryFromJson(json);
 
   Map<String, dynamic> toJson() => _$TransitRouteGeometryToJson(this);
-}
-
-extension GeoPointExtension on GeoPoint{
-  LngLat toLngLat() {
-    return LngLat(longitude: longitude, latitude: latitude);
-  }
 }

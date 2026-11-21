@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:syrianzone/core/constants/map_constants.dart';
 import 'package:syrianzone/core/constants/route_palette.dart';
 import 'package:syrianzone/core/data/model/lng_lat.dart';
 import 'package:syrianzone/core/network/response/map_data_response.dart';
 import 'package:syrianzone/core/util/color_util.dart';
 import 'package:syrianzone/core/util/map_util.dart';
-import 'package:syrianzone/core/widget/osm_tile.dart';
 import 'package:syrianzone/feature/transit/ui/widget/nearby_stops_bottom_sheet.dart';
 
 class TransitMapPane extends StatefulWidget {
@@ -32,38 +32,30 @@ class TransitMapPane extends StatefulWidget {
 }
 
 class _TransitMapPaneState extends State<TransitMapPane> {
-  static const _fallbackLat = 33.5138;
-  static const _fallbackLon = 36.2765;
-
   late final MapController _mapController;
-  final List<GeoPoint> _drawnMarkers = <GeoPoint>[];
-  final Map<String, MapStopFeature> _stopsByLocation =
-      <String, MapStopFeature>{};
   MapStopFeature? _selectedStop;
-  GeoPoint? _selectedGeoPoint;
-  bool _isMapReady = false;
-  String? _lastRenderedSignature;
-  bool _isRendering = false;
-  bool _hasPendingRender = false;
-  GeoPoint? _userMarkerGeoPoint;
+  LatLng? _selectedLatLng;
+  LatLng? _userMarkerLatLng;
   StreamSubscription<Position>? _positionStreamSubscription;
   bool _isLoadingUserLocation = false;
+
+  // Memoized polylines and markers (recomputed only on mapData or selectedRouteId change)
+  List<Polyline> _cachedPolylines = const [];
+  List<Marker> _cachedStopMarkers = const [];
 
   @override
   void initState() {
     super.initState();
-    final lat = widget.latitude ?? _fallbackLat;
-    final lon = widget.longitude ?? _fallbackLon;
-
-    _mapController = MapController.withPosition(
-      initPosition: GeoPoint(latitude: lat, longitude: lon),
-    );
+    _mapController = MapController();
+    _rebuildMapLayers();
+    _initUserLocation(centerOnUser: false);
   }
 
   @override
   void dispose() {
     _positionStreamSubscription?.cancel();
     _positionStreamSubscription = null;
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -73,173 +65,23 @@ class _TransitMapPaneState extends State<TransitMapPane> {
     if (widget.mapData != oldWidget.mapData ||
         widget.selectedRouteId != oldWidget.selectedRouteId) {
       if (_selectedStop != null) {
-        setState(() {
-          _selectedStop = null;
-          _selectedGeoPoint = null;
-        });
+        _selectedStop = null;
+        _selectedLatLng = null;
       }
-      _renderMapDataIfReady();
+      _rebuildMapLayers();
     }
   }
 
-  String _buildDataSignature(MapDataResponse data) {
-    final selectedRouteId = widget.selectedRouteId ?? '';
-    final routeIds = data.routes.features
-        .map((route) => route.properties.id)
-        .join('|');
-    return '$selectedRouteId::$routeIds::${data.stops.features.length}';
+  void _rebuildMapLayers() {
+    _cachedPolylines = _computePolylines();
+    _cachedStopMarkers = _computeStopMarkers();
   }
 
-  Future<void> _renderMapDataIfReady() async {
-    if (!_isMapReady || widget.mapData == null) {
-      return;
-    }
-
-    if (_isRendering) {
-      _hasPendingRender = true;
-      return;
-    }
-
-    _isRendering = true;
-    try {
-      await _performRenderMapData();
-      while (_hasPendingRender && mounted) {
-        _hasPendingRender = false;
-        await _performRenderMapData();
-      }
-    } finally {
-      _isRendering = false;
-    }
-  }
-
-  Future<void> _performRenderMapData() async {
-    if (!_isMapReady || widget.mapData == null || !mounted) {
-      return;
-    }
-
-    final data = widget.mapData!;
-    final signature = _buildDataSignature(data);
-    if (signature == _lastRenderedSignature) {
-      return;
-    }
-
-    try {
-      await _mapController.clearAllRoads();
-      if (_drawnMarkers.isNotEmpty) {
-        await _mapController.removeMarkers(_drawnMarkers);
-        _drawnMarkers.clear();
-      }
-
-      if (_hasPendingRender || !mounted) return;
-
-      final selectedRouteId = widget.selectedRouteId;
-      final routeFeatures = selectedRouteId == null
-          ? data.routes.features
-          : data.routes.features
-                .where((route) => route.properties.id == selectedRouteId)
-                .toList();
-
-      final stopFeatures = selectedRouteId == null
-          ? data.stops.features
-          : data.stops.features
-                .where(
-                  (stop) => stop.properties.routeIds.contains(selectedRouteId),
-                )
-                .toList();
-
-      final roadDrawFutures = <Future<void>>[];
-      for (final routeFeature in routeFeatures) {
-        if (routeFeature.geometry.type != 'LineString' &&
-            routeFeature.geometry.type != 'MultiLineString') {
-          continue;
-        }
-
-        final roadColor = ColorUtil.hexToColor(
-          RoutePalette.colorForIndexOrDefault(
-            routeFeature.properties.colorIndex,
-          ),
-        );
-
-        for (final segment in routeFeature.geometry.segments) {
-          final points = segment.map((c) => c.toGeoPoint()).toList();
-
-          if (points.length < 2) {
-            continue;
-          }
-
-        roadDrawFutures.add(
-          _mapController.drawRoadManually(
-            points,
-            RoadOption(roadColor: roadColor, roadWidth: 6),
-          ),
-        );
-        }
-      }
-      await Future.wait(roadDrawFutures);
-
-      if (_hasPendingRender || !mounted) return;
-
-      _stopsByLocation.clear();
-      final markerAddFutures = <Future<void>>[];
-      for (final stopFeature in stopFeatures) {
-        if (stopFeature.geometry.type != 'Point') {
-          continue;
-        }
-        final coordinate = stopFeature.geometry.coordinates;
-        if (coordinate.length < 2) {
-          continue;
-        }
-
-        final centerPoint = GeoPoint(
-          latitude: coordinate[1],
-          longitude: coordinate[0],
-        );
-        _drawnMarkers.add(centerPoint);
-        _stopsByLocation['${centerPoint.latitude.toStringAsFixed(5)},${centerPoint.longitude.toStringAsFixed(5)}'] =
-            stopFeature;
-
-        markerAddFutures.add(
-          _mapController.addMarker(
-            centerPoint,
-            markerIcon: MarkerIcon(
-              iconWidget: Stack(
-                alignment: Alignment.center,
-                children: const [
-                  Icon(
-                    Icons.circle,
-                    size: 24.0, // Slightly larger background icon
-                    color: Colors.white, // This mimics the border color
-                  ),
-                  Icon(
-                    Icons.circle,
-                    size: 20.0, // Actual foreground icon
-                    color: Colors.amber,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-      await Future.wait(markerAddFutures);
-
-      _lastRenderedSignature = signature;
-    } catch (_) {
-      // Ignore map drawing errors to keep list UI responsive.
-    }
-  }
-
-  void _handleGeoPointClicked(GeoPoint clickedPoint) {
-    final key =
-        '${clickedPoint.latitude.toStringAsFixed(5)},${clickedPoint.longitude.toStringAsFixed(5)}';
-    MapStopFeature? matched = _stopsByLocation[key];
-
-    if (matched != null) {
-      setState(() {
-        _selectedStop = matched;
-        _selectedGeoPoint = clickedPoint;
-      });
-    }
+  void _handleStopClicked(MapStopFeature stop, LatLng point) {
+    setState(() {
+      _selectedStop = stop;
+      _selectedLatLng = point;
+    });
   }
 
   String _getRouteLabel(MapStopFeature stop) {
@@ -290,10 +132,10 @@ class _TransitMapPaneState extends State<TransitMapPane> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
-          if (_selectedGeoPoint != null) {
+          if (_selectedLatLng != null) {
             MapUtil.openMapApp(
-              _selectedGeoPoint!.latitude,
-              _selectedGeoPoint!.longitude,
+              _selectedLatLng!.latitude,
+              _selectedLatLng!.longitude,
               label: stop.properties.nameAr,
             );
           }
@@ -348,7 +190,7 @@ class _TransitMapPaneState extends State<TransitMapPane> {
                 onTap: () {
                   setState(() {
                     _selectedStop = null;
-                    _selectedGeoPoint = null;
+                    _selectedLatLng = null;
                   });
                 },
                 child: Container(
@@ -392,15 +234,55 @@ class _TransitMapPaneState extends State<TransitMapPane> {
           onTap: () {
             NearbyStopsBottomSheet.show(
               context,
-              onStopSelected: (stop) async {
+              onStopSelected: (stop) {
                 Navigator.pop(context);
                 if (stop.coordinates.length >= 2) {
-                  final target = GeoPoint(
-                    latitude: stop.coordinates[1],
-                    longitude: stop.coordinates[0],
+                  final target = LatLng(
+                    stop.coordinates[1],
+                    stop.coordinates[0],
                   );
-                  await _mapController.moveTo(target);
-                  _handleGeoPointClicked(target);
+                  _mapController.move(target, _mapController.camera.zoom);
+
+                  MapStopFeature? matched;
+                  if (widget.mapData != null) {
+                    final stops = widget.mapData!.stops.features;
+                    for (final f in stops) {
+                      if (f.properties.id == stop.id) {
+                        matched = f;
+                        break;
+                      }
+                    }
+                    if (matched == null) {
+                      for (final f in stops) {
+                        if (f.geometry.coordinates.length >= 2 &&
+                            (f.geometry.coordinates[0] - stop.coordinates[0]).abs() < 0.0001 &&
+                            (f.geometry.coordinates[1] - stop.coordinates[1]).abs() < 0.0001) {
+                          matched = f;
+                          break;
+                        }
+                      }
+                    }
+                  }
+
+                  final stopRouteIds = stop.routes
+                      .map((r) => r['id']?.toString() ?? '')
+                      .where((id) => id.isNotEmpty)
+                      .toList();
+
+                  matched ??= MapStopFeature(
+                    type: 'Feature',
+                    geometry: MapPointGeometry(
+                      type: 'Point',
+                      coordinates: stop.coordinates,
+                    ),
+                    properties: MapStopProperties(
+                      id: stop.id,
+                      nameAr: stop.nameAr,
+                      routeIds: stopRouteIds,
+                    ),
+                  );
+
+                  _handleStopClicked(matched, target);
                 }
               },
             );
@@ -433,55 +315,7 @@ class _TransitMapPaneState extends State<TransitMapPane> {
     );
   }
 
-  Future<void> _updateUserMarker(GeoPoint newPoint) async {
-    if (!mounted || !_isMapReady) return;
-
-    if (_userMarkerGeoPoint != null) {
-      if ((_userMarkerGeoPoint!.latitude - newPoint.latitude).abs() < 0.00001 &&
-          (_userMarkerGeoPoint!.longitude - newPoint.longitude).abs() < 0.00001) {
-        return;
-      }
-      try {
-        await _mapController.removeMarker(_userMarkerGeoPoint!);
-      } catch (_) {}
-    }
-
-    _userMarkerGeoPoint = newPoint;
-    try {
-      await _mapController.addMarker(
-        newPoint,
-        markerIcon: MarkerIcon(
-          iconWidget: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF1A73E8).withValues(alpha: 0.25),
-                ),
-              ),
-              const Icon(
-                Icons.circle,
-                size: 22.0,
-                color: Colors.white,
-              ),
-              const Icon(
-                Icons.circle,
-                size: 16.0,
-                color: Color(0xFF1A73E8),
-              ),
-            ],
-          ),
-        ),
-      );
-    } catch (_) {}
-  }
-
   Future<void> _initUserLocation({bool centerOnUser = false}) async {
-    if (!mounted || !_isMapReady) return;
-
     try {
       LocationPermission permission = await Geolocator.checkPermission();
       if (centerOnUser && permission == LocationPermission.denied) {
@@ -524,22 +358,19 @@ class _TransitMapPaneState extends State<TransitMapPane> {
           position = await Geolocator.getLastKnownPosition();
         }
       } else {
-        // Fallback to last known position if user location service is turned off
         position = await Geolocator.getLastKnownPosition();
       }
 
-      // Ensure widget is still mounted before interacting with map or subscribing
       if (!mounted) return;
 
       if (position != null) {
-        final point = GeoPoint(
-          latitude: position.latitude,
-          longitude: position.longitude,
-        );
-        await _updateUserMarker(point);
+        final point = LatLng(position.latitude, position.longitude);
+        setState(() {
+          _userMarkerLatLng = point;
+        });
 
         if (centerOnUser && mounted) {
-          await _mapController.moveTo(point);
+          _mapController.move(point, MapConstants.detailZoom);
         }
 
         if (isServiceEnabled && _positionStreamSubscription == null && mounted) {
@@ -551,9 +382,9 @@ class _TransitMapPaneState extends State<TransitMapPane> {
           ).listen(
             (pos) {
               if (mounted) {
-                _updateUserMarker(
-                  GeoPoint(latitude: pos.latitude, longitude: pos.longitude),
-                );
+                setState(() {
+                  _userMarkerLatLng = LatLng(pos.latitude, pos.longitude);
+                });
               }
             },
             onError: (_) {},
@@ -617,31 +448,224 @@ class _TransitMapPaneState extends State<TransitMapPane> {
     );
   }
 
+  Widget _buildZoomButtons() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE4D8C8)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+              onTap: () {
+                final currentZoom = _mapController.camera.zoom;
+                if (currentZoom < MapConstants.maxZoom) {
+                  _mapController.move(
+                    _mapController.camera.center,
+                    currentZoom + 1,
+                  );
+                }
+              },
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(
+                  Icons.add,
+                  size: 20,
+                  color: Color(0xFF2F2722),
+                ),
+              ),
+            ),
+            const Divider(height: 1, color: Color(0xFFE4D8C8)),
+            InkWell(
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(10)),
+              onTap: () {
+                final currentZoom = _mapController.camera.zoom;
+                if (currentZoom > MapConstants.minZoom) {
+                  _mapController.move(
+                    _mapController.camera.center,
+                    currentZoom - 1,
+                  );
+                }
+              },
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(
+                  Icons.remove,
+                  size: 20,
+                  color: Color(0xFF2F2722),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Polyline> _computePolylines() {
+    if (widget.mapData == null) return const [];
+    final selectedRouteId = widget.selectedRouteId;
+    final routeFeatures = selectedRouteId == null
+        ? widget.mapData!.routes.features
+        : widget.mapData!.routes.features
+            .where((route) => route.properties.id == selectedRouteId)
+            .toList();
+
+    final polylines = <Polyline>[];
+    for (final routeFeature in routeFeatures) {
+      if (routeFeature.geometry.type != 'LineString' &&
+          routeFeature.geometry.type != 'MultiLineString') {
+        continue;
+      }
+
+      final roadColor = ColorUtil.hexToColor(
+        RoutePalette.colorForIndexOrDefault(
+          routeFeature.properties.colorIndex,
+        ),
+      );
+
+      for (final segment in routeFeature.geometry.segments) {
+        final points = segment.map((c) => c.toLatLng()).toList();
+        if (points.length < 2) continue;
+
+        polylines.add(
+          Polyline(
+            points: points,
+            color: roadColor,
+            strokeWidth: 6.0,
+          ),
+        );
+      }
+    }
+    return polylines;
+  }
+
+  List<Marker> _computeStopMarkers() {
+    if (widget.mapData == null) return const [];
+    final selectedRouteId = widget.selectedRouteId;
+    final stopFeatures = selectedRouteId == null
+        ? widget.mapData!.stops.features
+        : widget.mapData!.stops.features
+            .where(
+              (stop) => stop.properties.routeIds.contains(selectedRouteId),
+            )
+            .toList();
+
+    final markers = <Marker>[];
+    for (final stopFeature in stopFeatures) {
+      if (stopFeature.geometry.type != 'Point') continue;
+      final coordinates = stopFeature.geometry.coordinates;
+      if (coordinates.length < 2) continue;
+
+      final point = LatLng(coordinates[1], coordinates[0]);
+      markers.add(
+        Marker(
+          point: point,
+          width: 28,
+          height: 28,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _handleStopClicked(stopFeature, point),
+            child: const Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  Icons.circle,
+                  size: 16.0,
+                  color: Colors.white,
+                ),
+                Icon(
+                  Icons.circle,
+                  size: 12.0,
+                  color: Colors.amber,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return markers;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final initCenter = (widget.latitude != null && widget.longitude != null)
+        ? LatLng(widget.latitude!, widget.longitude!)
+        : MapConstants.defaultCenter;
+    final initZoom = widget.zoom ?? MapConstants.transitInitialZoom;
+
     return Stack(
       children: [
-        OSMFlutter(
-          controller: _mapController,
-          onMapIsReady: (isReady) {
-            _isMapReady = isReady;
-            if (isReady) {
-              _mapController.changeTileLayer(
-                tileLayer: MapConstants.cartoDarkTileLayer,
-              );
-              _renderMapDataIfReady();
-              _initUserLocation(centerOnUser: false);
-            }
-          },
-          mapIsLoading: const Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: initCenter,
+            initialZoom: initZoom,
+            minZoom: MapConstants.minZoom,
+            maxZoom: MapConstants.maxZoom,
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all,
+            ),
           ),
-          
-          onGeoPointClicked: _handleGeoPointClicked,
-          osmOption: OSMOption(
-            showZoomController: true,
-            zoomOption: ZoomOption(initZoom: widget.zoom ?? 15),
-          ),
+          children: [
+            MapConstants.cartoDarkTileLayer,
+            PolylineLayer(
+              polylines: _cachedPolylines,
+            ),
+            MarkerLayer(
+              markers: [
+                ..._cachedStopMarkers,
+                if (_userMarkerLatLng != null)
+                  Marker(
+                    point: _userMarkerLatLng!,
+                    width: 32,
+                    height: 32,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF1A73E8).withValues(alpha: 0.25),
+                          ),
+                        ),
+                        const Icon(
+                          Icons.circle,
+                          size: 22.0,
+                          color: Colors.white,
+                        ),
+                        const Icon(
+                          Icons.circle,
+                          size: 16.0,
+                          color: Color(0xFF1A73E8),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+        Positioned(
+          top: 72,
+          right: 16,
+          child: _buildZoomButtons(),
         ),
         Positioned(
           bottom: _selectedStop != null ? 140 : 16,

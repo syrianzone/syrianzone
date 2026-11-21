@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:syrianzone/core/network/response/guides_response.dart';
 import 'package:syrianzone/core/network/response/hotel_response.dart';
+import 'package:syrianzone/core/network/response/hotels_map_response.dart';
 import 'package:syrianzone/core/network/response/place_photos_response.dart';
 import 'package:syrianzone/core/network/response/places_map_response.dart';
 import 'package:syrianzone/core/network/response/places_response.dart';
@@ -41,7 +42,7 @@ sealed class MishwarState with _$MishwarState {
     @Default(true) bool hasMoreHotels,
 
     // Hotels Map
-    @Default([]) List<PlaceMapFeature> mapHotels,
+    @Default([]) List<HotelMapFeature> mapHotels,
     @Default(false) bool isLoadingMapHotels,
 
     // Guides tab

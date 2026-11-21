@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:syrianzone/core/data/model/lng_lat.dart';
+import 'package:syrianzone/core/data/model/map_feature_item.dart';
 import 'package:syrianzone/core/network/json_converter/lng_lat_json_converter.dart';
 
 part 'places_map_response.g.dart';
@@ -19,7 +20,7 @@ class PlacesMapResponse {
 }
 
 @JsonSerializable()
-class PlaceMapFeature {
+class PlaceMapFeature implements MapFeatureItem {
   final String type;
   final PlaceMapGeometry geometry;
   final PlaceMapProperties properties;
@@ -32,6 +33,24 @@ class PlaceMapFeature {
 
   factory PlaceMapFeature.fromJson(Map<String, dynamic> json) =>
       _$PlaceMapFeatureFromJson(json);
+
+  @override
+  int get id => properties.id;
+
+  @override
+  double get latitude => geometry.latitude;
+
+  @override
+  double get longitude => geometry.longitude;
+
+  @override
+  String get displayName => properties.displayName;
+
+  @override
+  String get mapType => 'place';
+
+  @override
+  int? get userId => properties.userId;
 }
 
 @JsonSerializable()
@@ -61,7 +80,6 @@ class PlaceMapProperties {
   final String? thumbUrl;
   @JsonKey(name: 'user_id')
   final int? userId;
-  final String? type; // 'hotel' for hotel map points
 
   PlaceMapProperties({
     required this.id,
@@ -69,9 +87,10 @@ class PlaceMapProperties {
     this.category,
     this.thumbUrl,
     this.userId,
-    this.type,
   });
 
   factory PlaceMapProperties.fromJson(Map<String, dynamic> json) =>
       _$PlaceMapPropertiesFromJson(json);
+
+  String get displayName => name;
 }

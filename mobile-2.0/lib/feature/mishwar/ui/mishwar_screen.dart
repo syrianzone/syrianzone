@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syrianzone/core/constants/map_constants.dart';
+import 'package:syrianzone/core/data/model/map_feature_item.dart';
+import 'package:syrianzone/core/network/response/hotels_map_response.dart';
 import 'package:syrianzone/core/network/response/places_map_response.dart';
 import 'package:syrianzone/feature/auth/ui/auth_bottom_sheet.dart';
 import 'package:syrianzone/feature/mishwar/constants/mishwar_constants.dart';
@@ -29,17 +31,18 @@ class MishwarScreen extends StatefulWidget {
 
 class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateMixin {
   late TabController _tabController;
-  double _sheetFraction = MishwarSheetConstants.midFraction;
+  double _sheetFraction = MishwarSheetConstants.collapsedFraction;
   late final AnimationController _sheetAnimController;
   Animation<double>? _sheetAnimation;
   final GlobalKey<MishwarMapPaneState> _mapPaneKey = GlobalKey<MishwarMapPaneState>();
 
   bool _isGalleryMode = false;
+  bool _hasEverOpenedGallery = false;
   String _typeFilter = 'all'; // 'all', 'places', 'hotels'
 
-  List<PlaceMapFeature>? _cachedMapFeatures;
+  List<MapFeatureItem>? _cachedMapFeatures;
   List<PlaceMapFeature>? _lastMapPlaces;
-  List<PlaceMapFeature>? _lastMapHotels;
+  List<HotelMapFeature>? _lastMapHotels;
   String? _lastTypeFilter;
   int? _lastSelectedTabIndex;
   int? _lastFilterUserId;
@@ -93,7 +96,7 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
     _sheetAnimController.forward(from: 0);
   }
 
-  List<PlaceMapFeature> _getMapFeatures(MishwarState state) {
+  List<MapFeatureItem> _getMapFeatures(MishwarState state) {
     if (_cachedMapFeatures != null &&
         identical(_lastMapPlaces, state.mapPlaces) &&
         identical(_lastMapHotels, state.mapHotels) &&
@@ -109,7 +112,7 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
     _lastSelectedTabIndex = state.selectedTabIndex;
     _lastFilterUserId = state.filterUserId;
 
-    List<PlaceMapFeature> rawMapFeatures;
+    List<MapFeatureItem> rawMapFeatures;
     if (_typeFilter == 'hotels') {
       rawMapFeatures = state.mapHotels;
     } else if (_typeFilter == 'places') {
@@ -119,7 +122,7 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
     }
 
     _cachedMapFeatures = (state.selectedTabIndex != 1 && state.filterUserId != null)
-        ? rawMapFeatures.where((f) => f.properties.userId == state.filterUserId).toList()
+        ? rawMapFeatures.where((f) => f.userId == state.filterUserId).toList()
         : rawMapFeatures;
 
     return _cachedMapFeatures!;
@@ -167,6 +170,7 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
     String? category,
   }) {
     context.read<MishwarCubit>().highlightPlace(placeId);
+    _animateSheetTo(MishwarSheetConstants.collapsedFraction);
     _mapPaneKey.currentState?.zoomToLocation(lat, lng);
     PlaceDetailBottomSheet.show(
       context,
@@ -183,6 +187,7 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
     String? name,
   }) {
     context.read<MishwarCubit>().highlightHotel(hotelId);
+    _animateSheetTo(MishwarSheetConstants.collapsedFraction);
     if (lat != null && lng != null) {
       _mapPaneKey.currentState?.zoomToLocation(lat, lng);
     }
@@ -355,7 +360,17 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                 ),
               ];
 
-        return Scaffold(
+        final isSheetExpanded = !_isGalleryMode &&
+            _sheetFraction > (MishwarSheetConstants.collapsedFraction + 0.01);
+
+        return PopScope<void>(
+          canPop: !isSheetExpanded,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && isSheetExpanded) {
+              _animateSheetTo(MishwarSheetConstants.collapsedFraction);
+            }
+          },
+          child: Scaffold(
             resizeToAvoidBottomInset: false, // Prevents layout from resizing for the keyboard
 
           appBar: AppBar(
@@ -414,6 +429,17 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                           highlightedType: state.highlightedPlaceId != null
                               ? 'place'
                               : (state.highlightedHotelId != null ? 'hotel' : null),
+                          bottomOffsetRatio: MishwarSheetConstants.collapsedFraction,
+                          onClusterTapped: () {
+                            if (_sheetFraction > MishwarSheetConstants.collapsedFraction) {
+                              _animateSheetTo(MishwarSheetConstants.collapsedFraction);
+                            }
+                          },
+                          onMapTapped: () {
+                            if (_sheetFraction > MishwarSheetConstants.collapsedFraction) {
+                              _animateSheetTo(MishwarSheetConstants.collapsedFraction);
+                            }
+                          },
                           onPlaceSelected: (id) {
                             final feature = state.mapPlaces.cast<PlaceMapFeature?>().firstWhere(
                               (f) => f?.properties.id == id,
@@ -425,12 +451,12 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                               placeId: id,
                               lat: lat,
                               lng: lng,
-                              name: feature?.properties.name,
+                              name: feature?.properties.displayName,
                               category: feature?.properties.category,
                             );
                           },
                           onHotelSelected: (id) {
-                            final feature = state.mapHotels.cast<PlaceMapFeature?>().firstWhere(
+                            final feature = state.mapHotels.cast<HotelMapFeature?>().firstWhere(
                               (f) => f?.properties.id == id,
                               orElse: () => null,
                             );
@@ -440,7 +466,7 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                               hotelId: id,
                               lat: lat,
                               lng: lng,
-                              name: feature?.properties.name,
+                              name: feature?.properties.displayName,
                             );
                           },
                           isHotelMap: _typeFilter == 'hotels',
@@ -617,28 +643,32 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                         ),
                       ),
                     ),
-                  ] else ...[
-                    // Gallery Mode Grid
+                  ],
+
+                  // Gallery Mode Grid (lazily mounted on first open, then kept alive via Offstage)
+                  if (_hasEverOpenedGallery)
                     Positioned.fill(
-                      child: Container(
-                        color: const Color(0xFFFAF6F0),
-                        child: MishwarGalleryView(
-                          onPlaceTap: (place) {
-                            setState(() {
-                              _isGalleryMode = false;
-                            });
-                            _openPlaceDetail(
-                              placeId: place.id,
-                              lat: place.lat,
-                              lng: place.lng,
-                              name: place.name,
-                              category: place.category,
-                            );
-                          },
+                      child: Offstage(
+                        offstage: !_isGalleryMode,
+                        child: Container(
+                          color: const Color(0xFFFAF6F0),
+                          child: MishwarGalleryView(
+                            onPlaceTap: (place) {
+                              setState(() {
+                                _isGalleryMode = false;
+                              });
+                              _openPlaceDetail(
+                                placeId: place.id,
+                                lat: place.lat,
+                                lng: place.lng,
+                                name: place.name,
+                                category: place.category,
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
-                  ],
 
                   // Floating Search Bar & Controls on Map / Gallery
                   if (!state.isPickingLocation)
@@ -651,6 +681,9 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                         onViewModeChanged: (isGallery) {
                           setState(() {
                             _isGalleryMode = isGallery;
+                            if (isGallery) {
+                              _hasEverOpenedGallery = true;
+                            }
                           });
                         },
                         onOpenFilter: () => _openFilterBottomSheet(context, state),
@@ -677,8 +710,9 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
               },
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 }

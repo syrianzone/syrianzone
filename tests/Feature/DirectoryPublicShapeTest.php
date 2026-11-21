@@ -123,7 +123,7 @@ test('govapps page keeps its public app shape', function () {
     $props = $this->get('/govapps')->assertOk()->viewData('page')['props'];
 
     expect(array_keys($props['initialData'][0]))->toBe([
-        'id', 'name', 'description', 'icon', 'images', 'links',
+        'id', 'name', 'name_en', 'description', 'icon', 'images', 'links', 'publisher_name', 'has_rich_guide',
     ]);
     expect($props['initialData'][0]['name'])->toBe('تطبيق');
     expect($props['initialData'][0]['description'])->toBe('وصف');

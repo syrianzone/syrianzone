@@ -46,6 +46,8 @@ class CreateGovAppTool extends GovAppsTool
 
             'description_ar' => $schema->string()->description('Optional Arabic description.'),
 
+            'icon_url' => $schema->string()->description('Optional remote HTTP(S) image URL to download, convert to a square WebP icon, and store on R2.'),
+
             'links' => $schema->object($this->linkProperties($schema))
                 ->description('Optional store or official links as an object keyed by channel: {"official": "...", "android": "...", "apple": "..."}. Only http and https are kept; an empty value drops that key. A plain list is refused.'),
 
@@ -65,6 +67,7 @@ class CreateGovAppTool extends GovAppsTool
             'name_ar' => 'required|string|max:255',
             'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
+            'icon_url' => 'sometimes|nullable|url|max:2048',
             'links' => 'nullable|array',
             'links.*' => 'nullable|string|max:2048',
             'official_entity_id' => 'nullable|string|max:128|exists:official_entities,id',

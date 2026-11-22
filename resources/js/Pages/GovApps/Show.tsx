@@ -430,11 +430,6 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                             </dd>
                                         </div>
 
-                                        <div className="flex items-center justify-between gap-2 py-1.5 border-b border-border/50">
-                                            <dt className="text-muted-foreground">التكلفة</dt>
-                                            <dd className="font-semibold text-foreground">مجاني (خدمة حكومية)</dd>
-                                        </div>
-
                                         {ids.android_source && (
                                             <div className="flex items-center justify-between gap-2 py-1.5 border-b border-border/50">
                                                 <dt className="text-muted-foreground">مصدر تحميل أندرويد</dt>

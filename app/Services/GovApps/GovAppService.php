@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 /**
  * The government-apps directory domain, transport-free.
@@ -73,9 +74,13 @@ class GovAppService
         $app->requirements = array_key_exists('requirements', $attributes) ? $this->filterStringList($attributes['requirements']) : null;
         $app->faqs = array_key_exists('faqs', $attributes) ? $this->filterFaqs($attributes['faqs']) : null;
         $app->verified_at = $attributes['verified_at'] ?? null;
-        $app->icon = $icon !== null
-            ? $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id)
-            : null;
+        if ($icon !== null) {
+            $app->icon = $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id);
+        } elseif (! empty($attributes['icon_url']) && is_string($attributes['icon_url'])) {
+            $app->icon = $this->storeIconFromUrl($attributes['icon_url'], $app->id);
+        } else {
+            $app->icon = null;
+        }
         $app->images = [];
         $app->links = $this->filterLinkMap($links);
         $app->order_column = (int) (GovApp::max('order_column') ?? 0) + 1;
@@ -134,17 +139,10 @@ class GovAppService
         }
         if ($icon !== null) {
             $app->icon = $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id);
-        } elseif (! empty($attributes['icon_url']) && is_string($attributes['icon_url'])
-            && (str_starts_with(trim($attributes['icon_url']), 'https://') || str_starts_with(trim($attributes['icon_url']), 'http://'))) {
-            $response = \Illuminate\Support\Facades\Http::timeout(15)
-                ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
-                ->get(trim($attributes['icon_url']));
-
-            if ($response->successful() && $response->body() !== '') {
-                $stored = $this->images->storeSquareWebpFromBytes($response->body(), self::ICON_DIR, $app->id);
-                if ($stored !== null) {
-                    $app->icon = $stored;
-                }
+        } elseif (! empty($attributes['icon_url']) && is_string($attributes['icon_url'])) {
+            $stored = $this->storeIconFromUrl($attributes['icon_url'], $app->id);
+            if ($stored !== null) {
+                $app->icon = $stored;
             }
         }
 
@@ -153,6 +151,24 @@ class GovAppService
         $this->flushCache();
 
         return $app;
+    }
+
+    private function storeIconFromUrl(string $url, string $appId): ?string
+    {
+        $trimmed = trim($url);
+        if (! str_starts_with($trimmed, 'https://') && ! str_starts_with($trimmed, 'http://')) {
+            return null;
+        }
+
+        $response = Http::timeout(15)
+            ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
+            ->get($trimmed);
+
+        if (! $response->successful() || $response->body() === '') {
+            return null;
+        }
+
+        return $this->images->storeSquareWebpFromBytes($response->body(), self::ICON_DIR, $appId);
     }
 
     public function setActive(string $id, bool $isActive): GovApp

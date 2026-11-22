@@ -14,7 +14,10 @@ use App\Models\GovApp;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
 use App\Models\User;
+use App\Services\Directories\SquareWebpImageService;
 use App\Services\GovApps\GovAppService;
+use App\Services\SyOfficial\SyOfficialDirectoryService;
+use Illuminate\Support\Facades\Http;
 
 /*
 |--------------------------------------------------------------------------
@@ -260,4 +263,55 @@ it('refuses a list-shaped links argument from create-gov-app and keeps keyed lin
             'android' => 'https://play.google.com/store/apps/details?id=sy.test',
             'apple' => 'https://apps.apple.com/us/app/test/id123',
         ]);
+});
+
+it('downloads and stores icon_url on R2 when creating a gov app via MCP', function () {
+    Http::fake([
+        'https://example.test/icon.png' => Http::response('fake-png-bytes', 200),
+    ]);
+
+    $mock = Mockery::mock(SquareWebpImageService::class);
+    $mock->shouldReceive('storeSquareWebpFromBytes')
+        ->once()
+        ->with('fake-png-bytes', GovAppService::ICON_DIR, 'icon-app')
+        ->andReturn('https://r2.example.test/govapps/icon-app_123.webp');
+    app()->instance(SquareWebpImageService::class, $mock);
+
+    agentToken($this->user, ['govapps.create']);
+    $created = toolPayload(callTool(CreateGovAppTool::class, [
+        'id' => 'icon-app',
+        'name' => 'Icon App',
+        'name_ar' => 'تطبيق بأيقونة',
+        'icon_url' => 'https://example.test/icon.png',
+    ]));
+
+    expect($created['created'])->toBeTrue()
+        ->and($created['app']['icon'])->toBe('https://r2.example.test/govapps/icon-app_123.webp');
+});
+
+it('downloads and stores image_url on R2 when creating a SyOfficial entity via MCP', function () {
+    $category = OfficialCategory::factory()->create(['id' => 'ministries']);
+
+    Http::fake([
+        'https://example.test/logo.png' => Http::response('fake-logo-bytes', 200),
+    ]);
+
+    $mock = Mockery::mock(SquareWebpImageService::class);
+    $mock->shouldReceive('storeSquareWebpFromBytes')
+        ->once()
+        ->with('fake-logo-bytes', SyOfficialDirectoryService::IMAGE_DIR, 'min-logo')
+        ->andReturn('https://r2.example.test/syofficial/entities/min-logo_123.webp');
+    app()->instance(SquareWebpImageService::class, $mock);
+
+    agentToken($this->user, ['syofficial.create']);
+    $created = toolPayload(callTool(CreateSyOfficialEntityTool::class, [
+        'id' => 'min-logo',
+        'category_id' => $category->id,
+        'name' => 'Logo Ministry',
+        'name_ar' => 'وزارة بشعار',
+        'image_url' => 'https://example.test/logo.png',
+    ]));
+
+    expect($created['created'])->toBeTrue()
+        ->and($created['entity']['image'])->toBe('https://r2.example.test/syofficial/entities/min-logo_123.webp');
 });

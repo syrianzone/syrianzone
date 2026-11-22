@@ -44,6 +44,8 @@ class UpdateGovAppTool extends GovAppsTool
 
             'description_ar' => $schema->string()->description('New Arabic description. Pass null to clear it.'),
 
+            'icon_url' => $schema->string()->description('Optional remote HTTP(S) image URL to download, convert to a square WebP icon, and store on R2.'),
+
             'links' => $schema->object($this->linkProperties($schema))
                 ->description('Replace the links object keyed by channel: {"official": "...", "android": "...", "apple": "..."}. Omit to leave existing links untouched; pass an empty object to clear every link. A plain list is refused.'),
 
@@ -59,6 +61,7 @@ class UpdateGovAppTool extends GovAppsTool
             'name_ar' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
+            'icon_url' => 'sometimes|nullable|url|max:2048',
             'links' => 'sometimes|array',
             'links.*' => 'nullable|string|max:2048',
             'official_entity_id' => 'sometimes|nullable|string|max:128|exists:official_entities,id',

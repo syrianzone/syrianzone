@@ -134,6 +134,18 @@ class GovAppService
         }
         if ($icon !== null) {
             $app->icon = $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id);
+        } elseif (! empty($attributes['icon_url']) && is_string($attributes['icon_url'])
+            && (str_starts_with(trim($attributes['icon_url']), 'https://') || str_starts_with(trim($attributes['icon_url']), 'http://'))) {
+            $response = \Illuminate\Support\Facades\Http::timeout(15)
+                ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
+                ->get(trim($attributes['icon_url']));
+
+            if ($response->successful() && $response->body() !== '') {
+                $stored = $this->images->storeSquareWebpFromBytes($response->body(), self::ICON_DIR, $app->id);
+                if ($stored !== null) {
+                    $app->icon = $stored;
+                }
+            }
         }
 
         $app->save();

@@ -2,6 +2,7 @@
 
 use App\Mcp\Tools\GovApps\CreateGovAppTool;
 use App\Mcp\Tools\GovApps\RestoreGovAppTool;
+use App\Mcp\Tools\Suggestions\ReviewDirectorySuggestionTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialEntityTool;
 use App\Mcp\Tools\SyOfficial\DeleteSyOfficialCategoryTool;
@@ -10,6 +11,7 @@ use App\Mcp\Tools\SyOfficial\ReorderSyOfficialCategoriesTool;
 use App\Mcp\Tools\SyOfficial\ReorderSyOfficialEntitiesTool;
 use App\Mcp\Tools\SyOfficial\ToggleSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\UpdateSyOfficialEntityTool;
+use App\Models\DirectorySuggestion;
 use App\Models\GovApp;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
@@ -314,4 +316,30 @@ it('downloads and stores image_url on R2 when creating a SyOfficial entity via M
 
     expect($created['created'])->toBeTrue()
         ->and($created['entity']['image'])->toBe('https://r2.example.test/syofficial/entities/min-logo_123.webp');
+});
+
+it('lets a module editor accept or dismiss a directory suggestion via MCP', function () {
+    $submitter = User::factory()->create();
+    $suggestion = DirectorySuggestion::create([
+        'module' => 'govapps',
+        'kind' => 'edit',
+        'target_id' => 'paymera',
+        'target_label' => 'بيميرا',
+        'title' => 'تحديث رابط',
+        'details' => 'الرابط الرسمي هو https://paymera.net/',
+        'user_id' => $submitter->id,
+        'status' => 'pending',
+    ]);
+
+    agentToken($this->user, ['govapps.edit']);
+    $res = toolPayload(callTool(ReviewDirectorySuggestionTool::class, [
+        'module' => 'govapps',
+        'id' => $suggestion->id,
+        'decision' => 'accepted',
+        'resolution_note' => 'Applied official URL.',
+    ]));
+
+    expect($res['reviewed'])->toBeTrue()
+        ->and($res['suggestion']['status'])->toBe('accepted')
+        ->and($res['suggestion']['resolution_note'])->toBe('Applied official URL.');
 });

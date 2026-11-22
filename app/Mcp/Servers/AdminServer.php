@@ -83,6 +83,7 @@ use App\Mcp\Tools\Promises\UpdatePromiseSectorTool;
 use App\Mcp\Tools\Promises\UpdatePromiseSpeakerTool;
 use App\Mcp\Tools\Promises\UpdatePromiseTool;
 use App\Mcp\Tools\Suggestions\ListDirectorySuggestionsTool;
+use App\Mcp\Tools\Suggestions\ReviewDirectorySuggestionTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialEntityTool;
 use App\Mcp\Tools\SyOfficial\DeleteSyOfficialCategoryTool;
@@ -287,6 +288,8 @@ class AdminServer extends Server
             ArchivePollCandidateTool::class,
             RestorePollCandidateTool::class,
             DeletePollCandidateTool::class,
+
+            ReviewDirectorySuggestionTool::class,
 
             SetUserBanTool::class,
         ],

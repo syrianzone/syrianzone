@@ -67,3 +67,7 @@ scripts/tierlist-card/out/
 *.jks
 *.keystore
 key.properties
+
+# Local tool output
+graphify-out/
+__pycache__/

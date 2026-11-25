@@ -29,6 +29,11 @@ export interface SiteSubCategory {
     iconUrl: string | null;
 }
 
+export interface SiteModuleGroup {
+    id: string;
+    title: string;
+}
+
 export interface SiteModule {
     id: string;
     title: string;
@@ -38,6 +43,9 @@ export interface SiteModule {
     target: string;
     iconKey: string | null;
     iconUrl: string | null;
+    iconUrlDark: string | null;
+    group: string | null;
+    groupOrder: number | null;
     isInternal: boolean;
     /** Search copy: what the palette matches besides the title and subtitle. */
     description: string;
@@ -109,6 +117,9 @@ function moduleOf(raw: Record<string, unknown>): SiteModule {
         target: optionalText(raw.target) ?? text(raw.href, 'modules[].href'),
         iconKey: optionalText(raw.iconKey),
         iconUrl: optionalText(raw.iconUrl),
+        iconUrlDark: optionalText(raw.iconUrlDark),
+        group: optionalText(raw.group),
+        groupOrder: typeof raw.groupOrder === 'number' ? raw.groupOrder : null,
         isInternal: raw.isInternal !== false,
         description: optionalText(raw.description) ?? optionalText(raw.subtitle) ?? '',
         subCategories: subCategories(raw.subCategories),
@@ -148,6 +159,11 @@ function gateOf(raw: Record<string, unknown>): AdminGate {
 export function isCapabilityModule(value: string): value is CapabilityModule {
     return CAPABILITIES.some((capability) => capability.startsWith(`${value}.`));
 }
+
+export const SITE_MODULE_GROUPS: readonly SiteModuleGroup[] = (catalogue.groups ?? []).map((group) => ({
+    id: text(group.id, 'groups[].id'),
+    title: text(group.title, 'groups[].title'),
+}));
 
 export const SITE_MODULES: readonly SiteModule[] = catalogue.modules.map((module) => moduleOf(module));
 

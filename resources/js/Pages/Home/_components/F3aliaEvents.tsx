@@ -85,20 +85,7 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
 
             {/* Content Area */}
             {loading ? (
-                <div className="w-full animate-pulse" dir="rtl" aria-hidden="true">
-                    <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1.5">
-                        <div className="h-5 bg-muted rounded w-16" />
-                        <div className="h-6 bg-muted rounded w-64 max-w-full" />
-                    </div>
-                    <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-                        <div className="h-4 bg-muted rounded w-24" />
-                        <div className="h-4 bg-muted rounded w-14" />
-                        <div className="h-4 bg-muted rounded w-12" />
-                    </div>
-                    <div className="mt-2 flex justify-center">
-                        <div className="h-4 bg-muted rounded w-24" />
-                    </div>
-                </div>
+                <div className="w-full min-h-[72px]" aria-hidden="true" />
             ) : error ? (
                 <Card className="border-destructive/20 bg-destructive/5 text-center p-8">
                     <CardContent className="flex flex-col items-center gap-3">

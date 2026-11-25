@@ -74,6 +74,11 @@ export interface PrayerTimesOptions {
   timeoutMs?: number | null;
   /** Read/write Home's per-day `sessionStorage` entry before fetching. */
   sessionCache?: boolean;
+  /** Server-rendered initial timings so SSR paints the prayer table immediately. */
+  initialData?: {
+    timings: Record<string, string>;
+    hijri: PrayerHijri | null;
+  } | null;
 }
 
 export interface PrayerTimesState {
@@ -114,10 +119,10 @@ export function usePrayerTimes(
   method: number,
   options: PrayerTimesOptions = {},
 ): PrayerTimesState {
-  const { enabled = true, timeoutMs = 10_000, sessionCache = false } = options;
-  const [timings, setTimings] = useState<Record<string, string> | null>(null);
-  const [hijri, setHijri] = useState<PrayerHijri | null>(null);
-  const [loading, setLoading] = useState(enabled);
+  const { enabled = true, timeoutMs = 10_000, sessionCache = false, initialData = null } = options;
+  const [timings, setTimings] = useState<Record<string, string> | null>(() => initialData?.timings ?? null);
+  const [hijri, setHijri] = useState<PrayerHijri | null>(() => initialData?.hijri ?? null);
+  const [loading, setLoading] = useState(() => enabled && !initialData?.timings);
   const [error, setError] = useState<PrayerTimesError | null>(null);
   const [nonce, setNonce] = useState(0);
 

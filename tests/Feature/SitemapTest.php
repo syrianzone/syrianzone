@@ -66,9 +66,10 @@ test('sitemap lists every page in the SEO table', function () {
     // was added with `"sitemap": false` or the two lists have diverged again.
     $locs = sitemapLocs($this->get('/sitemap.xml')->getContent());
 
-    foreach (Pages::paths() as $path) {
+    foreach (array_column(Pages::sitemapPages(), 0) as $path) {
         expect($locs)->toContain('https://syrian.zone'.$path);
     }
+    expect($locs)->not->toContain('https://syrian.zone/party');
 });
 
 test('sitemap uses the canonical host configuration every other SEO surface reads', function () {

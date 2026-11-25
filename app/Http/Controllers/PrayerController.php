@@ -79,6 +79,74 @@ class PrayerController extends Controller
     return Facts::syria()['timezone'];
   }
 
+  /**
+   * Cached daily prayer timings for one Syrian governorate (used by both the
+   * JSON API and server-rendered /muslim/prayer/{city} pages). Returns null on
+   * transient upstream failure so SSR pages still render gracefully.
+   *
+   * @return array{governorate:string,latitude:float,longitude:float,method:int,timings:array<string,string>,hijri:?array{day:string,month:string,year:string}}|null
+   */
+  public static function timingsForGovernorate(string $governorate, ?int $method = null): ?array
+  {
+    if (! in_array($governorate, self::governorateIds(), true)) {
+      return null;
+    }
+
+    $resolvedMethod = $method ?? self::defaultMethod();
+    $today = now()->timezone(self::timezone());
+    $key = "prayer:{$governorate}:{$resolvedMethod}:{$today->format('Y-m-d')}";
+
+    $cached = Cache::get($key);
+    if (is_array($cached)) {
+      return $cached;
+    }
+
+    [$lat, $lon] = self::coordsFor($governorate);
+
+    try {
+      $response = Http::timeout(3)->get(rtrim((string) config('services.prayer.url'), '/').'/'.$today->format('d-m-Y'), [
+        'latitude' => $lat,
+        'longitude' => $lon,
+        'method' => $resolvedMethod,
+      ]);
+    } catch (\Throwable) {
+      return null;
+    }
+
+    if (! $response->successful() || $response->json('code') !== 200) {
+      return null;
+    }
+
+    $timings = $response->json('data.timings');
+    if (! is_array($timings)) {
+      return null;
+    }
+
+    $normalized = [];
+    foreach (self::PRAYERS as $prayer) {
+      if (isset($timings[$prayer])) {
+        $normalized[$prayer] = substr((string) $timings[$prayer], 0, 5);
+      }
+    }
+
+    if ($normalized === []) {
+      return null;
+    }
+
+    $payload = [
+      'governorate' => $governorate,
+      'latitude' => $lat,
+      'longitude' => $lon,
+      'method' => $resolvedMethod,
+      'timings' => $normalized,
+      'hijri' => self::parseHijri($response->json('data.date.hijri')),
+    ];
+
+    Cache::put($key, $payload, $today->copy()->endOfDay()->timestamp - $today->timestamp + 1);
+
+    return $payload;
+  }
+
   public function show(Request $request)
   {
     $validated = $request->validate([
@@ -170,6 +238,14 @@ class PrayerController extends Controller
   // timings, so we pass it through rather than adding a conversion library.
   // Null when upstream omits it: the widget drops the line, it is not fatal.
   private function hijri(mixed $hijri): ?array
+  {
+    return self::parseHijri($hijri);
+  }
+
+  /**
+   * @return array{day:string,month:string,year:string}|null
+   */
+  private static function parseHijri(mixed $hijri): ?array
   {
     if (! is_array($hijri) || ! isset($hijri['day'], $hijri['year']) || ! isset($hijri['month']['ar'])) {
       return null;

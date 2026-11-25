@@ -38,5 +38,7 @@ final readonly class Preview
         public ?\DateTimeInterface $published = null,
         public ?\DateTimeInterface $modified = null,
         public ?array $mainEntity = null,
+        /** @var list<array<string, mixed>> */
+        public array $extraGraph = [],
     ) {}
 }

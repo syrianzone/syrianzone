@@ -44,7 +44,14 @@ use App\Mcp\Tools\Places\ListPlacesTool;
 use App\Mcp\Tools\Places\RejectPlaceTool;
 use App\Mcp\Tools\Places\RotatePlacePhotoTool;
 use App\Mcp\Tools\Places\UpdatePlaceTool;
+use App\Mcp\Tools\Polls\ArchivePollCandidateTool;
+use App\Mcp\Tools\Polls\CreatePollCandidateTool;
+use App\Mcp\Tools\Polls\DeletePollCandidateTool;
+use App\Mcp\Tools\Polls\ListPollCandidatesTool;
+use App\Mcp\Tools\Polls\ListPollGroupsTool;
 use App\Mcp\Tools\Polls\ListPollsTool;
+use App\Mcp\Tools\Polls\RestorePollCandidateTool;
+use App\Mcp\Tools\Polls\UpdatePollCandidateTool;
 use App\Mcp\Tools\Promises\AcceptPromiseReportTool;
 use App\Mcp\Tools\Promises\AddPromiseUpdateTool;
 use App\Mcp\Tools\Promises\ApprovePromiseSpeakerTool;
@@ -76,6 +83,7 @@ use App\Mcp\Tools\Promises\UpdatePromiseSectorTool;
 use App\Mcp\Tools\Promises\UpdatePromiseSpeakerTool;
 use App\Mcp\Tools\Promises\UpdatePromiseTool;
 use App\Mcp\Tools\Suggestions\ListDirectorySuggestionsTool;
+use App\Mcp\Tools\Suggestions\ReviewDirectorySuggestionTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialEntityTool;
 use App\Mcp\Tools\SyOfficial\DeleteSyOfficialCategoryTool;
@@ -181,6 +189,8 @@ class AdminServer extends Server
         ListPhonebookEntriesTool::class,
         ListDirectorySuggestionsTool::class,
         ListPollsTool::class,
+        ListPollGroupsTool::class,
+        ListPollCandidatesTool::class,
         ListCompassFiguresTool::class,
         ListCompassPersonasTool::class,
         ListGuessWhoCategoriesTool::class,
@@ -272,6 +282,14 @@ class AdminServer extends Server
             UpdateGovtEvidenceTool::class,
             DeleteGovtEvidenceTool::class,
             SaveGovtSlotTool::class,
+
+            CreatePollCandidateTool::class,
+            UpdatePollCandidateTool::class,
+            ArchivePollCandidateTool::class,
+            RestorePollCandidateTool::class,
+            DeletePollCandidateTool::class,
+
+            ReviewDirectorySuggestionTool::class,
 
             SetUserBanTool::class,
         ],

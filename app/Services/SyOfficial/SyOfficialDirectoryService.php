@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 /**
  * The SyOfficial directory domain, transport-free.
@@ -151,9 +152,14 @@ class SyOfficialDirectoryService
         $entity->socials = $this->filterSocialMap($socials);
         $entity->is_active = $attributes['is_active'] ?? true;
         $entity->order_column = (int) (OfficialEntity::where('category_id', $categoryId)->max('order_column') ?? 0) + 1;
-        $entity->image = $image !== null
-            ? $this->images->storeSquareWebp($image, self::IMAGE_DIR, $entity->id)
-            : self::PLACEHOLDER_IMAGE;
+        if ($image !== null) {
+            $entity->image = $this->images->storeSquareWebp($image, self::IMAGE_DIR, $entity->id);
+        } elseif (! empty($attributes['image_url']) && self::isHttpUrl($attributes['image_url'])) {
+            $entity->image = $this->storeImageFromUrl((string) $attributes['image_url'], $entity->id)
+                ?? self::PLACEHOLDER_IMAGE;
+        } else {
+            $entity->image = self::PLACEHOLDER_IMAGE;
+        }
 
         // Wrapped so a failure after the upload does not leave an orphaned file
         // referenced by nothing: the row is what makes the image reachable.
@@ -204,15 +210,9 @@ class SyOfficialDirectoryService
             // but an R2 lifecycle policy should own the orphan.
             $entity->image = $this->images->storeSquareWebp($image, self::IMAGE_DIR, $entity->id);
         } elseif (! empty($attributes['image_url']) && self::isHttpUrl($attributes['image_url'])) {
-            $response = \Illuminate\Support\Facades\Http::timeout(15)
-                ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
-                ->get(trim((string) $attributes['image_url']));
-
-            if ($response->successful() && $response->body() !== '') {
-                $stored = $this->images->storeSquareWebpFromBytes($response->body(), self::IMAGE_DIR, $entity->id);
-                if ($stored !== null) {
-                    $entity->image = $stored;
-                }
+            $stored = $this->storeImageFromUrl((string) $attributes['image_url'], $entity->id);
+            if ($stored !== null) {
+                $entity->image = $stored;
             }
         }
 
@@ -221,6 +221,19 @@ class SyOfficialDirectoryService
         $this->flushCache();
 
         return $entity;
+    }
+
+    private function storeImageFromUrl(string $url, string $entityId): ?string
+    {
+        $response = Http::timeout(15)
+            ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
+            ->get(trim($url));
+
+        if (! $response->successful() || $response->body() === '') {
+            return null;
+        }
+
+        return $this->images->storeSquareWebpFromBytes($response->body(), self::IMAGE_DIR, $entityId);
     }
 
     public function setEntityActive(string $id, bool $isActive): OfficialEntity

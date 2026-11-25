@@ -162,9 +162,9 @@ test('a route link previews as the route on its city map', function () {
 
     // A draft route, an unknown one, or a route of another city: the city itself.
     foreach (['damascus-draft', 'no-such-route', 'bad id!'] as $route) {
-        expect(seoMetaFor('/transit/city/damascus?route='.urlencode($route))['title'])->toBe('مواصلات دمشق | ترانزيت');
+        expect(seoMetaFor('/transit/city/damascus?route='.urlencode($route))['title'])->toBe('مواصلات وسرافيس دمشق | ترانزيت سوريا');
     }
-    expect(seoMetaFor('/transit/city/homs?route=damascus-001')['title'])->toBe('مواصلات حمص | ترانزيت')
+    expect(seoMetaFor('/transit/city/homs?route=damascus-001')['title'])->toBe('مواصلات وسرافيس حمص | ترانزيت سوريا')
         ->and(Previews::cardSource('route')->card('damascus-draft'))->toBeNull();
 });
 
@@ -185,7 +185,7 @@ test('cities that share one map accept each other\'s routes', function () {
         ->and($meta['image'])->toContain('/og/r/route/rif-001.png?v=')
         ->and(seoMetaFor('/transit/city/rif-dimashq?route=damascus-001')['og_title'])->toBe('مزة جبل – كراج الست')
         // a city outside the shared map still does not claim the route
-        ->and(seoMetaFor('/transit/city/homs?route=rif-001')['title'])->toBe('مواصلات حمص | ترانزيت');
+        ->and(seoMetaFor('/transit/city/homs?route=rif-001')['title'])->toBe('مواصلات وسرافيس حمص | ترانزيت سوريا');
 
     expect(City::mapGroup('damascus'))->toBe(['damascus', 'rif-dimashq'])
         ->and(City::mapGroup('rif-dimashq'))->toBe(['damascus', 'rif-dimashq'])
@@ -196,10 +196,10 @@ test('a crossing link previews as the crossing', function () {
     $meta = seoMetaFor('/crossings?c=1');
     $card = Previews::cardSource('crossing')->card('1');
 
-    expect($meta['title'])->toBe('منفذ باب الهوى الحدودي | المنافذ الحدودية')
-        ->and($meta['description'])->toBe('منفذ برّي مع تركيا: الحالة وساعات العمل وأرقام التواصل والموقع على الخريطة.')
+    expect($meta['title'])->toBe('منفذ باب الهوى الحدودي — ساعات العمل والواتساب والموقع | المنافذ الحدودية')
+        ->and($meta['description'])->toContain('منفذ برّي مع تركيا')
         ->and($meta['url'])->toBe('https://syrian.zone/crossings?c=1')
-        ->and($meta['canonical'])->toBe('https://syrian.zone/crossings')
+        ->and($meta['canonical'])->toBe('https://syrian.zone/crossings/bab-al-hawa')
         ->and($meta['image'])->toBe('https://syrian.zone/og/r/crossing/1.png?v='.$card->version())
         ->and($card->model['title'])->toBe('منفذ باب الهوى الحدودي')
         ->and(array_column($card->model['pills'], 'label'))->toBe(['منفذ برّي', 'تركيا', 'مسافرين وتجاري']);

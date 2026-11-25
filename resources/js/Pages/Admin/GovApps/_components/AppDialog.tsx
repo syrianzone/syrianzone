@@ -88,9 +88,11 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
         formData.append('description_ar', descriptionAr);
         formData.append('is_active', isActive ? '1' : '0');
 
-        if (officialLink && officialLink.trim()) formData.append('links[official]', officialLink.trim());
-        if (androidLink && androidLink.trim()) formData.append('links[android]', androidLink.trim());
-        if (appleLink && appleLink.trim()) formData.append('links[apple]', appleLink.trim());
+        // Always submit all three keys so clearing a link (or clearing every
+        // link) sends an explicit links map instead of omitting the field.
+        formData.append('links[official]', officialLink.trim());
+        formData.append('links[android]', androidLink.trim());
+        formData.append('links[apple]', appleLink.trim());
 
         if (iconFile) {
             formData.append('icon_file', iconFile);

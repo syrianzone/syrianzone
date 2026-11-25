@@ -47,7 +47,7 @@ const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/Hom
 const AddLinkDialog = React.lazy(() => import('@/Pages/Home/_components/AddLinkDialog'));
 const EditLinkDialog = React.lazy(() => import('@/Pages/Home/_components/EditLinkDialog'));
 
-import { useSiteNavigation } from '@/Lib/siteLinks';
+import { groupSiteLinks, useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 
 const getFaviconUrl = (urlStr: string) => {
     try {
@@ -64,7 +64,7 @@ const getFaviconUrl = (urlStr: string) => {
 export default function Home() {
     const { props } = usePage<{ auth?: { user: { id: number; name: string; email: string; avatar_url: string; role: string; settings?: Record<string, any> | null } | null } }>();
     const user = props.auth?.user ?? null;
-    const { homeLinks } = useSiteNavigation();
+    const { homeLinks, groups } = useSiteNavigation();
 
     const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
     const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
@@ -274,59 +274,139 @@ export default function Home() {
                     )}
 
                     <HomeInlineSearchSection>
-                        <div className="mb-12">
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
-                                {homeLinks.filter((l) => l.isInternal).map((link) => {
-                                    const Icon = link.icon;
-                                    return (
-                                        <a
-                                            key={link.id || link.href}
-                                            href={link.href}
-                                            target={link.external ? '_blank' : undefined}
-                                            rel={link.external ? 'noopener noreferrer' : undefined}
-                                            className="group relative flex h-full flex-col items-center justify-between gap-2 py-1 text-center"
-                                        >
-                                            {Icon && <Icon className="w-12 h-12 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />}
-                                            {lastPage === link.href && (
-                                                <span title="آخر صفحة تمت زيارتها" className="absolute -top-1.5 -end-1.5 rounded-full border border-border bg-background p-0.5 text-primary shadow-sm">
-                                                    <History className="w-3.5 h-3.5" />
-                                                </span>
-                                            )}
-                                            {link.image && <img src={link.image} alt="" loading="lazy" decoding="async" className="w-12 h-12 shrink-0 object-contain transition-transform group-hover:scale-110" />}
-                                            <span className="text-xs font-medium text-foreground transition-colors group-hover:text-primary line-clamp-2">
-                                                {link.text}
-                                            </span>
-                                        </a>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                        {(() => {
+                            const internalLinks = homeLinks.filter((l) => l.isInternal);
+                            const externalLinks = homeLinks.filter((l) => !l.isInternal);
+                            const internalGroups = groupSiteLinks(internalLinks, groups);
+                            const byId = new Map(internalGroups.map((g) => [g.id, g]));
+                            const politics = byId.get('politics');
+                            const utility = byId.get('utility');
+                            const maps = byId.get('maps');
+                            const community = byId.get('community');
+                            const others = internalGroups.filter(
+                                (g) => !['politics', 'utility', 'maps', 'community'].includes(g.id),
+                            );
 
-                        <div>
-                            <h2 className="text-xl font-bold text-foreground mb-6 text-center">
-                                روابط خارجية وشقيقة
-                            </h2>
-                            <div className="flex flex-wrap justify-center gap-x-8 gap-y-5">
-                                {homeLinks.filter((l) => !l.isInternal).map((link, idx) => {
-                                    const Icon = link.icon;
-                                    return (
-                                        <a
-                                            key={link.id || link.href || idx}
-                                            href={link.href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group flex w-24 shrink-0 flex-col items-center justify-between gap-2 py-1 text-center"
-                                        >
-                                            {Icon && <Icon className="w-12 h-12 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />}
-                                            {link.image && <img src={link.image} alt="" loading="lazy" decoding="async" className="w-12 h-12 shrink-0 object-contain transition-transform group-hover:scale-110" />}
-                                            <span className="text-xs font-medium text-foreground transition-colors group-hover:text-primary line-clamp-2">
-                                                {link.text}
+                            const renderTile = (link: SiteLink) => {
+                                const Icon = link.icon;
+                                return (
+                                    <a
+                                        key={link.id || link.href}
+                                        href={link.href}
+                                        target={link.external ? '_blank' : undefined}
+                                        rel={link.external ? 'noopener noreferrer' : undefined}
+                                        className="group relative flex h-full flex-col items-center justify-between gap-2 rounded-lg px-1 py-2 text-center transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        {Icon && <Icon className="w-10 h-10 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />}
+                                        {lastPage === link.href && (
+                                            <span title="آخر صفحة تمت زيارتها" className="absolute -top-1 -end-1 rounded-full border border-border bg-background p-0.5 text-primary shadow-sm">
+                                                <History className="w-3.5 h-3.5" />
                                             </span>
-                                        </a>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                                        )}
+                                        {link.image && link.imageDark ? (
+                                            <>
+                                                <img src={link.image} alt="" loading="lazy" decoding="async" className="w-10 h-10 shrink-0 object-contain transition-transform group-hover:scale-110 dark:hidden" />
+                                                <img src={link.imageDark} alt="" loading="lazy" decoding="async" className="hidden w-10 h-10 shrink-0 object-contain transition-transform group-hover:scale-110 dark:block" />
+                                            </>
+                                        ) : link.image ? (
+                                            <img src={link.image} alt="" loading="lazy" decoding="async" className="w-10 h-10 shrink-0 object-contain transition-transform group-hover:scale-110" />
+                                        ) : null}
+                                        <span className="text-xs font-medium text-foreground transition-colors group-hover:text-primary line-clamp-2">
+                                            {link.text}
+                                        </span>
+                                    </a>
+                                );
+                            };
+
+                            return (
+                                <div className="mb-10 grid grid-cols-1 lg:grid-cols-10 gap-4">
+                                    {politics && (
+                                        <section
+                                            aria-labelledby="home-group-politics"
+                                            className="lg:col-span-5 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
+                                        >
+                                            <h2 id="home-group-politics" className="mb-4 text-sm font-bold text-foreground">
+                                                {politics.title}
+                                            </h2>
+                                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-2 gap-y-4">
+                                                {politics.links.map(renderTile)}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {utility && (
+                                        <section
+                                            aria-labelledby="home-group-utility"
+                                            className="lg:col-span-5 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
+                                        >
+                                            <h2 id="home-group-utility" className="mb-4 text-sm font-bold text-foreground">
+                                                {utility.title}
+                                            </h2>
+                                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-2 gap-y-4">
+                                                {utility.links.map(renderTile)}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {maps && (
+                                        <section
+                                            aria-labelledby="home-group-maps"
+                                            className="lg:col-span-4 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
+                                        >
+                                            <h2 id="home-group-maps" className="mb-4 text-sm font-bold text-foreground">
+                                                {maps.title}
+                                            </h2>
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-4">
+                                                {maps.links.map(renderTile)}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {community && (
+                                        <section
+                                            aria-labelledby="home-group-community"
+                                            className="lg:col-span-2 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
+                                        >
+                                            <h2 id="home-group-community" className="mb-4 text-sm font-bold text-foreground">
+                                                {community.title}
+                                            </h2>
+                                            <div className="grid grid-cols-2 gap-x-2 gap-y-4">
+                                                {community.links.map(renderTile)}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {externalLinks.length > 0 && (
+                                        <section
+                                            aria-labelledby="home-group-external"
+                                            className="lg:col-span-4 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
+                                        >
+                                            <h2 id="home-group-external" className="mb-4 text-sm font-bold text-foreground">
+                                                روابط خارجية وشقيقة
+                                            </h2>
+                                            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+                                                {externalLinks.map(renderTile)}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {others.map((group) => (
+                                        <section
+                                            key={group.id}
+                                            aria-labelledby={`home-group-${group.id}`}
+                                            className="lg:col-span-10 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
+                                        >
+                                            <h2 id={`home-group-${group.id}`} className="mb-4 text-sm font-bold text-foreground">
+                                                {group.title}
+                                            </h2>
+                                            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+                                                {group.links.map(renderTile)}
+                                            </div>
+                                        </section>
+                                    ))}
+                                </div>
+                            );
+                        })()}
                     </HomeInlineSearchSection>
 
                     <div>

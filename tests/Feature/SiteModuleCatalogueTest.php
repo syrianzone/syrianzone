@@ -37,7 +37,23 @@ test('the default navigation is the catalogue, entry for entry', function () {
     }
 
     expect(SiteSetting::navigationDefaults()['navbarTopCount'])
-        ->toBe(Facts::siteModules()['navbar']['topCount']);
+        ->toBe(Facts::siteModules()['navbar']['topCount'])
+        ->and(SiteSetting::navigationDefaults()['groups'])
+        ->toBe(Facts::siteModules()['groups']);
+});
+
+test('public navigation api exposes groups, item group metadata, and dark logos without party', function () {
+    $response = $this->getJson('/api/v1/navigation')->assertOk();
+
+    $groups = $response->json('groups');
+    $items = collect($response->json('items'));
+
+    expect(array_column($groups, 'id'))->toBe(['politics', 'utility', 'maps', 'community', 'external'])
+        ->and($items->firstWhere('id', 'party'))->toBeNull()
+        ->and($items->firstWhere('id', 'compass')['group'])->toBe('politics')
+        ->and($items->firstWhere('id', 'atlas')['group'])->toBe('maps')
+        ->and($items->firstWhere('id', 'jard')['iconUrl'])->toBe('https://jard.chat/images/logo-light.svg')
+        ->and($items->firstWhere('id', 'jard')['iconUrlDark'])->toBe('https://jard.chat/images/logo-dark.svg');
 });
 
 test('the stored admin override still wins over the catalogue', function () {

@@ -365,6 +365,23 @@ export function SearchResultsContent({
                         alt=""
                         className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
                     />
+                ) : link.image && link.imageDark ? (
+                    <>
+                        <img
+                            src={link.image}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110 dark:hidden"
+                        />
+                        <img
+                            src={link.imageDark}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="hidden h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110 dark:block"
+                        />
+                    </>
                 ) : link.image ? (
                     <img
                         src={link.image}

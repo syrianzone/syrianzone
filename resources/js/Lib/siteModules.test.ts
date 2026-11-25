@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { CAPABILITIES } from './capabilities';
-import { SITE_ICON_MAP, SITE_ICON_OPTIONS, SITE_LINKS } from './siteLinks';
+import { SITE_ICON_MAP, SITE_ICON_OPTIONS, SITE_LINKS, groupSiteLinks } from './siteLinks';
 import {
     ADMIN_SECTIONS,
     SITE_MODULES,
+    SITE_MODULE_GROUPS,
     adminSectionAllowed,
     isCapabilityModule,
     siteModule,
@@ -41,7 +42,22 @@ describe('the site-module catalogue', () => {
 
     it('finds modules by id', () => {
         expect(siteModule('transit')?.href).toBe('/transit');
+        expect(siteModule('party')).toBeNull();
         expect(siteModule('nope')).toBeNull();
+    });
+
+    it('assigns every module to a valid group and preserves jard dark/light logos', () => {
+        const validGroups = new Set(SITE_MODULE_GROUPS.map((g) => g.id));
+        for (const module of SITE_MODULES) {
+            expect(module.group && validGroups.has(module.group), `${module.id} -> ${module.group}`).toBe(true);
+        }
+
+        const grouped = groupSiteLinks(SITE_LINKS.filter((l) => l.isInternal));
+        expect(grouped.map((g) => g.id)).toEqual(['politics', 'utility', 'maps', 'community']);
+
+        const jard = siteModule('jard');
+        expect(jard?.iconUrl).toBe('https://jard.chat/images/logo-light.svg');
+        expect(jard?.iconUrlDark).toBe('https://jard.chat/images/logo-dark.svg');
     });
 });
 

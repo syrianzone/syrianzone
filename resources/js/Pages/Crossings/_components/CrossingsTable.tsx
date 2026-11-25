@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { cn } from '@/Lib/utils';
 import { StatusDot } from './StatusPill';
 import { WhatsAppIcon } from './WhatsAppIcon';
@@ -81,16 +82,24 @@ export function CrossingsTable({
                                         </div>
                                     </button>
 
-                                    <a
-                                        href={`https://wa.me/${crossing.intl}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        title={`واتساب ${formatIntl(crossing.intl)}`}
-                                        className="absolute bottom-2.5 end-4 inline-flex items-center gap-1 rounded-md border border-emerald-600/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
-                                    >
-                                        <WhatsAppIcon className="h-3.5 w-3.5" />
-                                        واتساب
-                                    </a>
+                                    <div className="absolute bottom-2.5 end-4 flex items-center gap-1.5">
+                                        <Link
+                                            href={`/crossings/${crossing.slug}`}
+                                            className="inline-flex items-center rounded-md border border-border bg-background/80 px-2 py-1 text-[11px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                                        >
+                                            التفاصيل
+                                        </Link>
+                                        <a
+                                            href={`https://wa.me/${crossing.intl}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title={`واتساب ${formatIntl(crossing.intl)}`}
+                                            className="inline-flex items-center gap-1 rounded-md border border-emerald-600/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-bold text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
+                                        >
+                                            <WhatsAppIcon className="h-3.5 w-3.5" />
+                                            واتساب
+                                        </a>
+                                    </div>
                                 </li>
                             );
                         })}

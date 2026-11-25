@@ -310,6 +310,12 @@ class SeoMeta
             $graph[] = $page;
         }
 
+        foreach ($about->extraGraph as $node) {
+            if (is_array($node) && ! empty($node['@type'])) {
+                $graph[] = $node;
+            }
+        }
+
         // The string is printed raw inside <script> (app.blade.php and
         // SeoHead), and titles can come from visitor submissions, so `<`, `>`
         // and `&` are escaped: a "</script>" in a title must stay data.

@@ -47,6 +47,8 @@ class CreateSyOfficialEntityTool extends SyOfficialTool
 
             'description_ar' => $schema->string()->description('Optional Arabic description.'),
 
+            'image_url' => $schema->string()->description('Optional remote HTTP(S) image URL to download, convert to a 200x200 square WebP, and store on R2.'),
+
             'socials' => $schema->object($this->socialProperties($schema))
                 ->description('Optional profile links as an object keyed by platform, e.g. {"facebook": "https://facebook.com/page"}. Only http and https are kept; an empty value drops that platform. A plain list is refused because it loses the platform.'),
         ];
@@ -61,6 +63,7 @@ class CreateSyOfficialEntityTool extends SyOfficialTool
             'name_ar' => 'required|string|max:255',
             'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
+            'image_url' => 'sometimes|nullable|url|max:2048',
             'socials' => 'nullable|array',
             'socials.*' => 'nullable|string|max:2048',
             'is_active' => 'boolean',

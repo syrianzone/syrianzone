@@ -153,9 +153,16 @@ Single-source-of-truth catalog for all Syrian Zone modules, icons, titles, subti
 **Response (`200 OK`)**:
 ```json
 {
-  "navbarTopCount": 4,
+  "navbarTopCount": 5,
   "useSeparateNavbarOrder": false,
-  "navbarOrder": ["transit", "mishwar", "polls", "compass"],
+  "navbarOrder": ["roznama", "muslim", "games", "transit", "mishwar"],
+  "groups": [
+    { "id": "politics", "title": "السياسة والحكومة" },
+    { "id": "utility", "title": "أدوات وخدمات" },
+    { "id": "maps", "title": "الخرائط والنقل" },
+    { "id": "community", "title": "المجتمع" },
+    { "id": "external", "title": "روابط خارجية وشقيقة" }
+  ],
   "version": 3,
   "items": [
     {
@@ -163,12 +170,15 @@ Single-source-of-truth catalog for all Syrian Zone modules, icons, titles, subti
       "title": "ترانزيت",
       "subtitle": "شبكة وخطوط النقل العام",
       "iconUrl": "https://syrian.zone/assets/icons/transit.svg",
+      "iconUrlDark": null,
       "iconKey": "transit",
+      "group": "maps",
+      "groupOrder": 1,
       "type": "native",
       "target": "transit_map",
       "href": "/transit",
       "enabled": true,
-      "surfaces": ["home", "navbar", "mobile_menubar"],
+      "surfaces": ["home", "navbar", "mobile_menu", "mobile_home"],
       "subCategories": [
         {
           "id": "transit_studio",
@@ -183,6 +193,7 @@ Single-source-of-truth catalog for all Syrian Zone modules, icons, titles, subti
       ],
       "text": "ترانزيت",
       "image": "https://syrian.zone/assets/icons/transit.svg",
+      "imageDark": null,
       "isFlag": false,
       "external": false,
       "isInternal": true,
@@ -195,14 +206,16 @@ Single-source-of-truth catalog for all Syrian Zone modules, icons, titles, subti
 ```
 
 #### Field Semantics for Cross-Platform Clients (Web + Flutter)
+- `groups`: Ordered list of canonical tool categories (`politics`, `utility`, `maps`, `community`, `external`) with their Arabic `title`. Clients can group `items` by `item.group` and sort within each group by `item.groupOrder`.
 - `id`: Stable canonical identifier (`transit`, `mishwar`, `polls`, `tierlist`, `compass`, `muslim`, `games`, `syofficial`, `phonebook`, `govapps`, `atlas`, etc.). Clients can select or exclude specific IDs per screen.
 - `title` / `subtitle`: Arabic display title and short description.
-- `iconUrl` / `iconKey`: Custom uploaded icon URL (Cloudflare R2 / HTTPS) or built-in vector icon key (`transit`, `mishwar`, `polls`, `compass`, `muslim`, `games`, etc.).
+- `iconUrl` / `iconUrlDark` / `iconKey`: Custom uploaded icon URL (light mode default, plus optional `iconUrlDark` / `imageDark` for dark themes such as `jard`) or built-in vector icon key (`transit`, `mishwar`, `polls`, `compass`, `muslim`, `games`, etc.).
+- `group` / `groupOrder`: Optional category ID matching an entry in `groups` (`politics`, `utility`, `maps`, `community`, `external`) and its 0-based display order within that group.
 - `type`:
   - `"native"` — Open a native screen in Flutter identified by `target` (e.g. `transit_map`, `mishwar`, `polls`, `compass`, `muslim_hub`) or navigate internally to `href` on Web.
   - `"web"` / `"webview"` — Internal web page without a dedicated native screen yet; open `href` in an in-app WebView on Flutter or internal link on Web.
   - `"external"` — External website (`https://...`); open in external browser / custom tab.
-- `surfaces`: Array of surfaces where the item is active (`"home"`, `"navbar"`, `"mobile_menubar"`).
+- `surfaces`: Array of surfaces where the item is active (`"home"`, `"navbar"`, `"mobile_menu"`, `"mobile_home"`).
 - `subCategories`: Optional array of child items (e.g. `/muslim/prayer`, `/muslim/quran`, `/muslim/radio` under `muslim`, or individual games under `games`).
 
 ### `PUT /api/v1/admin/navigation` (`site.navigation` only)

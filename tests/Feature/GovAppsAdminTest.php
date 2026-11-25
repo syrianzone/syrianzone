@@ -38,14 +38,21 @@ it('creates an app and flashes the admin toast', function () {
             'id' => 'services',
             'name' => 'Services',
             'name_ar' => 'الخدمات',
-            'links' => ['https://example.com'],
+            'links' => [
+                'official' => 'https://example.com',
+                'android' => 'https://play.google.com/store/apps/details?id=sy.test',
+                'apple' => '',
+            ],
         ])
         ->assertRedirect()
         ->assertSessionHas('success', 'تم إضافة التطبيق الحكومي بنجاح');
 
     $app = GovApp::where('id', 'services')->first();
 
-    expect($app->links)->toBe(['https://example.com'])
+    expect($app->links)->toBe([
+        'official' => 'https://example.com',
+        'android' => 'https://play.google.com/store/apps/details?id=sy.test',
+    ])
         ->and($app->icon)->toBeNull()
         ->and($app->order_column)->toBe(1);
 });
@@ -70,14 +77,29 @@ it('answers 404 when deleting an app that does not exist', function () {
         ->assertNotFound();
 });
 
-it('accepts an update on both POST and PUT', function () {
-    $app = GovApp::factory()->create(['name' => 'Old Name']);
-    $payload = ['name' => 'New Name', 'name_ar' => 'اسم جديد'];
+it('accepts an update on both POST and PUT and preserves store link keys', function () {
+    $app = GovApp::factory()->create([
+        'name' => 'Old Name',
+        'links' => ['android' => 'https://play.google.com/store/apps/details?id=sy.old'],
+    ]);
+    $payload = [
+        'name' => 'New Name',
+        'name_ar' => 'اسم جديد',
+        'links' => [
+            'official' => '',
+            'android' => 'https://play.google.com/store/apps/details?id=sy.old',
+            'apple' => 'https://apps.apple.com/us/app/test/id123',
+        ],
+    ];
 
     $this->actingAs($this->admin)->post($this->base.'/'.$app->id, $payload)->assertRedirect();
     $this->actingAs($this->admin)->put($this->base.'/'.$app->id, $payload)->assertRedirect();
 
-    expect($app->fresh()->name)->toBe('New Name');
+    expect($app->fresh()->name)->toBe('New Name')
+        ->and($app->fresh()->links)->toBe([
+            'android' => 'https://play.google.com/store/apps/details?id=sy.old',
+            'apple' => 'https://apps.apple.com/us/app/test/id123',
+        ]);
 });
 
 it('soft deletes an app through the dashboard', function () {

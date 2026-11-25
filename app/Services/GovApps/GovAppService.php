@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 /**
  * The government-apps directory domain, transport-free.
@@ -55,7 +56,7 @@ class GovAppService
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<int, string>  $links
+     * @param  array<string, string|null>  $links  Channel key (`official`, `android`, `apple`) => URL.
      */
     public function create(array $attributes, array $links = [], ?UploadedFile $icon = null): GovApp
     {
@@ -67,11 +68,21 @@ class GovAppService
         $app->name_ar = $attributes['name_ar'];
         $app->description = $attributes['description'] ?? null;
         $app->description_ar = $attributes['description_ar'] ?? null;
-        $app->icon = $icon !== null
-            ? $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id)
-            : null;
+        $app->official_entity_id = $attributes['official_entity_id'] ?? null;
+        $app->overview_ar = $attributes['overview_ar'] ?? null;
+        $app->features = array_key_exists('features', $attributes) ? $this->filterStringList($attributes['features']) : null;
+        $app->requirements = array_key_exists('requirements', $attributes) ? $this->filterStringList($attributes['requirements']) : null;
+        $app->faqs = array_key_exists('faqs', $attributes) ? $this->filterFaqs($attributes['faqs']) : null;
+        $app->verified_at = $attributes['verified_at'] ?? null;
+        if ($icon !== null) {
+            $app->icon = $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id);
+        } elseif (! empty($attributes['icon_url']) && is_string($attributes['icon_url'])) {
+            $app->icon = $this->storeIconFromUrl($attributes['icon_url'], $app->id);
+        } else {
+            $app->icon = null;
+        }
         $app->images = [];
-        $app->links = $this->filterUrls($links);
+        $app->links = $this->filterLinkMap($links);
         $app->order_column = (int) (GovApp::max('order_column') ?? 0) + 1;
         $app->is_active = $attributes['is_active'] ?? true;
 
@@ -90,7 +101,7 @@ class GovAppService
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<int, string>|null  $links  Null leaves the existing list alone.
+     * @param  array<string, string|null>|null  $links  Null leaves the existing map alone.
      */
     public function update(string $id, array $attributes, ?array $links = null, ?UploadedFile $icon = null): GovApp
     {
@@ -105,11 +116,34 @@ class GovAppService
         if (array_key_exists('description_ar', $attributes)) {
             $app->description_ar = $attributes['description_ar'];
         }
+        if (array_key_exists('official_entity_id', $attributes)) {
+            $app->official_entity_id = $attributes['official_entity_id'] ?: null;
+        }
+        if (array_key_exists('overview_ar', $attributes)) {
+            $app->overview_ar = $attributes['overview_ar'];
+        }
+        if (array_key_exists('features', $attributes)) {
+            $app->features = $this->filterStringList($attributes['features']);
+        }
+        if (array_key_exists('requirements', $attributes)) {
+            $app->requirements = $this->filterStringList($attributes['requirements']);
+        }
+        if (array_key_exists('faqs', $attributes)) {
+            $app->faqs = $this->filterFaqs($attributes['faqs']);
+        }
+        if (array_key_exists('verified_at', $attributes)) {
+            $app->verified_at = $attributes['verified_at'] ?: null;
+        }
         if ($links !== null) {
-            $app->links = $this->filterUrls($links);
+            $app->links = $this->filterLinkMap($links);
         }
         if ($icon !== null) {
             $app->icon = $this->images->storeSquareWebp($icon, self::ICON_DIR, $app->id);
+        } elseif (! empty($attributes['icon_url']) && is_string($attributes['icon_url'])) {
+            $stored = $this->storeIconFromUrl($attributes['icon_url'], $app->id);
+            if ($stored !== null) {
+                $app->icon = $stored;
+            }
         }
 
         $app->save();
@@ -117,6 +151,24 @@ class GovAppService
         $this->flushCache();
 
         return $app;
+    }
+
+    private function storeIconFromUrl(string $url, string $appId): ?string
+    {
+        $trimmed = trim($url);
+        if (! str_starts_with($trimmed, 'https://') && ! str_starts_with($trimmed, 'http://')) {
+            return null;
+        }
+
+        $response = Http::timeout(15)
+            ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
+            ->get($trimmed);
+
+        if (! $response->successful() || $response->body() === '') {
+            return null;
+        }
+
+        return $this->images->storeSquareWebpFromBytes($response->body(), self::ICON_DIR, $appId);
     }
 
     public function setActive(string $id, bool $isActive): GovApp
@@ -184,30 +236,89 @@ class GovAppService
     }
 
     /**
-     * Keep only http(s) links and reindex, so the JSON column stays a list
-     * rather than becoming an object with gaps. `gov_apps.links` *is* a list;
-     * the entities' `socials` column is a platform-keyed map and uses its own
-     * filter in SyOfficialDirectoryService — copying this one there is what
-     * flattened the platform keys.
+     * Filter `gov_apps.links`, which is an object keyed by channel (`official`,
+     * `android`, `apple`) — both the public directory (`GovAppsClient.tsx`) and
+     * the admin edit dialog (`AppDialog.tsx`) read links by those keys.
      *
-     * @param  array<int, mixed>  $urls
-     * @return array<int, string>
+     * Calling `array_values()` previously stripped those keys into a numeric
+     * list `[0 => "https://..."]`, making every saved link disappear from both
+     * the public page and the edit dialog on reload. Empty values and non-http
+     * URLs are dropped while keeping the channel keys intact; a list is refused.
+     *
+     * @param  array<array-key, mixed>  $links
+     * @return array<string, string>
      */
-    protected function filterUrls(array $urls): array
+    protected function filterLinkMap(array $links): array
     {
-        return array_values(array_filter(
-            $urls,
-            static function ($url): bool {
-                if (! is_string($url)) {
-                    return false;
-                }
+        if ($links !== [] && array_is_list($links)) {
+            throw DirectoryActionException::linksNotKeyed();
+        }
 
-                $url = trim($url);
+        $filtered = [];
 
-                return $url !== ''
-                    && (str_starts_with($url, 'http://') || str_starts_with($url, 'https://'));
-            },
-        ));
+        foreach ($links as $channel => $url) {
+            if (! is_string($channel) || $channel === '' || ! is_string($url)) {
+                continue;
+            }
+
+            $trimmed = trim($url);
+            if ($trimmed === '' || (! str_starts_with($trimmed, 'http://') && ! str_starts_with($trimmed, 'https://'))) {
+                continue;
+            }
+
+            $filtered[$channel] = $trimmed;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * @param  array<array-key, mixed>|null  $items
+     * @return array<int, string>|null
+     */
+    protected function filterStringList(?array $items): ?array
+    {
+        if ($items === null) {
+            return null;
+        }
+
+        $clean = [];
+        foreach ($items as $item) {
+            if (! is_string($item)) {
+                continue;
+            }
+            $trimmed = trim($item);
+            if ($trimmed !== '') {
+                $clean[] = $trimmed;
+            }
+        }
+
+        return $clean;
+    }
+
+    /**
+     * @param  array<array-key, mixed>|null  $faqs
+     * @return array<int, array{q: string, a: string}>|null
+     */
+    protected function filterFaqs(?array $faqs): ?array
+    {
+        if ($faqs === null) {
+            return null;
+        }
+
+        $clean = [];
+        foreach ($faqs as $faq) {
+            if (! is_array($faq)) {
+                continue;
+            }
+            $q = is_string($faq['q'] ?? null) ? trim($faq['q']) : '';
+            $a = is_string($faq['a'] ?? null) ? trim($faq['a']) : '';
+            if ($q !== '' && $a !== '') {
+                $clean[] = ['q' => $q, 'a' => $a];
+            }
+        }
+
+        return $clean;
     }
 
     protected function assertIdFree(?string $id): void

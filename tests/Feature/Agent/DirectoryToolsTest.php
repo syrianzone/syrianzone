@@ -2,6 +2,7 @@
 
 use App\Mcp\Tools\GovApps\CreateGovAppTool;
 use App\Mcp\Tools\GovApps\RestoreGovAppTool;
+use App\Mcp\Tools\Suggestions\ReviewDirectorySuggestionTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialEntityTool;
 use App\Mcp\Tools\SyOfficial\DeleteSyOfficialCategoryTool;
@@ -10,11 +11,15 @@ use App\Mcp\Tools\SyOfficial\ReorderSyOfficialCategoriesTool;
 use App\Mcp\Tools\SyOfficial\ReorderSyOfficialEntitiesTool;
 use App\Mcp\Tools\SyOfficial\ToggleSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\UpdateSyOfficialEntityTool;
+use App\Models\DirectorySuggestion;
 use App\Models\GovApp;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
 use App\Models\User;
+use App\Services\Directories\SquareWebpImageService;
 use App\Services\GovApps\GovAppService;
+use App\Services\SyOfficial\SyOfficialDirectoryService;
+use Illuminate\Support\Facades\Http;
 
 /*
 |--------------------------------------------------------------------------
@@ -230,4 +235,111 @@ it('tells the agent a deleted app id stays taken', function () {
     ]);
 
     expect(toolText($response))->toContain('restore-gov-app');
+});
+
+it('refuses a list-shaped links argument from create-gov-app and keeps keyed links intact', function () {
+    agentToken($this->user, ['govapps.create']);
+
+    $refused = callTool(CreateGovAppTool::class, [
+        'id' => 'list-links-app',
+        'name' => 'List Links',
+        'name_ar' => 'قائمة',
+        'links' => ['https://apps.apple.com/us/app/test/id123'],
+    ]);
+
+    expect(toolText($refused))->toContain('links must be an object keyed by platform')
+        ->and(GovApp::where('id', 'list-links-app')->exists())->toBeFalse();
+
+    $created = toolPayload(callTool(CreateGovAppTool::class, [
+        'id' => 'keyed-links-app',
+        'name' => 'Keyed Links',
+        'name_ar' => 'روابط مصنفة',
+        'links' => [
+            'android' => 'https://play.google.com/store/apps/details?id=sy.test',
+            'apple' => 'https://apps.apple.com/us/app/test/id123',
+        ],
+    ]));
+
+    expect($created['created'])->toBeTrue()
+        ->and($created['app']['links'])->toBe([
+            'android' => 'https://play.google.com/store/apps/details?id=sy.test',
+            'apple' => 'https://apps.apple.com/us/app/test/id123',
+        ]);
+});
+
+it('downloads and stores icon_url on R2 when creating a gov app via MCP', function () {
+    Http::fake([
+        'https://example.test/icon.png' => Http::response('fake-png-bytes', 200),
+    ]);
+
+    $mock = Mockery::mock(SquareWebpImageService::class);
+    $mock->shouldReceive('storeSquareWebpFromBytes')
+        ->once()
+        ->with('fake-png-bytes', GovAppService::ICON_DIR, 'icon-app')
+        ->andReturn('https://r2.example.test/govapps/icon-app_123.webp');
+    app()->instance(SquareWebpImageService::class, $mock);
+
+    agentToken($this->user, ['govapps.create']);
+    $created = toolPayload(callTool(CreateGovAppTool::class, [
+        'id' => 'icon-app',
+        'name' => 'Icon App',
+        'name_ar' => 'تطبيق بأيقونة',
+        'icon_url' => 'https://example.test/icon.png',
+    ]));
+
+    expect($created['created'])->toBeTrue()
+        ->and($created['app']['icon'])->toBe('https://r2.example.test/govapps/icon-app_123.webp');
+});
+
+it('downloads and stores image_url on R2 when creating a SyOfficial entity via MCP', function () {
+    $category = OfficialCategory::factory()->create(['id' => 'ministries']);
+
+    Http::fake([
+        'https://example.test/logo.png' => Http::response('fake-logo-bytes', 200),
+    ]);
+
+    $mock = Mockery::mock(SquareWebpImageService::class);
+    $mock->shouldReceive('storeSquareWebpFromBytes')
+        ->once()
+        ->with('fake-logo-bytes', SyOfficialDirectoryService::IMAGE_DIR, 'min-logo')
+        ->andReturn('https://r2.example.test/syofficial/entities/min-logo_123.webp');
+    app()->instance(SquareWebpImageService::class, $mock);
+
+    agentToken($this->user, ['syofficial.create']);
+    $created = toolPayload(callTool(CreateSyOfficialEntityTool::class, [
+        'id' => 'min-logo',
+        'category_id' => $category->id,
+        'name' => 'Logo Ministry',
+        'name_ar' => 'وزارة بشعار',
+        'image_url' => 'https://example.test/logo.png',
+    ]));
+
+    expect($created['created'])->toBeTrue()
+        ->and($created['entity']['image'])->toBe('https://r2.example.test/syofficial/entities/min-logo_123.webp');
+});
+
+it('lets a module editor accept or dismiss a directory suggestion via MCP', function () {
+    $submitter = User::factory()->create();
+    $suggestion = DirectorySuggestion::create([
+        'module' => 'govapps',
+        'kind' => 'edit',
+        'target_id' => 'paymera',
+        'target_label' => 'بيميرا',
+        'title' => 'تحديث رابط',
+        'details' => 'الرابط الرسمي هو https://paymera.net/',
+        'user_id' => $submitter->id,
+        'status' => 'pending',
+    ]);
+
+    agentToken($this->user, ['govapps.edit']);
+    $res = toolPayload(callTool(ReviewDirectorySuggestionTool::class, [
+        'module' => 'govapps',
+        'id' => $suggestion->id,
+        'decision' => 'accepted',
+        'resolution_note' => 'Applied official URL.',
+    ]));
+
+    expect($res['reviewed'])->toBeTrue()
+        ->and($res['suggestion']['status'])->toBe('accepted')
+        ->and($res['suggestion']['resolution_note'])->toBe('Applied official URL.');
 });

@@ -46,9 +46,12 @@ class CreateGovAppTool extends GovAppsTool
 
             'description_ar' => $schema->string()->description('Optional Arabic description.'),
 
-            'links' => $schema->array()
-                ->description('Optional store or official links. Only http and https are kept; anything else is dropped.')
-                ->items($schema->string()->max(2048)),
+            'icon_url' => $schema->string()->description('Optional remote HTTP(S) image URL to download, convert to a square WebP icon, and store on R2.'),
+
+            'links' => $schema->object($this->linkProperties($schema))
+                ->description('Optional store or official links as an object keyed by channel: {"official": "...", "android": "...", "apple": "..."}. Only http and https are kept; an empty value drops that key. A plain list is refused.'),
+
+            ...$this->guideProperties($schema),
 
             'is_active' => $schema->boolean()
                 ->description('Defaults to true. Set false to add it hidden while you prepare it.')
@@ -64,8 +67,19 @@ class CreateGovAppTool extends GovAppsTool
             'name_ar' => 'required|string|max:255',
             'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
+            'icon_url' => 'sometimes|nullable|url|max:2048',
             'links' => 'nullable|array',
             'links.*' => 'nullable|string|max:2048',
+            'official_entity_id' => 'nullable|string|max:128|exists:official_entities,id',
+            'overview_ar' => 'nullable|string|max:10000',
+            'features' => 'nullable|array|max:20',
+            'features.*' => 'nullable|string|max:500',
+            'requirements' => 'nullable|array|max:20',
+            'requirements.*' => 'nullable|string|max:500',
+            'faqs' => 'nullable|array|max:20',
+            'faqs.*.q' => 'required_with:faqs|string|max:500',
+            'faqs.*.a' => 'required_with:faqs|string|max:2000',
+            'verified_at' => 'nullable|date',
             'is_active' => 'boolean',
         ]);
 

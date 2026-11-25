@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, Check, Settings } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { AlertCircle, Check, MapPin, Settings } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
@@ -11,21 +12,38 @@ import { prayerSchedule } from '../../../Domain/prayer/nextPrayer';
 import { PrayerIcon } from '../../../Domain/prayer/PrayerIcon';
 import PrayerSettingsFields from '../../../Domain/prayer/PrayerSettingsFields';
 import ResponsiveSettingsDialog from '../../../Domain/prayer/ResponsiveSettingsDialog';
-import { usePrayerTimes } from '../../../Domain/prayer/times';
-import { resolvePlaceLabel, useLocationPreference } from '../../../Domain/location/preference';
+import { usePrayerTimes, type PrayerHijri } from '../../../Domain/prayer/times';
+import { resolvePlaceLabel, useLocationPreference, type LocationPreference } from '../../../Domain/location/preference';
+import { governoratesByPickerOrder } from '../../../Domain/geography/governorates';
 import { usePageDialog } from '@/Lib/appShell';
 
 interface Props {
   prefs: MuslimPrefs;
   setPrefs: (p: Partial<MuslimPrefs>) => void;
   isLoggedIn: boolean;
+  initialCity?: string | null;
+  initialPrayer?: {
+    governorate: string;
+    method: number;
+    timings: Record<string, string>;
+    hijri: PrayerHijri | null;
+  } | null;
 }
 
-export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
+export default function PrayerView({ prefs, setPrefs, isLoggedIn, initialCity = null, initialPrayer = null }: Props) {
   const [now, setNow] = useState(() => new Date());
-  const location = useLocationPreference();
+  const storedLocation = useLocationPreference();
+  const location: LocationPreference = useMemo(
+    () => (initialCity
+      ? { ...storedLocation, city: initialCity, useCustomCoords: false, geo: null }
+      : storedLocation),
+    [initialCity, storedLocation],
+  );
   const { timings, hijri, loading, error: prayerError, reload } = usePrayerTimes(location, prefs.method, {
     timeoutMs: 12_000,
+    initialData: initialPrayer && initialPrayer.method === prefs.method
+      ? { timings: initialPrayer.timings, hijri: initialPrayer.hijri }
+      : null,
   });
   // A timed-out request keeps the previous list on screen (no error copy) on
   // this page; the "إعادة المحاولة" button appears only for real failures.
@@ -110,9 +128,7 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
           )}
 
           {loading ? (
-            <div className="space-y-3 py-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="h-10 animate-pulse rounded-lg bg-muted" />)}
-            </div>
+            <div className="min-h-[348px]" aria-hidden="true" />
           ) : error ? (
             <div className="flex flex-col items-center gap-2 py-8 text-sm text-red-500">
               <AlertCircle className="h-8 w-8" /><p>{error}</p>
@@ -174,6 +190,33 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
           </p>
         </CardContent>
       </Card>
+
+      {/* Syrian Governorates Prayer Times Directory (internal SEO links) */}
+      <nav aria-label="مواقيت الصلاة في المحافظات السورية" className="mt-6 rounded-xl border border-border/70 bg-card/50 p-4">
+        <div className="mb-3 flex items-center gap-2 text-xs font-bold text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+          <span>مواقيت الصلاة في المحافظات السورية</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {governoratesByPickerOrder().map((gov) => {
+            const active = initialCity === gov.id;
+            return (
+              <Link
+                key={gov.id}
+                href={`/muslim/prayer/${gov.id}`}
+                aria-current={active ? 'page' : undefined}
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  active
+                    ? 'border-primary/40 bg-primary/10 font-bold text-primary'
+                    : 'border-border/60 bg-background/70 text-foreground hover:border-primary/40 hover:text-primary'
+                }`}
+              >
+                {gov.nameAr}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

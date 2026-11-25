@@ -4,6 +4,7 @@ import {
   Calendar,
   CheckCircle2,
   ExternalLink,
+  Pause,
   XCircle,
 } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
@@ -28,6 +29,7 @@ interface RevealPanelProps {
 const DISMISS_DISTANCE_PX = 80;
 const DISMISS_VELOCITY_PX_MS = 0.42;
 const DISMISS_MIN_FLICK_PX = 34;
+const TAP_MAX_DISTANCE_PX = 10;
 const FLY_OUT_MS = 200;
 const AUTO_DISMISS_MS = 3000;
 
@@ -47,6 +49,7 @@ export default function RevealPanel({
   const [dragging, setDragging] = useState(false);
   const [flyVector, setFlyVector] = useState<{ x: number; y: number } | null>(null);
   const [remainingMs, setRemainingMs] = useState(AUTO_DISMISS_MS);
+  const [timerStopped, setTimerStopped] = useState(false);
 
   const dragStartRef = useRef<{ x: number; y: number; time: number; pointerId: number } | null>(null);
   const committedRef = useRef(false);
@@ -66,6 +69,7 @@ export default function RevealPanel({
     setFlyVector(null);
     setOffset({ x: 0, y: 0 });
     setRemainingMs(AUTO_DISMISS_MS);
+    setTimerStopped(false);
     return () => {
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
@@ -91,9 +95,9 @@ export default function RevealPanel({
     [onNext],
   );
 
-  // Auto-dismiss after 3 seconds (pauses while actively dragging)
+  // Auto-dismiss after 3 seconds (pauses while dragging, stops when tapped/clicked)
   useEffect(() => {
-    if (dragging || flyVector !== null || committedRef.current) return;
+    if (dragging || timerStopped || flyVector !== null || committedRef.current) return;
     lastTickRef.current = performance.now();
 
     const intervalId = window.setInterval(() => {
@@ -110,7 +114,7 @@ export default function RevealPanel({
     }, 50);
 
     return () => window.clearInterval(intervalId);
-  }, [dragging, flyVector, dismissCard, claim.id]);
+  }, [dragging, timerStopped, flyVector, dismissCard, claim.id]);
 
   // Keyboard shortcuts: Enter / Space / Arrow keys dismiss to next card
   useEffect(() => {
@@ -200,6 +204,9 @@ export default function RevealPanel({
     if (dist >= DISMISS_DISTANCE_PX || (velocity >= DISMISS_VELOCITY_PX_MS && dist >= DISMISS_MIN_FLICK_PX)) {
       dismissCard(dx, dy);
     } else {
+      if (dist <= TAP_MAX_DISTANCE_PX) {
+        setTimerStopped(true);
+      }
       setDragging(false);
       setOffset({ x: 0, y: 0 });
     }
@@ -341,6 +348,19 @@ export default function RevealPanel({
                 </span>
               </div>
 
+              {claim.image && (
+                <div className="overflow-hidden rounded-lg border border-border bg-muted/30">
+                  <img
+                    src={claim.image}
+                    alt={claim.imageAlt ?? claim.text}
+                    draggable={false}
+                    loading="eager"
+                    decoding="async"
+                    className="pointer-events-none max-h-36 w-full object-contain"
+                  />
+                </div>
+              )}
+
               <p className="text-base sm:text-lg font-bold leading-relaxed text-foreground">
                 <BdiText text={claim.text} />
               </p>
@@ -349,15 +369,31 @@ export default function RevealPanel({
                 <BdiText text={claim.explain} />
               </p>
 
-              {/* Subtle 3-second auto-dismiss timer bar */}
-              <div className="h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-[width] duration-75 ease-linear',
-                    isCorrect ? 'bg-emerald-500' : 'bg-destructive',
+              {/* Subtle 3-second auto-dismiss timer bar (tap/click card to stop) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  {timerStopped ? (
+                    <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                      <Pause className="h-3 w-3" aria-hidden="true" />
+                      <span>تم إيقاف المؤقّت</span>
+                    </span>
+                  ) : (
+                    <span>اضغط على البطاقة لإيقاف المؤقّت</span>
                   )}
-                  style={{ width: `${remainingPct}%` }}
-                />
+                </div>
+                <div className="h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-[width] duration-75 ease-linear',
+                      timerStopped
+                        ? 'bg-muted-foreground/40'
+                        : isCorrect
+                          ? 'bg-emerald-500'
+                          : 'bg-destructive',
+                    )}
+                    style={{ width: `${remainingPct}%` }}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -373,6 +409,7 @@ export default function RevealPanel({
                 href={src.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => setTimerStopped(true)}
                 className="inline-flex items-center justify-center gap-2 text-center whitespace-normal"
               >
                 <ExternalLink className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />

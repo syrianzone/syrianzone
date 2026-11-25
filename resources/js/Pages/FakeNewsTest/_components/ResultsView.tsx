@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
+  BarChart3,
   Check,
   Copy,
   ExternalLink,
@@ -43,6 +44,7 @@ interface ResultsViewProps {
   summary: RoundSummary;
   stats: FakeNewsStats | null;
   onPlayAgain: () => void;
+  onOpenStats: () => void;
 }
 
 const KIND_ICONS: Record<ClaimKind, React.ComponentType<{ className?: string }>> = {
@@ -52,7 +54,7 @@ const KIND_ICONS: Record<ClaimKind, React.ComponentType<{ className?: string }>>
   media: ImageIcon,
 };
 
-export default function ResultsView({ summary, stats, onPlayAgain }: ResultsViewProps) {
+export default function ResultsView({ summary, stats, onPlayAgain, onOpenStats }: ResultsViewProps) {
   const themeKey = useThemeId();
   const shareCardRef = useRef<HTMLDivElement>(null);
   const [imageBusy, setImageBusy] = useState(false);
@@ -321,6 +323,16 @@ export default function ResultsView({ summary, stats, onPlayAgain }: ResultsView
                 </div>
               </>
             )}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onOpenStats}
+              className="w-full gap-2 font-semibold"
+            >
+              <BarChart3 className="h-4 w-4" aria-hidden="true" />
+              <span>إحصاءات جميع الأسئلة</span>
+            </Button>
           </CardContent>
         </Card>
       )}

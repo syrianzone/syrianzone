@@ -13,6 +13,8 @@ export interface FakeNewsClaim {
   label: string;
   date: string;
   explain: string;
+  image?: string;
+  imageAlt?: string;
   source: ClaimSource;
   source2?: ClaimSource;
 }
@@ -84,4 +86,13 @@ export interface HardestClaimItem {
   claim: FakeNewsClaim;
   wrongPct: number;
   total: number;
+}
+
+export interface ClaimOutcomeStat {
+  claim: FakeNewsClaim;
+  wonCount: number;
+  failedCount: number;
+  total: number;
+  wonPct: number;
+  failedPct: number;
 }

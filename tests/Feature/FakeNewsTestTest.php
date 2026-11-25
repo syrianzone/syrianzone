@@ -6,8 +6,10 @@ use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
 
 const EXPECTED_CLAIM_IDS = [
-    's01', 's02', 's18', 's08', 's12', 's22',
-    's13', 's25', 's28', 's15', 's29', 's32',
+    's01', 's02', 's03', 's04', 's05', 's06', 's16', 's17', 's18', 's19',
+    's07', 's08', 's09', 's10', 's11', 's12', 's20', 's21', 's22', 's23', 's24',
+    's13', 's14', 's25', 's26', 's27', 's28',
+    's15', 's29', 's30', 's31', 's32',
 ];
 
 test('GET /games/fakenews renders the Inertia page with initialStats', function () {
@@ -23,7 +25,7 @@ test('GET /games/fakenews renders the Inertia page with initialStats', function 
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('FakeNewsTest/Index')
-            ->has('initialStats.claims', 12)
+            ->has('initialStats.claims', count(EXPECTED_CLAIM_IDS))
             ->where('initialStats.claims.s01', ['true' => 0, 'false' => 0])
             ->where('initialStats.scores.0', 0)
             ->where('initialStats.scores.12', 0)
@@ -31,7 +33,7 @@ test('GET /games/fakenews renders the Inertia page with initialStats', function 
             ->where('initialStats.average_score', null));
 });
 
-test('GET /api/v1/fakenews/stats returns empty snapshot with all 12 claims and scores 0..12', function () {
+test('GET /api/v1/fakenews/stats returns empty snapshot with all 32 claims and scores 0..12', function () {
     $response = $this->getJson('/api/v1/fakenews/stats')->assertOk();
 
     $data = $response->json();

@@ -4,6 +4,7 @@ import type {
   CategoryStat,
   ClaimCommunitySplit,
   ClaimKind,
+  ClaimOutcomeStat,
   FakeNewsClaim,
   FakeNewsStats,
   HardestClaimItem,
@@ -14,6 +15,8 @@ import type {
 } from './types';
 
 export const FAKE_NEWS_CLAIMS: readonly FakeNewsClaim[] = rawClaims as FakeNewsClaim[];
+
+export const ROUND_SIZE = 12;
 
 export const CLAIM_KIND_ORDER: readonly ClaimKind[] = [
   'decisions',
@@ -62,16 +65,64 @@ export function getClaimById(id: string): FakeNewsClaim | undefined {
   return CLAIM_MAP.get(id);
 }
 
+function shuffleArray<T>(items: readonly T[], rng: () => number): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 export function shuffleClaimOrder(
   claims: readonly FakeNewsClaim[] = FAKE_NEWS_CLAIMS,
   rng: () => number = Math.random,
 ): string[] {
-  const ids = claims.map((c) => c.id);
-  for (let i = ids.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [ids[i], ids[j]] = [ids[j], ids[i]];
+  return shuffleArray(
+    claims.map((c) => c.id),
+    rng,
+  );
+}
+
+/**
+ * Picks a random balanced round of `roundSize` unique claims from the pool,
+ * drawing equally across categories where possible and shuffling the final order.
+ */
+export function pickRoundClaimOrder(
+  claims: readonly FakeNewsClaim[] = FAKE_NEWS_CLAIMS,
+  roundSize: number = ROUND_SIZE,
+  rng: () => number = Math.random,
+): string[] {
+  const targetSize = Math.min(roundSize, claims.length);
+  if (targetSize <= 0) return [];
+
+  const perKind = Math.floor(targetSize / CLAIM_KIND_ORDER.length);
+  const picked: string[] = [];
+  const pickedSet = new Set<string>();
+
+  for (const kind of CLAIM_KIND_ORDER) {
+    const bucket = shuffleArray(
+      claims.filter((c) => c.kind === kind),
+      rng,
+    );
+    for (const claim of bucket.slice(0, perKind)) {
+      picked.push(claim.id);
+      pickedSet.add(claim.id);
+    }
   }
-  return ids;
+
+  if (picked.length < targetSize) {
+    const remaining = shuffleArray(
+      claims.filter((c) => !pickedSet.has(c.id)),
+      rng,
+    );
+    for (const claim of remaining.slice(0, targetSize - picked.length)) {
+      picked.push(claim.id);
+      pickedSet.add(claim.id);
+    }
+  }
+
+  return shuffleArray(picked, rng);
 }
 
 export function getRankTier(score: number, total: number): RankTier {
@@ -129,7 +180,7 @@ export function computeSummary(
     });
   }
 
-  const total = orderedResults.length || FAKE_NEWS_CLAIMS.length;
+  const total = orderedResults.length || ROUND_SIZE;
   const score = orderedResults.filter((r) => r.correct).length;
   const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
 
@@ -191,6 +242,36 @@ export function getHardestClaims(
     .slice(0, limit);
 }
 
+export function getAllClaimOutcomeStats(
+  stats: FakeNewsStats | null | undefined,
+): ClaimOutcomeStat[] {
+  return FAKE_NEWS_CLAIMS.map((claim) => {
+    const split = getClaimCommunitySplit(stats, claim.id);
+    if (!split) {
+      return {
+        claim,
+        wonCount: 0,
+        failedCount: 0,
+        total: 0,
+        wonPct: 0,
+        failedPct: 0,
+      };
+    }
+    const wonCount = claim.answer ? split.trueCount : split.falseCount;
+    const failedCount = claim.answer ? split.falseCount : split.trueCount;
+    const wonPct = Math.round((wonCount / split.total) * 100);
+    const failedPct = 100 - wonPct;
+    return {
+      claim,
+      wonCount,
+      failedCount,
+      total: split.total,
+      wonPct,
+      failedPct,
+    };
+  });
+}
+
 export function buildShareText(summary: RoundSummary): string {
   const tiles = summary.orderedResults
     .map((r) => (r.correct ? '🟩' : '🟥'))
@@ -212,7 +293,8 @@ export function loadSavedRun(): SavedRunState | null {
     const parsed = JSON.parse(raw) as Partial<SavedRunState>;
     if (
       !Array.isArray(parsed.order) ||
-      parsed.order.length !== FAKE_NEWS_CLAIMS.length ||
+      parsed.order.length !== ROUND_SIZE ||
+      new Set(parsed.order).size !== ROUND_SIZE ||
       !parsed.order.every((id) => typeof id === 'string' && CLAIM_MAP.has(id))
     ) {
       return null;

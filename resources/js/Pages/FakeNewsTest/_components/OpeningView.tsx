@@ -1,9 +1,9 @@
 import React from 'react';
-import { Check, Play, RotateCcw, X } from 'lucide-react';
+import { BarChart3, Check, Play, RotateCcw, X } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
-import { FAKE_NEWS_CLAIMS } from '@/Domain/fakenewstest/claims';
+import { FAKE_NEWS_CLAIMS, ROUND_SIZE } from '@/Domain/fakenewstest/claims';
 import type { FakeNewsStats } from '@/Domain/fakenewstest/types';
 
 interface OpeningViewProps {
@@ -11,6 +11,7 @@ interface OpeningViewProps {
   resumableCount: number | null;
   onStart: () => void;
   onResume: () => void;
+  onOpenStats: () => void;
 }
 
 export default function OpeningView({
@@ -18,8 +19,10 @@ export default function OpeningView({
   resumableCount,
   onStart,
   onResume,
+  onOpenStats,
 }: OpeningViewProps) {
-  const totalClaims = FAKE_NEWS_CLAIMS.length;
+  const roundSize = ROUND_SIZE;
+  const poolSize = FAKE_NEWS_CLAIMS.length;
 
   return (
     <section
@@ -35,7 +38,7 @@ export default function OpeningView({
           <div className="h-2 w-32 rounded-full bg-muted-foreground/20" />
           <div className="h-2 w-20 rounded-full bg-muted-foreground/15" />
           <Badge variant="secondary" className="mt-1 text-[11px] font-semibold">
-            <bdi dir="ltr">{totalClaims}</bdi>&nbsp;بطاقة
+            <bdi dir="ltr">{roundSize}</bdi>&nbsp;بطاقة
           </Badge>
         </Card>
 
@@ -78,10 +81,20 @@ export default function OpeningView({
             >
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
               <span>
-                أكمل الجولة السابقة (<bdi dir="ltr">{resumableCount}/{totalClaims}</bdi>)
+                أكمل الجولة السابقة (<bdi dir="ltr">{resumableCount}/{roundSize}</bdi>)
               </span>
             </Button>
           )}
+
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={onOpenStats}
+            className="w-full gap-2 font-semibold"
+          >
+            <BarChart3 className="h-4 w-4" aria-hidden="true" />
+            <span>إحصاءات الأسئلة</span>
+          </Button>
         </CardContent>
       </Card>
 
@@ -96,13 +109,16 @@ export default function OpeningView({
               <>
                 {' '}· المتوسّط{' '}
                 <bdi dir="ltr" className="font-semibold text-foreground">
-                  {stats.average_score.toFixed(1)}/{totalClaims}
+                  {stats.average_score.toFixed(1)}/{roundSize}
                 </bdi>
               </>
             )}
           </>
         ) : (
-          'موثّق بالمصادر'
+          <>
+            <bdi dir="ltr" className="font-semibold text-foreground">{roundSize}</bdi> بطاقة عشوائية من أصل{' '}
+            <bdi dir="ltr" className="font-semibold text-foreground">{poolSize}</bdi> · موثّق بالمصادر
+          </>
         )}
       </p>
     </section>

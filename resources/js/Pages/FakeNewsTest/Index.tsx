@@ -11,8 +11,9 @@ import {
   FAKE_NEWS_CLAIMS,
   getClaimById,
   loadSavedRun,
+  pickRoundClaimOrder,
+  ROUND_SIZE,
   saveRun,
-  shuffleClaimOrder,
 } from '@/Domain/fakenewstest/claims';
 import type {
   AnswerRecord,
@@ -20,6 +21,7 @@ import type {
   FakeNewsStats,
   SavedRunState,
 } from '@/Domain/fakenewstest/types';
+import ClaimStatsDialog from './_components/ClaimStatsDialog';
 import OpeningView from './_components/OpeningView';
 import ResultsView from './_components/ResultsView';
 import RevealPanel from './_components/RevealPanel';
@@ -33,11 +35,14 @@ interface FakeNewsTestPageProps {
 
 export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestPageProps) {
   const [phase, setPhase] = useState<ViewPhase>('opening');
-  const [order, setOrder] = useState<string[]>(() => FAKE_NEWS_CLAIMS.map((c) => c.id));
+  const [order, setOrder] = useState<string[]>(() =>
+    FAKE_NEWS_CLAIMS.slice(0, ROUND_SIZE).map((c) => c.id),
+  );
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [stats, setStats] = useState<FakeNewsStats | null>(initialStats);
   const [savedRun, setSavedRun] = useState<SavedRunState | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const submittedRunRef = useRef(false);
 
@@ -48,7 +53,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
       saved &&
       (saved.phase === 'playing' || saved.phase === 'reveal') &&
       saved.answers.length > 0 &&
-      saved.answers.length < FAKE_NEWS_CLAIMS.length
+      saved.answers.length < ROUND_SIZE
     ) {
       setSavedRun(saved);
     }
@@ -67,7 +72,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
   }, [initialStats]);
 
   const startFreshRun = useCallback(() => {
-    const freshOrder = shuffleClaimOrder(FAKE_NEWS_CLAIMS);
+    const freshOrder = pickRoundClaimOrder(FAKE_NEWS_CLAIMS, ROUND_SIZE);
     submittedRunRef.current = false;
     setOrder(freshOrder);
     setIndex(0);
@@ -188,6 +193,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
             resumableCount={savedRun ? savedRun.answers.length : null}
             onStart={startFreshRun}
             onResume={resumeSavedRun}
+            onOpenStats={() => setStatsOpen(true)}
           />
         )}
 
@@ -220,8 +226,16 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
             summary={summary}
             stats={stats}
             onPlayAgain={startFreshRun}
+            onOpenStats={() => setStatsOpen(true)}
           />
         )}
+
+        <ClaimStatsDialog
+          open={statsOpen}
+          onOpenChange={setStatsOpen}
+          stats={stats}
+          onStatsRefresh={setStats}
+        />
       </div>
     </MainLayout>
   );

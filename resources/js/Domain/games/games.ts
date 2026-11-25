@@ -1,5 +1,6 @@
 import type React from 'react';
 import {
+  FakeNewsTestIcon,
   Game2048Icon,
   GuessWhoIcon,
   PresidentIcon,
@@ -38,6 +39,7 @@ const GAME_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   trix: TrixIcon,
   guesswho: GuessWhoIcon,
   president: PresidentIcon,
+  fakenews: FakeNewsTestIcon,
 };
 
 function toGameEntry(game: (typeof raw)[number]): GameEntry {

@@ -43,6 +43,7 @@ export const NewsIcon = projectIcon('news');
 export const AnswersIcon = projectIcon('answers');
 export const CodexCommunityIcon = projectIcon('codex');
 export const CrossingsIcon = projectIcon('crossings');
+export const FakeNewsTestIcon = projectIcon('fakenews');
 
 /**
  * رئيس الجمهورية (external game): its own mark, shipped from `public/` rather

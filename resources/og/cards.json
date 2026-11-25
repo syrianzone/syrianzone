@@ -14,6 +14,7 @@
     { "slug": "compass", "title": "بوصلة سوريا", "subtitle": "اكتشف موقعك السياسي على أحد عشر محوراً", "icon": "compass" },
     { "slug": "compass-stats", "title": "إحصاءات البوصلة", "subtitle": "نتائج مجمّعة ومجهولة الهوية لاختبار بوصلة سوريا", "icon": "compass" },
     { "slug": "alignment", "title": "مواءمة البوصلة", "subtitle": "قارن توجّهاتك بالقوى والتيارات السياسية", "icon": "compass" },
+    { "slug": "games-fakenews", "title": "هل تميّزها؟", "subtitle": "اختبر قدرتك على التمييز بين الأخبار الحقيقية والشائعات في سوريا", "icon": "fakenews" },
 
     { "slug": "mishwar", "title": "مشوار", "subtitle": "دليل وخريطة الأماكن والمطاعم والمقاهي في سوريا", "icon": "mishwar" },
     { "slug": "transit", "title": "ترانزيت سوريا", "subtitle": "خرائط وخطوط النقل العام في المدن السورية", "icon": "transit" },

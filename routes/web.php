@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevController;
 use App\Http\Controllers\DirectorySuggestionAdminController;
 use App\Http\Controllers\ExternalDataController;
+use App\Http\Controllers\FakeNewsTestController;
 use App\Http\Controllers\GovAppController;
 use App\Http\Controllers\GovAppsAdminController;
 use App\Http\Controllers\GovtCvAdminController;
@@ -206,6 +207,8 @@ Route::redirect('/syriafy', '/', 301);
 Route::redirect('/spotify', '/', 301);
 Route::get('/syriafy/{any}', fn () => redirect('/', 301))->where('any', '.*');
 Route::get('/spotify/{any}', fn () => redirect('/', 301))->where('any', '.*');
+
+Route::get('/games/fakenews', [FakeNewsTestController::class, 'index']);
 
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::get('/guesswho/room/{roomCode}', [GuessWhoController::class, 'showRoom']);

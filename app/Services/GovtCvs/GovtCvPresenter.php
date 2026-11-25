@@ -18,6 +18,14 @@ use Illuminate\Support\Collection;
  */
 final class GovtCvPresenter
 {
+    public const PUBLIC_LIST_WITH = [
+        'tenures.institution',
+        'candidate',
+        'promiseSpeaker.candidate',
+        'promiseSpeaker.officialEntity',
+        'officialEntity',
+    ];
+
     public const PUBLIC_CARD_WITH = [
         'tenures.institution',
         'tenures.officeSlot',
@@ -36,6 +44,100 @@ final class GovtCvPresenter
         'tenures.evidenceLinks',
         'tenures.officeSlot.replacedBy',
     ];
+
+    /**
+     * Lean public summary card for `/govtcvs`, containing only the fields
+     * read by `OfficialCard`, client-side filters, and sorting.
+     *
+     * @return array<string, mixed>
+     */
+    public function publicListCard(GovtOfficial $official): array
+    {
+        $official->loadMissing(self::PUBLIC_LIST_WITH);
+
+        $tenures = $official->tenures;
+        $activeTenure = $tenures->firstWhere('status', 'current') ?? $tenures->first();
+        $displayName = $official->display_name_ar ?: $official->full_name_ar;
+
+        $card = [
+            'id' => $official->id,
+            'slug' => $official->slug,
+            'full_name_ar' => $official->full_name_ar,
+            'office_status' => $official->office_status,
+            'highest_tier' => $official->highest_tier,
+            'cv_completeness' => $official->cv_completeness,
+            'tenures_count' => $official->tenures_count !== null ? (int) $official->tenures_count : $tenures->count(),
+        ];
+
+        if ($displayName !== $official->full_name_ar) {
+            $card['display_name_ar'] = $displayName;
+        }
+        if (filled($official->full_name_en)) {
+            $card['full_name_en'] = $official->full_name_en;
+        }
+        if (filled($official->honorific_ar)) {
+            $card['honorific_ar'] = $official->honorific_ar;
+        }
+        if (filled($official->bio_summary_ar)) {
+            $card['bio_summary_ar'] = $official->bio_summary_ar;
+        }
+        if (filled($official->birth_place_ar)) {
+            $card['birth_place_ar'] = $official->birth_place_ar;
+        }
+        if ($portrait = $official->resolvedPortrait()) {
+            $card['portrait_url'] = $portrait;
+        }
+        if ($official->first_seen_in_office_at !== null) {
+            $card['first_seen_in_office_at'] = $official->first_seen_in_office_at->format('Y-m-d');
+        }
+        if ($activeTenure !== null) {
+            $card['active_tenure'] = $this->activeTenureBrief($activeTenure);
+        }
+
+        return $card;
+    }
+
+    /**
+     * Lean active-tenure payload for the public `/govtcvs` index.
+     *
+     * @return array<string, mixed>
+     */
+    public function activeTenureBrief(GovtTenure $tenure): array
+    {
+        $institutionName = $tenure->institution?->name_ar
+            ?: $tenure->institution?->name
+            ?: $tenure->institution_name_ar;
+
+        $brief = [
+            'role_title_ar' => $tenure->role_title_ar,
+            'tier' => $tenure->tier,
+            'government_phase' => $tenure->government_phase,
+        ];
+
+        if ($tenure->institution_id !== null) {
+            $brief['institution_id'] = $tenure->institution_id;
+        }
+        if (filled($institutionName)) {
+            $brief['institution_name_ar'] = $institutionName;
+        }
+        if ($tenure->started_at !== null) {
+            $brief['started_at'] = $tenure->started_at->format('Y-m-d');
+            if ($tenure->start_date_precision !== null) {
+                $brief['start_date_precision'] = $tenure->start_date_precision;
+            }
+        }
+        if ($tenure->ended_at !== null) {
+            $brief['ended_at'] = $tenure->ended_at->format('Y-m-d');
+            if ($tenure->end_date_precision !== null) {
+                $brief['end_date_precision'] = $tenure->end_date_precision;
+            }
+        }
+        if ($tenure->is_acting) {
+            $brief['is_acting'] = true;
+        }
+
+        return $brief;
+    }
 
     /**
      * Public summary card for an official on `/govtcvs`.

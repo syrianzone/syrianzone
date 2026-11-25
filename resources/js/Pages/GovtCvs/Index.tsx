@@ -32,6 +32,7 @@ import {
     filterOfficials,
     govtFilterFacets,
     govtListUrl,
+    hasActiveGovtFilters,
     matchesStatus,
     readGovtFilters,
     selectScoreboardTile,
@@ -41,6 +42,8 @@ import {
 } from './_lib/filters';
 
 const LAYOUT_KEY = 'govtcvs-layout';
+const INITIAL_VISIBLE_COUNT = 30;
+const LOAD_MORE_STEP = 30;
 const LAYOUT_OPTIONS = [
     { value: 'grid', label: 'عرض كبطاقات', icon: LayoutGrid },
     { value: 'list', label: 'عرض كقائمة', icon: List },
@@ -78,8 +81,16 @@ export default function GovtCvsIndex({
         [page.url, facets, filters],
     );
     const [value, setValue] = useRemember<SmartFilterValue>(initialValue, 'govtcvs.filters');
+    const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE_COUNT);
+    const [showAllFiltered, setShowAllFiltered] = useState(false);
+
     const base = useMemo(() => filterOfficials(officials, value), [officials, value]);
     const visible = useMemo(() => visibleOfficials(base, value), [base, value]);
+    const displayed = useMemo(
+        () => (showAllFiltered ? visible : visible.slice(0, visibleLimit)),
+        [visible, visibleLimit, showAllFiltered],
+    );
+    const remaining = Math.max(0, visible.length - displayed.length);
     const statusFacet = useMemo(() => facets.find((facet) => facet.key === 'status'), [facets]);
     const searchFacets = useMemo(() => facets.filter((facet) => facet.key !== 'status'), [facets]);
 
@@ -109,8 +120,19 @@ export default function GovtCvsIndex({
             officials.map((o) => ({
                 id: o.id,
                 label: o.display_name_ar || o.full_name_ar,
-                subtitle: (o.current_tenure ?? o.latest_tenure)?.role_title_ar ?? null,
+                subtitle: o.active_tenure?.role_title_ar ?? null,
             })),
+        [officials],
+    );
+
+    const allOfficialsIndex = useMemo(
+        () =>
+            [...officials].sort((a, b) =>
+                (a.display_name_ar || a.full_name_ar).localeCompare(
+                    b.display_name_ar || b.full_name_ar,
+                    'ar',
+                ),
+            ),
         [officials],
     );
 
@@ -154,6 +176,11 @@ export default function GovtCvsIndex({
     function changeFilters(next: SmartFilterValue) {
         const previousUrl = govtListUrl(value);
         setValue(next);
+        const active = hasActiveGovtFilters(next);
+        setShowAllFiltered(active);
+        if (!active) {
+            setVisibleLimit(INITIAL_VISIBLE_COUNT);
+        }
         const url = govtListUrl(next);
         if (url === previousUrl) return;
         router.replace({ url, preserveState: true, preserveScroll: true });
@@ -354,21 +381,36 @@ export default function GovtCvsIndex({
                 </div>
 
                 {visible.length > 0 ? (
-                    <div
-                        className={
-                            layout === 'list'
-                                ? 'flex flex-col gap-2 sm:gap-3'
-                                : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'
-                        }
-                    >
-                        {visible.map((official) => (
-                            <OfficialCard
-                                key={official.id}
-                                official={official}
-                                layout={layout}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div
+                            className={
+                                layout === 'list'
+                                    ? 'flex flex-col gap-2 sm:gap-3'
+                                    : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'
+                            }
+                        >
+                            {displayed.map((official) => (
+                                <OfficialCard
+                                    key={official.id}
+                                    official={official}
+                                    layout={layout}
+                                />
+                            ))}
+                        </div>
+
+                        {remaining > 0 && (
+                            <div className="flex justify-center pt-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="lg"
+                                    onClick={() => setVisibleLimit((prev) => prev + LOAD_MORE_STEP)}
+                                >
+                                    عرض المزيد (تبقّى {remaining})
+                                </Button>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
@@ -385,6 +427,34 @@ export default function GovtCvsIndex({
                             )}
                         </CardContent>
                     </Card>
+                )}
+
+                {allOfficialsIndex.length > 0 && (
+                    <section
+                        aria-labelledby="all-officials-index-heading"
+                        className="border-t border-border pt-8"
+                    >
+                        <div className="mb-4 flex items-center justify-between gap-2">
+                            <h2
+                                id="all-officials-index-heading"
+                                className="text-lg font-bold text-foreground"
+                            >
+                                جميع المسؤولين
+                            </h2>
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                                {allOfficialsIndex.length} مسؤولاً
+                            </span>
+                        </div>
+                        <ul className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 [&_a]:inline-block [&_a]:max-w-full [&_a]:truncate [&_a]:py-0.5 [&_a]:font-medium [&_a]:text-foreground [&_a]:underline-offset-4 [&_a:hover]:text-primary [&_a:hover]:underline [&_a:focus-visible]:outline-none [&_a:focus-visible]:ring-2 [&_a:focus-visible]:ring-ring">
+                            {allOfficialsIndex.map((official) => (
+                                <li key={official.id} className="min-w-0">
+                                    <Link href={`/govtcvs/${official.slug}`}>
+                                        {official.display_name_ar || official.full_name_ar}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
                 )}
             </div>
 

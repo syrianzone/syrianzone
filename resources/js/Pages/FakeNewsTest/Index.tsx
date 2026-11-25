@@ -193,7 +193,6 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
             resumableCount={savedRun ? savedRun.answers.length : null}
             onStart={startFreshRun}
             onResume={resumeSavedRun}
-            onOpenStats={() => setStatsOpen(true)}
           />
         )}
 

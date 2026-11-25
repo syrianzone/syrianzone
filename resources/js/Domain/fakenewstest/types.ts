@@ -85,3 +85,12 @@ export interface HardestClaimItem {
   wrongPct: number;
   total: number;
 }
+
+export interface ClaimOutcomeStat {
+  claim: FakeNewsClaim;
+  wonCount: number;
+  failedCount: number;
+  total: number;
+  wonPct: number;
+  failedPct: number;
+}

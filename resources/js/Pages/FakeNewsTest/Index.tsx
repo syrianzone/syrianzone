@@ -20,6 +20,7 @@ import type {
   FakeNewsStats,
   SavedRunState,
 } from '@/Domain/fakenewstest/types';
+import ClaimStatsDialog from './_components/ClaimStatsDialog';
 import OpeningView from './_components/OpeningView';
 import ResultsView from './_components/ResultsView';
 import RevealPanel from './_components/RevealPanel';
@@ -38,6 +39,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [stats, setStats] = useState<FakeNewsStats | null>(initialStats);
   const [savedRun, setSavedRun] = useState<SavedRunState | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const submittedRunRef = useRef(false);
 
@@ -188,6 +190,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
             resumableCount={savedRun ? savedRun.answers.length : null}
             onStart={startFreshRun}
             onResume={resumeSavedRun}
+            onOpenStats={() => setStatsOpen(true)}
           />
         )}
 
@@ -220,8 +223,16 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
             summary={summary}
             stats={stats}
             onPlayAgain={startFreshRun}
+            onOpenStats={() => setStatsOpen(true)}
           />
         )}
+
+        <ClaimStatsDialog
+          open={statsOpen}
+          onOpenChange={setStatsOpen}
+          stats={stats}
+          onStatsRefresh={setStats}
+        />
       </div>
     </MainLayout>
   );

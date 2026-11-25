@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Play, RotateCcw, X } from 'lucide-react';
+import { BarChart3, Check, Play, RotateCcw, X } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
@@ -11,6 +11,7 @@ interface OpeningViewProps {
   resumableCount: number | null;
   onStart: () => void;
   onResume: () => void;
+  onOpenStats: () => void;
 }
 
 export default function OpeningView({
@@ -18,6 +19,7 @@ export default function OpeningView({
   resumableCount,
   onStart,
   onResume,
+  onOpenStats,
 }: OpeningViewProps) {
   const totalClaims = FAKE_NEWS_CLAIMS.length;
 
@@ -82,6 +84,16 @@ export default function OpeningView({
               </span>
             </Button>
           )}
+
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={onOpenStats}
+            className="w-full gap-2 font-semibold"
+          >
+            <BarChart3 className="h-4 w-4" aria-hidden="true" />
+            <span>إحصاءات الأسئلة</span>
+          </Button>
         </CardContent>
       </Card>
 

@@ -4,6 +4,7 @@ import {
   CLAIM_KIND_ORDER,
   computeSummary,
   FAKE_NEWS_CLAIMS,
+  getAllClaimOutcomeStats,
   getClaimCommunitySplit,
   getHardestClaims,
   getRankTier,
@@ -120,5 +121,29 @@ describe('fakenewstest domain', () => {
     expect(hardest[0].wrongPct).toBe(80);
     expect(hardest[1].claim.id).toBe('s01');
     expect(hardest[1].wrongPct).toBe(70);
+
+    const outcomes = getAllClaimOutcomeStats(stats);
+    expect(outcomes).toHaveLength(12);
+    expect(outcomes.find((o) => o.claim.id === 's01')).toMatchObject({
+      wonCount: 3,
+      failedCount: 7,
+      total: 10,
+      wonPct: 30,
+      failedPct: 70,
+    });
+    expect(outcomes.find((o) => o.claim.id === 's18')).toMatchObject({
+      wonCount: 2,
+      failedCount: 8,
+      total: 10,
+      wonPct: 20,
+      failedPct: 80,
+    });
+    expect(outcomes.find((o) => o.claim.id === 's02')).toMatchObject({
+      wonCount: 0,
+      failedCount: 0,
+      total: 0,
+      wonPct: 0,
+      failedPct: 0,
+    });
   });
 });

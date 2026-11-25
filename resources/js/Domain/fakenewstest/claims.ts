@@ -4,6 +4,7 @@ import type {
   CategoryStat,
   ClaimCommunitySplit,
   ClaimKind,
+  ClaimOutcomeStat,
   FakeNewsClaim,
   FakeNewsStats,
   HardestClaimItem,
@@ -189,6 +190,36 @@ export function getHardestClaims(
   return items
     .sort((a, b) => b.wrongPct - a.wrongPct || b.total - a.total)
     .slice(0, limit);
+}
+
+export function getAllClaimOutcomeStats(
+  stats: FakeNewsStats | null | undefined,
+): ClaimOutcomeStat[] {
+  return FAKE_NEWS_CLAIMS.map((claim) => {
+    const split = getClaimCommunitySplit(stats, claim.id);
+    if (!split) {
+      return {
+        claim,
+        wonCount: 0,
+        failedCount: 0,
+        total: 0,
+        wonPct: 0,
+        failedPct: 0,
+      };
+    }
+    const wonCount = claim.answer ? split.trueCount : split.falseCount;
+    const failedCount = claim.answer ? split.falseCount : split.trueCount;
+    const wonPct = Math.round((wonCount / split.total) * 100);
+    const failedPct = 100 - wonPct;
+    return {
+      claim,
+      wonCount,
+      failedCount,
+      total: split.total,
+      wonPct,
+      failedPct,
+    };
+  });
 }
 
 export function buildShareText(summary: RoundSummary): string {

@@ -81,4 +81,20 @@ return [
         'image_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('OG_IMAGE_HOSTS', ''))))),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | IndexNow
+    |--------------------------------------------------------------------------
+    |
+    | Instant search-engine indexing notifications. Active only when enabled,
+    | a verification key is configured, and the app runs in production.
+    |
+    */
+
+    'indexnow' => [
+        'enabled' => filter_var(env('INDEXNOW_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'key' => env('INDEXNOW_KEY'),
+        'endpoint' => 'https://api.indexnow.org/indexnow',
+    ],
+
 ];

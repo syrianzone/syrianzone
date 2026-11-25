@@ -20,6 +20,10 @@ if (app()->environment('production')) {
         ->everyFiveMinutes()
         ->withoutOverlapping(10)
         ->onOneServer();
+    Schedule::command('indexnow:submit')
+        ->everyFiveMinutes()
+        ->withoutOverlapping(10)
+        ->onOneServer();
 }
 
 // Sync hotel data from HalaSyria every 2 days at 03:00

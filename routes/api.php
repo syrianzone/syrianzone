@@ -16,6 +16,7 @@ use App\Http\Controllers\ContributorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DirectorySuggestionController;
 use App\Http\Controllers\EventsController;
+use App\Http\Controllers\FakeNewsTestController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GovtCvController;
 use App\Http\Controllers\HotelController;
@@ -440,6 +441,12 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
             ->name('api.v1.atlas.index');
         Route::get('/atlas/environment', [PopulationAtlasController::class, 'getEnvironmentalDetails'])
             ->name('api.v1.atlas.environment');
+    });
+
+    Route::prefix('fakenews')->group(function () {
+        Route::get('/stats', [FakeNewsTestController::class, 'stats'])->name('api.v1.fakenews.stats');
+        Route::post('/answer', [FakeNewsTestController::class, 'recordAnswer'])->middleware('throttle:120,1')->name('api.v1.fakenews.answer');
+        Route::post('/result', [FakeNewsTestController::class, 'recordResult'])->middleware('throttle:30,1')->name('api.v1.fakenews.result');
     });
 });
 

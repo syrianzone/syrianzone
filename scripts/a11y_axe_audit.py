@@ -39,7 +39,7 @@ PUBLIC_ROUTES = [
     "/compass", "/compass/stats", "/tierlist", "/tierlist/leaderboard",
     "/polls", "/guesswho", "/muslim",
     "/muslim/prayer", "/muslim/quran", "/muslim/radio",
-    "/games", "/games/2048", "/games/solitare", "/games/tarneeb", "/games/trix", "/board",
+    "/games", "/games/2048", "/games/solitare", "/games/tarneeb", "/games/trix", "/games/fakenews", "/board",
     "/mishwar", "/transit", "/transit/studio",
     "/promises", "/promises/suggest",
     "/govtcvs", "/govtcvs/movements",

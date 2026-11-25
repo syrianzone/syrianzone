@@ -147,6 +147,16 @@
      "target": "/games/2048",
      "iconKey": "games",
      "iconUrl": null
+    },
+    {
+     "id": "game_fakenews",
+     "title": "هل تميّزها؟",
+     "subtitle": "اختبار تمييز الأخبار الحقيقية من الشائعات",
+     "href": "/games/fakenews",
+     "type": "web",
+     "target": "/games/fakenews",
+     "iconKey": "fakenews",
+     "iconUrl": null
     }
    ],
    "description": "ألعاب ورق وذكاء جماعية وفردية: تركس، طرنيب، مين، سوليتير، 2048",
@@ -231,6 +241,21 @@
    "groupOrder": 0
   },
   {
+   "id": "fakenews",
+   "title": "هل تميّزها؟",
+   "subtitle": "اختبار تفاعلي للتمييز بين الأخبار الحقيقية والشائعات المتداولة في سوريا",
+   "href": "/games/fakenews",
+   "type": "web",
+   "target": "/games/fakenews",
+   "iconKey": "fakenews",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "اختبار الأخبار الكاذبة والشائعات في سوريا: اسحب يميناً أو يساراً للحكم على 12 ادّعاءً موثّقاً بالمصادر",
+   "group": "politics",
+   "groupOrder": 2
+  },
+  {
    "id": "tierlist",
    "title": "تقييم الحكومة",
    "subtitle": "تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب",
@@ -254,7 +279,7 @@
    ],
    "description": "تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب",
    "group": "politics",
-   "groupOrder": 2
+   "groupOrder": 3
   },
   {
    "id": "promises",
@@ -269,7 +294,7 @@
    "subCategories": [],
    "description": "وعود المسؤولين العلنية ومواعيدها وما تحقق منها",
    "group": "politics",
-   "groupOrder": 3
+   "groupOrder": 4
   },
   {
    "id": "govtcvs",
@@ -295,7 +320,7 @@
    ],
    "description": "السير الذاتية للوزراء والمحافظين والمسؤولين الحكوميين وسجل التعيينات والتنقلات منذ 8 كانون الأول 2024",
    "group": "politics",
-   "groupOrder": 4
+   "groupOrder": 5
   },
   {
    "id": "priorities",
@@ -370,7 +395,7 @@
    "subCategories": [],
    "description": "دليل الحسابات والصفحات الرسمية للوزارات والمؤسسات السورية",
    "group": "politics",
-   "groupOrder": 6
+   "groupOrder": 7
   },
   {
    "id": "phonebook",
@@ -385,7 +410,7 @@
    "subCategories": [],
    "description": "أرقام الطوارئ والاستعلامات والخدمات العامة في المحافظات",
    "group": "politics",
-   "groupOrder": 5
+   "groupOrder": 6
   },
   {
    "id": "sites",
@@ -430,7 +455,7 @@
    "subCategories": [],
    "description": "دليل التطبيقات الحكومية والخدمية الرسمية في سوريا",
    "group": "politics",
-   "groupOrder": 7
+   "groupOrder": 8
   },
   {
    "id": "house",
@@ -445,7 +470,7 @@
    "subCategories": [],
    "description": "مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء",
    "group": "politics",
-   "groupOrder": 8
+   "groupOrder": 9
   },
   {
    "id": "justice",
@@ -460,7 +485,7 @@
    "subCategories": [],
    "description": "العدالة الانتقالية والتوثيق والمحاسبة",
    "group": "politics",
-   "groupOrder": 9
+   "groupOrder": 10
   },
   {
    "id": "syid",
@@ -567,6 +592,21 @@
    "description": "متابعة آخر أخبار سوريا من المصادر الموثوقة",
    "group": "external",
    "groupOrder": 2
+  },
+  {
+   "id": "president",
+   "title": "محاكي الرئيس",
+   "subtitle": "لعبة محاكي رئيس الجمهورية التفاعلية",
+   "href": "https://game.hadealahmad.com",
+   "type": "external",
+   "target": "https://game.hadealahmad.com",
+   "iconKey": null,
+   "iconUrl": "/assets/games/president.svg",
+   "isInternal": false,
+   "subCategories": [],
+   "description": "محاكي رئيس الجمهورية — لعبة سياسية تفاعلية",
+   "group": "external",
+   "groupOrder": 3
   }
  ],
  "adminSections": [

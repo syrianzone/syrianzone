@@ -1,5 +1,5 @@
 {
-  "recipe": "a4c1e0242214b048",
+  "recipe": "0be0cc6457c868a3",
   "cards": {
     "home": "a1a1048328",
     "tierlist": "03ef938c8c",
@@ -13,6 +13,7 @@
     "compass": "9c96f24bda",
     "compass-stats": "3bde952057",
     "alignment": "acdab800bf",
+    "games-fakenews": "283d10c77c",
     "mishwar": "4227cafd3d",
     "transit": "ea32826124",
     "transit-studio": "43a6397448",

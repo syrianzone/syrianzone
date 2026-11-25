@@ -384,7 +384,7 @@ export default function Home() {
                                             <h2 id="home-group-external" className="mb-4 text-sm font-bold text-foreground">
                                                 روابط خارجية وشقيقة
                                             </h2>
-                                            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-4">
                                                 {externalLinks.map(renderTile)}
                                             </div>
                                         </section>

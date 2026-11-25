@@ -198,6 +198,17 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                                     </div>
 
                                     <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
+                                        <span className="font-bold text-foreground block mb-0.5">عمر البيك (@omaralbeik)</span>
+                                        <span className="text-muted-foreground">
+                                            طوّر عداد الوعود، وحسّن أداء الموقع وأمانه وظهوره في محركات البحث (تابعه على{" "}
+                                            <a href="https://x.com/omaralbeik" target="_blank" rel="noreferrer" className="hover:text-primary underline">X / Twitter</a>
+                                            {" و "}
+                                            <a href="https://omaralbeik.com" target="_blank" rel="noreferrer" className="hover:text-primary underline">موقعه الشخصي</a>
+                                            ).
+                                        </span>
+                                    </div>
+
+                                    <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
                                         <span className="font-bold text-foreground block mb-0.5">
                                             <a href="https://www.verify-sy.com/ar" target="_blank" rel="noopener noreferrer" className="hover:text-primary underline">منصة تأكد (Verify-Sy)</a>
                                         </span>

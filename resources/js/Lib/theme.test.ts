@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { SYSTEM_THEME, THEME_REGISTRY, applyTheme } from './theme';
+import { SYSTEM_THEME, SYSTEM_THEME_DEFAULTS, THEME_REGISTRY, applyTheme, resolveTheme } from './theme';
 
 const read = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
 const css = read('../../css/app.css').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -91,12 +91,16 @@ describe('the single theme record', () => {
   });
 
   it('keeps every static swatch colour equal to the token it mirrors', () => {
-    const lightPrimary = hslToHex(lightTokens['--primary']);
     for (const theme of THEME_REGISTRY) {
       if (theme.id === SYSTEM_THEME) {
-        const light = THEME_REGISTRY.find((entry) => entry.id === 'light');
-        expect(theme.primary, theme.id).toBe(light?.primary);
-        expect(theme.primary, theme.id).toBe(lightPrimary);
+        const lightDefault = THEME_REGISTRY.find((entry) => entry.id === SYSTEM_THEME_DEFAULTS.light);
+        const darkDefault = THEME_REGISTRY.find((entry) => entry.id === SYSTEM_THEME_DEFAULTS.dark);
+        expect(lightDefault, 'system light default').toBeDefined();
+        expect(darkDefault, 'system dark default').toBeDefined();
+        expect(lightDefault?.isDark, 'system light default isDark').toBe(false);
+        expect(darkDefault?.isDark, 'system dark default isDark').toBe(true);
+        expect(theme.primary, theme.id).toBe(lightDefault?.primary);
+        expect(theme.bg, theme.id).toBe(`linear-gradient(90deg, ${lightDefault?.bg} 50%, ${darkDefault?.bg} 50%)`);
         continue;
       }
       const tokens = themeTokens(theme.id, theme.isDark);
@@ -162,6 +166,44 @@ describe('applyTheme', () => {
   it('does nothing when the meta is absent', () => {
     withDocument(false, () => {
       expect(() => applyTheme('dark')).not.toThrow();
+    });
+  });
+
+  it('resolves the system preference to jasmine in light mode and damascus-rose in dark mode', () => {
+    const previousWindow = (globalThis as { window?: unknown }).window;
+    const withDarkScheme = (matches: boolean, run: () => void) => {
+      (globalThis as { window?: unknown }).window = {
+        matchMedia: () => ({ matches }),
+      };
+      try {
+        run();
+      } finally {
+        (globalThis as { window?: unknown }).window = previousWindow;
+      }
+    };
+
+    withDarkScheme(false, () => {
+      expect(resolveTheme(SYSTEM_THEME)).toBe('jasmine');
+      withDocument(true, (attributes) => {
+        applyTheme(SYSTEM_THEME);
+        expect(attributes).toEqual({
+          'html.data-theme': 'jasmine',
+          'html.data-scheme': 'light',
+          'meta.content': 'light',
+        });
+      });
+    });
+
+    withDarkScheme(true, () => {
+      expect(resolveTheme(SYSTEM_THEME)).toBe('damascus-rose');
+      withDocument(true, (attributes) => {
+        applyTheme(SYSTEM_THEME);
+        expect(attributes).toEqual({
+          'html.data-theme': 'damascus-rose',
+          'html.data-scheme': 'dark',
+          'meta.content': 'dark',
+        });
+      });
     });
   });
 });

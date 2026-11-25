@@ -260,7 +260,7 @@ export default function ResultsView({ summary, stats, onPlayAgain }: ResultsView
               <span>كيف أجاب الآخرون</span>
             </CardTitle>
             <Badge variant="secondary" className="text-[11px] font-semibold">
-              <bdi dir="ltr">{stats.total_runs.toLocaleString('en-US')}</bdi>&nbsp;جولة مجهولة
+              <bdi dir="ltr">{stats.total_runs.toLocaleString('en-US')}</bdi>&nbsp;جولة
             </Badge>
           </CardHeader>
 
@@ -440,7 +440,7 @@ export default function ResultsView({ summary, stats, onPlayAgain }: ResultsView
         >
           منصة تأكد
         </a>{' '}
-        ومصادر رسمية. الإحصاءات مجهولة تماماً.
+        ومصادر رسمية.
       </footer>
 
       {/* Off-screen 360x640 story card captured by html2canvas-pro */}

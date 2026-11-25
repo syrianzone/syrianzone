@@ -91,7 +91,7 @@ export default function OpeningView({
             <bdi dir="ltr" className="font-semibold text-foreground">
               {stats.total_runs.toLocaleString('en-US')}
             </bdi>{' '}
-            جولة مجهولة
+            جولة
             {stats.average_score !== null && (
               <>
                 {' '}· المتوسّط{' '}
@@ -102,7 +102,7 @@ export default function OpeningView({
             )}
           </>
         ) : (
-          'موثّق بالمصادر · نتائج مجهولة تماماً'
+          'موثّق بالمصادر'
         )}
       </p>
     </section>

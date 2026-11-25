@@ -3,6 +3,7 @@
     "non_pages": [
         "healthcheck",
         "sitemap.xml",
+        "sitemap-images.xml",
         "llms.txt",
         "broadcasting/auth",
         "sanctum/csrf-cookie",

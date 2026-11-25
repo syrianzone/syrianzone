@@ -1,7 +1,11 @@
 {
   "theme": {
     "key": "sz-theme",
-    "system": "system"
+    "system": "system",
+    "defaults": {
+      "light": "jasmine",
+      "dark": "damascus-rose"
+    }
   },
   "font": {
     "key": "sz-font",
@@ -19,8 +23,8 @@
       "emoji": "🌓",
       "icon": "monitor",
       "isDark": false,
-      "bg": "linear-gradient(90deg, #ffffff 50%, #1a1f22 50%)",
-      "primary": "#556a4e",
+      "bg": "linear-gradient(90deg, #fcfaf3 50%, #1a0f12 50%)",
+      "primary": "#9e5e0a",
       "group": "system"
     },
     {

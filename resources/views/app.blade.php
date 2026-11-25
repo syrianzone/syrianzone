@@ -60,6 +60,8 @@
         $themeFacts = \App\Support\Facts::themes();
         $themeKey = $themeFacts['theme']['key'];
         $systemTheme = $themeFacts['theme']['system'];
+        $lightDefaultTheme = $themeFacts['theme']['defaults']['light'];
+        $darkDefaultTheme = $themeFacts['theme']['defaults']['dark'];
         $fontKey = $themeFacts['font']['key'];
         $legacySettingsKey = $themeFacts['legacySettingsKey'];
         $syrianDefaultFont = $themeFacts['font']['defaults']['syrian'];
@@ -108,7 +110,7 @@
 
                 var theme = localStorage.getItem(@json($themeKey)) || legacySetting('theme');
                 if (!theme || theme === @json($systemTheme)) {
-                    theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+                    theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? @json($darkDefaultTheme) : @json($lightDefaultTheme);
                 }
                 var scheme = @json($darkThemeIds).indexOf(theme) !== -1 ? 'dark' : 'light';
                 root.setAttribute('data-theme', theme);

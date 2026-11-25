@@ -98,6 +98,8 @@ test('the theme record is readable through the facts reader', function () {
 
     expect($themes['theme']['key'])->toBeString()
         ->and($themes['theme']['system'])->toBeString()
+        ->and($themes['theme']['defaults']['light'])->toBeString()
+        ->and($themes['theme']['defaults']['dark'])->toBeString()
         ->and($themes['font']['key'])->toBeString()
         ->and($themes['themes'])->toBeArray()->not->toBeEmpty();
 });

@@ -35,6 +35,7 @@ export interface ThemeConfig {
 
 export const THEME_KEY = themeData.theme.key;
 export const SYSTEM_THEME = themeData.theme.system;
+export const SYSTEM_THEME_DEFAULTS = themeData.theme.defaults;
 
 const THEME_ICONS: Record<string, LucideIcon> = {
   monitor: Monitor,
@@ -130,7 +131,9 @@ export function getThemePreference(): string {
 }
 
 export function resolveTheme(pref: string): string {
-  return pref === SYSTEM_THEME ? (darkQuery().matches ? 'dark' : 'light') : pref;
+  return pref === SYSTEM_THEME
+    ? (darkQuery().matches ? SYSTEM_THEME_DEFAULTS.dark : SYSTEM_THEME_DEFAULTS.light)
+    : pref;
 }
 
 // Apply the resolved theme id and its scheme together. The scheme also drives
@@ -188,8 +191,8 @@ export function useColorScheme(): ColorScheme {
 
 /** The theme id currently applied to the document (`data-theme`). */
 export function getThemeId(): string {
-  if (typeof document === 'undefined') return 'light';
-  return document.documentElement.getAttribute('data-theme') || 'light';
+  if (typeof document === 'undefined') return SYSTEM_THEME_DEFAULTS.light;
+  return document.documentElement.getAttribute('data-theme') || SYSTEM_THEME_DEFAULTS.light;
 }
 
 // `applyTheme` also reports here, because picking 'system' while already on the
@@ -220,7 +223,7 @@ function subscribeToTheme(onChange: () => void): () => void {
  * SSR markup hydrates unchanged.
  */
 export function useThemeId(): string {
-  return useSyncExternalStore(subscribeToTheme, getThemeId, () => 'light');
+  return useSyncExternalStore(subscribeToTheme, getThemeId, () => SYSTEM_THEME_DEFAULTS.light);
 }
 
 /**

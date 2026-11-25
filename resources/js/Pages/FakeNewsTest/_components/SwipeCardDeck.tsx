@@ -221,7 +221,12 @@ export default function SwipeCardDeck({
 
       {/* Stacked shadcn Card Deck */}
       <div className="relative my-4 flex flex-1 items-center justify-center overflow-x-clip py-3">
-        <div className="relative h-[360px] sm:h-[400px] w-full">
+        <div
+          className={cn(
+            'relative w-full',
+            claim.image ? 'h-[420px] sm:h-[460px]' : 'h-[360px] sm:h-[400px]',
+          )}
+        >
           {upcomingClaims.length >= 2 && (
             <Card
               aria-hidden="true"
@@ -286,7 +291,7 @@ export default function SwipeCardDeck({
               <span>غير صحيح</span>
             </div>
 
-            <CardContent className="flex flex-1 flex-col justify-between p-6">
+            <CardContent className="flex flex-1 flex-col justify-between gap-3 p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <KindBadge kind={claim.kind} />
                 {index === 0 && !dragging && (
@@ -300,11 +305,29 @@ export default function SwipeCardDeck({
                 )}
               </div>
 
-              <div className="my-auto py-4">
-                <p className="text-xl sm:text-2xl font-bold leading-relaxed text-foreground">
-                  <BdiText text={claim.text} />
-                </p>
-              </div>
+              {claim.image ? (
+                <div className="my-auto flex flex-col gap-3">
+                  <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+                    <img
+                      src={claim.image}
+                      alt={claim.imageAlt ?? claim.text}
+                      draggable={false}
+                      loading="eager"
+                      decoding="async"
+                      className="pointer-events-none max-h-44 sm:max-h-52 w-full object-contain"
+                    />
+                  </div>
+                  <p className="text-base sm:text-lg font-bold leading-relaxed text-foreground">
+                    <BdiText text={claim.text} />
+                  </p>
+                </div>
+              ) : (
+                <div className="my-auto py-4">
+                  <p className="text-xl sm:text-2xl font-bold leading-relaxed text-foreground">
+                    <BdiText text={claim.text} />
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center justify-center pt-1" aria-hidden="true">
                 <span className="h-1 w-10 rounded-full bg-border" />

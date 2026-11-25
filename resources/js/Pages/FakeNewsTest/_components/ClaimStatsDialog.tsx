@@ -13,7 +13,7 @@ import {
 import { ScrollArea } from '@/Components/ui/scroll-area';
 import { Separator } from '@/Components/ui/separator';
 import { fetchFakeNewsStats } from '@/Domain/fakenewstest/api';
-import { FAKE_NEWS_CLAIMS, getAllClaimOutcomeStats } from '@/Domain/fakenewstest/claims';
+import { FAKE_NEWS_CLAIMS, getAllClaimOutcomeStats, ROUND_SIZE } from '@/Domain/fakenewstest/claims';
 import type { FakeNewsStats } from '@/Domain/fakenewstest/types';
 import { cn } from '@/Lib/utils';
 import BdiText from './BdiText';
@@ -66,7 +66,7 @@ export default function ClaimStatsDialog({
     });
   }, [stats, sortMode]);
 
-  const totalClaims = FAKE_NEWS_CLAIMS.length;
+  const poolSize = FAKE_NEWS_CLAIMS.length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -75,6 +75,9 @@ export default function ClaimStatsDialog({
           <DialogTitle className="flex items-center gap-2 text-lg font-bold">
             <BarChart3 className="h-5 w-5 text-primary shrink-0" aria-hidden="true" />
             <span>إحصاءات الأسئلة</span>
+            <Badge variant="secondary" className="text-[11px] font-semibold">
+              <bdi dir="ltr">{poolSize}</bdi>
+            </Badge>
             {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden="true" />}
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
@@ -88,7 +91,7 @@ export default function ClaimStatsDialog({
                   <>
                     {' '}· المتوسّط{' '}
                     <bdi dir="ltr" className="font-semibold text-foreground">
-                      {stats.average_score.toFixed(1)}/{totalClaims}
+                      {stats.average_score.toFixed(1)}/{ROUND_SIZE}
                     </bdi>
                   </>
                 )}

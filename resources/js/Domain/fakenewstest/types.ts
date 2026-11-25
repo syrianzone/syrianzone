@@ -13,6 +13,8 @@ export interface FakeNewsClaim {
   label: string;
   date: string;
   explain: string;
+  image?: string;
+  imageAlt?: string;
   source: ClaimSource;
   source2?: ClaimSource;
 }

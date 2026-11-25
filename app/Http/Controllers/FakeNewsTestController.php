@@ -12,6 +12,8 @@ use Inertia\Response;
 
 class FakeNewsTestController extends Controller
 {
+    public const ROUND_SIZE = 12;
+
     public function index(): Response
     {
         return Inertia::render('FakeNewsTest/Index', [
@@ -56,7 +58,7 @@ class FakeNewsTestController extends Controller
 
     public function recordResult(Request $request): JsonResponse
     {
-        $maxScore = count($this->claimIds());
+        $maxScore = self::ROUND_SIZE;
 
         $validated = $request->validate([
             'score' => ['required', 'integer', 'min:0', "max:{$maxScore}"],
@@ -106,7 +108,7 @@ class FakeNewsTestController extends Controller
     private function statsSnapshot(): array
     {
         $claimIds = $this->claimIds();
-        $maxScore = count($claimIds);
+        $maxScore = self::ROUND_SIZE;
 
         $claimRows = DB::table('fake_news_claim_stats')
             ->get(['claim_id', 'true_count', 'false_count'])

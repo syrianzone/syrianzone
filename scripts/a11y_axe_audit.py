@@ -44,6 +44,11 @@ PUBLIC_ROUTES = [
     "/promises", "/promises/suggest",
     "/govtcvs", "/govtcvs/movements",
 ]
+# Sample record pages whose parameterized route pattern is registered in web.php
+# (kept outside PUBLIC_ROUTES so A11yRouteCoverageTest still matches static routes).
+SAMPLE_DETAIL_ROUTES = [
+    "/house/members/73",
+]
 ADMIN_ROUTES = [
     "/dashboard", "/admin/govapps", "/admin/phonebook", "/admin/syofficial",
     "/admin/guesswho", "/admin/assets", "/admin/navigation", "/admin/places",
@@ -218,7 +223,7 @@ async def main() -> int:
 
         axe_source = load_axe(args.axe)
 
-        routes = list(PUBLIC_ROUTES)
+        routes = list(PUBLIC_ROUTES) + list(SAMPLE_DETAIL_ROUTES)
         if args.admin:
             impersonate = f"{args.base}/dev/impersonate/superadmin"
             try:

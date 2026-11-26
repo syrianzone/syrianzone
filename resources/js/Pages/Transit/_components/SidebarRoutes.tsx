@@ -5,6 +5,7 @@ import { useAuth } from '@/Contexts/AuthContext'
 import { Button } from '@/Components/ui/button'
 import { ScrollArea } from '@/Components/ui/scroll-area'
 import { Separator } from '@/Components/ui/separator'
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date'
 import { useMapStore } from '../_store/useMapStore'
 import { getRouteColor } from '../_lib/mapColors'
 import type { RouteProperties } from '../_types'
@@ -15,11 +16,12 @@ interface SidebarRoutesProps {
   /** The city list, for the names of the other cities a shared map draws. */
   cities: TransitCity[]
   routes: RouteProperties[]
+  lastUpdated?: string | null
   /** Set when the list replaces a route's detail: that route's card takes focus back. */
   returnFocusRouteId?: string | null
 }
 
-export function SidebarRoutes({ city, cities, routes, returnFocusRouteId = null }: SidebarRoutesProps) {
+export function SidebarRoutes({ city, cities, routes, lastUpdated = null, returnFocusRouteId = null }: SidebarRoutesProps) {
   const { user } = useAuth()
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
   const rootRef = useRef<HTMLDivElement>(null)
@@ -66,13 +68,17 @@ export function SidebarRoutes({ city, cities, routes, returnFocusRouteId = null 
     const hasPrice = priceNew != null && Number.isFinite(priceNew) && priceNew > 0
 
     return (
-    <button
+    <a
       key={route.id}
-      type="button"
+      href={`/transit/city/${city.id}?route=${encodeURIComponent(route.id)}`}
       data-route-id={route.id}
-      aria-pressed={selectedRouteId === route.id}
-      onClick={() => handleRouteClick(route.id)}
-      className={`group flex items-stretch rounded-xl border transition-all duration-200 hover:shadow-sm overflow-hidden w-full text-start ${
+      aria-current={selectedRouteId === route.id ? 'true' : undefined}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+        e.preventDefault()
+        handleRouteClick(route.id)
+      }}
+      className={`group flex items-stretch rounded-xl border transition-all duration-200 hover:shadow-sm overflow-hidden w-full text-start no-underline ${
         selectedRouteId === route.id
           ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/20'
           : 'border-border bg-card hover:border-primary/40'
@@ -103,7 +109,7 @@ export function SidebarRoutes({ city, cities, routes, returnFocusRouteId = null 
           )}
         </div>
       </div>
-    </button>
+    </a>
     )
   }
 
@@ -118,9 +124,16 @@ export function SidebarRoutes({ city, cities, routes, returnFocusRouteId = null 
           </Button>
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-foreground">{city.nameAr}</h2>
-            <p className="text-xs text-muted-foreground">{routes.length} خط سيرفيس</p>
+            <p className="text-xs text-muted-foreground">
+              {routes.length} خط سيرفيس
+              {lastUpdated ? ` · آخر تحديث: ${formatGregorianSyrianShort(lastUpdated)}` : ''}
+            </p>
           </div>
         </div>
+
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          اختر خطاً من القائمة أو ابحث في الخريطة لعرض المسار والمواقف والأجرة.
+        </p>
 
         {user && (
           <Button asChild className="mt-3 w-full" size="sm">

@@ -218,4 +218,132 @@ describe('pages render their content on the server', () => {
             expect(cleanHtml).toContain(`href="/govtcvs/${official.slug}"`);
         }
     });
+
+    it('renders roznama lead with Gregorian/Hijri dates, next holiday, Ramadan countdown, and calendar keywords', async () => {
+        const html = await renderOnServer(
+            'Roznama/Index',
+            {
+                serverYear: 2026,
+                serverToday: {
+                    iso: '2026-11-26',
+                    gregorianAr: 'الخميس، 26 تشرين الثاني 2026',
+                    hijriAr: '16 جمادى الآخرة 1448 هـ',
+                },
+                ramadan: {
+                    hijriYear: 1448,
+                    expectedStartDate: '2027-02-08',
+                    expectedEndDate: '2027-03-08',
+                    daysLeft: 74,
+                    status: 'upcoming',
+                },
+            },
+            '/roznama',
+        );
+
+        const cleanHtml = html.replace(/<!-- -->/g, '');
+        expect(cleanHtml.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml).toContain('الروزنامة السورية 2026');
+        expect(cleanHtml).toContain('التقويم');
+        expect(cleanHtml).toContain('روزناما');
+        expect(cleanHtml).toContain('الخميس، 26 تشرين الثاني 2026');
+        expect(cleanHtml).toContain('16 جمادى الآخرة 1448 هـ');
+        expect(cleanHtml).toContain('عيد التحرير الوطني');
+        expect(cleanHtml).toContain('كم باقي على رمضان 1448؟');
+        expect(cleanHtml).toContain('متبقٍ 74 يوماً');
+        expect(cleanHtml).toContain('href="/muslim/ramadan"');
+    });
+
+    it('renders transit city H1, intro with route count/last update, and crawlable route links with fares', async () => {
+        const city = {
+            id: 'damascus',
+            nameAr: 'دمشق',
+            nameEn: 'Damascus',
+            status: 'active',
+            zoom: 12,
+            center: [36.29, 33.51],
+            bounds: [[36.2, 33.45], [36.38, 33.57]],
+            routeCount: 2,
+            mapGroup: ['damascus', 'rif-dimashq'],
+            mapGroupLabel: 'دمشق الكبرى',
+        };
+        const rifCity = {
+            ...city,
+            id: 'rif-dimashq',
+            nameAr: 'ريف دمشق',
+            nameEn: 'Rif Dimashq',
+            routeCount: 1,
+        };
+        const routes = [
+            { id: 'damascus-001', cityId: 'damascus', nameAr: 'برزة البلد - شارع الثورة', nameEn: null, colorIndex: 0, priceOld: 2500, priceNew: 25, stopsCount: 12 },
+            { id: 'rif-001', cityId: 'rif-dimashq', nameAr: 'جرمانا - البرامكة', nameEn: null, colorIndex: 1, priceOld: 3000, priceNew: 30, stopsCount: 9 },
+        ];
+
+        const html = await renderOnServer(
+            'Transit/city/[id]/Index',
+            { id: 'damascus', city, cities: [city, rifCity], routes, lastUpdated: '2026-07-24' },
+            '/transit/city/damascus',
+        );
+
+        const cleanHtml = html.replace(/<!-- -->/g, '');
+        expect(cleanHtml.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml).toContain('خطوط السرافيس في دمشق — خريطة ومسارات وأجرة');
+        expect(cleanHtml).toContain('2 خط سيرفيس');
+        expect(cleanHtml).toContain('آخر تحديث:');
+        expect(cleanHtml).toContain('اختر خطاً من القائمة أو ابحث في الخريطة');
+        expect(cleanHtml).toContain('href="/transit/city/damascus?route=damascus-001"');
+        expect(cleanHtml).toContain('href="/transit/city/damascus?route=rif-001"');
+        expect(cleanHtml).toContain('برزة البلد - شارع الثورة');
+        expect(cleanHtml).toContain('٢٥ ل.س');
+    });
+
+    it('renders house members grouped by governorate with member page links and member detail page without raw gender codes', async () => {
+        const houseHtml = await renderOnServer('House/Index', { members2026: [] }, '/house');
+        const cleanHouse = houseHtml.replace(/<!-- -->/g, '');
+        expect(cleanHouse.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanHouse.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanHouse).toContain('أعضاء مجلس الشعب السوري 2026 — الأسماء حسب المحافظة');
+        expect(cleanHouse).toContain('أسماء أعضاء مجلس الشعب السوري حسب المحافظة');
+        expect(cleanHouse).toContain('href="/house/members/73"');
+        expect(cleanHouse).toContain('مصطفى عبدالوهاب موسى');
+
+        const memberHtml = await renderOnServer(
+            'House/Show',
+            {
+                member: {
+                    name_ar: 'فاطمة عبد اللطيف اليوسف',
+                    governorate_ar: 'ادلب',
+                    governorate_display_ar: 'إدلب',
+                    district: '',
+                    town: '',
+                    gender: 'F',
+                    birth_year: '1991',
+                    age: '34',
+                    selection_method: 'تعيين',
+                    category: '',
+                    status: 'active',
+                    member_number: '176',
+                    management_position: '',
+                    facebook_url: '',
+                    twitter_url: '',
+                },
+                sameGovernorateMembers: [
+                    { member_number: '73', name_ar: 'مصطفى عبدالوهاب موسى', district: 'جسر الشغور', management_position: 'نائب أول لرئيس المجلس', selection_method: 'انتخابات' },
+                ],
+                sourceUrl: 'https://omrandirasat.org/test',
+            },
+            '/house/members/176',
+        );
+
+        const cleanMember = memberHtml.replace(/<!-- -->/g, '');
+        expect(cleanMember.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanMember.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanMember).toContain('عضوة مجلس الشعب السوري عن محافظة إدلب');
+        expect(cleanMember).toContain('أنثى');
+        expect(cleanMember).not.toContain('>F<');
+        expect(cleanMember).toContain('href="/house"');
+        expect(cleanMember).toContain('href="/house/members/73"');
+        expect(cleanMember).toContain('https://omrandirasat.org/test');
+    });
 });

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
@@ -100,7 +101,16 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                             <TableBody>
                                 {filtered.map((m) => (
                                     <TableRow key={m.member_number || m.name_ar}>
-                                        <TableCell className="font-medium">{m.name_ar}{m.management_position ? ` — ${m.management_position}` : ''}</TableCell>
+                                        <TableCell className="font-medium">
+                                            {m.member_number ? (
+                                                <Link href={`/house/members/${m.member_number}`} className="text-primary hover:underline">
+                                                    {m.name_ar}
+                                                </Link>
+                                            ) : (
+                                                m.name_ar
+                                            )}
+                                            {m.management_position ? ` — ${m.management_position}` : ''}
+                                        </TableCell>
                                         <TableCell>{m.governorate_ar} {m.district ? `· ${m.district}` : ''}</TableCell>
                                         <TableCell>{m.gender === 'F' ? 'أنثى' : 'ذكر'}</TableCell>
                                         <TableCell>{m.birth_year}</TableCell>

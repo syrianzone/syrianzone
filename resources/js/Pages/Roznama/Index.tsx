@@ -82,6 +82,7 @@ import {
     GOVERNORATES_BY_ID,
     governorateNameForF3aliaProvince,
 } from '@/Domain/geography/governorates';
+import { daysBetweenIso } from '@/Domain/prayer/ramadan';
 import { variableHolidays, type VariableHolidayId } from './_lib/variableHolidays';
 
 /** Upstream event links reach an href: only http(s) passes, else the platform. */
@@ -138,7 +139,34 @@ function holidaysForYear(year: number): ActiveHoliday[] {
     return list.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
-export default function Index({ serverYear }: { serverYear?: number }) {
+interface RoznamaServerToday {
+    iso: string;
+    gregorianAr: string;
+    hijriAr: string;
+}
+
+interface RoznamaRamadanLead {
+    hijriYear: number;
+    expectedStartDate: string;
+    expectedEndDate: string;
+    daysLeft: number;
+    status: 'upcoming' | 'during' | 'after';
+}
+
+interface RoznamaPageProps {
+    serverYear?: number;
+    serverToday?: RoznamaServerToday;
+    ramadan?: RoznamaRamadanLead;
+}
+
+function parseIsoCalendarDate(iso?: string): Date | null {
+    if (!iso) return null;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (!match) return null;
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageProps) {
     // One location preference, shared with Home, /muslim and the board.
     const location = useLocationPreference();
     // The calculation method is part of `Domain/settings/prefs`: the choice is
@@ -315,6 +343,25 @@ export default function Index({ serverYear }: { serverYear?: number }) {
     const geoActive = mounted && isDeviceLocation(location) ? location.geo : null;
     const placeLabel = mounted ? resolvePlaceLabel(location) : activeGov.nameAr;
 
+    const displayYear = serverYear ?? currentYear;
+    const ssrTodayDate = useMemo(
+        () => parseIsoCalendarDate(serverToday?.iso) ?? new Date(displayYear, 0, 1),
+        [serverToday?.iso, displayYear],
+    );
+    const ssrNextHoliday = useMemo(() => {
+        const list = holidaysForYear(displayYear);
+        const next = list.find((h) => h.date >= ssrTodayDate) ?? holidaysForYear(displayYear + 1)[0];
+        const daysLeft = Math.ceil((next.date.getTime() - ssrTodayDate.getTime()) / (1000 * 60 * 60 * 24));
+        return { ...next, daysLeft };
+    }, [displayYear, ssrTodayDate]);
+
+    const ramadanStart = ramadan?.expectedStartDate ?? '2027-02-08';
+    const ramadanHijriYear = ramadan?.hijriYear ?? 1448;
+    const ramadanDaysLeft = ramadan
+        ? ramadan.daysLeft
+        : Math.max(0, daysBetweenIso(serverToday?.iso ?? syriaDayKey, ramadanStart));
+    const ramadanStatus = ramadan?.status ?? 'upcoming';
+
     return (
         <MainLayout>
             
@@ -327,23 +374,74 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                 
                 <section className="bg-card py-10 shadow-sm border-b border-border">
                     <div className="container mx-auto px-4 text-center max-w-4xl">
-                        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">الروزنامة</h1>
+                        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
+                            الروزنامة السورية {mounted ? currentYear : displayYear} — التقويم والعطل الرسمية
+                        </h1>
                         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                            التوقيت المحلي، ومواقيت الصلاة الرسمية، والأعياد والعطل الرسمية للدولة السورية.
+                            الروزنامة (التقويم) السورية لعرض التاريخ اليوم ميلادياً وهجرياً، والأعياد والعطل الرسمية، وكم باقي على رمضان ومواقيت الصلاة بتوقيت دمشق (وتُعرف أيضاً باسم «روزناما» سوريا).
                         </p>
                     </div>
                 </section>
 
                 {!mounted && (
                 <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="border-border bg-card/60 shadow-sm">
+                            <CardContent className="p-5 space-y-1.5">
+                                <p className="text-xs font-semibold text-primary">التاريخ اليوم في سوريا</p>
+                                <p className="text-lg font-bold text-foreground">
+                                    {serverToday?.gregorianAr || formatGregorianSyrian(ssrTodayDate)}
+                                </p>
+                                {serverToday?.hijriAr && (
+                                    <p className="text-sm text-muted-foreground">{serverToday.hijriAr}</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                        <Card className="border-border bg-card/60 shadow-sm">
+                            <CardContent className="p-5 space-y-1.5">
+                                <p className="text-xs font-semibold text-primary">العطلة الرسمية القادمة</p>
+                                <p className="text-lg font-bold text-foreground">{ssrNextHoliday.nameAr}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {formatGregorianSyrian(ssrNextHoliday.date)} —{' '}
+                                    <span className="font-semibold text-foreground">
+                                        {ssrNextHoliday.daysLeft === 0
+                                            ? 'اليوم'
+                                            : ssrNextHoliday.daysLeft === 1
+                                                ? 'متبقٍ يوم واحد'
+                                                : ssrNextHoliday.daysLeft === 2
+                                                    ? 'متبقٍ يومان'
+                                                    : `متبقٍ ${ssrNextHoliday.daysLeft} يوماً`}
+                                    </span>
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-primary/20 bg-primary/5 shadow-sm">
+                            <CardContent className="p-5 space-y-1.5">
+                                <p className="text-xs font-semibold text-primary">كم باقي على رمضان {ramadanHijriYear}؟</p>
+                                <p className="text-lg font-bold text-foreground">
+                                    {ramadanStatus === 'during'
+                                        ? `شهر رمضان ${ramadanHijriYear} هـ جارٍ حالياً`
+                                        : ramadanStatus === 'after'
+                                            ? `إمساكية رمضان ${ramadanHijriYear} هـ`
+                                            : `متبقٍ ${ramadanDaysLeft} يوماً`}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    الغرة الفلكية المتوقعة: {formatGregorianSyrianShort(ramadanStart)} ·{' '}
+                                    <Link href="/muslim/ramadan" className="font-semibold text-primary hover:underline">
+                                        عرض إمساكية رمضان
+                                    </Link>
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
                     <Card className="border-border bg-card/60 shadow-sm">
                         <CardContent className="p-6">
                             <h2 className="font-bold text-lg text-foreground flex items-center gap-2 mb-4 border-b border-border/60 pb-3">
                                 <Calendar className="h-5 w-5 text-primary" aria-hidden="true" />
-                                <span>العطل الرسمية في سوريا ({serverYear ?? 2026}م)</span>
+                                <span>العطل الرسمية في سوريا ({displayYear}م)</span>
                             </h2>
                             <ul className="divide-y divide-border/50 text-sm">
-                                {holidaysForYear(serverYear ?? 2026).map((h) => (
+                                {holidaysForYear(displayYear).map((h) => (
                                     <li key={`${h.nameEn}-${h.date.getTime()}`} className="py-2.5">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="font-semibold text-foreground">{h.nameAr}</span>
@@ -355,20 +453,6 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                     </li>
                                 ))}
                             </ul>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-primary/20 bg-primary/5 shadow-sm">
-                        <CardContent className="p-5 flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <h2 className="font-bold text-base text-foreground">إمساكية رمضان 1448 هـ / 2027 م</h2>
-                                <p className="text-xs text-muted-foreground mt-0.5">مواعيد الإمساك والفجر والإفطار لجميع المحافظات السورية</p>
-                            </div>
-                            <Link
-                                href="/muslim/ramadan"
-                                className="text-xs font-semibold text-primary hover:underline"
-                            >
-                                عرض الإمساكية
-                            </Link>
                         </CardContent>
                     </Card>
                     <Card className="border-border bg-muted/20 shadow-sm p-5">
@@ -385,7 +469,31 @@ export default function Index({ serverYear }: { serverYear?: number }) {
 
                 {mounted && (
                 <div className="container mx-auto px-4 py-8 max-w-7xl">
-                    
+                    <Card className="mb-6 border-primary/20 bg-primary/5 shadow-sm">
+                        <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p className="font-bold text-sm text-foreground">
+                                    كم باقي على رمضان {ramadanHijriYear} هـ؟{' '}
+                                    <span className="text-primary">
+                                        {ramadanStatus === 'during'
+                                            ? 'شهر رمضان جارٍ حالياً'
+                                            : ramadanStatus === 'after'
+                                                ? 'إمساكية رمضان 1448 هـ / 2027 م'
+                                                : `متبقٍ ${ramadanDaysLeft} يوماً`}
+                                    </span>
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    الغرة الفلكية المتوقعة: {formatGregorianSyrianShort(ramadanStart)} — مواعيد الإمساك والفجر والإفطار لجميع المحافظات.
+                                </p>
+                            </div>
+                            <Link
+                                href="/muslim/ramadan"
+                                className="text-xs font-semibold text-primary hover:underline shrink-0"
+                            >
+                                عرض إمساكية رمضان
+                            </Link>
+                        </CardContent>
+                    </Card>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                         
                         <div className="space-y-6 flex flex-col">

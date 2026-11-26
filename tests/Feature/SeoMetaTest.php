@@ -205,7 +205,7 @@ test('a fixed page keeps dates out of its structured data', function () {
     $page = collect(json_decode(SeoMeta::resolve(Request::create('/house', 'GET'))['json_ld'], true)['@graph'])
         ->firstWhere('@type', 'Article');
 
-    expect($page['headline'])->toBe('المجلس التشريعي السوري 2026')
+    expect($page['headline'])->toBe('أعضاء مجلس الشعب السوري 2026 — الأسماء حسب المحافظة')
         ->and($page)->not->toHaveKeys(['datePublished', 'dateModified']);
 });
 

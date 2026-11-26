@@ -91,7 +91,7 @@ export default function CityPage({ id, city, cities = [] }: CityPageProps) {
 
   return (
     <TransitLayout>
-      <h1 className="sr-only">مواصلات {city.nameAr}</h1>
+      <h1 className="sr-only">خطوط السرافيس في {city.nameAr} — خريطة ومسارات وأجرة</h1>
       <div className="relative h-full overflow-hidden">
         {isComposite && city.mapGroupLabel && (
           // Below the search box (top-3 + a 36px field) so the two never overlap.

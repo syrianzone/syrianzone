@@ -16,6 +16,8 @@ use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\Route as TransitRoute;
 use App\Services\ExternalData\ExternalSheetCache;
+use App\Support\Facts;
+use App\Support\HouseMembers;
 use App\Support\Seo\Pages;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +43,7 @@ class SitemapBuilder
             $this->prayerCityUrls(),
             $this->ramadanCityUrls(),
             $this->transitCityUrls(),
+            $this->houseMemberUrls(),
         );
 
         // A path reaching both a static entry and a dynamic source would split
@@ -149,7 +152,7 @@ class SitemapBuilder
      */
     private function crossingUrls(): array
     {
-        $data = \App\Support\Facts::json('crossings');
+        $data = Facts::json('crossings');
         $asOf = ! empty($data['meta']['asOf']) ? Carbon::parse((string) $data['meta']['asOf']) : null;
         $urls = [];
 
@@ -172,7 +175,7 @@ class SitemapBuilder
     private function prayerCityUrls(): array
     {
         $urls = [];
-        foreach (\App\Support\Facts::governorates() as $gov) {
+        foreach (Facts::governorates() as $gov) {
             $id = trim((string) ($gov['id'] ?? ''));
             if ($id === '') {
                 continue;
@@ -191,7 +194,7 @@ class SitemapBuilder
     private function ramadanCityUrls(): array
     {
         $urls = [];
-        foreach (\App\Support\Facts::governorates() as $gov) {
+        foreach (Facts::governorates() as $gov) {
             $id = trim((string) ($gov['id'] ?? ''));
             if ($id === '') {
                 continue;
@@ -314,6 +317,19 @@ class SitemapBuilder
             ))
             ->values()
             ->all();
+    }
+
+    /**
+     * One profile page per member of the 2026 People's Assembly snapshot.
+     *
+     * @return SitemapUrl[]
+     */
+    private function houseMemberUrls(): array
+    {
+        return array_map(
+            fn (array $member) => new SitemapUrl('/house/members/'.$member['member_number'], 0.6, 'monthly', null),
+            HouseMembers::all(),
+        );
     }
 
     /**

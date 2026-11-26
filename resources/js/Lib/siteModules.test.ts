@@ -72,6 +72,7 @@ describe('the client fallback', () => {
         const muslim = SITE_LINKS.find((link) => link.id === 'muslim');
         expect(muslim?.subCategories?.map((sub) => sub.id)).toEqual([
             'muslim_prayer',
+            'muslim_ramadan',
             'muslim_quran',
             'muslim_radio',
         ]);

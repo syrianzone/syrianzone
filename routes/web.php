@@ -117,20 +117,63 @@ Route::get('/muslim', function () {
     return Inertia::render('Muslim/Index');
 });
 Route::get('/muslim/prayer', function () {
+    $defaultCity = 'damascus';
+
     return Inertia::render('Muslim/Prayer/Index', [
         'initialCity' => null,
         'initialCityName' => null,
-        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate('damascus'),
+        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate($defaultCity),
+        'monthlyCalendar' => \App\Http\Controllers\PrayerController::monthlyCalendarForGovernorate($defaultCity),
+        'qibla' => \App\Http\Controllers\PrayerController::qiblaForGovernorate($defaultCity),
+        'todayInfo' => \App\Http\Controllers\PrayerController::todaySyriaInfo(),
     ]);
 });
 Route::get('/muslim/prayer/{city}', function (string $city) {
     $gov = \App\Support\Facts::governorate($city);
     abort_if($gov === null, 404);
+    $id = (string) $gov['id'];
 
     return Inertia::render('Muslim/Prayer/Index', [
-        'initialCity' => (string) $gov['id'],
+        'initialCity' => $id,
         'initialCityName' => (string) $gov['name_ar'],
-        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate((string) $gov['id']),
+        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate($id),
+        'monthlyCalendar' => \App\Http\Controllers\PrayerController::monthlyCalendarForGovernorate($id),
+        'qibla' => \App\Http\Controllers\PrayerController::qiblaForGovernorate($id),
+        'todayInfo' => \App\Http\Controllers\PrayerController::todaySyriaInfo(),
+    ]);
+})->where('city', '[a-z0-9-]+');
+Route::get('/muslim/ramadan', function () {
+    $imsakiya = \App\Support\Facts::imsakiya(1448);
+
+    return Inertia::render('Muslim/Ramadan/Index', [
+        'meta' => $imsakiya['meta'],
+        'images' => \App\Support\Facts::ramadanImages(),
+        'todayInfo' => \App\Http\Controllers\PrayerController::todaySyriaInfo(),
+    ]);
+});
+Route::get('/muslim/ramadan/{city}', function (string $city) {
+    $gov = \App\Support\Facts::governorate($city);
+    abort_if($gov === null, 404);
+
+    $id = (string) $gov['id'];
+    $imsakiya = \App\Support\Facts::imsakiya(1448);
+    $rows = $imsakiya['governorates'][$id] ?? null;
+    abort_if(! is_array($rows), 404);
+
+    $images = \App\Support\Facts::ramadanImages();
+
+    return Inertia::render('Muslim/Ramadan/Show', [
+        'city' => [
+            'id' => $id,
+            'nameAr' => (string) $gov['name_ar'],
+            'nameEn' => (string) $gov['name_en'],
+            'lat' => (float) $gov['lat'],
+            'lng' => (float) $gov['lng'],
+        ],
+        'meta' => $imsakiya['meta'],
+        'rows' => $rows,
+        'image' => $images[$id] ?? null,
+        'todayInfo' => \App\Http\Controllers\PrayerController::todaySyriaInfo(),
     ]);
 })->where('city', '[a-z0-9-]+');
 Route::get('/muslim/quran', function () {

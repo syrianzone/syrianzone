@@ -22,6 +22,7 @@ use App\Support\Seo\Preview\Resolvers\RoznamaPreview;
 use App\Support\Seo\Preview\Resolvers\SyIdPreview;
 use App\Support\Seo\Preview\Resolvers\TransitCityPreview;
 use App\Support\Seo\Preview\Resolvers\TransitRoutePreview;
+use App\Support\Seo\Preview\Resolvers\WildSpeciesPreview;
 use Illuminate\Http\Request;
 
 /** The registry of preview resolvers for database-backed pages. */
@@ -45,6 +46,7 @@ final class Previews
         TransitRoutePreview::class, // before the city: same path, with ?route=
         TransitCityPreview::class,
         CrossingPreview::class,
+        WildSpeciesPreview::class,
         GovernoratePreview::class,
         PrayerCityPreview::class,
         RamadanCityPreview::class,

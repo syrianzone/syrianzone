@@ -42,12 +42,13 @@ PUBLIC_ROUTES = [
     "/games", "/games/2048", "/games/solitare", "/games/tarneeb", "/games/trix", "/games/fakenews", "/board",
     "/mishwar", "/transit", "/transit/studio", "/currency",
     "/promises", "/promises/suggest",
-    "/govtcvs", "/govtcvs/movements", "/ministries",
+    "/govtcvs", "/govtcvs/movements", "/ministries", "/wild",
 ]
 # Sample record pages whose parameterized route pattern is registered in web.php
 # (kept outside PUBLIC_ROUTES so A11yRouteCoverageTest still matches static routes).
 SAMPLE_DETAIL_ROUTES = [
     "/house/members/73",
+    "/wild/northern-bald-ibis",
 ]
 ADMIN_ROUTES = [
     "/dashboard", "/admin/govapps", "/admin/phonebook", "/admin/syofficial",

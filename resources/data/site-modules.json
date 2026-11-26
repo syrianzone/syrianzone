@@ -649,6 +649,21 @@
    "groupOrder": 4
   },
   {
+   "id": "wild",
+   "title": "الحياة البرية",
+   "subtitle": "دليل موثّق لحيوانات سوريا وطيورها",
+   "href": "/wild",
+   "type": "native",
+   "target": "wild_guide",
+   "iconKey": "wild",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "دليل موثّق المصادر لحيوانات سوريا وطيورها وزواحفها ووضعها في البلاد",
+   "group": "maps",
+   "groupOrder": 5
+  },
+  {
    "id": "ministries",
    "title": "وزارات سوريا",
    "subtitle": "الحكومة السورية الحالية والخط الزمني للوزراء ومسارات الدمج والفصل",

@@ -67,7 +67,30 @@ class ImageSitemapBuilder
             $this->governorateIconImages(),
             $this->syidImages(),
             $this->placeImages(),
+            $this->wildlifeImages(),
         ];
+    }
+
+    /**
+     * The photo on each wildlife species page (`/wild/{slug}`), once
+     * `wildlife:mirror-images` has copied it to the site's media store;
+     * species still served from Wikimedia Commons are left out.
+     *
+     * @return list<ImageSitemapUrl>
+     */
+    private function wildlifeImages(): array
+    {
+        $entries = [];
+        foreach (Facts::json('wildlife')['species'] ?? [] as $species) {
+            $key = $species['image']['r2Key'] ?? null;
+            if (! is_string($key) || $key === '') {
+                continue;
+            }
+
+            $entries[] = new ImageSitemapUrl('/wild/'.$species['slug'], [$this->mediaBase().'/'.ltrim($key, '/')]);
+        }
+
+        return $entries;
     }
 
     /**

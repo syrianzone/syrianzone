@@ -1,5 +1,5 @@
 {
-  "recipe": "1b6f240e8e6963ea",
+  "recipe": "df7ab407973d4b62",
   "cards": {
     "home": "a1a1048328",
     "tierlist": "03ef938c8c",
@@ -18,6 +18,7 @@
     "transit": "ea32826124",
     "transit-studio": "43a6397448",
     "crossings": "cc0107782f",
+    "wild": "01babe95bf",
     "atlas": "18211a6741",
     "syofficial": "9b6373e4a1",
     "phonebook": "7fad3d927e",

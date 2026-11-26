@@ -1,0 +1,4218 @@
+{
+    "meta": {
+        "asOf": "2026-11-27",
+        "sources": [
+            {
+                "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria. Zootaxa 5580(1): 1–130.",
+                "url": "https://doi.org/10.11646/zootaxa.5580.1.1"
+            },
+            {
+                "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48 (OSME).",
+                "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+            },
+            {
+                "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+            },
+            {
+                "title": "Aidek, A.E. et al. (2024). Turtles and tortoises of Syria: Diversity, distribution, and conservation. Zootaxa 5506(2): 151–193.",
+                "url": "https://doi.org/10.11646/zootaxa.5506.2.1"
+            },
+            {
+                "title": "IUCN Red List of Threatened Species (via the GBIF mirror of the IUCN checklist)",
+                "url": "https://www.iucnredlist.org/"
+            },
+            {
+                "title": "GBIF — Global Biodiversity Information Facility: occurrence records for Syria",
+                "url": "https://www.gbif.org/country/SY/summary"
+            }
+        ]
+    },
+    "species": [
+        {
+            "slug": "golden-hamster",
+            "nameAr": "الهامستر الذهبي",
+            "altNamesAr": [
+                "الهامستر السوري",
+                "القداد الذهبي"
+            ],
+            "nameEn": "Golden hamster",
+            "scientific": "Mesocricetus auratus",
+            "group": "mammal",
+            "iucn": {
+                "category": "EN",
+                "url": "https://www.iucnredlist.org/species/13219/107411865"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "يمتد انتشاره البري من هضبة حلب جنوباً حتى السهوب شرق حمص، ومنه سجل حديث قرب السلمية.",
+            "habitats": [
+                "farmland",
+                "steppe"
+            ],
+            "governorates": [
+                "aleppo",
+                "idlib",
+                "hama",
+                "homs"
+            ],
+            "summaryAr": "قارض صغير يتركّز موطنه البري في هضبة حلب شمال سوريا وما يتاخمها في جنوب تركيا، مع سجل حديث أبعد جنوباً قرب السلمية، ومن سلالته تنحدر حيوانات الهامستر الأليفة والمخبرية حول العالم.",
+            "summarySources": [
+                1,
+                0,
+                4
+            ],
+            "factsAr": [
+                {
+                    "text": "وُصف علمياً لأول مرة عام 1839 اعتماداً على عيّنة من حلب.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "تنحدر الحيوانات المرباة في الأسر من بطنٍ واحد استُخرج من جحره عام 1930، وأُضيفت إليها حيوانات برية عام 1971.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "في بعثتين ميدانيتين عامَي 1997 و1999 قرب حلب، وُجد معظم الجحور في الحقول الزراعية، ولا سيما حقول البقوليات، ولم يضم أي جحر مأهول أكثر من فرد بالغ واحد.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "يتراوح عمق جحوره بين 36 و106 سم (65 سم في المتوسط)، وقد تمتد أنفاقه حتى 9 أمتار.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "خلافاً لنشاطه الليلي المعروف في المختبرات، تبيّن أن إناثه في البرية تنشط نهاراً بشكل شبه حصري.",
+                    "sources": [
+                        3
+                    ]
+                },
+                {
+                    "text": "نُشر عام 2021 سجلٌّ له في برقان شمال السلمية، على بعد نحو 150 كم جنوب الحد المعروف سابقاً لانتشاره.",
+                    "sources": [
+                        0,
+                        4
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "الفقدان المستمر لموائله وإجراءات مكافحة القوارض في الأراضي الزراعية.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "صِغر مساحة انتشاره: لم يُتحقّق من وجوده بيقين إلا في أحد عشر موقعاً بحسب مراجعة عام 2017.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Golden hamster front 1.jpg",
+                "author": "Adamjennison111 at English Wikipedia",
+                "license": "CC BY 2.5",
+                "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+                "captionAr": "هامستر ذهبي أليف",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Golden Hamster. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E7FFFF6FF42FE78B2A510FB"
+                },
+                {
+                    "title": "Wilson, D.E., Lacher, T.E. & Mittermeier, R.A. (eds.) (2017). Handbook of the Mammals of the World, Vol. 7: Rodents II — Golden Hamster, p. 204.",
+                    "url": "https://treatment.plazi.org/id/03F06D13FFAD20640D9A10040093FCC6"
+                },
+                {
+                    "title": "Gattermann, R. et al. (2001). Notes on the current distribution and the ecology of wild golden hamsters (Mesocricetus auratus). Journal of Zoology 254(3): 359–365.",
+                    "url": "https://doi.org/10.1017/S0952836901000851"
+                },
+                {
+                    "title": "Gattermann, R. et al. (2008). Golden hamsters are nocturnal in captivity but diurnal in nature. Biology Letters 4(3): 253–255.",
+                    "url": "https://doi.org/10.1098/rsbl.2008.0066"
+                },
+                {
+                    "title": "Aidek, A. & Amr, Z. (2021). A new locality record for the Syrian hamster, Mesocricetus auratus. Mammalia 85(6): 601–602.",
+                    "url": "https://doi.org/10.1515/mammalia-2021-0067"
+                },
+                {
+                    "title": "IUCN Red List — Mesocricetus auratus",
+                    "url": "https://www.iucnredlist.org/species/13219/107411865"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "striped-hyena",
+            "nameAr": "الضبع المخطّط",
+            "altNamesAr": [
+                "الضبع"
+            ],
+            "nameEn": "Striped hyena",
+            "scientific": "Hyaena hyaena",
+            "group": "mammal",
+            "iucn": {
+                "category": "NT",
+                "url": "https://www.iucnredlist.org/species/10274/45195080"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "واسع الانتشار لكنه غير شائع، وأعداده منخفضة.",
+            "habitats": [
+                "steppe",
+                "mountains",
+                "farmland"
+            ],
+            "governorates": [
+                "aleppo",
+                "idlib",
+                "hama",
+                "homs",
+                "latakia",
+                "rural-damascus",
+                "sweida",
+                "deir-ez-zor",
+                "raqqa"
+            ],
+            "summaryAr": "من اللواحم البرية الواسعة الانتشار في سوريا؛ يتجوّل في معظم بيئات البلاد تقريباً لكن بأعداد قليلة، ويصنّفه الاتحاد الدولي لصون الطبيعة عالمياً «قريباً من التهديد».",
+            "summarySources": [
+                0,
+                1
+            ],
+            "factsAr": [
+                {
+                    "text": "تُنسب جمهرته في سوريا إلى النُّويع Hyaena hyaena syriaca.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من أقدم سجلاته المكتوبة في سوريا ما ورد عنه من حلب عام 1756.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تشمل سجلاته الحديثة (2020–2023) مناطق منها شهبا وصيدنايا وحلبون ومحيط حمص وشرق إدلب.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّل أيضاً في جبل البشري (2006–2012) ومحيط مسكنة (2007) ومحيط السلمية (2008).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "الملاحقة والقتل المتعمّد، ويُرجَّح أن أعداده في سوريا تراجعت بسببهما.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Striped hyena (Hyaena hyaena).jpg",
+                "author": "Rushikesh Deshmukh DOP",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "ضبع مخطّط",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Striped Hyena. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E38FFB1FF42FE30B78B11FF"
+                },
+                {
+                    "title": "IUCN Red List — Hyaena hyaena",
+                    "url": "https://www.iucnredlist.org/species/10274/45195080"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "syrian-brown-bear",
+            "nameAr": "الدب البني السوري",
+            "altNamesAr": [
+                "الدب السوري",
+                "الدب البني"
+            ],
+            "nameEn": "Syrian brown bear",
+            "scientific": "Ursus arctos",
+            "subspecies": "Ursus arctos syriacus",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/41688/121229971"
+            },
+            "iucnNoteAr": "التصنيف للنوع ككل (الدب البني) على المستوى العالمي، لا للجمهرة السورية النادرة جداً.",
+            "syriaStatus": "uncertain",
+            "statusNoteAr": "نادر جداً؛ اختفى من معظم مواقعه السابقة، وصُوّرت آثار أقدام قرب بلودان عام 2018 دون تأكيد بعد.",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "rural-damascus",
+                "latakia",
+                "hasakah"
+            ],
+            "summaryAr": "نُويع من الدب البني امتدّ نطاقه سابقاً في الجبال الساحلية وجبل الشيخ وبلاد ما بين النهرين، وبات اليوم نادراً جداً في سوريا ووجوده غير مؤكد.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "ذكره أهاروني عام 1930 في جبل عبد العزيز، وسُجّل في جبل الشيخ واللاذقية حتى أواخر خمسينيات القرن العشرين، وهو منقرض اليوم في هذه المواقع.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "رُصدت آخر آثار موثّقة له جنوب شرق بلودان عام 2004.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "صُوّرت آثار أقدام دب على الثلج قرب بلودان عام 2018، ولا يزال الأمر بحاجة إلى مزيد من البحث للتأكد.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Taxidermized Syrian Brown Bear AUB.jpg",
+                "author": "باسم",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "دب بني سوري محنّط في متحف التاريخ الطبيعي بالجامعة الأمريكية في بيروت",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Brown Bear. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E0DFF84FF42FE14B6FC116B"
+                },
+                {
+                    "title": "IUCN Red List — Ursus arctos",
+                    "url": "https://www.iucnredlist.org/species/41688/121229971"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "caucasian-squirrel",
+            "nameAr": "السنجاب الفارسي",
+            "altNamesAr": [
+                "السنجاب القوقازي"
+            ],
+            "nameEn": "Caucasian squirrel",
+            "scientific": "Sciurus anomalus",
+            "subspecies": "Sciurus anomalus syriacus",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/20000/115154256"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "شائع في سلسلة الجبال الساحلية، ونادر على ما يبدو في الغوطة وجبل الشيخ.",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "latakia",
+                "tartus",
+                "rural-damascus",
+                "hama"
+            ],
+            "summaryAr": "سنجاب شائع في سلسلة الجبال الساحلية الغربية، ويبدو نادراً في الغوطة وجبل الشيخ.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "تُنسب جمهرته في سوريا إلى النُّويع Sciurus anomalus syriacus.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من مواقع تسجيله السابقة قسطل معاف وصلنفة والفرنلق، وجبل الشيخ والمناطق المشجّرة قرب دمشق.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "جمعت دراسة نُشرت عام 2021 ما مجموعه 83 سجلاً حديثاً له في أنحاء سوريا، واعتمدت أساساً على سجلات من منطقة طرطوس.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Կովկասյան սկյուռ 02.jpg",
+                "author": "Արարատ Թրվանց",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "سنجاب فارسي في أرمينيا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Caucasian squirrel. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E47FFCEFF42FF7CB0B913AF"
+                },
+                {
+                    "title": "IUCN Red List — Sciurus anomalus",
+                    "url": "https://www.iucnredlist.org/species/20000/115154256"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "indian-crested-porcupine",
+            "nameAr": "النيص الهندي",
+            "altNamesAr": [
+                "الشيهم المتوّج الهندي",
+                "النيص"
+            ],
+            "nameEn": "Indian crested porcupine",
+            "scientific": "Hystrix indica",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/10751/197516522"
+            },
+            "syriaStatus": "resident",
+            "habitats": [
+                "steppe",
+                "mountains",
+                "farmland"
+            ],
+            "governorates": [
+                "hasakah",
+                "aleppo",
+                "raqqa",
+                "deir-ez-zor",
+                "homs",
+                "hama",
+                "tartus",
+                "latakia",
+                "rural-damascus",
+                "sweida"
+            ],
+            "summaryAr": "قارض وفير وواسع الانتشار في معظم بيئات سوريا تقريباً، ويعيش فيها نُويعان يفصل بينهما نهر الفرات على ما يبدو.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "وُصف النُّويع H. i. mesopotamica من جبل عبد العزيز، أما H. i. indica فمن غرب وادي الفرات.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة: جبل عبد العزيز وجبل البشري (2006–2011)، ومحيط جرابلس (2008–2009)، والسلمية (2011)، والقدموس وحلبون (2020)، وشهبا والمشقيتا (2021).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Hystrix indica (Indian Crested Porcupine) at IG Zoological park, Visakhapatnam 03.JPG",
+                "author": "Adityamadhav83",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "نيص هندي في حديقة حيوان بمدينة فيساكاباتنام في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Indian crested porcupine. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E42FFCDFF42F9E9B17C131B"
+                },
+                {
+                    "title": "IUCN Red List — Hystrix indica",
+                    "url": "https://www.iucnredlist.org/species/10751/197516522"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "rock-hyrax",
+            "nameAr": "الوبر الصخري",
+            "altNamesAr": [
+                "الوبر"
+            ],
+            "nameEn": "Rock hyrax",
+            "scientific": "Procavia capensis",
+            "subspecies": "Procavia capensis syriaca",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/41766/278607316"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "نادر، ويقتصر على الجبال الصخرية في وادي الرقاد ووادي اليرموك.",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "daraa",
+                "quneitra"
+            ],
+            "summaryAr": "نوع أفريقي الأصل يعيش في سوريا على نطاق ضيق في الجبال الصخرية لوادي الرقاد ووادي اليرموك.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "الممثل الوحيد لرتبة الوبريات في الشرق الأوسط.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "نوع أفريقي امتدّ نطاقه عبر وادي الأردن حتى جنوب لبنان وحوض نهر اليرموك.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تُنسب جمهرته في المنطقة إلى النُّويع Procavia capensis syriaca.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لم يُدرج في قائمة ثدييات سوريا التي نُشرت عام 1975، ثم سُجّلت مشاهدة له جنوب غرب الجولان قرب بحيرة طبريا عام 1990.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "الوبر الصخري ١.jpg",
+                "author": "Basem mosaa",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "وبر صخري",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Rock hyrax. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E40FFC9FF42FECDB64E1043"
+                },
+                {
+                    "title": "IUCN Red List — Procavia capensis",
+                    "url": "https://www.iucnredlist.org/species/41766/278607316"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "egyptian-fruit-bat",
+            "nameAr": "خفاش الفاكهة المصري",
+            "altNamesAr": [
+                "الخفاش المصري"
+            ],
+            "nameEn": "Egyptian fruit bat",
+            "scientific": "Rousettus aegyptiacus",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/29730/22043105"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "غير شائع.",
+            "habitats": [
+                "farmland",
+                "coast"
+            ],
+            "governorates": [
+                "latakia",
+                "homs",
+                "daraa",
+                "aleppo",
+                "quneitra"
+            ],
+            "summaryAr": "خفاش غير شائع في سوريا، ويقتصر على الأراضي الزراعية في المنطقة الساحلية وحوض العاصي ووادي اليرموك وشمال حلب.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "من مواقع تسجيله السابقة تل شهاب وقلعة الحصن.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سجلاته الحديثة من البهلولية (2018)، وسيفات شمال حلب والمشقيتا (2020).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Rousettus aegyptiacus in Turkey 187450372.jpg",
+                "author": "Vsevolod Rudyi",
+                "license": "CC BY 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+                "captionAr": "خفاش فاكهة مصري في تركيا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Egyptian fruit bat. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E64FFEDFF42FC8CB7291603"
+                },
+                {
+                    "title": "IUCN Red List — Rousettus aegyptiacus",
+                    "url": "https://www.iucnredlist.org/species/29730/22043105"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "marbled-polecat",
+            "nameAr": "ابن عرس المرقّط",
+            "altNamesAr": [
+                "ابن عرس المنتن المجزّع"
+            ],
+            "nameEn": "Marbled polecat",
+            "scientific": "Vormela peregusna",
+            "subspecies": "Vormela peregusna syriaca",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/29680/45203971"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "شائع وواسع الانتشار في سوريا، مع أن تصنيفه العالمي «معرّض للانقراض».",
+            "habitats": [
+                "steppe",
+                "farmland",
+                "coast"
+            ],
+            "governorates": [
+                "deir-ez-zor",
+                "raqqa",
+                "latakia",
+                "tartus",
+                "damascus",
+                "rural-damascus",
+                "daraa",
+                "hama",
+                "idlib",
+                "homs",
+                "sweida"
+            ],
+            "summaryAr": "حيوان لاحم شائع في سوريا، ينتشر على طول وادي الفرات والمنطقة الساحلية وحوض العاصي وسهل الغاب ووسط البادية ومحيط دمشق والجنوب الغربي.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "تُنسب جمهرته في سوريا إلى النُّويع Vormela peregusna syriaca.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته المنشورة سجلٌّ من دمشق عام 1941.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة (2020–2023): كسب والقرداحة والحفة ومحيط اللاذقية وطرطوس وصلخد.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Marbled Polecat, Suzakskiy, Kazakhstan 2.jpg",
+                "author": "katharinegk",
+                "license": "CC BY 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+                "captionAr": "ابن عرس مرقّط في كازاخستان",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Marbled polecat. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E08FF81FF42FC38B393172B"
+                },
+                {
+                    "title": "IUCN Red List — Vormela peregusna",
+                    "url": "https://www.iucnredlist.org/species/29680/45203971"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "eurasian-otter",
+            "nameAr": "ثعلب الماء الأوراسي",
+            "altNamesAr": [
+                "القضاعة الأوراسية",
+                "كلب الماء"
+            ],
+            "nameEn": "Eurasian otter",
+            "scientific": "Lutra lutra",
+            "subspecies": "Lutra lutra seistanica",
+            "group": "mammal",
+            "iucn": {
+                "category": "NT",
+                "url": "https://www.iucnredlist.org/species/12419/218069689"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "غير شائع؛ يقتصر على وادي الفرات، مع توسّع في الأنهار الداخلية للمنطقة الساحلية.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "deir-ez-zor",
+                "latakia",
+                "tartus",
+                "raqqa"
+            ],
+            "summaryAr": "ثعلب الماء غير شائع في سوريا، يعيش في وادي الفرات، وامتدّ نطاقه إلى أنهار المنطقة الساحلية.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "تُنسب جمهرته في سوريا إلى النُّويع Lutra lutra seistanica.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "التُقطت أولى صوره الموثّقة في سوريا في دير الزور والمنصورة ووادي قنديل، على بعد 3.5 كم من شاطئ اللاذقية.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّل عام 2022 في نهر العروس جنوب صافيتا، وفي البصيرة على نهر الخابور.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Otter - Eurasian otter - Lutra lutra.jpg",
+                "author": "Bouke ten Cate",
+                "license": "CC BY 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+                "captionAr": "ثعلب ماء أوراسي يسبح في بحيرة في المجر",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Eurasian otter. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E08FF81FF42FA69B7E614C3"
+                },
+                {
+                    "title": "IUCN Red List — Lutra lutra",
+                    "url": "https://www.iucnredlist.org/species/12419/218069689"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "mediterranean-monk-seal",
+            "nameAr": "فقمة الراهب المتوسطية",
+            "altNamesAr": [
+                "فقمة البحر المتوسط"
+            ],
+            "nameEn": "Mediterranean monk seal",
+            "scientific": "Monachus monachus",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/13653/238637039"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "نادرة، وتُسجَّل في الجزء الشمالي من الساحل السوري.",
+            "habitats": [
+                "coast"
+            ],
+            "governorates": [
+                "latakia"
+            ],
+            "summaryAr": "فقمة نادرة يقتصر انتشارها على البحر المتوسط والسواحل المجاورة من المحيط الأطلسي، وتُسجَّل في سوريا على الساحل الشمالي.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "سُجّلت سابقاً في رأس البسيط.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تتركّز سجلاتها الحديثة (2004–2023) شمال اللاذقية، قرب الشاطئ الأزرق وبرج إسلام وبين أم الطيور ورأس البسيط، وسُجّلت في وادي قنديل عام 2013.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Monachus monachus DSC 0274.jpg",
+                "author": "Marinko Babić",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "فقمة راهب متوسطية على شاطئ في مدينة بولا الكرواتية",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Mediterranean monk seal. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E0DFF84FF42FF50B1B113D3"
+                },
+                {
+                    "title": "IUCN Red List — Monachus monachus",
+                    "url": "https://www.iucnredlist.org/species/13653/238637039"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "golden-jackal",
+            "nameAr": "ابن آوى الذهبي",
+            "altNamesAr": [
+                "ابن آوى"
+            ],
+            "nameEn": "Golden jackal",
+            "scientific": "Canis aureus",
+            "subspecies": "Canis aureus syriacus",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/118264161/163507876"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "وفير وواسع الانتشار، ونادر في البيئات الصحراوية.",
+            "habitats": [
+                "steppe",
+                "mountains",
+                "farmland",
+                "wetlands"
+            ],
+            "governorates": [
+                "aleppo",
+                "idlib",
+                "hama",
+                "homs",
+                "daraa",
+                "deir-ez-zor",
+                "raqqa",
+                "hasakah",
+                "latakia",
+                "tartus",
+                "quneitra",
+                "rural-damascus"
+            ],
+            "summaryAr": "حيوان لاحم وفير في سوريا، ينتشر في الأراضي الجافة المفتوحة والغابات وضفاف الأنهار والمراعي والسهوب، ونادراً ما يُرى في الصحراء.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "تُنسب جمهرته في سوريا إلى النُّويع Canis aureus syriacus.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من أقدم سجلاته المكتوبة في سوريا ما ورد عنه من حلب عام 1756.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "له سجلات حديثة كثيرة، منها مسكنة وجرابلس وتل تمر (2006–2012)، ومحردة ومصياف والقدموس والقنيطرة وجبلة (2020–2023).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "033 Golden jackal in Keoladeo National Park Photo by Giles Laurent.jpg",
+                "author": "Giles Laurent",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "ابن آوى ذهبي في منتزه كيولاديو الوطني في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Golden jackal. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E0DFF84FF42FC8CB775174F"
+                },
+                {
+                    "title": "IUCN Red List — Canis aureus",
+                    "url": "https://www.iucnredlist.org/species/118264161/163507876"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "gray-wolf",
+            "nameAr": "الذئب الرمادي",
+            "altNamesAr": [
+                "الذئب"
+            ],
+            "nameEn": "Gray wolf",
+            "scientific": "Canis lupus",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/3746/226161232"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "منتشر في معظم البيئات لكن بأعداد قليلة.",
+            "habitats": [
+                "steppe",
+                "mountains"
+            ],
+            "governorates": [
+                "hasakah",
+                "aleppo",
+                "homs",
+                "deir-ez-zor",
+                "hama",
+                "latakia",
+                "sweida",
+                "rural-damascus",
+                "raqqa"
+            ],
+            "summaryAr": "ينتشر في معظم بيئات سوريا تقريباً لكن بأعداد قليلة، ويُرجَّح أن أعداده تراجعت بسبب الملاحقة الواسعة.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "ذكرت المصادر القديمة ثلاثة نُويعات في سوريا، ورأت دراسة عام 1957 أن النُّويع العربي Canis lupus arabs يعيش في السهول والأودية الجافة جنوب البلاد وجنوب شرقها، ولا يزال الوضع والتوزّع الحاليان للذئاب في سوريا غير معروفين تماماً.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة (2020–2023): شرق اللاذقية وشهبا وجبلة ومصياف وصلخد.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "ملاحقة واسعة من البدو في وسط سوريا، وثّقتها تقارير ميدانية بين عامَي 2000 و2010.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Arabian wolf in Jordan.jpg",
+                "author": "Ahmad Qarmish12",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "ذئب عربي في الأردن",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Gray wolf. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E0DFF89FF42FAB4B7F7131B"
+                },
+                {
+                    "title": "IUCN Red List — Canis lupus",
+                    "url": "https://www.iucnredlist.org/species/3746/226161232"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "red-fox",
+            "nameAr": "الثعلب الأحمر",
+            "altNamesAr": [
+                "الثعلب"
+            ],
+            "nameEn": "Red fox",
+            "scientific": "Vulpes vulpes",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/23062/193903628"
+            },
+            "syriaStatus": "resident",
+            "habitats": [
+                "steppe",
+                "mountains",
+                "farmland",
+                "wetlands"
+            ],
+            "governorates": [
+                "raqqa",
+                "homs",
+                "latakia",
+                "deir-ez-zor",
+                "idlib",
+                "hama",
+                "hasakah",
+                "aleppo",
+                "daraa",
+                "sweida",
+                "quneitra",
+                "rural-damascus",
+                "tartus"
+            ],
+            "summaryAr": "ينتشر في أنحاء سوريا في الأراضي الجافة المفتوحة والغابات وضفاف الأنهار والمراعي والسهوب.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "تشير الصور الموثّقة إلى احتمال وجود ثلاثة نُويعات منه في سوريا، وتوزّعها غير موثّق جيداً.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "يُرجَّح أن النُّويع العربي Vulpes vulpes arabica يقتصر على السهول الجافة في جنوب البلاد وجنوب شرقها.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "له سجلات حديثة كثيرة، منها الرستن واللجاة ومحيط السويداء وبلودان ومصياف (2020–2021).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Portrait of a red fox in Rautas fjällurskog (4×3).jpg",
+                "author": "ClaudiaTen",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "ثعلب أحمر في محمية طبيعية في السويد",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Red fox. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E00FF89FF42FD58B38F17BF"
+                },
+                {
+                    "title": "IUCN Red List — Vulpes vulpes",
+                    "url": "https://www.iucnredlist.org/species/23062/193903628"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "ruppells-fox",
+            "nameAr": "ثعلب روبل",
+            "altNamesAr": [
+                "ثعلب الرمل"
+            ],
+            "nameEn": "Rüppell's fox",
+            "scientific": "Vulpes rueppellii",
+            "subspecies": "Vulpes rueppellii sabaea",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/23053/46197483"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "غير شائع.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "homs",
+                "raqqa",
+                "deir-ez-zor"
+            ],
+            "summaryAr": "ثعلب صحراوي غير شائع في سوريا، يقتصر على الصحارى وأشباه الصحارى والسهول الجافة.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "تُنسب جمهرته في سوريا إلى النُّويع Vulpes rueppellii sabaea.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّل في محمية التليلة وتدمر والرصافة وماري، وفي السهوب الجافة جنوب دير الزور والرقة.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة جبل البشري وسهوب الدخول والصرايم (2006–2012).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Rüppell's fox.jpg",
+                "author": "HelmutBoehm",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "ثعلب روبل في الصحراء البيضاء في مصر",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Rüppell's fox. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E00FF89FF42FE78B39310FB"
+                },
+                {
+                    "title": "IUCN Red List — Vulpes rueppellii",
+                    "url": "https://www.iucnredlist.org/species/23053/46197483"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "caracal",
+            "nameAr": "عناق الأرض",
+            "altNamesAr": [
+                "الوشق الصحراوي",
+                "أم ريشات"
+            ],
+            "nameEn": "Caracal",
+            "scientific": "Caracal caracal",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/3847/102424310"
+            },
+            "syriaStatus": "uncertain",
+            "statusNoteAr": "وضعه غير مؤكد، ويُرجَّح أنه نادر جداً.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "hasakah",
+                "homs"
+            ],
+            "summaryAr": "سنّور بري امتدّت سجلاته في سوريا من منابع نهر الخابور إلى تدمر، ووضعه الحالي غير مؤكد ويُرجَّح أنه نادر جداً.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "في متحف تدمر الأثري عيّنة منه قتلها السكان المحليون حول تدمر بين السبعينيات والثمانينيات.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "نُقل عناق أرض حيّ من البادية إلى حديقة حيوان دوما عام 2001.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "يقول صيادون محليون إنه قد يوجد في دير صوّان شمال غرب حلب وفي الغمام شمال شرق اللاذقية، لكن ذلك يحتاج إلى تأكيد لأنه يُخلط أحياناً بقط الأدغال.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Caracal Caracal-001.jpg",
+                "author": "Leo za1",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "عناق الأرض في منتزه ماونتن زيبرا في جنوب أفريقيا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Caracal. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E00FF89FF42F9F8B00115C7"
+                },
+                {
+                    "title": "IUCN Red List — Caracal caracal",
+                    "url": "https://www.iucnredlist.org/species/3847/102424310"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "jungle-cat",
+            "nameAr": "قط الأدغال",
+            "altNamesAr": [
+                "نمر الفرات"
+            ],
+            "nameEn": "Jungle cat",
+            "scientific": "Felis chaus",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/8540/200639312"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "منتشر نسبياً لكنه غير شائع.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "deir-ez-zor",
+                "raqqa",
+                "homs"
+            ],
+            "summaryAr": "سنّور بري يعيش في المستنقعات والأحراج النهرية وعلى ضفاف الفرات الأدنى ومنطقة الجزيرة، ويسمّيه أهالي دير الزور «نمر الفرات».",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "يسمّيه أهالي دير الزور «نمر الفرات».",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة التبني وموحسن وحطلة (2007–2008)، والميادين (2021).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "يُرجَّح أن أعداده تراجعت بسبب الملاحقة الواسعة.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "FelisChausMunsiari1.jpg",
+                "author": "L. Shyamal",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "قط أدغال في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Jungle cat. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E03FF8AFF42F9D6B17315C0"
+                },
+                {
+                    "title": "IUCN Red List — Felis chaus",
+                    "url": "https://www.iucnredlist.org/species/8540/200639312"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "sand-cat",
+            "nameAr": "قط الرمال",
+            "altNamesAr": [
+                "القط الصحراوي",
+                "هر الرمال"
+            ],
+            "nameEn": "Sand cat",
+            "scientific": "Felis margarita",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/8541/50651884"
+            },
+            "syriaStatus": "resident",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "deir-ez-zor",
+                "homs",
+                "raqqa"
+            ],
+            "summaryAr": "سنّور ليلي النشاط، واسع الانتشار في البادية جنوب دير الزور، وأقل شيوعاً جنوب غرب تدمر وغرب جبل البشري.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "سُجّل في محمية التليلة على بعد 25 كم جنوب شرق تدمر.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة فيضة ابن موينع والدخول والمعيزيلة جنوب دير الزور وجبل البشري (2006–2012).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "SandCat12.jpg",
+                "author": "Greg Hume",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "قط رمال في حديقة حيوان سينسيناتي",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Sand cat. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E05FF8CFF42FA93B00D1485"
+                },
+                {
+                    "title": "IUCN Red List — Felis margarita",
+                    "url": "https://www.iucnredlist.org/species/8541/50651884"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "sand-gazelle",
+            "nameAr": "غزال الريم",
+            "altNamesAr": [
+                "الرئم العربي",
+                "الريم"
+            ],
+            "nameEn": "Sand gazelle",
+            "scientific": "Gazella marica",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/8977/50187738"
+            },
+            "syriaStatus": "uncertain",
+            "statusNoteAr": "وضعه غير مؤكد؛ يعيش في نطاق جغرافي ضيق وبأعداد قليلة.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "homs",
+                "sweida",
+                "aleppo",
+                "raqqa",
+                "deir-ez-zor"
+            ],
+            "summaryAr": "غزال يعيش في نطاق ضيق من السهول الجافة غرب تدمر وجنوب البادية، بأعداد قليلة بسبب الصيد الجائر.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "يفصل نهر الفرات بين غزلان سوريا: غزال الريم غرب النهر، والغزال الدرقي شرقه.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "وُصف أولاً نوعاً مستقلاً عام 1897، ثم عُدّ نُويعاً من الغزال الدرقي، قبل أن يُفصل نوعاً مستقلاً من جديد اعتماداً على قياسات الجمجمة وتحليل الحمض النووي الميتوكوندري.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة الزلف (2011–2021) وتل الضبع (2020–2021).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "الصيد الجائر من قبل الصيادين المحليين.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Sand gazelle (gazella subgutturosa marica).jpg",
+                "author": "Charles J. Sharp",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "غزال ريم في محمية دبي الصحراوية في الإمارات",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Sand gazelle. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E38FFB2FF42F900B0DA138B"
+                },
+                {
+                    "title": "IUCN Red List — Gazella marica",
+                    "url": "https://www.iucnredlist.org/species/8977/50187738"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "goitered-gazelle",
+            "nameAr": "الغزال الدرقي",
+            "altNamesAr": [
+                "الغزال الفارسي"
+            ],
+            "nameEn": "Goitered gazelle",
+            "scientific": "Gazella subgutturosa",
+            "subspecies": "Gazella subgutturosa subgutturosa",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/8976/50187422"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "يقتصر على نطاق جغرافي ضيق قرب جبل عبد العزيز.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "hasakah",
+                "raqqa"
+            ],
+            "summaryAr": "غزال يقتصر في سوريا على نطاق ضيق من السهول الجافة والسهوب قرب جبل عبد العزيز ومنطقة الجزيرة، شرق نهر الفرات.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "من سجلاته السابقة الرقة وتل أبيض ورأس العين وبحيرة الخاتونية وجبل عبد العزيز.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أكّدت صور التُقطت في السهوب جنوب غرب جبل عبد العزيز بين عامَي 2019 و2021 وجوده هناك.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Female goitered gazelle, Shirvan National Park, Azerbaijan.jpg",
+                "author": "Elşad İbrahimov",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "أنثى غزال درقي في منتزه شيروان الوطني في أذربيجان",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Goitered gazelle. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E3BFFB2FF42FDC8B04411FF"
+                },
+                {
+                    "title": "IUCN Red List — Gazella subgutturosa",
+                    "url": "https://www.iucnredlist.org/species/8976/50187422"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "mountain-gazelle",
+            "nameAr": "غزال الجبل",
+            "altNamesAr": [
+                "الغزال الجبلي",
+                "غزال الأدمي"
+            ],
+            "nameEn": "Mountain gazelle",
+            "scientific": "Gazella gazella",
+            "group": "mammal",
+            "iucn": {
+                "category": "EN",
+                "url": "https://www.iucnredlist.org/species/8989/50186574"
+            },
+            "syriaStatus": "uncertain",
+            "statusNoteAr": "وضعه غير مؤكد، ويبدو نادراً.",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "sweida",
+                "rural-damascus",
+                "quneitra"
+            ],
+            "summaryAr": "غزال مهدد بالانقراض عالمياً، وضعه في سوريا غير مؤكد، وسُجّل في المرتفعات الجنوبية الغربية (جبل العرب وجبل الشيخ)، وربما وُجد في الشمال الغربي في الماضي.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "من سجلاته السابقة جبل العرب (جبل حوران) وجبل الشيخ.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "قد يكون لا يزال موجوداً في جنوب غرب سوريا.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أُبلغ عن غزال جبل مصاد جنوب حضر عام 1991، دون تحقق.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لا يزال يعيش في ولاية هاتاي التركية، وربما وُجد في شمال غرب سوريا في الماضي.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Gazella gazella.jpg",
+                "author": "Bassem18 at English Wikipedia",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "غزال الجبل",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Mountain gazelle. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E38FFB1FF42FAB4B3BF14C3"
+                },
+                {
+                    "title": "IUCN Red List — Gazella gazella",
+                    "url": "https://www.iucnredlist.org/species/8989/50186574"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "dorcas-gazelle",
+            "nameAr": "الغزال الأعفر",
+            "altNamesAr": [
+                "غزال دوركاس",
+                "العفري"
+            ],
+            "nameEn": "Dorcas gazelle",
+            "scientific": "Gazella dorcas",
+            "subspecies": "Gazella dorcas dorcas",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/8969/50186334"
+            },
+            "syriaStatus": "possibly-extinct",
+            "statusNoteAr": "يُرجَّح أنه انقرض من البرية في سوريا.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "raqqa",
+                "sweida",
+                "daraa"
+            ],
+            "summaryAr": "غزال صحراوي يُرجَّح أنه انقرض من البرية في سوريا، ولم تبقَ منه إلا سجلات تاريخية.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "سجلاته التاريخية من محيط تل أبيض وشرق السويداء ووادي اليرموك.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "كان يُنسب سابقاً إلى الغزال السعودي، ثم تبيّن أنه نوع مختلف.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "اختفى من أجزاء كثيرة من شبه الجزيرة العربية قبل عقود.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Dorcasgazellemarwell.jpg",
+                "author": "Khendon",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "غزال أعفر في حديقة مارويل للحياة البرية في إنجلترا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Dorcas gazelle. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E38FFB1FF42FC1CB2C8174F"
+                },
+                {
+                    "title": "IUCN Red List — Gazella dorcas",
+                    "url": "https://www.iucnredlist.org/species/8969/50186334"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "nubian-ibex",
+            "nameAr": "الوعل النوبي",
+            "altNamesAr": [
+                "التيتل النوبي"
+            ],
+            "nameEn": "Nubian ibex",
+            "scientific": "Capra nubiana",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/3796/22143385"
+            },
+            "syriaStatus": "uncertain",
+            "statusNoteAr": "وضعه غير مؤكد: ربما انقرضت جمهرته الأصلية في البادية بحلول أواخر الخمسينيات، ويذكر المصدر أنه أُعيد إدخاله إلى الجولان عام 1970 وأن وجوده يقتصر عليها، دون أن يورد سجلات حديثة له.",
+            "habitats": [
+                "mountains",
+                "steppe"
+            ],
+            "governorates": [
+                "homs",
+                "quneitra"
+            ],
+            "summaryAr": "وعل جبلي سُجّل سابقاً في البادية جنوب غرب تدمر وشرق القريتين، وربما انقرض منها بحلول أواخر الخمسينيات، ويقتصر وجوده اليوم على الجولان.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "سُجّل في تلال جبل الأبتر جنوب غرب تدمر، وتحتفظ مجموعة متحف التاريخ الطبيعي البريطاني بعيّنة منه جُمعت شرق القريتين.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "كان يُعدّ نُويعاً من الوعل الألبي، ويُعدّ اليوم نوعاً مستقلاً.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أُعيد إدخاله إلى الجولان عام 1970، ويقتصر وجوده الحالي عليها.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Nubian ibex Capra nubiana (3497827720).jpg",
+                "author": "Paul Asman and Jill Lenoble",
+                "license": "CC BY 2.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+                "captionAr": "أنثى وعل نوبي وصغيرها",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Nubian ibex. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E3BFFB2FF42FC44B76A1773"
+                },
+                {
+                    "title": "IUCN Red List — Capra nubiana",
+                    "url": "https://www.iucnredlist.org/species/3796/22143385"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "roe-deer",
+            "nameAr": "اليحمور الأوروبي",
+            "altNamesAr": [
+                "اليحمور"
+            ],
+            "nameEn": "Roe deer",
+            "scientific": "Capreolus capreolus",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/42395/22161386"
+            },
+            "syriaStatus": "uncertain",
+            "statusNoteAr": "يبدو غير شائع وبأعداد قليلة، في الأودية المشجّرة في المنطقة الساحلية وسهل الغاب.",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "latakia",
+                "hama",
+                "aleppo"
+            ],
+            "summaryAr": "أيل صغير يعيش في الأودية المشجّرة في المنطقة الساحلية وسهل الغاب، بأعداد قليلة على ما يبدو، وقد انقرض من غرب حلب.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "لا تُنسب جمهرته في سوريا إلى أي نُويع محدد.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّل في أوائل القرن العشرين في التلال المكسوّة بالشجيرات غرب حلب، وهو منقرض هناك اليوم.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة شرق صلنفة والفرنلق وأبو قبيس (2008)، والمشقيتا (2010)، والغمام (2020–2021).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Capreolus (js)11.jpg",
+                "author": "Jerzystrzelecki",
+                "license": "CC BY 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+                "captionAr": "يحمور أوروبي في مدينة وودج في بولندا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Roe deer. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E3BFFB2FF42FAB4B00014E7"
+                },
+                {
+                    "title": "IUCN Red List — Capreolus capreolus",
+                    "url": "https://www.iucnredlist.org/species/42395/22161386"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "wild-boar",
+            "nameAr": "الخنزير البري",
+            "altNamesAr": [],
+            "nameEn": "Wild boar",
+            "scientific": "Sus scrofa",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/41775/44141833"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "وفير في الشمال الغربي والساحل والغاب ووادي اليرموك، وبأعداد قليلة في الشمال الشرقي.",
+            "habitats": [
+                "mountains",
+                "wetlands",
+                "steppe"
+            ],
+            "governorates": [
+                "aleppo",
+                "idlib",
+                "latakia",
+                "tartus",
+                "hama",
+                "daraa",
+                "hasakah",
+                "homs",
+                "rural-damascus",
+                "deir-ez-zor"
+            ],
+            "summaryAr": "حيوان وفير في الغابات وضفاف الأنهار وحواف الأراضي الرطبة من شمال غرب حلب إلى الساحل وسهل الغاب ووادي اليرموك.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "في سوريا نُويعان: S. s. attila على طول وادي الفرات، وS. s. libycus في الشمال الغربي والمناطق الغربية والجنوبية.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "عاش سابقاً حول تدمر ودمشق وفي وادي الفرات الأدنى، لكنه انقرض منها منذ خمسينيات القرن العشرين بسبب الملاحقة الواسعة.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة (2020–2021): القرداحة والقدموس والمشقيتا ورأس البسيط وعفرين ومحيط كسب.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Wild boar in San Rossore, Pisa, Italy.jpg",
+                "author": "Daniele Napolitano",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "خنزير بري في سان روسوري قرب بيزا في إيطاليا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Wild boar. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E3BFFB7FF42F900B0301043"
+                },
+                {
+                    "title": "IUCN Red List — Sus scrofa",
+                    "url": "https://www.iucnredlist.org/species/41775/44141833"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "white-breasted-hedgehog",
+            "nameAr": "القنفذ أبيض الصدر الجنوبي",
+            "altNamesAr": [
+                "القنفذ"
+            ],
+            "nameEn": "Southern white-breasted hedgehog",
+            "scientific": "Erinaceus concolor",
+            "subspecies": "Erinaceus concolor concolor",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/40605/197506348"
+            },
+            "syriaStatus": "resident",
+            "habitats": [
+                "farmland",
+                "mountains"
+            ],
+            "governorates": [
+                "damascus",
+                "rural-damascus",
+                "tartus",
+                "latakia",
+                "aleppo",
+                "raqqa",
+                "homs",
+                "daraa",
+                "quneitra"
+            ],
+            "summaryAr": "قنفذ شائع في سوريا، يمتدّ انتشاره من شمال غرب الجزيرة إلى المنطقة الجبلية الساحلية وسهل الغاب والجنوب الغربي.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "من مواقع تسجيله السابقة دمشق ومنبج ورأس البسيط وتلكلخ ويبرود ومعلولا.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة (2020–2021): القنيطرة وجبلة وحلبون واللجاة ووادي قنديل.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "2008 Hedgehog 1020932.jpg",
+                "author": "Nevit Dilmen",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "قنفذ أبيض الصدر جنوبي",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Southern white-breasted hedgehog. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E6FFFE6FF42FA99B7F214AC"
+                },
+                {
+                    "title": "IUCN Red List — Erinaceus concolor",
+                    "url": "https://www.iucnredlist.org/species/40605/197506348"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "bottlenose-dolphin",
+            "nameAr": "الدلفين قاروري الأنف",
+            "altNamesAr": [
+                "الدلفين الشائع قاروري الأنف"
+            ],
+            "nameEn": "Common bottlenose dolphin",
+            "scientific": "Tursiops truncatus",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22563/156932432"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "يُرى بانتظام قبالة الساحل السوري.",
+            "habitats": [
+                "coast"
+            ],
+            "governorates": [
+                "latakia",
+                "tartus"
+            ],
+            "summaryAr": "دلفين يُرى بانتظام قبالة الساحل السوري، ووُثّقت حالات جنوح له على شواطئ اللاذقية وطرطوس.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "عُثر على دلافين طافية على غير هدى أو جانحة نافقة قرب رأس البسيط وابن هانئ وجبلة وبانياس وطرطوس.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "صودف دلفين مصاب قرب نادي ليالينا للسباحة في مدينة اللاذقية في تشرين الأول 2019.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّل على بعد 5 كم شمال غرب طرطوس عام 2022.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Tursiops truncatus 01-cropped.jpg",
+                "author": "NASA",
+                "license": "Public domain",
+                "licenseUrl": null,
+                "captionAr": "دلفين قاروري الأنف",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Common bottlenose dolphin. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E32FFBBFF42FB7AB13E17B4"
+                },
+                {
+                    "title": "IUCN Red List — Tursiops truncatus",
+                    "url": "https://www.iucnredlist.org/species/22563/156932432"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "honey-badger",
+            "nameAr": "غرير العسل",
+            "altNamesAr": [],
+            "nameEn": "Honey badger",
+            "scientific": "Mellivora capensis",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/41629/45210107"
+            },
+            "syriaStatus": "uncertain",
+            "statusNoteAr": "وضعه غير مؤكد ويبدو نادراً؛ يقتصر على المرتفعات في الجولان.",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "quneitra"
+            ],
+            "summaryAr": "حيوان لاحم وضعه في سوريا غير مؤكد ويبدو نادراً، وتقتصر سجلاته على الجولان.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "تُنسب جمهرته في المنطقة إلى النُّويع Mellivora capensis wilsoni.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "قد يكون موجوداً في البادية السورية وعلى ضفاف الفرات شرق البلاد، لأنه سُجّل في المناطق المجاورة غرب العراق، وهذا يحتاج إلى متابعة.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Honey Badger (Mellivora capensis) (17425848662).jpg",
+                "author": "Bernard DUPONT from FRANCE",
+                "license": "CC BY-SA 2.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+                "captionAr": "غرير عسل في منتزه كروغر الوطني في جنوب أفريقيا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Honey badger. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E0BFF82FF42FA51B26814D3"
+                },
+                {
+                    "title": "IUCN Red List — Mellivora capensis",
+                    "url": "https://www.iucnredlist.org/species/41629/45210107"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "egyptian-mongoose",
+            "nameAr": "النمس المصري",
+            "altNamesAr": [
+                "النمس"
+            ],
+            "nameEn": "Egyptian mongoose",
+            "scientific": "Herpestes ichneumon",
+            "group": "mammal",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/41613/45207211"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "غير شائع؛ يقتصر على الجبال الساحلية والجنوب الغربي.",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "latakia",
+                "tartus",
+                "quneitra",
+                "rural-damascus"
+            ],
+            "summaryAr": "حيوان لاحم غير شائع في سوريا، يقتصر على البيئات الجبلية الساحلية والمنطقة الجنوبية الغربية.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "سُجّل سابقاً في القنيطرة ومحيط اللاذقية والغوطة.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاته الحديثة عمريت (2010) وصلنفة (2014) وكرسانا وسقوبين (2021).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Mongoose - Herpestes ichneumon.jpg",
+                "author": "Artemy Voikhansky",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "نمس مصري",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A. et al. (2025). Checklist of Mammals of Syria — Egyptian mongoose. Zootaxa 5580(1).",
+                    "url": "https://treatment.plazi.org/id/3874162A7E05FF8CFF42F8A7B6EB1589"
+                },
+                {
+                    "title": "IUCN Red List — Herpestes ichneumon",
+                    "url": "https://www.iucnredlist.org/species/41613/45207211"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "northern-bald-ibis",
+            "nameAr": "أبو منجل الأصلع الشمالي",
+            "altNamesAr": [
+                "أبو منجل الناسك",
+                "أبو منجل الأقرع",
+                "النوق"
+            ],
+            "nameEn": "Northern bald ibis",
+            "scientific": "Geronticus eremita",
+            "group": "bird",
+            "iucn": {
+                "category": "EN",
+                "url": "https://www.iucnredlist.org/species/22697488/130895601"
+            },
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "انقرضت آخر مستعمرة برية له قرب تدمر: شوهد آخر طائر فيها في شباط 2015 بحسب قائمة طيور سوريا لعام 2025، أما تحليل سيرّا (2025) فيذكر أن آخر عودة لطائر إليها كانت في ربيع 2014. ويُرجَّح أن أي طائر يُرى في المنطقة مستقبلاً قادم من مستعمرة بيره جك شبه الأسيرة في تركيا.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "homs",
+                "raqqa",
+                "deir-ez-zor",
+                "aleppo"
+            ],
+            "summaryAr": "طائر مهاجر اكتُشفت عام 2002 في بادية تدمر آخر مستعمرة برية معروفة لجمهرته الشرقية، بعد أن ظُنّ أنها انقرضت، ثم انقرضت هذه المستعمرة بحلول عام 2015.",
+            "summarySources": [
+                0,
+                5
+            ],
+            "factsAr": [
+                {
+                    "text": "انتشرت مستعمراته تاريخياً في سوريا، ولا سيما على نهر الفرات وفي البادية، وأقدم ذكر له على الفرات قرب حلبية عام 1574.",
+                    "sources": [
+                        5
+                    ]
+                },
+                {
+                    "text": "وُثّقت مستعمرات له قرب الرقة عام 1870، وشمال شرق القريتين عامَي 1904 و1905، ونشطت مستعمرة في الصالحية غرب البوكمال بين عامَي 1924 و1933.",
+                    "sources": [
+                        5
+                    ]
+                },
+                {
+                    "text": "قُدّرت مستعمرة قرب تدمر سُجّلت عام 1910، وهي الأكبر المعروفة في البادية، بنحو 1000 طائر متكاثر، وشاهد ويغولد عام 1911 مجموعة من عشرين طائراً على جزيرة في الفرات قرب منبج.",
+                    "sources": [
+                        5
+                    ]
+                },
+                {
+                    "text": "كان يُعتقد أن الجمهرة الشرقية انقرضت بعد فقدان مستعمرة بيره جك في تركيا عام 1989.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "قادت معارف البدو والصيادين المحليين الباحثين عام 2002 إلى 15 موقع تعشيش قديماً في البادية، أحدها ما زال يأوي مستعمرة تتكاثر من سبعة أفراد.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "كشف تتبّع ثلاثة طيور بالغة بالأقمار الصناعية في 2006–2007 أنها تهاجر عبر الأردن والسعودية واليمن إلى المرتفعات الوسطى في إثيوبيا.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "تراجعت المستعمرة إلى زوج واحد عام 2010.",
+                    "sources": [
+                        3
+                    ]
+                },
+                {
+                    "text": "عادت أنثى بالغة وحيدة إلى جرف التعشيش في تدمر في ربيعَي 2013 و2014 للمرة الأخيرة.",
+                    "sources": [
+                        3
+                    ]
+                },
+                {
+                    "text": "شوهد آخر طائر في تدمر في شباط 2015، وبذلك انقرضت المستعمرة.",
+                    "sources": [
+                        5
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "كان الطائر شائعاً نسبياً في المنطقة حتى نحو عشرين عاماً قبل اكتشاف المستعمرة، حين بدأ تراجعه الحاد بفعل استنزاف المراعي وتزايد الصيد.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "ضعف بقاء الطيور اليافعة على طريق الهجرة بسبب الصيد والصعق على خطوط الكهرباء، ولا سيما غرب شبه الجزيرة العربية.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "يُرجَّح أن صِغر الجمهرة البرية جعلها غير قابلة للاستمرار، وأن نفوق الصغار على طريق الهجرة، ولا سيما بالصيد، أسهم كثيراً في انقراض المستعمرة.",
+                    "sources": [
+                        5
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Northern bald ibis (Geronticus eremita).jpg",
+                "author": "Charles J. Sharp",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "أبو منجل الأصلع الشمالي في منتزه سوس ماسة الوطني بالمغرب",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Serra, G. et al. (2004). Discovery of a relict breeding colony of northern bald ibis Geronticus eremita in Syria. Oryx 38(1): 106–108.",
+                    "url": "https://doi.org/10.1017/S003060530400016X"
+                },
+                {
+                    "title": "Lindsell, J.A. et al. (2009). Satellite tracking reveals the migration route and wintering area of the Middle East population of Critically Endangered northern bald ibis Geronticus eremita. Oryx 43(3): 329–335.",
+                    "url": "https://doi.org/10.1017/S0030605309001963"
+                },
+                {
+                    "title": "Serra, G. et al. (2015). Accounting for the low survival of the Critically Endangered northern bald ibis Geronticus eremita on a major migratory flyway. Oryx 49(2): 312–320.",
+                    "url": "https://doi.org/10.1017/S0030605313000665"
+                },
+                {
+                    "title": "Serra, G. (2025). The effort to save Syria’s northern bald ibis population failed, but much can be learned (analysis). Mongabay.",
+                    "url": "https://news.mongabay.com/2025/03/the-effort-to-save-syrias-northern-bald-ibis-population-failed-but-much-can-be-learned-analysis/"
+                },
+                {
+                    "title": "IUCN Red List — Geronticus eremita",
+                    "url": "https://www.iucnredlist.org/species/22697488/130895601"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "sociable-lapwing",
+            "nameAr": "القطقاط الاجتماعي",
+            "altNamesAr": [],
+            "nameEn": "Sociable lapwing",
+            "scientific": "Vanellus gregarius",
+            "group": "bird",
+            "iucn": {
+                "category": "CR",
+                "url": "https://www.iucnredlist.org/species/22694053/155545788"
+            },
+            "syriaStatus": "passage-migrant",
+            "statusNoteAr": "بحسب قائمة 2025: عابر نادر في الهجرة، تقع محطات توقّفه الرئيسية في شمال الجزيرة، وسُجّل أيضاً في مواقع كثيرة من البادية. ولا دليل قاطعاً على أنه يقضي الشتاء في سوريا (بحسب قائمة 2008).",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "hasakah"
+            ],
+            "summaryAr": "طائر مهدد بشدة بالانقراض يعبر سوريا في هجرته، وتقع محطات توقّفه الرئيسية في شمال الجزيرة، حيث أُحصي أكثر من 2000 طائر في سرب واحد في آذار 2007.",
+            "summarySources": [
+                2,
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "في 25 شباط 2007 رُصدت أسراب كبيرة منه في ثلاث مناطق من السهوب الطبيعية في الجزيرة، أكبرها سرب من 1000 طائر تماماً.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أُحصي في الرويرة أكثر من 2000 طائر في 8 آذار 2007، وهو أكبر سرب ربيعي سُجّل له، أما أكبر سرب خريفي فتجاوز 170 طائراً على بعد 20 كم جنوب غرب مبروكة في 26 تشرين الأول 2010.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "أخبر الرعاة المراقبين أن الطائر يتوقف أسابيع في الخريف والربيع، وأنه كان أكثر شيوعاً في الماضي.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أظهر تتبّع الطيور بأجهزة الإرسال عبر الأقمار الصناعية أن شمال سوريا قد يكون محطة توقف لنسبة كبيرة من جمهرته العالمية في هجرته شمالاً.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "حتى عام 2008 لم تُسجَّل له مشاهدات في كانون الأول أو كانون الثاني، فلا دليل قاطع على أنه يقضي الشتاء في سوريا.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "شوهد صيادون أجانب يطلقون النار عليه في الجزيرة عام 2007، وما زال مدى مسؤولية الصيد عن تراجعه بحاجة إلى بحث.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Sociable Lapwing, Korgalzhynskiy, Kazakhstan 1.jpg",
+                "author": "andrewbazdyrev",
+                "license": "CC BY 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+                "captionAr": "قطقاط اجتماعي في كازاخستان",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Vanellus gregarius",
+                    "url": "https://www.iucnredlist.org/species/22694053/155545788"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "syrian-serin",
+            "nameAr": "النعار السوري",
+            "altNamesAr": [
+                "النعار"
+            ],
+            "nameEn": "Syrian serin",
+            "scientific": "Serinus syriacus",
+            "group": "bird",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/22720053/209844480"
+            },
+            "syriaStatus": "breeding-visitor",
+            "statusNoteAr": "بحسب قائمة 2025: زائر صيفي يتكاثر في سوريا، ويُصادَف غالباً على السفوح قليلة الأشجار فوق 1000 م في سلسلة جبال لبنان الشرقية (مثل بلودان وحلبون وهريرة وصيدنايا) وفي جبل الشيخ. ويبدو أنه يقضي الشتاء خارج سوريا (بحسب قائمة 2008).",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "rural-damascus"
+            ],
+            "summaryAr": "طائر مستوطن في المنطقة ذو نطاق تكاثر ضيق جداً، تقتصر سجلاته في سوريا على الحزام الجبلي المحاذي للحدود اللبنانية من جبل الشيخ حتى صيدنايا وحلبون وبلودان.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "تتكاثر معظم جمهرته العالمية في لبنان والأردن.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لم تنجح عمليات بحث قصيرة شمال فتحة حمص في العثور عليه.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "يسهل العثور عليه في بلودان، لكن المصدر يحذّر من أن التأثيرات البشرية غيّرت كثيراً من نطاقه الصغير خلال جيل واحد.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لم يُسجَّل حتى الآن في المنطقة الساحلية.",
+                    "sources": [
+                        2
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "تغيّر موائله في نطاقه الصغير بفعل النشاط البشري.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Serinus syriacus 93094713.jpg",
+                "author": "Christoph Moning",
+                "license": "CC BY 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+                "captionAr": "نعار سوري في النقب",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Serinus syriacus",
+                    "url": "https://www.iucnredlist.org/species/22720053/209844480"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "egyptian-vulture",
+            "nameAr": "الرخمة المصرية",
+            "altNamesAr": [
+                "النسر المصري",
+                "الرخمة"
+            ],
+            "nameEn": "Egyptian vulture",
+            "scientific": "Neophron percnopterus",
+            "group": "bird",
+            "iucn": {
+                "category": "EN",
+                "url": "https://www.iucnredlist.org/species/22695180/205187871"
+            },
+            "syriaStatus": "breeding-visitor",
+            "statusNoteAr": "بحسب قائمة 2025: زائر صيفي نادر يتكاثر على جروف البادية، وعابر شائع في الهجرة.",
+            "habitats": [
+                "steppe",
+                "mountains"
+            ],
+            "governorates": [
+                "homs",
+                "idlib",
+                "rural-damascus"
+            ],
+            "summaryAr": "نسر كان يتكاثر تاريخياً على نطاق واسع في سوريا، وصار بحسب قائمة 2025 زائراً صيفياً نادراً يتكاثر على جروف البادية، مع بقائه عابراً شائعاً في الهجرة.",
+            "summarySources": [
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "تكاثر تاريخياً على نطاق واسع في وادي الفرات والجبال الساحلية وجبال البادية وإدلب وجبل الشيخ وسلسلة جبال لبنان الشرقية.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "بحسب قائمة 2008، سُجّلت له أكثر من 100 مشاهدة في منطقة تدمر بين عامَي 2000 و2004، وبدا يومها واسع الانتشار وشائعاً نسبياً، على الأقل في موسم الهجرة.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "له مشاهدات من مناطق داخلية كثيرة أخرى، لكن سجلات تكاثره قليلة جداً ولا تتوفر معلومات عن إنتاجيته.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "وهو أكثر انفراداً من النسر الأسمر، ولا يعشّش في مستعمرات يسهل رصدها.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Egyptian Vulture, Socotra.jpg",
+                "author": "Rod Waddington",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "رخمة مصرية في جزيرة سقطرى",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Neophron percnopterus",
+                    "url": "https://www.iucnredlist.org/species/22695180/205187871"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "saker-falcon",
+            "nameAr": "الصقر الحر",
+            "altNamesAr": [
+                "صقر الغزال"
+            ],
+            "nameEn": "Saker falcon",
+            "scientific": "Falco cherrug",
+            "group": "bird",
+            "iucn": {
+                "category": "EN",
+                "url": "https://www.iucnredlist.org/species/22696495/204182473"
+            },
+            "syriaStatus": "winter-visitor",
+            "statusNoteAr": "بحسب قائمة 2025: زائر شتوي نادر جداً وعابر نادر في الهجرة؛ وكانت مراجعة 2008 قد وصفته بأنه عابر نادر جداً في أحسن الأحوال.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [],
+            "summaryAr": "صقر كان يُصاد منه المئات كل عام في البادية السورية، وتراجع تراجعاً هائلاً خلال نصف قرن حتى صار بحلول عام 2008 عابراً نادراً جداً في أحسن الأحوال.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "كان يُعدّ عابراً في الهجرة، وزائراً شتوياً في أغلب الأحيان.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "كان المئات منه يُصادون كل عام في البادية السورية، لكن الصيد السنوي انخفض بحلول الثمانينيات إلى بضعة طيور على الأرجح.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "وُثّقت سبع حالات صيد له في أربعة خرائف (2000–2003)، ولم تُسجَّل إلا مشاهدتان ميدانيتان حديثتان (2001 و2004)، ولا دليل على تكاثره.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "الضغط الشديد من الصيادين الذين ينتشرون في البادية كل خريف، والصيد بمستويات غير مستدامة هو السبب المرجّح لتراجعه.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Falco cherrug 1 (Bohuš Číčel).jpg",
+                "author": "Bohuš Číčel",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "صقر حر في جمهورية التشيك",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Falco cherrug",
+                    "url": "https://www.iucnredlist.org/species/22696495/204182473"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "lesser-kestrel",
+            "nameAr": "العويسق",
+            "altNamesAr": [
+                "العوسق الصغير"
+            ],
+            "nameEn": "Lesser kestrel",
+            "scientific": "Falco naumanni",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22696357/205768513"
+            },
+            "iucnNoteAr": "كان مصنّفاً «معرّضاً للانقراض» حين صدرت قائمة طيور سوريا عام 2008.",
+            "syriaStatus": "breeding-visitor",
+            "statusNoteAr": "بحسب قائمة 2025: زائر صيفي يتكاثر في معظم المناطق، وعابر واسع الانتشار في الهجرة، وله مستعمرات تكاثر كبيرة قرب تدمر وفي وادي الفرات.",
+            "habitats": [
+                "steppe",
+                "mountains"
+            ],
+            "governorates": [
+                "homs",
+                "raqqa",
+                "deir-ez-zor",
+                "hasakah"
+            ],
+            "summaryAr": "صقر يتكاثر في سوريا صيفاً، وله مستعمرات كبيرة في الجبال الصحراوية قرب تدمر وفي وادي الفرات، وقدّرت قائمة 2008 أن جمهرته تُعدّ على الأرجح بالمئات من الأزواج.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "اكتُشفت مستعمرات كبيرة في الجبال الصحراوية شمال تدمر، وفي وادي الفرات عند بحيرة البعث وقرب حلبية («جروف العويسق»).",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّل في موسم التكاثر أيضاً في جبل عبد العزيز وجبل البلعاس.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تبلغ هجرته ذروتها في منتصف نيسان، ولا سجلات له في الشتاء.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "A Lesser Kestrel on a Weak Perch (49591372658).jpg",
+                "author": "Hari K Patibanda",
+                "license": "CC BY 2.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+                "captionAr": "عويسق في بحيرة عثمان ساغار في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Falco naumanni",
+                    "url": "https://www.iucnredlist.org/species/22696357/205768513"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "white-headed-duck",
+            "nameAr": "البط أبيض الوجه",
+            "altNamesAr": [
+                "البط أبيض الرأس",
+                "أبو مروحة"
+            ],
+            "nameEn": "White-headed duck",
+            "scientific": "Oxyura leucocephala",
+            "group": "bird",
+            "iucn": {
+                "category": "EN",
+                "url": "https://www.iucnredlist.org/species/22679814/119403602"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "بحسب قائمة 2025: مقيم متكاثر نادر، وزائر شتوي وعابر في الهجرة، ويُسجَّل في مستنقعات حوض الفرات وسبخة الجبول ومستنقعات أخرى في الشمال.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "aleppo",
+                "homs",
+                "deir-ez-zor"
+            ],
+            "summaryAr": "بطة مهددة بالانقراض تتكاثر في سوريا بأعداد قليلة، وتقضي الشتاء بأعداد كبيرة في سبخة الجبول، حيث أُحصي 2406 طيور في شباط 2010.",
+            "summarySources": [
+                2,
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "سُجّل في الشتاء في بحيرة قطينة (بحيرة حمص) لأكثر من 30 عاماً، بأعداد تصل إلى 100.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "بلغ أكبر عدد سجّلته قائمة 2008 في سبخة الجبول 982 طائراً في 23 تشرين الثاني 2007، وهو نسبة مهمة من جمهرته العالمية.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّل أول تكاثر له في سوريا في المهيميدة عام 2003، وثبت تكاثره في سبخة الجبول عام 2006.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أُحصي 2406 طيور في سبخة الجبول في شباط 2010.",
+                    "sources": [
+                        2
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Oxyura leucocephala, Clot-de-Galvany, Alicante 16.jpg",
+                "author": "Ferran Pestaña from Barcelona, España",
+                "license": "CC BY-SA 2.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+                "captionAr": "ذكر البط أبيض الوجه في أليكانتي في إسبانيا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Oxyura leucocephala",
+                    "url": "https://www.iucnredlist.org/species/22679814/119403602"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "ferruginous-duck",
+            "nameAr": "البطة المحمرّة",
+            "altNamesAr": [
+                "البطة الحديدية",
+                "البط الحمراوي أبيض العين"
+            ],
+            "nameEn": "Ferruginous duck",
+            "scientific": "Aythya nyroca",
+            "group": "bird",
+            "iucn": {
+                "category": "NT",
+                "url": "https://www.iucnredlist.org/species/22680373/152620862"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "بحسب قائمة 2025: مقيم متكاثر قليل وزائر شتوي نادر في حوض الفرات وسبخة الجبول، وعابر نادر في الهجرة.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "deir-ez-zor",
+                "aleppo",
+                "homs",
+                "hasakah"
+            ],
+            "summaryAr": "بطة تتكاثر محلياً في سوريا، وتنتشر على طول وادي الفرات وفي سبخة الجبول، وقد تبلغ جمهرتها المتكاثرة المئات من الأزواج.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "سُجّل أول تكاثر لها في سوريا في بحيرة نهرية قرب العشارة في وادي الفرات الأدنى.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "رُصد 30 زوجاً على الأقل في المهيميدة في أيار 2006.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "رُصدت في الشتاء على امتداد وادي الفرات وفي سبخة الجبول بأعداد وصلت إلى 470 (كانون الثاني–شباط 2004).",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تفضّل البرك الضحلة المنعزلة الغنية بالنباتات.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Ferruginous Pochard Aythya nyroca Male by Dr. Raju Kasambe DSCN2746 (12).jpg",
+                "author": "Dr. Raju Kasambe",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "ذكر البطة المحمرّة في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Aythya nyroca",
+                    "url": "https://www.iucnredlist.org/species/22680373/152620862"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "great-bustard",
+            "nameAr": "الحبارى الكبرى",
+            "altNamesAr": [
+                "الحبارى الكبيرة"
+            ],
+            "nameEn": "Great bustard",
+            "scientific": "Otis tarda",
+            "group": "bird",
+            "iucn": {
+                "category": "EN",
+                "url": "https://www.iucnredlist.org/species/22691900/226280431"
+            },
+            "syriaStatus": "winter-visitor",
+            "statusNoteAr": "بحسب قائمة 2025: زائر شتوي نادر في الجزيرة، وكان يتكاثر في الجزيرة وشرق حلب حتى خمسينيات القرن العشرين.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "homs",
+                "hasakah",
+                "aleppo"
+            ],
+            "summaryAr": "طائر كان يتكاثر في الجزيرة وشرق حلب حتى خمسينيات القرن العشرين، وصار زائراً شتوياً نادراً في الجزيرة.",
+            "summarySources": [
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "كان يتكاثر في الجزيرة وشرق حلب حتى خمسينيات القرن العشرين.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "كان يُعتقد أنه يقضي الشتاء بأعداد غير قليلة في شمال سوريا، لكن لا مشاهدات موثّقة بالكامل منذ ذلك الحين.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أفاد مهتمون بالحفاظ على الطبيعة في تدمر بأسراب تصل إلى 16 طائراً في السهوب الجبلية شمال شرق تدمر في شتاء 2003–2004.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "أظهر «التراجع الكارثي» في أعداد الحبارى والقطا أن مستوى الصيد غير مستدام.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Otis tarda, Hortobagy, Hungary 1.jpg",
+                "author": "Francesco Veronesi from Italy",
+                "license": "CC BY-SA 2.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+                "captionAr": "ذكر الحبارى الكبرى في هورتوباجي في المجر",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Otis tarda",
+                    "url": "https://www.iucnredlist.org/species/22691900/226280431"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27",
+            "iucnNoteAr": "كان مصنّفاً «معرّضاً للانقراض» حين صدرت قائمة طيور سوريا عام 2008."
+        },
+        {
+            "slug": "greater-flamingo",
+            "nameAr": "النحام الكبير",
+            "altNamesAr": [
+                "طائر الفلامنجو",
+                "النحام الأكبر"
+            ],
+            "nameEn": "Greater flamingo",
+            "scientific": "Phoenicopterus roseus",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22697360/155527405"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "بحسب قائمة 2025: مقيم متكاثر وزائر شتوي في سبخة الجبول، ويزور شتاءً سبخات أخرى بحسب منسوب المياه، مثل سبخة الروضة وسبخة الموح، ولا يوجد في الفترات الجافة إلا في سبخة الجبول.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "aleppo",
+                "homs"
+            ],
+            "summaryAr": "تستضيف سبخة الجبول أسراباً ضخمة منه، وفيها اكتُشفت أول مستعمرة تكاثر له في سوريا عام 2006.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "أحصي في سبخة الجبول ما بين 6000 و8000 طائر عام 1975، و19,500 طائر في 23 تشرين الثاني 2007.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "اكتُشفت أول مستعمرة تكاثر له في سوريا على جزيرة صغيرة في سبخة الجبول في 12 أيار 2006.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "يصل عدده إلى 100 في الشتاءات الرطبة في سبخة الموح جنوب شرق تدمر.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أظهرت دراسات تحجيل الطيور أن صغاره من بحيرة أرومية شمال غرب إيران تنتشر حتى سوريا.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Flamant rose Thyna009.jpg",
+                "author": "El Golli Mohamed",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "نحام كبير في طينة في تونس",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Phoenicopterus roseus",
+                    "url": "https://www.iucnredlist.org/species/22697360/155527405"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "european-roller",
+            "nameAr": "الشقراق الأوروبي",
+            "altNamesAr": [
+                "الخضيري"
+            ],
+            "nameEn": "European roller",
+            "scientific": "Coracias garrulus",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22682860/154424974"
+            },
+            "iucnNoteAr": "كان مصنّفاً «قريباً من التهديد» حين صدرت قائمة طيور سوريا عام 2008.",
+            "syriaStatus": "breeding-visitor",
+            "statusNoteAr": "بحسب قائمة 2025: زائر صيفي متكاثر غير شائع، وعابر غير شائع في الهجرة؛ سُجّل في كل المناطق، وثبت تكاثره في الجزيرة وحوض الفرات والمنطقة الجنوبية الغربية.",
+            "habitats": [
+                "steppe",
+                "farmland"
+            ],
+            "governorates": [
+                "deir-ez-zor",
+                "hasakah"
+            ],
+            "summaryAr": "طائر صيفي يُسجَّل في كل مناطق سوريا لكنه غير شائع بحسب قائمة 2025، وكان يُصاد كثيراً بسبب ريشه الجميل.",
+            "summarySources": [
+                2,
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "رُصدت له مستعمرة كبيرة في «جروف العويسق» في وادي الفرات، وكان شائعاً في جبل عبد العزيز في ربيع 2006.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "ثبت تكاثره في الجزيرة وحوض الفرات والمنطقة الجنوبية الغربية.",
+                    "sources": [
+                        2
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "يُصاد كثيراً بسبب ريشه الجميل (بحسب قائمة 2008).",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Coracias garrulus - European roller 02.jpg",
+                "author": "Zeynel Cebeci",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "شقراق أوروبي في عثمانية في تركيا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Coracias garrulus",
+                    "url": "https://www.iucnredlist.org/species/22682860/154424974"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "pallid-harrier",
+            "nameAr": "المرزة الباهتة",
+            "altNamesAr": [
+                "المرزة الشاحبة"
+            ],
+            "nameEn": "Pallid harrier",
+            "scientific": "Circus macrourus",
+            "group": "bird",
+            "iucn": {
+                "category": "NT",
+                "url": "https://www.iucnredlist.org/species/22695396/201209093"
+            },
+            "syriaStatus": "passage-migrant",
+            "statusNoteAr": "بحسب قائمة 2025: عابر واسع الانتشار في الهجرة، وزائر شتوي غير شائع.",
+            "habitats": [
+                "steppe",
+                "wetlands"
+            ],
+            "governorates": [],
+            "summaryAr": "جارح شائع في الهجرة عبر سوريا، ويقضي بعضه الشتاء فيها بأعداد قليلة.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "تبلغ هجرته ذروتها في أوائل نيسان وأوائل تشرين الأول، وتسبق الذكور الإناثَ في الهجرة شمالاً في الربيع.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّل 16 طائراً في 11 مشاهدة في كانون الثاني–شباط 2004، كلها في الشمال الشرقي.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Pallid Harrier Adult Male (46333226825).jpg",
+                "author": "Koshy Koshy from Faridabad, Haryana, India",
+                "license": "CC BY 2.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+                "captionAr": "ذكر مرزة باهتة في محمية تال تشهابار في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Circus macrourus",
+                    "url": "https://www.iucnredlist.org/species/22695396/201209093"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "eastern-imperial-eagle",
+            "nameAr": "ملك العقبان الشرقي",
+            "altNamesAr": [
+                "ملكة العقبان الشرقية",
+                "العقاب الإمبراطوري"
+            ],
+            "nameEn": "Eastern imperial eagle",
+            "scientific": "Aquila heliaca",
+            "group": "bird",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/22696048/203686356"
+            },
+            "syriaStatus": "passage-migrant",
+            "statusNoteAr": "بحسب قائمة 2025: عابر في الهجرة وزائر شتوي نادر في المناطق المفتوحة، وقد انقرض طائراً متكاثراً.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "hasakah",
+                "raqqa"
+            ],
+            "summaryAr": "عقاب كان يتكاثر في سوريا ثم انقرض طائراً متكاثراً، ويمرّ بها اليوم عابراً في الهجرة وزائراً شتوياً نادراً.",
+            "summarySources": [
+                2,
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "وُصف زائراً شتوياً بين تشرين الثاني ومنتصف نيسان.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّلت له مشاهدتان شتويتان وخمس مشاهدات في الهجرة منذ عام 2000.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّلت مشاهدتان قديمتان في موسم التكاثر في أيار 1962: زوج على الحدود التركية، وطائر في وادي الفرات.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "كان يتكاثر سابقاً في منطقة القامشلي وغرب الرقة.",
+                    "sources": [
+                        2
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "كان يُقدَّر محنّطاً بسبب ريشه الجميل.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Eastern Imperial Eagle cr.jpg",
+                "author": "Sumeet Moghe",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "ملك العقبان الشرقي يافعاً في رن كتش الصغرى في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Aquila heliaca",
+                    "url": "https://www.iucnredlist.org/species/22696048/203686356"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "black-francolin",
+            "nameAr": "الدراج الأسود",
+            "altNamesAr": [
+                "الدراج العراقي"
+            ],
+            "nameEn": "Black francolin",
+            "scientific": "Francolinus francolinus",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22678719/131903818"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "بحسب قائمة 2025: مقيم متكاثر واسع الانتشار على امتداد حوض الفرات وروافده.",
+            "habitats": [
+                "wetlands",
+                "farmland"
+            ],
+            "governorates": [
+                "aleppo",
+                "raqqa",
+                "deir-ez-zor",
+                "hasakah"
+            ],
+            "summaryAr": "طائر مقيم وُصف عام 1995 بأنه انخفض إلى أعداد حرجة بسبب الصيد، وتصفه قائمة 2025 بأنه مقيم متكاثر واسع الانتشار على امتداد حوض الفرات وروافده.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "وُصف عام 1995 بأنه «انخفض إلى أعداد حرجة»، بسبب ضغط الصيد الكثيف أساساً.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّلت له أكثر من 30 مشاهدة بعد ذلك على امتداد وادي الفرات حتى جرابلس شمالاً، ومن الجزيرة.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لا سجلات له في سبخة الجبول أو غربها.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "ضغط الصيد الكثيف.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Black Francolin in Tal Chhapar Sanctuary November 2025 by Tisha Mukherjee 01.jpg",
+                "author": "Tisha Mukherjee",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "ذكر الدراج الأسود في محمية تال تشهابار في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Francolinus francolinus",
+                    "url": "https://www.iucnredlist.org/species/22678719/131903818"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "see-see-partridge",
+            "nameAr": "حجل السي سي",
+            "altNamesAr": [
+                "حجل رمادي الرقبة"
+            ],
+            "nameEn": "See-see partridge",
+            "scientific": "Ammoperdix griseogularis",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22678652/281032492"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "بحسب قائمة 2025: مقيم متكاثر في وادي الفرات والجزيرة، يمتد نطاقه غرباً حتى شمال شرق حلب، وجنوباً حتى جبل البشري وجبل البلعاس.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "deir-ez-zor",
+                "hasakah",
+                "aleppo"
+            ],
+            "summaryAr": "طائر مقيم يتكاثر في وادي الفرات والجزيرة، ويمتد نطاقه غرباً حتى شمال شرق حلب وجنوباً حتى جبل البشري وجبل البلعاس.",
+            "summarySources": [
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "سُجّل أول مرة على الضفة الغربية لبحيرة الفرات (بحيرة الأسد سابقاً) عام 1976.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تتوالى التقارير عنه منذ 2004 في وادي الفرات حول حلبية، وسُجّل في الجزيرة في تل براك وبحيرة الخاتونية.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "See-see Partridge, Ammoperdix griseogularis (5829563744).jpg",
+                "author": "Tommy Pedersen from Dubai, United Arab Emirates",
+                "license": "CC BY-SA 2.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+                "captionAr": "حجل السي سي في جزيرة صير بني ياس في الإمارات",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Ammoperdix griseogularis",
+                    "url": "https://www.iucnredlist.org/species/22678652/281032492"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "iraq-babbler",
+            "nameAr": "ثرثارة العراق",
+            "altNamesAr": [],
+            "nameEn": "Iraq babbler",
+            "scientific": "Turdoides altirostris",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22716341/131973162"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "بحسب قائمة 2025: مقيم متكاثر واسع الانتشار في حوض الفرات وحوض الخابور وسبخة الجبول.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "deir-ez-zor",
+                "raqqa",
+                "aleppo",
+                "hasakah"
+            ],
+            "summaryAr": "طائر لم يُسجَّل في سوريا قبل عام 2001، وصار مقيماً متكاثراً واسع الانتشار في حوض الفرات وحوض الخابور وسبخة الجبول.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "سُجّل أول مرة في سوريا عند الجسر المعلّق في دير الزور في 20 آذار 2001.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "وُجد شمالاً حتى الحدود التركية عند جرابلس، وفي سبخة الجبول في أول سجل له غرب الفرات (2004).",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "ثبت تكاثره على بعد 5 كم من الحدود التركية وفي سبخة الجبول.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "يرى المصدر أن إغفاله سابقاً أمر مستبعد لأنه طائر لافت وكثير الصخب خارج موسم التكاثر، ويطرح احتمال توسّع حديث كبير في نطاقه.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Turdoides altirostris - Iraq Babbler 01.jpg",
+                "author": "Zeynel Cebeci",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "ثرثارة العراق في عثمانية في تركيا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Turdoides altirostris",
+                    "url": "https://www.iucnredlist.org/species/22716341/131973162"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "pin-tailed-sandgrouse",
+            "nameAr": "القطا العراقي",
+            "altNamesAr": [
+                "القطا مسنن الذيل"
+            ],
+            "nameEn": "Pin-tailed sandgrouse",
+            "scientific": "Pterocles alchata",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22692983/155616576"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "بحسب قائمة 2025: مقيم متكاثر في الجزيرة والمناطق شبه الجافة من البادية، وهو طائر رحّال تتفاوت أعداده بين المواسم والسنوات بحسب كمية الأمطار. وكانت قائمة 2008 قد حذّرت من أنه ربما يتراجع بسرعة.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "hasakah"
+            ],
+            "summaryAr": "طائر كان «من الطيور المميزة للمناطق الجافة في الداخل السوري»، وقلّت سجلاته كثيراً حتى عام 2008، وتصفه قائمة 2025 بأنه مقيم متكاثر في الجزيرة والمناطق شبه الجافة من البادية، تتفاوت أعداده بحسب الأمطار.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "لم تتجاوز مشاهداته 24 في أربع سنوات من العمل الميداني (2000–2004)، وخمساً لمراقبين آخرين خلال عشر سنوات.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "وصف أحد الباحثين عام 1983 رؤية «أسراب كبيرة» تتعرض لصيد «مُهلك» لم تنجُ منه إلا مجموعات قليلة.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "قد يكون الصيد بمستويات غير مستدامة سبباً في قلة سجلاته، ويحذّر المصدر من أنه قد يتبع النعام والحبارى الآسيوية إلى الانقراض المحلي.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Pin-tailed sandgrouse (Pterocles alchata) in Algeria.jpg",
+                "author": "mourad-harzallah",
+                "license": "CC BY 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+                "captionAr": "قطا عراقي في الجزائر",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Pterocles alchata",
+                    "url": "https://www.iucnredlist.org/species/22692983/155616576"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "white-tailed-eagle",
+            "nameAr": "العقاب أبيض الذنب",
+            "altNamesAr": [
+                "عقاب البحر أبيض الذيل"
+            ],
+            "nameEn": "White-tailed eagle",
+            "scientific": "Haliaeetus albicilla",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22695137/206723035"
+            },
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "انقرض طائراً متكاثراً بعد أن اختفى تماماً في الستينيات، وتصف قائمة 2025 وضعه الحالي بأنه غير واضح ويُرجَّح أنه منقرض؛ وآخر مشاهدة معروفة له عام 1991 قرب المالكية على نهر دجلة.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "hasakah"
+            ],
+            "summaryAr": "عقاب كان يتكاثر بكثرة في شمال حوض الفرات وفي حوض العاصي، واختفى طائراً متكاثراً في الستينيات.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "كان يتكاثر بكثرة تاريخياً في شمال حوض الفرات وفي حوض العاصي، واختفى تماماً في الستينيات.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "لا سجلات موثّقة له منذ الستينيات بحسب قائمة 2008.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أُبلغ عن طائر في سبخة الجبول في 24 آذار 1999، دون وصف يؤكد المشاهدة.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "آخر مشاهدة معروفة له عام 1991 قرب المالكية على نهر دجلة.",
+                    "sources": [
+                        2
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Adult White-tailed Eagle defending prey, Rezerwat Gostynin-Wloclawek, Poland.jpg",
+                "author": "Original: Andreas Weith. This edit: MPF.",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "عقاب أبيض الذنب في محمية غوستينين-فوتسوافيك في بولندا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Haliaeetus albicilla",
+                    "url": "https://www.iucnredlist.org/species/22695137/206723035"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "red-billed-chough",
+            "nameAr": "الزمت أحمر المنقار",
+            "altNamesAr": [
+                "الغراب الأعصم"
+            ],
+            "nameEn": "Red-billed chough",
+            "scientific": "Pyrrhocorax pyrrhocorax",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22705916/264549459"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "بحسب قائمة 2025: مقيم متكاثر غير شائع، يقتصر اليوم على الجروف شمال تدمر، وانقرض من منطقة القريتين.",
+            "habitats": [
+                "mountains",
+                "steppe"
+            ],
+            "governorates": [
+                "homs"
+            ],
+            "summaryAr": "طائر كان يُعدّ منقرضاً في سوريا، إلى أن اكتُشفت له جمهرة في الجبال شمال غرب تدمر.",
+            "summarySources": [
+                0,
+                2
+            ],
+            "factsAr": [
+                {
+                    "text": "كان يُعدّ «منقرضاً» في سوريا حتى اكتُشفت جمهرته في الجبال شمال غرب تدمر.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "الأسراب المؤلفة من 50 طائراً شائعة هناك، ولا سيما حول سد وادي الأبيض.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لا سجلات حديثة له تقريباً خارج هذه المنطقة.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "انقرض من منطقة القريتين، ويقتصر اليوم على الجروف شمال تدمر.",
+                    "sources": [
+                        2
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Bran goesgoch Pyrrhocorax pyrrhocorax.jpg",
+                "author": "Alun Williams333",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "زمت أحمر المنقار في ويلز",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Pyrrhocorax pyrrhocorax",
+                    "url": "https://www.iucnredlist.org/species/22705916/264549459"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "bonellis-eagle",
+            "nameAr": "عقاب بونلي",
+            "altNamesAr": [
+                "الزمج"
+            ],
+            "nameEn": "Bonelli's eagle",
+            "scientific": "Aquila fasciata",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22696076/280981467"
+            },
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "انقرض طائراً متكاثراً، ووضعه الحالي غير واضح بحسب قائمة 2025؛ ولم يكن يُرى حتى عام 2008 إلا طائراً شارداً.",
+            "habitats": [
+                "steppe",
+                "mountains"
+            ],
+            "governorates": [
+                "homs",
+                "latakia",
+                "hasakah"
+            ],
+            "summaryAr": "عقاب كان يتكاثر في البادية والجبال الساحلية السورية ثم انقرض طائراً متكاثراً، والصيد هو السبب الأرجح لذلك بحسب قائمة 2008.",
+            "summarySources": [
+                2,
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "كان «في الماضي طائراً متكاثراً في المناطق الصحراوية السورية».",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "كان يتكاثر في البادية والجبال الساحلية، حول تدمر والقريتين وقرب تل تمر، وآخر تكاثر موثّق له قرب صلنفة في الجبال الساحلية عام 1978.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "وصفت قائمة 2008 طائراً صِيد قرب تدمر وصُوّر في 23 أيلول 2001 بأنه على ما يبدو أول سجل له منذ الأربعينيات، لكن قائمة 2025 تذكر سجل تكاثر موثّقاً قرب صلنفة عام 1978.",
+                    "sources": [
+                        0,
+                        2
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "الصيد هو السبب الأرجح لانقراضه طائراً متكاثراً.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Bonelli's Eagle.jpg",
+                "author": "Seshadri.K.S",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "عقاب بونلي في محمية بيليغيري في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Aquila fasciata",
+                    "url": "https://www.iucnredlist.org/species/22696076/280981467"
+                },
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "green-sea-turtle",
+            "nameAr": "السلحفاة البحرية الخضراء",
+            "altNamesAr": [
+                "السلحفاة الخضراء",
+                "اللجأة الخضراء"
+            ],
+            "nameEn": "Green sea turtle",
+            "scientific": "Chelonia mydas",
+            "group": "reptile",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/4615/285108125"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "تعيش قبالة الساحل السوري على مدار العام وبأعمار مختلفة، وتعشّش على عدد من شواطئه الرملية.",
+            "habitats": [
+                "coast"
+            ],
+            "governorates": [
+                "latakia",
+                "tartus"
+            ],
+            "summaryAr": "سلحفاة بحرية كبيرة يضم الساحل السوري أحد أهم مواقع تعشيشها في البحر المتوسط، على الشاطئ الممتد جنوب شرق اللاذقية.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "سجّل مسح عام 2004 ما مجموعه 106 أعشاش للسلحفاة الخضراء في سوريا، منها 104 على شاطئ طوله 12 كم جنوب شرق اللاذقية.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "يُعدّ هذا الشاطئ من أهم عشرة مواقع لتعشيش السلحفاة الخضراء في البحر المتوسط من حيث العدد الأقصى للأعشاش.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "بلغ متوسط عدد البيض في العش 108 بيضات (بين 72 و164)، وفقس 83.5% من بيض الأعشاش الناجحة.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "دُرس تعشيش السلحفاة الخضراء والسلحفاة ضخمة الرأس على الشاطئ الممتد من جنوب طرطوس (شاطئ الأحلام) حتى الحدود اللبنانية، وبلغ نجاح التعشيش 40% للسلحفاة الخضراء.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "تُعدّ سوريا ثالث أهم دولة لتعشيش السلحفاة الخضراء في البحر المتوسط، بعد تركيا وقبرص.",
+                    "sources": [
+                        3
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "القتل المتعمّد للسلاحف البالغة، وافتراس الأعشاش، وتشتّت اتجاه الصغار بعد الفقس.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "رُصدت 106 سلاحف بحرية نافقة على شاطئ جنوب طرطوس، منها 11 سلحفاة خضراء.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "جنح أكثر من 85 سلحفاة على الساحل السوري عام 2005، معظمها سلاحف خضراء.",
+                    "sources": [
+                        3
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Green sea turtle (Chelonia mydas) Moorea.jpg",
+                "author": "Charles J. Sharp",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "سلحفاة بحرية خضراء قرب جزيرة موريا في بولينيزيا الفرنسية",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Rees, A.F., Saad, A. & Jony, M. (2008). Discovery of a regionally important green turtle Chelonia mydas rookery in Syria. Oryx 42(3): 456–459.",
+                    "url": "https://doi.org/10.1017/S0030605308000926"
+                },
+                {
+                    "title": "Saad, A., Soulaiman, A. & Alkusairy, H. (2020). Marine turtle nesting survey and stranding assessment from Tartus to Syria’s border with Lebanon. Natura Croatica 29 (suppl. 1): 51–57.",
+                    "url": "https://hrcak.srce.hr/249245"
+                },
+                {
+                    "title": "IUCN Red List — Chelonia mydas",
+                    "url": "https://www.iucnredlist.org/species/4615/285108125"
+                },
+                {
+                    "title": "Aidek, A.E., Saad, A., Jablonski, D., Esterbauer, H. & Fritz, U. (2024). Turtles and tortoises of Syria: Diversity, distribution, and conservation — Green sea turtle. Zootaxa 5506(2): 151–193.",
+                    "url": "https://treatment.plazi.org/id/03B9F52AC72DFF8C04B62D40F779F88C"
+                }
+            ],
+            "lastReviewed": "2026-11-27",
+            "iucnNoteAr": "تصنّفها القائمة الحمراء حالياً «غير مهددة»، أما دراسة سلاحف سوريا (2024) فذكرت تصنيفها السابق «مهددة بالانقراض»، ولم تكن جمهرة البحر المتوسط مقيَّمة حينها."
+        },
+        {
+            "slug": "euphrates-softshell-turtle",
+            "nameAr": "سلحفاة الفرات ليّنة الدرع",
+            "altNamesAr": [
+                "رفش الكرخة"
+            ],
+            "nameEn": "Euphrates softshell turtle",
+            "scientific": "Rafetus euphraticus",
+            "group": "reptile",
+            "iucn": {
+                "category": "EN",
+                "url": "https://www.iucnredlist.org/species/19070/1956551"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "نادرة جداً، وتراجعت أعدادها كثيراً في السنوات الأخيرة.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "raqqa",
+                "hasakah",
+                "deir-ez-zor",
+                "aleppo"
+            ],
+            "summaryAr": "سلحفاة نهرية مهددة بالانقراض، تعيش في سوريا على امتداد نهر الفرات وأعالي نهر الخابور، وهي نادرة جداً.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "سُجّلت أول مرة في سوريا في الرقة والحسكة (نُشر ذلك عام 1913).",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تحتفظ مجموعات متحفية بعيّنات منها جُمعت من جرابلس والحسكة والرقة والرصافة.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من سجلاتها الحديثة البصيرة والحسكة وموحسن وسد تشرين والطبقة وتل تمر.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "من بين 19 سجلاً منسوباً إلى سوريا في قاعدة بيانات GBIF، تبيّن أن 16 منها في الواقع من العراق وتركيا.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "تعلق كثيراً بخيوط صيادي السمك، وقد تراجعت أعدادها بشكل كبير في السنوات الأخيرة لهذا السبب.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Rafetus euphraticus - shush-khozestan لاکپشت فراتی- حاشیه رود شاوور.jpg",
+                "author": "Newager92(zali)",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "سلحفاة فرات ليّنة الدرع على ضفاف نهر شاوور في إيران",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Saad, A., Jablonski, D., Esterbauer, H. & Fritz, U. (2024). Turtles and tortoises of Syria: Diversity, distribution, and conservation — Euphrates softshell turtle. Zootaxa 5506(2): 151–193.",
+                    "url": "https://treatment.plazi.org/id/03B9F52AC734FF9704B62F28F139FDD4"
+                },
+                {
+                    "title": "IUCN Red List — Rafetus euphraticus",
+                    "url": "https://www.iucnredlist.org/species/19070/1956551"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        },
+        {
+            "slug": "african-softshell-turtle",
+            "nameAr": "السلحفاة الإفريقية ليّنة الدرع",
+            "altNamesAr": [
+                "سلحفاة النيل ليّنة الدرع",
+                "السلحفاة المائية المصرية"
+            ],
+            "nameEn": "African softshell turtle",
+            "scientific": "Trionyx triunguis",
+            "group": "reptile",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/62256/96894956"
+            },
+            "iucnNoteAr": "صُنّفت جمهرة البحر المتوسط منها «مهددة بشدة بالانقراض» بحسب فريق عمل تصنيف السلاحف (TTWG 2021).",
+            "syriaStatus": "resident",
+            "statusNoteAr": "تقتصر على نهر الكبير الجنوبي ونهر العاصي.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "hama",
+                "tartus"
+            ],
+            "summaryAr": "سلحفاة نهرية ليّنة الدرع يقتصر وجودها في سوريا على نهر الكبير الجنوبي ونهر العاصي.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "يعود أقدم ذكر لها في سوريا، في نهر الكبير الجنوبي، إلى كتاب «التاريخ الطبيعي» لبلينيوس الأكبر في القرن الأول الميلادي.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سُجّلت في مجرى العاصي الأوسط عند عين الطاقة في سهل الغاب.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "شوهدت إحداها تسبح في نهر الكبير الجنوبي على الحدود السورية اللبنانية في 4 آب 2004.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "اصطاد صياد واحدة منها في العاصي عند العلاني في تشرين الأول 2020، ووُجدت أخرى نافقة على ضفة النهر في الحمزية في أيار 2022.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "يُرجَّح أن جمهرات البحر المتوسط، ومنها السورية على الأرجح، تشكّل جمهرة واحدة متصلة عبر البحر.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Trionyx triunguis at Alexandria Aquarium by Hatem Moushir 1.JPG",
+                "author": "Hatem Moushir",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "سلحفاة إفريقية ليّنة الدرع في حوض الأسماك (الأكواريوم) بالإسكندرية في مصر",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Saad, A., Jablonski, D., Esterbauer, H. & Fritz, U. (2024). Turtles and tortoises of Syria: Diversity, distribution, and conservation — African softshell turtle. Zootaxa 5506(2): 151–193.",
+                    "url": "https://treatment.plazi.org/id/03B9F52AC736FF9704B62BD8F054FA50"
+                },
+                {
+                    "title": "IUCN Red List — Trionyx triunguis",
+                    "url": "https://www.iucnredlist.org/species/62256/96894956"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "loggerhead-sea-turtle",
+            "nameAr": "السلحفاة البحرية ضخمة الرأس",
+            "altNamesAr": [
+                "لجأة مكتلة الرأس"
+            ],
+            "nameEn": "Loggerhead sea turtle",
+            "scientific": "Caretta caretta",
+            "group": "reptile",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/3897/119333622"
+            },
+            "iucnNoteAr": "صُنّفت جمهرة البحر المتوسط منها «غير مهددة»؛ والتصنيف المعروض للنوع ككل.",
+            "syriaStatus": "resident",
+            "statusNoteAr": "تعيش قبالة الساحل على مدار العام وبأحجام مختلفة، وتتغذى وتعشّش في سوريا.",
+            "habitats": [
+                "coast"
+            ],
+            "governorates": [
+                "latakia",
+                "tartus"
+            ],
+            "summaryAr": "سلحفاة بحرية تعيش قبالة الساحل السوري على مدار العام، وتعشّش على عدد من شواطئه الرملية.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "تعشّش على الشواطئ الرملية في رأس البسيط وأم الطيور ووادي قنديل وشاطئ اللاذقية (الشقيفات والصنوبر) وبانياس وجنوب طرطوس.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "مع أن الساحل رملي في معظمه، تنتهي أغلب الشواطئ بحافة صخرية عند البحر، فلا تصلح للتعشيش.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سجّل مسح عام 2004 ثمانية أعشاش لها موزعة على امتداد الساحل.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "دُوّن أقدم ذكر لها في سوريا عام 1883 على السواحل الصخرية.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "من بين 106 سلاحف بحرية نافقة رُصدت على الشاطئ الممتد من جنوب طرطوس حتى الحدود اللبنانية، كانت 95 سلحفاة ضخمة الرأس.",
+                    "sources": [
+                        3
+                    ]
+                },
+                {
+                    "text": "شوهدت سلاحف نافقة على شواطئ عدة، منها الشاطئ الأزرق وأوغاريت وبانياس ورأس البسيط.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Caretta caretta 2.jpg",
+                "author": "Savvas Michaelides",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "ذكر سلحفاة ضخمة الرأس يعود إلى البحر بعد إنقاذه من شباك الصيد، على شاطئ توكسفترا في قبرص",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Saad, A., Jablonski, D., Esterbauer, H. & Fritz, U. (2024). Turtles and tortoises of Syria: Diversity, distribution, and conservation — Loggerhead sea turtle. Zootaxa 5506(2): 151–193.",
+                    "url": "https://treatment.plazi.org/id/03B9F52AC722FF8304B62DBDF108F875"
+                },
+                {
+                    "title": "IUCN Red List — Caretta caretta",
+                    "url": "https://www.iucnredlist.org/species/3897/119333622"
+                },
+                {
+                    "title": "Rees, A.F., Saad, A. & Jony, M. (2008). Discovery of a regionally important green turtle Chelonia mydas rookery in Syria. Oryx 42(3): 456–459.",
+                    "url": "https://doi.org/10.1017/S0030605308000926"
+                },
+                {
+                    "title": "Saad, A., Soulaiman, A. & Alkusairy, H. (2020). Marine turtle nesting survey and stranding assessment from Tartus to Syria’s border with Lebanon. Natura Croatica 29 (suppl. 1): 51–57.",
+                    "url": "https://hrcak.srce.hr/249245"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "spur-thighed-tortoise",
+            "nameAr": "السلحفاة مهمازية الورك",
+            "altNamesAr": [
+                "السلحفاة اليونانية"
+            ],
+            "nameEn": "Spur-thighed tortoise",
+            "scientific": "Testudo graeca",
+            "subspecies": "Testudo graeca terrestris",
+            "group": "reptile",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/21646/9305693"
+            },
+            "syriaStatus": "resident",
+            "statusNoteAr": "شائعة غرب البلاد، ونادرة جداً في الشمال الشرقي.",
+            "habitats": [
+                "mountains",
+                "farmland",
+                "steppe"
+            ],
+            "governorates": [
+                "aleppo",
+                "idlib",
+                "latakia",
+                "tartus",
+                "homs",
+                "hama",
+                "damascus",
+                "rural-damascus",
+                "quneitra",
+                "sweida",
+                "daraa",
+                "hasakah",
+                "deir-ez-zor"
+            ],
+            "summaryAr": "سلحفاة برية شائعة في غرب سوريا، تمتد من شرق حلب غرباً عبر الساحل وحوض العاصي وجنوباً حتى دمشق وجبل العرب والجولان وجبل الشيخ.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "العيّنة المرجعية التي يُعرَّف بها هذا النُّويع علمياً مأخوذة من حلب.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "يتباين لون درعها كثيراً: فهو غالباً لامع وفاتح لدى سلاحف الساحل الرطب، وأسود أو رمادي داكن باهت عموماً لدى سلاحف المناطق البازلتية في جبل العرب.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "نادرة جداً في الشمال الشرقي: سُجّلت قرب الحسكة عام 1991 وفي الحردانة عام 2020 قرب الحدود التركية.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "ذُكر عام 1883 أنها شائعة في منطقة تدمر، لكن عشرات الرحلات الميدانية بين 2006 و2013 لم تسجّلها هناك.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "سجلاتها من منطقة الفرات قليلة: يُرجَّح أن أربع سلاحف جُمعت عام 1999 شرق دير الزور كانت هاربة أو مرباة في الأسر، وشوهدت سلحفاتان في أرض زراعية في موحسن في خريف 2021.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Testudo graeca at Dibbeen2.JPG",
+                "author": "عباد ديرانية",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "سلحفاة مهمازية الورك في محمية دبين شمال الأردن",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Saad, A., Jablonski, D., Esterbauer, H. & Fritz, U. (2024). Turtles and tortoises of Syria: Diversity, distribution, and conservation — Spur-thighed tortoise. Zootaxa 5506(2): 151–193.",
+                    "url": "https://treatment.plazi.org/id/03B9F52AC731FF9304B62F9CF61AF998"
+                },
+                {
+                    "title": "IUCN Red List — Testudo graeca",
+                    "url": "https://www.iucnredlist.org/species/21646/9305693"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "eiselts-pond-turtle",
+            "nameAr": "سلحفاة مستنقعات آيزلت",
+            "altNamesAr": [
+                "سلحفاة المستنقعات الأوروبية",
+                "حمسة المناقع الأوروبية"
+            ],
+            "nameEn": "Eiselt's pond turtle",
+            "scientific": "Emys orbicularis",
+            "subspecies": "Emys orbicularis eiselti",
+            "group": "reptile",
+            "iucn": {
+                "category": "NT",
+                "url": "https://www.iucnredlist.org/species/7717/97292665"
+            },
+            "iucnNoteAr": "التصنيف المعروض للنوع ككل؛ أما النُّويع Emys orbicularis eiselti فصُنّف مؤقتاً «مهدداً بشدة بالانقراض» بحسب فريق عمل تصنيف السلاحف (TTWG 2021).",
+            "syriaStatus": "uncertain",
+            "statusNoteAr": "نادرة جداً، ولم تُسجَّل إلا في حوض العاصي الأوسط والأعلى، وآخر سجل لها عام 1997.",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [
+                "hama"
+            ],
+            "summaryAr": "نُويع نادر جداً من سلحفاة المستنقعات الأوروبية، لا يُعرف له في سوريا سوى سجلّين (1980 و1997) في حوض العاصي.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "أول سجل لها في سوريا عيّنة جُمعت بين الكريم وباب الطاقة في 25 آذار 1980.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "وُجدت واحدة نافقة شرق جورين قرب نهر العاصي عام 1997، وحُفظ درعها في مجموعة خاصة ضاعت خلال الحرب في سوريا.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لم يُعثر عليها في عمل ميداني في منطقة جورين في سهل الغاب في نيسان 2009.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Emys orbicularis by Christian Ursilva.jpg",
+                "author": "Christian Ursilva from København, Danmark",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "سلحفاة المستنقعات الأوروبية (نُويع غير محدد) في حديقة حيوان",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Saad, A., Jablonski, D., Esterbauer, H. & Fritz, U. (2024). Turtles and tortoises of Syria: Diversity, distribution, and conservation — Eiselt's pond turtle. Zootaxa 5506(2): 151–193.",
+                    "url": "https://treatment.plazi.org/id/03B9F52AC72EFF8804B62FD8F194FA18"
+                },
+                {
+                    "title": "IUCN Red List — Emys orbicularis",
+                    "url": "https://www.iucnredlist.org/species/7717/97292665"
+                }
+            ],
+            "lastReviewed": "2026-11-26"
+        }
+    ]
+}

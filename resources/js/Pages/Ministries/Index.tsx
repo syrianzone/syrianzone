@@ -1,0 +1,472 @@
+import { useMemo, useState } from 'react';
+import { Link } from '@inertiajs/react';
+import {
+    Archive,
+    ArrowLeft,
+    ExternalLink,
+    GitBranch,
+    History,
+    IdCard,
+    Landmark,
+    Search,
+    Shield,
+} from 'lucide-react';
+import MainLayout from '@/Layouts/MainLayout';
+import { MinistriesIcon } from '@/Components/Icons/ProjectIcons';
+import { Badge } from '@/Components/ui/badge';
+import { Button } from '@/Components/ui/button';
+import { Card, CardContent } from '@/Components/ui/card';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { formatGovtDate } from '@/Domain/govtcvs/constants';
+import {
+    MINISTRY_STATUS_LABELS,
+    RESTRUCTURING_KIND_LABELS,
+    type MinistriesIndexProps,
+} from '@/Domain/ministries/types';
+import { CabinetCard } from './_components/CabinetCard';
+import { GovernmentTimeline } from './_components/GovernmentTimeline';
+
+function normalizeArabic(text: string): string {
+    return text
+        .replace(/[إأآا]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[\u064B-\u065F\u0670]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+export default function MinistriesIndex({
+    meta,
+    eras = [],
+    restructurings = [],
+    current_cabinet = [],
+    historical_ministries = [],
+    sovereign_bodies = [],
+    all_ministries = [],
+    stats,
+}: MinistriesIndexProps) {
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const normalizedQuery = useMemo(() => normalizeArabic(searchQuery), [searchQuery]);
+
+    const matchesQuery = (ministry: (typeof current_cabinet)[number]) => {
+        if (!normalizedQuery) return true;
+        const haystack = normalizeArabic(
+            [
+                ministry.name_ar,
+                ministry.name_en,
+                ministry.current_holder?.name ?? '',
+                ministry.current_holder?.title ?? '',
+                ...ministry.holders.map((h) => h.name),
+            ].join(' '),
+        );
+        return haystack.includes(normalizedQuery);
+    };
+
+    const visibleCabinetCount = useMemo(
+        () => current_cabinet.filter(matchesQuery).length,
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [current_cabinet, normalizedQuery],
+    );
+
+    return (
+        <MainLayout>
+            {/* Hero */}
+            <section className="relative overflow-hidden border-b border-border/50 bg-gradient-to-b from-primary/10 via-background to-background py-10 md:py-14">
+                <div className="container mx-auto max-w-6xl px-4">
+                    <div className="mx-auto max-w-3xl text-center space-y-4">
+                        <div className="flex justify-center">
+                            <a
+                                href={meta.source_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <span>موثّق من المراسيم الرسمية وجَرد</span>
+                                <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+                            </a>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-3">
+                            <span
+                                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-card shadow-xs"
+                                aria-hidden="true"
+                            >
+                                <MinistriesIcon className="h-7 w-7" />
+                            </span>
+                            <h1 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl md:text-5xl">
+                                وزارات سوريا والحكومة السورية
+                            </h1>
+                        </div>
+
+                        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                            دليل موثّق للتشكيل الوزاري السوري الحالي والهيئات السيادية، والخط الزمني لتعاقب الوزراء
+                            ومسارات الدمج والفصل الوزاري عبر أربع مراحل حكومية بين عامي{' '}
+                            <span dir="ltr" className="tabular-nums font-medium text-foreground">
+                                2024–2026
+                            </span>
+                            ، مع ربط مباشر بالسير الذاتية والحسابات والتطبيقات الرسمية.
+                        </p>
+
+                        <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                            <Button asChild size="sm" className="min-h-10 gap-2">
+                                <a href="#government-timeline">
+                                    <History className="h-4 w-4" aria-hidden="true" />
+                                    <span>الخط الزمني للحكومة</span>
+                                </a>
+                            </Button>
+                            <Button asChild variant="outline" size="sm" className="min-h-10 gap-2">
+                                <Link href="/govtcvs">
+                                    <IdCard className="h-4 w-4" aria-hidden="true" />
+                                    <span>السير الذاتية للمسؤولين</span>
+                                </Link>
+                            </Button>
+                            <Button asChild variant="outline" size="sm" className="min-h-10 gap-2">
+                                <Link href="/syofficial">
+                                    <Landmark className="h-4 w-4" aria-hidden="true" />
+                                    <span>دليل الحسابات الرسمية</span>
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Quick stats */}
+                    <dl className="mx-auto mt-8 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div className="rounded-xl border border-border bg-card p-4 text-center">
+                            <dt className="text-xs font-medium text-muted-foreground">الوزارات الحالية</dt>
+                            <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
+                                {stats?.current_ministries ?? current_cabinet.length}
+                            </dd>
+                        </div>
+                        <div className="rounded-xl border border-border bg-card p-4 text-center">
+                            <dt className="text-xs font-medium text-muted-foreground">الهيئات السيادية</dt>
+                            <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
+                                {stats?.sovereign_bodies ?? sovereign_bodies.length}
+                            </dd>
+                        </div>
+                        <div className="rounded-xl border border-border bg-card p-4 text-center">
+                            <dt className="text-xs font-medium text-muted-foreground">وزارات مدمجة أو سابقة</dt>
+                            <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
+                                {stats?.historical_ministries ?? historical_ministries.length}
+                            </dd>
+                        </div>
+                        <div className="rounded-xl border border-border bg-card p-4 text-center">
+                            <dt className="text-xs font-medium text-muted-foreground">المراحل الحكومية</dt>
+                            <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
+                                {stats?.eras_count ?? eras.length}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
+
+            <div className="container mx-auto max-w-6xl space-y-12 px-4 py-8 md:py-10">
+                {/* 1. Current Cabinet */}
+                <section aria-labelledby="current-cabinet-heading" className="space-y-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="space-y-1">
+                            <h2
+                                id="current-cabinet-heading"
+                                className="flex items-center gap-2 text-xl font-bold text-foreground sm:text-2xl"
+                            >
+                                <Landmark className="h-5 w-5 text-primary" aria-hidden="true" />
+                                <span>التشكيل الوزاري الحالي</span>
+                            </h2>
+                            <p className="text-sm text-muted-foreground">
+                                الوزراء الـ{' '}
+                                <span className="tabular-nums font-medium text-foreground">
+                                    {current_cabinet.length}
+                                </span>{' '}
+                                في الحكومة السورية القائمة مع تاريخ تولي المنصب وروابط السيرة الذاتية والحسابات الرسمية.
+                            </p>
+                        </div>
+
+                        <div className="w-full sm:w-72">
+                            <Label htmlFor="ministries-search" className="sr-only">
+                                ابحث باسم الوزارة أو الوزير
+                            </Label>
+                            <div className="relative">
+                                <Search
+                                    className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                                    aria-hidden="true"
+                                />
+                                <Input
+                                    id="ministries-search"
+                                    type="search"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="ابحث باسم الوزارة أو الوزير..."
+                                    className="ps-9"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {normalizedQuery && visibleCabinetCount === 0 && (
+                        <p className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+                            لا توجد وزارة تطابق «{searchQuery}».
+                        </p>
+                    )}
+
+                    {/* All cards stay in SSR HTML; search hides non-matches cleanly */}
+                    <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" role="list">
+                        {current_cabinet.map((ministry, idx) => (
+                            <li
+                                key={ministry.slug}
+                                className={matchesQuery(ministry) ? undefined : 'hidden'}
+                            >
+                                <CabinetCard ministry={ministry} priority={idx < 6} />
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+
+                {/* 2. Four-Era Timeline */}
+                <section
+                    id="government-timeline"
+                    aria-labelledby="timeline-heading"
+                    className="scroll-mt-20 space-y-5"
+                >
+                    <div className="space-y-1">
+                        <h2
+                            id="timeline-heading"
+                            className="flex items-center gap-2 text-xl font-bold text-foreground sm:text-2xl"
+                        >
+                            <History className="h-5 w-5 text-primary" aria-hidden="true" />
+                            <span>الخط الزمني للحكومة السورية عبر المراحل الأربع</span>
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            تتبّع التعيينات والتعديلات الحكومية والدمج والفصل منذ أيلول{' '}
+                            <span dir="ltr" className="tabular-nums">2024</span> حتى التشكيل الحالي.
+                        </p>
+                    </div>
+
+                    <GovernmentTimeline
+                        eras={eras}
+                        ministries={all_ministries}
+                        restructurings={restructurings}
+                    />
+                </section>
+
+                {/* 3. Mergers, Splits & Structural Changes */}
+                <section aria-labelledby="restructurings-heading" className="space-y-5">
+                    <div className="space-y-1">
+                        <h2
+                            id="restructurings-heading"
+                            className="flex items-center gap-2 text-xl font-bold text-foreground sm:text-2xl"
+                        >
+                            <GitBranch className="h-5 w-5 text-primary" aria-hidden="true" />
+                            <span>مسارات الدمج والفصل والتعديلات الهيكلية</span>
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            أبرز التحوّلات في هيكلية الوزارات والسلطة التنفيذية وفق المراسيم الرسمية.
+                        </p>
+                    </div>
+
+                    <ol className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        {restructurings.map((item) => (
+                            <li key={item.id}>
+                                <Card className="h-full border-border/80 bg-card">
+                                    <CardContent className="flex h-full flex-col justify-between gap-4 p-5">
+                                        <div className="space-y-2.5">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <Badge variant="secondary" className="text-xs">
+                                                    {RESTRUCTURING_KIND_LABELS[item.kind] ?? item.kind}
+                                                </Badge>
+                                                <time
+                                                    dateTime={item.date}
+                                                    className="text-xs tabular-nums text-muted-foreground"
+                                                >
+                                                    {formatGovtDate(item.date)}
+                                                </time>
+                                            </div>
+
+                                            <h3 className="text-base font-bold text-foreground">
+                                                {item.title_ar}
+                                            </h3>
+
+                                            <p className="text-sm leading-relaxed text-muted-foreground">
+                                                {item.summary_ar}
+                                            </p>
+
+                                            {item.decree && (
+                                                <p className="text-xs font-semibold text-primary">
+                                                    {item.decree}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-2 border-t border-border/70 pt-3">
+                                            {(item.from_ministries.length > 0 || item.to_ministries.length > 0) && (
+                                                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                                    {item.from_ministries.map((ref) => (
+                                                        <Link
+                                                            key={`from-${ref.slug}`}
+                                                            href={`/ministries/${ref.slug}`}
+                                                            className="inline-flex min-h-8 items-center rounded-md border border-border bg-muted/40 px-2.5 py-1 font-medium text-foreground hover:border-primary/40 hover:text-primary"
+                                                        >
+                                                            {ref.name_ar}
+                                                        </Link>
+                                                    ))}
+                                                    {item.from_ministries.length > 0 && item.to_ministries.length > 0 && (
+                                                        <ArrowLeft
+                                                            className="h-3.5 w-3.5 shrink-0 text-primary"
+                                                            aria-hidden="true"
+                                                        />
+                                                    )}
+                                                    {item.to_ministries.map((ref) => (
+                                                        <Link
+                                                            key={`to-${ref.slug}`}
+                                                            href={`/ministries/${ref.slug}`}
+                                                            className="inline-flex min-h-8 items-center rounded-md border border-primary/40 bg-background px-2.5 py-1 font-semibold text-primary hover:bg-primary/5"
+                                                        >
+                                                            {ref.name_ar}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <a
+                                                href={item.source_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary hover:underline"
+                                            >
+                                                <span>المصدر المرجعي</span>
+                                                <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                                            </a>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </li>
+                        ))}
+                    </ol>
+                </section>
+
+                {/* 4. Sovereign Bodies */}
+                <section aria-labelledby="sovereign-heading" className="space-y-5">
+                    <div className="space-y-1">
+                        <h2
+                            id="sovereign-heading"
+                            className="flex items-center gap-2 text-xl font-bold text-foreground sm:text-2xl"
+                        >
+                            <Shield className="h-5 w-5 text-primary" aria-hidden="true" />
+                            <span>الرئاسة والهيئات السيادية والمصرف المركزي</span>
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            رئاسة الجمهورية والأمانة العامة ومصرف سورية المركزي والهيئات السيادية المرتبطة بالإدارة المركزية.
+                        </p>
+                    </div>
+
+                    <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" role="list">
+                        {sovereign_bodies.map((body) => (
+                            <li key={body.slug}>
+                                <CabinetCard ministry={body} />
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+
+                {/* 5. Historical / Merged / Split / Abolished Portfolios */}
+                <section aria-labelledby="historical-heading" className="space-y-5">
+                    <div className="space-y-1">
+                        <h2
+                            id="historical-heading"
+                            className="flex items-center gap-2 text-xl font-bold text-foreground sm:text-2xl"
+                        >
+                            <Archive className="h-5 w-5 text-primary" aria-hidden="true" />
+                            <span>الوزارات والمناصب التاريخية (مُدمجة أو مُقسّمة أو مُلغاة)</span>
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            حافظات وزارية ومناصب تنفيذية أُعيد هيكلتها خلال عامي{' '}
+                            <span dir="ltr" className="tabular-nums">2025–2026</span> مع توثيق شاغليها والوزارات التي خلفتها.
+                        </p>
+                    </div>
+
+                    <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" role="list">
+                        {historical_ministries.map((m) => (
+                            <li key={m.slug}>
+                                <Card className="flex h-full flex-col justify-between border-border/80 bg-card hover:border-primary/40 transition-colors">
+                                    <CardContent className="flex flex-1 flex-col justify-between gap-3 p-5">
+                                        <div className="space-y-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <h3 className="text-base font-bold text-foreground">
+                                                    <Link
+                                                        href={`/ministries/${m.slug}`}
+                                                        className="hover:text-primary hover:underline"
+                                                    >
+                                                        {m.name_ar}
+                                                    </Link>
+                                                </h3>
+                                                <Badge variant="outline" className="shrink-0 text-xs">
+                                                    {MINISTRY_STATUS_LABELS[m.status]}
+                                                </Badge>
+                                            </div>
+                                            {m.lineage_summary_ar && (
+                                                <p className="text-xs leading-relaxed text-muted-foreground">
+                                                    {m.lineage_summary_ar}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-2 border-t border-border/70 pt-3 text-xs">
+                                            {m.successors.length > 0 && (
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    <span className="text-muted-foreground">خلفتها:</span>
+                                                    {m.successors.map((succ) => (
+                                                        <Link
+                                                            key={succ.slug}
+                                                            href={`/ministries/${succ.slug}`}
+                                                            className="font-semibold text-primary hover:underline"
+                                                        >
+                                                            {succ.name_ar}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <Link
+                                                href={`/ministries/${m.slug}`}
+                                                className="inline-flex min-h-9 items-center gap-1 font-semibold text-primary hover:underline"
+                                            >
+                                                <span>عرض سجل الوزراء والتاريخ</span>
+                                                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                                            </Link>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+
+                {/* Attribution Footer */}
+                <footer className="rounded-xl border border-border bg-muted/25 p-5 text-xs text-muted-foreground space-y-2">
+                    <p className="font-semibold text-foreground">المصادر والتوثيق</p>
+                    <p className="leading-relaxed">
+                        يستند سجل التشكيلات الوزارية والخط الزمني والمراسيم إلى بيانات{' '}
+                        <a
+                            href={meta.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 font-semibold text-primary underline underline-offset-2 hover:no-underline"
+                        >
+                            <span>{meta.source_name_ar}</span>
+                            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                        </a>{' '}
+                        المتكاملة مع قاعدة السير الذاتية للمسؤولين ودليل الحسابات والتطبيقات الرسمية في المساحة السورية.
+                    </p>
+                    {meta.updated_at && (
+                        <p>
+                            آخر تحديث لبيانات المرجع:{' '}
+                            <time dateTime={meta.updated_at} className="tabular-nums font-medium text-foreground">
+                                {formatGovtDate(meta.updated_at)}
+                            </time>
+                        </p>
+                    )}
+                </footer>
+            </div>
+        </MainLayout>
+    );
+}

@@ -11,6 +11,7 @@ import {
     ArrowLeftRight,
     ExternalLink,
     IdCard,
+    Landmark,
     LayoutGrid,
     List,
     MessageSquarePlus,
@@ -247,6 +248,12 @@ export default function GovtCvsIndex({
                             <Link href="/govtcvs/movements">
                                 <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
                                 سجل التعيينات والتنقلات
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline" className="gap-2">
+                            <Link href="/ministries">
+                                <Landmark className="h-4 w-4" aria-hidden="true" />
+                                وزارات سوريا
                             </Link>
                         </Button>
                         {canAdmin && (

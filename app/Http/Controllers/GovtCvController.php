@@ -45,6 +45,7 @@ class GovtCvController extends Controller
             'tierlist_link' => $detail['tierlist_link'] ?? null,
             'official_entity_link' => $detail['official_entity_link'] ?? null,
             'house_link' => $detail['house_link'] ?? null,
+            'ministry_links' => $detail['ministry_links'] ?? [],
         ]);
     }
 

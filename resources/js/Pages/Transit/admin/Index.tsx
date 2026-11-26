@@ -894,8 +894,8 @@ function TransitAdminPageContent() {
                 <div className="space-y-2 pt-1 border-t border-border/50">
                   {canInCity('transit.approve', selectedDraft.city_id) && (
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-muted-foreground block">اختيار لون الخط على الخريطة:</label>
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <span id="approve-color-label" className="text-[11px] font-semibold text-muted-foreground block">اختيار لون الخط على الخريطة:</span>
+                      <div role="group" aria-labelledby="approve-color-label" className="flex items-center gap-1.5 flex-wrap">
                         {ROUTE_PALETTE.map((colorHex, idx) => (
                           <button aria-label={`لون ${idx + 1}`}
                             key={idx}
@@ -973,8 +973,8 @@ function TransitAdminPageContent() {
 
               {canEditSelectedRoute && (
                 <div className="space-y-1 pt-1 border-t border-border/50">
-                  <label className="text-[11px] font-semibold text-muted-foreground block">تغيير لون المسار سريعاً:</label>
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <span id="quick-color-label" className="text-[11px] font-semibold text-muted-foreground block">تغيير لون المسار سريعاً:</span>
+                  <div role="group" aria-labelledby="quick-color-label" className="flex items-center gap-1.5 flex-wrap">
                     {ROUTE_PALETTE.map((colorHex, idx) => (
                       <button aria-label={`تغيير للون ${idx + 1}`}
                         key={idx}
@@ -1093,39 +1093,39 @@ function TransitAdminPageContent() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">المدينة</label>
+              <label htmlFor="combine-city" className="text-xs font-medium">المدينة</label>
               <Select value={combineCityId} onValueChange={v => { setCombineCityId(v); setCombineRouteAId(''); setCombineRouteBId('') }}>
-                <SelectTrigger className="h-9 text-xs" aria-label="اختر المدينة…"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
+                <SelectTrigger id="combine-city" className="h-9 text-xs"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
                 <SelectContent>{visibleCities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">الخط الأول (البداية)</label>
+              <label htmlFor="combine-route-a" className="text-xs font-medium">الخط الأول (البداية)</label>
               <Select value={combineRouteAId} onValueChange={setCombineRouteAId} disabled={!combineCityId}>
-                <SelectTrigger className="h-9 text-xs" aria-label="اختر الخط…"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
+                <SelectTrigger id="combine-route-a" className="h-9 text-xs"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
                 <SelectContent>{publishedRoutes.filter(r => r.city_id === combineCityId && r.status === 'published').map(r => <SelectItem key={r.id} value={r.id}>{r.name_ar}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">الخط الثاني (الامتداد)</label>
+              <label htmlFor="combine-route-b" className="text-xs font-medium">الخط الثاني (الامتداد)</label>
               <Select value={combineRouteBId} onValueChange={setCombineRouteBId} disabled={!combineCityId}>
-                <SelectTrigger className="h-9 text-xs" aria-label="اختر الخط…"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
+                <SelectTrigger id="combine-route-b" className="h-9 text-xs"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
                 <SelectContent>{publishedRoutes.filter(r => r.city_id === combineCityId && r.status === 'published' && r.id !== combineRouteAId).map(r => <SelectItem key={r.id} value={r.id}>{r.name_ar}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium">الاسم بالعربية</label>
-                <Input aria-label="اسم الخط المدموج" value={combineNameAr} onChange={e => setCombineNameAr(e.target.value)} placeholder="مثال: الدوار الجنوبي" className="h-9 text-xs" />
+                <label htmlFor="combine-name-ar" className="text-xs font-medium">الاسم بالعربية</label>
+                <Input id="combine-name-ar" value={combineNameAr} onChange={e => setCombineNameAr(e.target.value)} placeholder="مثال: الدوار الجنوبي" className="h-9 text-xs" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium">الاسم بالإنجليزية</label>
-                <Input aria-label="الاسم بالإنجليزية للخط المدموج" value={combineNameEn} onChange={e => setCombineNameEn(e.target.value)} placeholder="e.g. Southern Ring" className="h-9 text-xs" dir="ltr" />
+                <label htmlFor="combine-name-en" className="text-xs font-medium">الاسم بالإنجليزية</label>
+                <Input id="combine-name-en" value={combineNameEn} onChange={e => setCombineNameEn(e.target.value)} placeholder="e.g. Southern Ring" className="h-9 text-xs" dir="ltr" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">التعرفة الجديدة (ل.س)</label>
-              <Input aria-label="اترك فارغاً للحفاظ على التعرفة الأصلية" type="number" value={combinePrice} onChange={e => setCombinePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الأصلية" className="h-9 text-xs" />
+              <label htmlFor="combine-price" className="text-xs font-medium">التعرفة الجديدة (ل.س)</label>
+              <Input id="combine-price" type="number" inputMode="numeric" value={combinePrice} onChange={e => setCombinePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الأصلية" className="h-9 text-xs" />
             </div>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">
@@ -1145,9 +1145,9 @@ function TransitAdminPageContent() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">نقطة التقسيم</label>
+              <label htmlFor="split-stop" className="text-xs font-medium">نقطة التقسيم</label>
               <Select value={splitAtStopId} onValueChange={setSplitAtStopId}>
-                <SelectTrigger className="h-9 text-xs" aria-label="اختر محطة…"><SelectValue placeholder="اختر محطة…" /></SelectTrigger>
+                <SelectTrigger id="split-stop" className="h-9 text-xs"><SelectValue placeholder="اختر محطة…" /></SelectTrigger>
                 <SelectContent>
                   {routeStops.map((stop, i) => {
                     if (i === 0 || i === routeStops.length - 1) return null
@@ -1157,10 +1157,10 @@ function TransitAdminPageContent() {
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الأول (عربي)</label><Input value={splitNameAAr} onChange={e => setSplitNameAAr(e.target.value)} className="h-9 text-xs" /></div>
-              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الأول (إنجليزي)</label><Input value={splitNameAEn} onChange={e => setSplitNameAEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
-              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الثاني (عربي)</label><Input value={splitNameBAr} onChange={e => setSplitNameBAr(e.target.value)} className="h-9 text-xs" /></div>
-              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الثاني (إنجليزي)</label><Input value={splitNameBEn} onChange={e => setSplitNameBEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
+              <div className="space-y-1.5"><label htmlFor="split-a-ar" className="text-xs font-medium">اسم القسم الأول (عربي)</label><Input id="split-a-ar" value={splitNameAAr} onChange={e => setSplitNameAAr(e.target.value)} className="h-9 text-xs" /></div>
+              <div className="space-y-1.5"><label htmlFor="split-a-en" className="text-xs font-medium">اسم القسم الأول (إنجليزي)</label><Input id="split-a-en" value={splitNameAEn} onChange={e => setSplitNameAEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
+              <div className="space-y-1.5"><label htmlFor="split-b-ar" className="text-xs font-medium">اسم القسم الثاني (عربي)</label><Input id="split-b-ar" value={splitNameBAr} onChange={e => setSplitNameBAr(e.target.value)} className="h-9 text-xs" /></div>
+              <div className="space-y-1.5"><label htmlFor="split-b-en" className="text-xs font-medium">اسم القسم الثاني (إنجليزي)</label><Input id="split-b-en" value={splitNameBEn} onChange={e => setSplitNameBEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
             </div>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">
@@ -1179,9 +1179,9 @@ function TransitAdminPageContent() {
             <DialogDescription>نقل <strong>{selectedRoute?.name_ar}</strong> والمواقف غير المشتركة مع خطوط أخرى.</DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium">المدينة المستهدفة</label>
+            <label htmlFor="move-city" className="text-xs font-medium">المدينة المستهدفة</label>
             <Select value={targetCityId} onValueChange={setTargetCityId}>
-              <SelectTrigger className="h-9 text-xs" aria-label="اختر مدينة…"><SelectValue placeholder="اختر مدينة…" /></SelectTrigger>
+              <SelectTrigger id="move-city" className="h-9 text-xs"><SelectValue placeholder="اختر مدينة…" /></SelectTrigger>
               <SelectContent>{visibleCities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -1202,21 +1202,22 @@ function TransitAdminPageContent() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">الاسم بالعربية</label>
-              <Input value={editRouteNameAr} onChange={e => setEditRouteNameAr(e.target.value)} className="h-9 text-xs" />
+              <label htmlFor="edit-route-name-ar" className="text-xs font-medium">الاسم بالعربية</label>
+              <Input id="edit-route-name-ar" value={editRouteNameAr} onChange={e => setEditRouteNameAr(e.target.value)} className="h-9 text-xs" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">الاسم بالإنجليزية</label>
-              <Input value={editRouteNameEn} onChange={e => setEditRouteNameEn(e.target.value)} className="h-9 text-xs" dir="ltr" />
+              <label htmlFor="edit-route-name-en" className="text-xs font-medium">الاسم بالإنجليزية</label>
+              <Input id="edit-route-name-en" value={editRouteNameEn} onChange={e => setEditRouteNameEn(e.target.value)} className="h-9 text-xs" dir="ltr" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium block">لون المسار على الخريطة</label>
-              <div className="flex items-center gap-2 flex-wrap">
+              <span id="edit-route-color-label" className="text-xs font-medium block">لون المسار على الخريطة</span>
+              <div role="group" aria-labelledby="edit-route-color-label" className="flex items-center gap-2 flex-wrap">
                 {ROUTE_PALETTE.map((colorHex, idx) => (
                   <button aria-label={`لون ${idx + 1}`}
                     key={idx}
                     type="button"
                     onClick={() => setEditRouteColorIndex(idx)}
+                    aria-pressed={editRouteColorIndex === idx}
                     className={`w-7 h-7 rounded-full border-2 transition-all ${editRouteColorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary' : 'border-transparent opacity-75 hover:opacity-100'}`}
                     style={{ backgroundColor: colorHex }}
                     title={`لون ${idx + 1}`}
@@ -1225,8 +1226,8 @@ function TransitAdminPageContent() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">التعرفة (ل.س)</label>
-              <Input aria-label="اترك فارغاً للحفاظ على التعرفة الحالية" type="number" value={editRoutePrice} onChange={e => setEditRoutePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الحالية" className="h-9 text-xs" />
+              <label htmlFor="edit-route-price" className="text-xs font-medium">التعرفة (ل.س)</label>
+              <Input id="edit-route-price" type="number" inputMode="numeric" value={editRoutePrice} onChange={e => setEditRoutePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الحالية" className="h-9 text-xs" />
             </div>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">

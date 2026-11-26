@@ -669,16 +669,16 @@ export default function Dashboard({
                               </Button>
                             )}
                             {!auth.user.is_banned && (
-                              <a href={`/transit/studio?edit=${draft.id}`}>
-                                <Button variant="outline" size="sm">تعديل</Button>
-                              </a>
+                              <Button asChild variant="outline" size="sm">
+                                <a href={`/transit/studio?edit=${draft.id}`}>تعديل</a>
+                              </Button>
                             )}
                             {draft.status === 'approved' && draft.route_id && (
-                              <a href={`/transit/city/${draft.city_id}?route=${draft.route_id}`}>
-                                <Button variant="outline" size="sm" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-emerald-600">
+                              <Button asChild variant="outline" size="sm" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-emerald-600">
+                                <a href={`/transit/city/${draft.city_id}?route=${draft.route_id}`}>
                                   عرض الخط المنشور
-                                </Button>
-                              </a>
+                                </a>
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -813,18 +813,18 @@ export default function Dashboard({
                         <div className="flex items-center gap-2">
                           {editingPoll && (
                             <>
-                              <a href={pollPublicUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
-                                <Button variant="outline" size="sm">
-                                  <Eye className="h-4 w-4 me-1" />
+                              <Button asChild variant="outline" size="sm">
+                                <a href={pollPublicUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
+                                  <Eye className="h-4 w-4 me-1" aria-hidden="true" />
                                   عرض
-                                </Button>
-                              </a>
-                              <a href={pollLeaderboardUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
-                                <Button variant="outline" size="sm">
-                                  <BarChart3 className="h-4 w-4 me-1" />
+                                </a>
+                              </Button>
+                              <Button asChild variant="outline" size="sm">
+                                <a href={pollLeaderboardUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
+                                  <BarChart3 className="h-4 w-4 me-1" aria-hidden="true" />
                                   النتائج
-                                </Button>
-                              </a>
+                                </a>
+                              </Button>
                             </>
                           )}
                           <Button variant="ghost" size="icon" onClick={closePollEditor} title="إغلاق" aria-label="إغلاق">

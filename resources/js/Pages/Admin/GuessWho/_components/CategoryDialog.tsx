@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Switch } from '@/Components/ui/switch';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
+import { notify } from '@/Lib/notify';
 
 export interface GuessWhoCategoryData {
     id: number;
@@ -29,6 +31,15 @@ export default function CategoryDialog({ open, onOpenChange, category }: Categor
     const [slug, setSlug] = useState('');
     const [isActive, setIsActive] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
+
+    // After the server rejects the save, focus the first invalid field so its
+    // message is announced where it can be fixed.
+    useEffect(() => {
+        if (Object.keys(errors).length === 0) return;
+        formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    }, [errors]);
 
     useEffect(() => {
         if (category) {
@@ -42,6 +53,7 @@ export default function CategoryDialog({ open, onOpenChange, category }: Categor
             setSlug('');
             setIsActive(true);
         }
+        setErrors({});
     }, [category, open]);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -50,7 +62,14 @@ export default function CategoryDialog({ open, onOpenChange, category }: Categor
         const payload = { name_ar: nameAr, name_en: nameEn, slug, is_active: isActive };
         const opts = {
             onSuccess: () => { setProcessing(false); onOpenChange(false); },
-            onError: () => setProcessing(false),
+            onError: (errs: Record<string, string>) => {
+                setProcessing(false);
+                setErrors(errs);
+                const shown = ['name_ar', 'name_en', 'slug'];
+                if (!Object.keys(errs).some((key) => shown.includes(key))) {
+                    notify.error(Object.values(errs)[0] ?? 'تعذر حفظ الفئة');
+                }
+            },
         };
         if (isEdit) {
             router.put(`/api/v1/admin/guesswho/categories/${category.id}`, payload, opts);
@@ -69,15 +88,17 @@ export default function CategoryDialog({ open, onOpenChange, category }: Categor
                     <DialogDescription>بيانات فئة لعبة من هو.</DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+                <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 pt-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <Label htmlFor="gw-cat-nameAr" className="font-semibold text-xs">الاسم (بالعربية)</Label>
-                            <Input id="gw-cat-nameAr" value={nameAr} onChange={(e) => setNameAr(e.target.value)} required />
+                            <Input id="gw-cat-nameAr" value={nameAr} onChange={(e) => setNameAr(e.target.value)} required {...fieldA11y('gw-cat-nameAr-error', errors.name_ar)} />
+                            <FieldError id="gw-cat-nameAr-error" message={errors.name_ar} />
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="gw-cat-nameEn" className="font-semibold text-xs">الاسم (بالإنكليزية)</Label>
-                            <Input id="gw-cat-nameEn" value={nameEn} onChange={(e) => setNameEn(e.target.value)} required dir="ltr" />
+                            <Input id="gw-cat-nameEn" value={nameEn} onChange={(e) => setNameEn(e.target.value)} required dir="ltr" {...fieldA11y('gw-cat-nameEn-error', errors.name_en)} />
+                            <FieldError id="gw-cat-nameEn-error" message={errors.name_en} />
                         </div>
                     </div>
 
@@ -90,7 +111,9 @@ export default function CategoryDialog({ open, onOpenChange, category }: Categor
                             required
                             dir="ltr"
                             placeholder="مثال: football-players"
+                            {...fieldA11y('gw-cat-slug-error', errors.slug)}
                         />
+                        <FieldError id="gw-cat-slug-error" message={errors.slug} />
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t">

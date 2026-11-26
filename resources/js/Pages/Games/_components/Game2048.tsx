@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import {
@@ -130,8 +130,12 @@ export default function Game2048() {
   // arrow keys.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Leave shortcuts (Alt+Arrow is browser back), keys another handler
+      // already took, and anything typed inside an open dialog alone.
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+      if (el?.closest?.('[role="dialog"], [role="alertdialog"]')) return;
       const dir = KEY_DIRECTIONS[e.key];
       if (!dir) return;
       e.preventDefault();
@@ -158,6 +162,12 @@ export default function Game2048() {
     if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_THRESHOLD) return;
     play(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up');
   };
+
+  const grid = useMemo(() => {
+    const rows: (number | null)[][] = Array.from({ length: SIZE }, () => Array<number | null>(SIZE).fill(null));
+    for (const t of board) rows[t.row][t.col] = t.value;
+    return rows;
+  }, [board]);
 
   return (
     <div className="mx-auto w-full max-w-md select-none">
@@ -189,6 +199,7 @@ export default function Game2048() {
         {Array.from({ length: SIZE * SIZE }, (_, i) => (
           <div
             key={`cell-${i}`}
+            aria-hidden="true"
             className="sz-2048-cell rounded-xl bg-[#cdc1b4] dark:bg-[#5a564b]"
             style={{ transform: at(i % SIZE, Math.floor(i / SIZE)) }}
           />
@@ -199,6 +210,7 @@ export default function Game2048() {
         {ghosts.map((g) => (
           <div
             key={`ghost-${g.id}`}
+            aria-hidden="true"
             className="sz-2048-cell sz-2048-ghost"
             style={
               {
@@ -223,7 +235,7 @@ export default function Game2048() {
             on the merge count instead, so a tile that merges twice in a row
             remounts its face and the pop replays. */}
         {board.map((t) => (
-          <div key={t.id} className="sz-2048-cell sz-2048-tile" style={{ transform: at(t.col, t.row) }}>
+          <div key={t.id} aria-hidden="true" className="sz-2048-cell sz-2048-tile" style={{ transform: at(t.col, t.row) }}>
             <div
               key={`${t.id}-${t.merges}`}
               className={`sz-2048-face ${tileClass(t.value)} ${
@@ -241,6 +253,21 @@ export default function Game2048() {
             </div>
           </div>
         ))}
+
+        {/* The tiles are positioned in DOM order of creation, not of the
+            grid, so screen readers get the board as a 4×4 table instead. */}
+        <div className="sr-only"><table>
+          <caption>اللوحة، صفاً صفاً من الأعلى</caption>
+          <tbody>
+            {grid.map((row, r) => (
+              <tr key={r}>
+                {row.map((value, c) => (
+                  <td key={c}>{value ?? 'فارغ'}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table></div>
 
         {phase !== 'playing' && (
           <Overlay

@@ -59,6 +59,15 @@ export default function SwipeCardDeck({
     };
   }, [claim.id]);
 
+  // Warm the cache for the next card's image so it doesn't pop in after the swipe.
+  const nextImage = upcomingClaims[0]?.image;
+  useEffect(() => {
+    if (!nextImage) return;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = nextImage;
+  }, [nextImage]);
+
   const triggerDecision = useCallback(
     (answer: boolean) => {
       if (committedRef.current) return;
@@ -87,10 +96,10 @@ export default function SwipeCardDeck({
         return;
       }
 
-      if (e.key === 'ArrowRight' || e.key === 'ص') {
+      if (e.key === 'ArrowRight') {
         e.preventDefault();
         triggerDecision(true);
-      } else if (e.key === 'ArrowLeft' || e.key === 'غ') {
+      } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         triggerDecision(false);
       }
@@ -216,7 +225,11 @@ export default function SwipeCardDeck({
         </div>
 
         <div className="flex items-center justify-between">
-          <h1 id="fakenewstest-play-title" className="text-sm font-bold text-muted-foreground">
+          <h1
+            id="fakenewstest-play-title"
+            tabIndex={-1}
+            className="text-sm font-bold text-muted-foreground focus:outline-none"
+          >
             هل تميّزها؟
           </h1>
           <span className="text-xs font-semibold tabular-nums text-muted-foreground">

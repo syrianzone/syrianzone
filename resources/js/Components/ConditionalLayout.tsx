@@ -24,7 +24,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
 
   return (
     <FocusModeProvider value={focusValue}>
-      <div className={fullBleed ? 'flex flex-col h-screen overflow-hidden' : ''}>
+      <div className={fullBleed ? 'flex flex-col h-dvh overflow-hidden' : ''}>
         {!focus && (
           <a
             href="#main-content"

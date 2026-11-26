@@ -2,9 +2,16 @@ import { useState, useEffect } from 'react';
 import { Calendar, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
+import { Alert } from "@/Components/ui/alert";
 import { formatGregorianSyrianShort } from "@/Lib/syrian-date";
 import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
 import { getGovernorateNameAr, governorateNameForF3aliaProvince } from '@/Domain/geography/governorates';
+
+/** Upstream event links reach an href: only http(s) passes, else the platform. */
+const F3ALIA_HOME = 'https://app.f3alia.com';
+function safeEventUrl(raw: string | null | undefined): string {
+    return typeof raw === 'string' && /^https?:\/\//i.test(raw.trim()) ? raw.trim() : F3ALIA_HOME;
+}
 
 interface F3aliaEventsProps {
     governorate: string; // local governorate key, e.g., 'damascus'
@@ -40,7 +47,7 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
     const [error, setError] = useState<string | null>(null);
     const [isShowingFallbackEvents, setIsShowingFallbackEvents] = useState(false);
 
-    const loadEventsData = async () => {
+    const loadEventsData = async (signal?: AbortSignal) => {
         setLoading(true);
         setError(null);
         try {
@@ -49,18 +56,24 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
             // fallback live in EventsController, never in the browser.
             const payload = await api.get<EventsPayload>(`${API_ROOT}/events/today`, {
                 params: { governorate, scope: 'upcoming' },
+                signal,
             });
+            if (signal?.aborted) return;
             setEvents(payload.events ?? []);
             setIsShowingFallbackEvents(Boolean(payload.is_fallback));
         } catch (err) {
+            // A superseded request (governorate changed) is not an error.
+            if (signal?.aborted) return;
             setError(apiErrorMessage(err, 'فشل تحميل الفعاليات حالياً'));
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadEventsData();
+        const ctrl = new AbortController();
+        void loadEventsData(ctrl.signal);
+        return () => ctrl.abort();
     }, [governorate]);
 
     // Only the very first next upcoming event is shown (homepage spotlight).
@@ -72,15 +85,15 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
         <div className="w-full" dir="rtl">
             {/* Notification when showing fallback events */}
             {isShowingFallbackEvents && !loading && !error && displayedEvents.length > 0 && (
-                <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-500 flex items-start gap-3">
-                    <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
+                <Alert variant="warning" role="status" className="mb-6 rounded-xl text-xs">
+                    <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" aria-hidden="true" />
                     <div>
                         <span className="font-semibold block mb-0.5">
                             {`لا توجد فعاليات قادمة مسجلة حالياً في ${currentGovName}`}
                         </span>
                         نعرض لك الفعاليات القادمة في باقي المحافظات السورية.
                     </div>
-                </div>
+                </Alert>
             )}
 
             {/* Content Area */}
@@ -91,7 +104,7 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                     <CardContent className="flex flex-col items-center gap-3">
                         <AlertCircle className="h-10 w-10 text-destructive" />
                         <p className="text-sm font-medium">{error}</p>
-                        <Button variant="outline" size="sm" onClick={loadEventsData} className="mt-2">
+                        <Button variant="outline" size="sm" onClick={() => void loadEventsData()} className="mt-2">
                             <RefreshCw className="h-4 w-4 ms-2" />
                             إعادة المحاولة
                         </Button>
@@ -121,13 +134,13 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                                 <span>{formatGregorianSyrianShort(event.event_date)}</span>
                                 {event.event_time && (
                                     <>
-                                        <span>•</span>
+                                        <span aria-hidden="true">•</span>
                                         <span className="font-mono">{event.event_time}</span>
                                     </>
                                 )}
-                                <span>•</span>
+                                <span aria-hidden="true">•</span>
                                 <a
-                                    href={event.url}
+                                    href={safeEventUrl(event.url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="font-bold text-primary hover:underline inline-flex items-center gap-1"

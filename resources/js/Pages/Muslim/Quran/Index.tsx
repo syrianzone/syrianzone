@@ -9,7 +9,7 @@ import { useAppShell } from '@/Lib/appShell';
 import { useQuranTarget } from '@/Domain/quran/targetAyah';
 
 export default function Index() {
-  const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();
+  const { prefs, setPrefs, isLoggedIn, deviceLoaded } = useMuslimPrefs();
   const targetAyah = useQuranTarget((s) => s.targetAyah);
   const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
   const quranFocus = useAppShell((s) => s.quranFocus);
@@ -40,12 +40,11 @@ export default function Index() {
   return (
     <MainLayout>
       <Head>
-        
-        
-        
-        
         <link rel="preload" href="/fonts/quran-hafs.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="prefetch" href="/quran-data/mushaf-unified.json" as="fetch" crossOrigin="anonymous" />
+        {/* The reader fetches this on mount (Domain/quran/quran.ts, a plain
+            same-origin fetch, which matches crossorigin=anonymous), so it is
+            a preload for this page, not a prefetch for a later one. */}
+        <link rel="preload" href="/quran-data/mushaf-unified.json" as="fetch" crossOrigin="anonymous" fetchPriority="high" />
       </Head>
       <h1 className="sr-only">قارئ القرآن</h1>
 
@@ -60,6 +59,7 @@ export default function Index() {
               setPage={(p) => setPrefs({ quranPage: p })}
               isLoggedIn={isLoggedIn}
               reciterCode={prefs.quranReciterId || DEFAULT_RECITATION_CODE}
+              recitationReady={deviceLoaded}
               setReciterCode={(code) => setPrefs({ quranReciterId: code })}
             />
           </div>

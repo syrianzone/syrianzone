@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
@@ -7,6 +7,8 @@ import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import { Switch } from '@/Components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
+import { notify } from '@/Lib/notify';
 import { ImagePlus } from 'lucide-react';
 import type { GuessWhoCategoryData } from './CategoryDialog';
 
@@ -59,7 +61,24 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
     const [isActive, setIsActive] = useState(true);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    // Release the blob behind a local preview once it is replaced or the
+    // dialog unmounts; server URLs are left alone.
+    useEffect(() => () => {
+        if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+    }, [imagePreview]);
     const [processing, setProcessing] = useState(false);
+    const [imageError, setImageError] = useState<string | null>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const imageTriggerRef = useRef<HTMLButtonElement>(null);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const formRef = useRef<HTMLFormElement>(null);
+
+    // After the server rejects the save, focus the first invalid field so its
+    // message is announced where it can be fixed.
+    useEffect(() => {
+        if (Object.keys(errors).length === 0) return;
+        formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    }, [errors]);
 
     useEffect(() => {
         if (character) {
@@ -78,12 +97,15 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
             setImagePreview(null);
         }
         setImageFile(null);
+        setImageError(null);
+        setErrors({});
     }, [character, open]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             setImageFile(file);
+            setImageError(null);
             setImagePreview(URL.createObjectURL(file));
         }
     };
@@ -91,6 +113,13 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!categoryId) return;
+        // The picker input is hidden, so the browser cannot focus it to show
+        // its own "required" bubble; report a missing image beside the button.
+        if (!isEdit && !imageFile) {
+            setImageError('اختر صورة للشخصية');
+            imageTriggerRef.current?.focus();
+            return;
+        }
         setProcessing(true);
 
         const formData = new FormData();
@@ -108,7 +137,14 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
 
         const opts = {
             onSuccess: () => { setProcessing(false); onOpenChange(false); },
-            onError: () => setProcessing(false),
+            onError: (errs: Record<string, string>) => {
+                setProcessing(false);
+                setErrors(errs);
+                const shown = ['category_id', 'name_ar', 'name_en', 'image_file'];
+                if (!Object.keys(errs).some((key) => shown.includes(key))) {
+                    notify.error(Object.values(errs)[0] ?? 'تعذر حفظ الشخصية');
+                }
+            },
         };
         if (isEdit) {
             formData.append('_method', 'PUT');
@@ -128,11 +164,11 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
                     <DialogDescription>بيانات الشخصية وصورتها وسماتها (مثال: gender: male).</DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+                <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 pt-2">
                     <div className="space-y-1.5">
-                        <Label className="font-semibold text-xs">الفئة</Label>
+                        <Label htmlFor="gw-char-category" className="font-semibold text-xs">الفئة</Label>
                         <Select value={categoryId} onValueChange={setCategoryId}>
-                            <SelectTrigger aria-label="اختر الفئة">
+                            <SelectTrigger id="gw-char-category" {...fieldA11y('gw-char-category-error', errors.category_id)}>
                                 <SelectValue placeholder="اختر الفئة" />
                             </SelectTrigger>
                             <SelectContent>
@@ -141,21 +177,24 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
                                 ))}
                             </SelectContent>
                         </Select>
+                        <FieldError id="gw-char-category-error" message={errors.category_id} />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <Label htmlFor="gw-char-nameAr" className="font-semibold text-xs">الاسم (بالعربية)</Label>
-                            <Input id="gw-char-nameAr" value={nameAr} onChange={(e) => setNameAr(e.target.value)} required />
+                            <Input id="gw-char-nameAr" value={nameAr} onChange={(e) => setNameAr(e.target.value)} required {...fieldA11y('gw-char-nameAr-error', errors.name_ar)} />
+                            <FieldError id="gw-char-nameAr-error" message={errors.name_ar} />
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="gw-char-nameEn" className="font-semibold text-xs">الاسم (بالإنكليزية)</Label>
-                            <Input id="gw-char-nameEn" value={nameEn} onChange={(e) => setNameEn(e.target.value)} required dir="ltr" />
+                            <Input id="gw-char-nameEn" value={nameEn} onChange={(e) => setNameEn(e.target.value)} required dir="ltr" {...fieldA11y('gw-char-nameEn-error', errors.name_en)} />
+                            <FieldError id="gw-char-nameEn-error" message={errors.name_en} />
                         </div>
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="font-semibold text-xs">صورة الشخصية {isEdit ? '(اتركها فارغة للإبقاء على الحالية)' : ''}</Label>
+                        <Label id="gw-char-image-label" className="font-semibold text-xs">صورة الشخصية {isEdit ? '(اتركها فارغة للإبقاء على الحالية)' : ''}</Label>
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-full overflow-hidden bg-muted border flex items-center justify-center flex-shrink-0">
                                 {imagePreview ? (
@@ -165,11 +204,20 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
                                 )}
                             </div>
                             <div className="flex-1">
-                                <Label htmlFor="gw-char-image" className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-muted transition-colors">
-                                    <ImagePlus className="w-4 h-4" />
-                                    <span>اختر صورة</span>
-                                </Label>
-                                <Input id="gw-char-image" type="file" accept="image/*" className="hidden" onChange={handleImageChange} required={!isEdit} />
+                                <button
+                                    ref={imageTriggerRef}
+                                    type="button"
+                                    onClick={() => imageInputRef.current?.click()}
+                                    aria-labelledby="gw-char-image-label gw-char-image-action"
+                                    aria-invalid={imageError || errors.image_file ? true : undefined}
+                                    aria-describedby={imageError || errors.image_file ? 'gw-char-image-error' : undefined}
+                                    className="cursor-pointer inline-flex items-center gap-2 leading-none px-3 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                >
+                                    <ImagePlus className="w-4 h-4" aria-hidden="true" />
+                                    <span id="gw-char-image-action">اختر صورة</span>
+                                </button>
+                                <input ref={imageInputRef} type="file" accept="image/*" className="hidden" aria-hidden="true" tabIndex={-1} onChange={handleImageChange} />
+                                <FieldError id="gw-char-image-error" message={imageError ?? errors.image_file} />
                             </div>
                         </div>
                     </div>

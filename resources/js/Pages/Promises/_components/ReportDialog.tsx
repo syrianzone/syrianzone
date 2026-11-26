@@ -71,6 +71,7 @@ export default function ReportDialog({ number, kind, open, onOpenChange }: {
                         <Label htmlFor="report-body">{copy.bodyLabel}</Label>
                         <Textarea
                             id="report-body"
+                            aria-required="true"
                             value={body}
                             onChange={(e) => setBody(e.target.value)}
                             rows={4}

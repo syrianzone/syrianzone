@@ -28,7 +28,7 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
     const {
         tiers,
         basePath = "",
-        fileName = "tier-list.png",
+        fileName = "tier-list.jpg",
         width = 1000,
         scale = 2,
         watermarkText = "syrian.zone/tierlist",
@@ -37,6 +37,8 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+    // Object URLs of the transcoded candidate photos, revoked once drawn.
+    const transcodedUrls: string[] = [];
     const origin = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "";
     function resolveUrl(u: string): string {
         if (!u) return u;
@@ -95,7 +97,13 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
                 const dy = Math.floor((off.height - dh) / 2);
                 octx.drawImage(img, dx, dy, dw, dh);
             }
-            return off.toDataURL("image/jpeg", 0.95);
+            // toBlob encodes off the main thread; toDataURL blocked it once
+            // per candidate and then held a base64 copy of every photo.
+            const out = await new Promise<Blob | null>((resolve) => off.toBlob(resolve, "image/jpeg", 0.95));
+            if (!out) return undefined;
+            const outUrl = URL.createObjectURL(out);
+            transcodedUrls.push(outUrl);
+            return outUrl;
         } catch {
             return undefined;
         }
@@ -352,14 +360,28 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
     ctx.textAlign = prevAlign;
     try { (ctx as any).direction = prevDir; } catch { }
 
-    try { objectUrls.forEach((u) => URL.revokeObjectURL(u)); } catch { }
+    try { [...objectUrls, ...transcodedUrls].forEach((u) => URL.revokeObjectURL(u)); } catch { }
 
-    // Prefer image/jpeg for better Safari compatibility; fallback to png if needed
-    const dataUrl = (() => {
-        try { return canvas.toDataURL("image/jpeg", 0.95); } catch { return canvas.toDataURL("image/png"); }
-    })();
+    // JPEG for Safari compatibility, PNG if the encoder refuses. toBlob keeps
+    // the encode off the main thread and the download off a multi-MB data URL.
+    const encode = (type: string, quality?: number) =>
+        new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+    let blob = await encode("image/jpeg", 0.95);
+    let ext = "jpg";
+    if (!blob) {
+        blob = await encode("image/png");
+        ext = "png";
+    }
+    if (!blob) throw new Error("tier list image could not be encoded");
+    // The name follows the bytes, so a JPEG is never saved as ".png".
+    const base = fileName.replace(/\.(png|jpe?g)$/i, "") || "tier-list";
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.download = fileName.endsWith(".png") || fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") ? fileName : "tier-list.jpg";
-    link.href = dataUrl;
+    link.download = `${base}.${ext}`;
+    link.href = url;
+    document.body.appendChild(link);
     link.click();
+    link.remove();
+    // Revoked later: some browsers start reading the URL after click() returns.
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }

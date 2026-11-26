@@ -189,12 +189,12 @@ export function visibleMovements(
     );
 
     if (value.sort === 'oldest') {
-        return [...list].sort((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'));
+        return list.toSorted((a, b) => (a.date ?? '9999-99-99').localeCompare(b.date ?? '9999-99-99'));
     }
 
     if (value.sort === 'alpha') {
-        return [...list].sort((a, b) => a.official_name_ar.localeCompare(b.official_name_ar, 'ar'));
+        return list.toSorted((a, b) => a.official_name_ar.localeCompare(b.official_name_ar, 'ar'));
     }
 
-    return [...list].sort((a, b) => (b.date ?? '0000-00-00').localeCompare(a.date ?? '0000-00-00'));
+    return list.toSorted((a, b) => (b.date ?? '0000-00-00').localeCompare(a.date ?? '0000-00-00'));
 }

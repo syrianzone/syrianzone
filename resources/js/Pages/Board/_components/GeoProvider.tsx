@@ -1,7 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { readGeo, writeGeo } from '../_lib/storage';
 
-export type GeoStatus = 'idle' | 'pending' | 'granted' | 'denied';
+// 'checking': the cached fix has not been read yet (first render, server and
+// hydrating client alike), so no tile may prompt for location before it is.
+export type GeoStatus = 'checking' | 'idle' | 'pending' | 'granted' | 'denied';
 
 interface GeoValue {
   coords: { lat: number; lng: number } | null;
@@ -14,10 +16,16 @@ const GeoContext = createContext<GeoValue>({ coords: null, status: 'idle', reque
 // One fix for the whole board: several location widgets must not produce
 // several browser prompts. The fix is cached so a reload does not re-prompt.
 export function GeoProvider({ children }: { children: ReactNode }) {
-  const cached = readGeo();
-  const [coords, setCoords] = useState(cached);
-  const [status, setStatus] = useState<GeoStatus>(cached ? 'granted' : 'idle');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [status, setStatus] = useState<GeoStatus>('checking');
   const inFlight = useRef(false);
+
+  // storage is read after mount, never during render (hydration)
+  useEffect(() => {
+    const cached = readGeo();
+    if (cached) setCoords(cached);
+    setStatus((s) => (s === 'checking' ? (cached ? 'granted' : 'idle') : s));
+  }, []);
 
   const request = useCallback(() => {
     if (inFlight.current || !navigator.geolocation) {

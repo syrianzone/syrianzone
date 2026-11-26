@@ -8,15 +8,19 @@ import type { PrayerHijri } from './times';
  */
 
 /** e.g. "٨ جمادى الآخرة ١٤٤٧ هـ". Empty when the browser has no Islamic calendar. */
-export function formatHijriDate(date: Date): string {
+export function formatHijriDate(date: Date, timeZone?: string): string {
   const formats = ['ar-SY-u-ca-islamic-umalqura', 'ar-SY-u-ca-islamic'];
   for (const locale of formats) {
     try {
-      const formatted = new Intl.DateTimeFormat(locale, {
+      const fmt = new Intl.DateTimeFormat(locale, {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-      }).format(date);
+        timeZone,
+      });
+      // An engine without the calendar silently falls back to Gregorian.
+      if (!fmt.resolvedOptions().calendar.startsWith('islamic')) continue;
+      const formatted = fmt.format(date);
       return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
     } catch {
       // try the next calendar

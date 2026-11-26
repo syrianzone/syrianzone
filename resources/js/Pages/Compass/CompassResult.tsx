@@ -1,5 +1,6 @@
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
+import { confirmDialog } from '@/Lib/confirm';
 import React, { useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
@@ -18,7 +19,6 @@ import AxisBars from '@/Domain/compass/AxisBars';
 import AlignmentCard from '@/Domain/compass/AlignmentCard';
 import CompassCanvas from './components/CompassCanvas';
 import CompassShareCard from './components/CompassShareCard';
-import { exportElementAsPng } from '@/Lib/exportElementAsPng';
 
 export default function CompassResult({
   answers,
@@ -27,6 +27,7 @@ export default function CompassResult({
   onRestart,
   onSavedToAccount,
   readOnly = false,
+  focusOnMount = false,
   figures = [],
   personas = [],
 }: {
@@ -36,6 +37,8 @@ export default function CompassResult({
   onRestart: () => void;
   onSavedToAccount?: () => void;
   readOnly?: boolean;
+  /** Move focus to the result heading when it replaces in-page content. */
+  focusOnMount?: boolean;
   /** Admin-managed roster; only enabled figures are passed in. */
   figures?: Figure[];
   /** Admin-managed personas; only enabled ones are passed in. */
@@ -47,11 +50,15 @@ export default function CompassResult({
   const [statsBusy, setStatsBusy] = useState(false);
   const [savedToAccount, setSavedToAccount] = useState(false);
   const [savedId, setSavedId] = useState<number | string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const themeKey = useThemeId();
   const storyCardRef = useRef<HTMLDivElement>(null);
   const localResultRef = useRef<Result | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  // The result replaces the quiz (or the saved list): start focus at its heading.
+  React.useEffect(() => {
+    if (focusOnMount) headingRef.current?.focus({ preventScroll: true });
+  }, [focusOnMount]);
 
   const computed = useMemo(() => {
     const { axes, align } = computeScores(answers, version);
@@ -155,6 +162,15 @@ export default function CompassResult({
   };
 
   const handleDelete = async () => {
+    const confirmed = await confirmDialog({
+      title: 'حذف تقدّمك ونتائجك؟',
+      description: isLoggedIn
+        ? 'ستُحذف نتائجك المحلية والمحفوظة في حسابك، ولا يمكن التراجع عن ذلك.'
+        : 'ستُحذف نتائجك المحفوظة في هذا المتصفح، ولا يمكن التراجع عن ذلك.',
+      confirmText: 'حذف',
+      destructive: true,
+    });
+    if (!confirmed) return;
     clearLocal();
     if (isLoggedIn) {
       try {
@@ -163,7 +179,6 @@ export default function CompassResult({
         notify.error(apiErrorMessage(e, 'تعذّر حذف نتائجك المحفوظة'));
       }
     }
-    setConfirmDelete(false);
     onRestart();
   };
 
@@ -171,6 +186,8 @@ export default function CompassResult({
     if (!storyCardRef.current) return;
     setImageBusy(true);
     try {
+      // Imported on demand: html2canvas is heavy and only this button needs it.
+      const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
       await exportElementAsPng(storyCardRef.current, `bousalat-syria-${Date.now()}.png`);
     } catch {
       notify.error('تعذّر إنشاء صورة النتيجة، حاول مرة أخرى');
@@ -197,7 +214,7 @@ export default function CompassResult({
       <Card className="overflow-hidden">
         <div className="bg-primary/10 border-b border-border px-4 py-5 text-center">
           <p className="text-xs text-muted-foreground mb-1">طيفك السياسي</p>
-          <h2 className="text-2xl font-extrabold text-foreground inline-flex items-center gap-2">
+          <h2 ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold text-foreground inline-flex items-center gap-2 focus:outline-none">
             <SpectrumIcon name={spectrum?.icon} className="w-6 h-6 text-primary" />
             {spectrum?.name}
           </h2>
@@ -381,10 +398,10 @@ export default function CompassResult({
             <Button
               variant="ghost"
               className="text-destructive gap-2"
-              onClick={() => (confirmDelete ? handleDelete() : setConfirmDelete(true))}
+              onClick={handleDelete}
             >
-              <Trash2 className="w-4 h-4" />
-              {confirmDelete ? 'اضغط مرة أخرى للتأكيد' : 'احذف تقدّمي ونتائجي المحلية'}
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+              احذف تقدّمي ونتائجي المحلية
             </Button>
           </>
         )}

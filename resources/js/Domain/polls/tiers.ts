@@ -12,12 +12,18 @@ export type TierKey = (typeof TIER_KEYS)[number];
 interface Tier {
     /** The Arabic description, on the board and on the image. */
     arabic: string;
-    /** Tailwind class for the label column. */
+    /**
+     * Tailwind class for the label column. White text sits on it at small
+     * sizes, so every shade clears 4.5:1 (amber/emerald/sky are -700, not -600).
+     */
     labelClass: string;
     /** Tailwind class for the drop area behind the candidates. */
     areaClass: string;
     borderClass: string;
-    /** `labelClass` as a literal colour: the canvas renderer has no CSS. */
+    /**
+     * The exported image's label colour (the canvas renderer has no CSS). It
+     * keeps the original -600 palette, where the text is large and bold.
+     */
     color: string;
 }
 
@@ -31,21 +37,21 @@ export const TIERS: Record<TierKey, Tier> = {
     },
     A: {
         arabic: 'جيد جدًا',
-        labelClass: 'bg-amber-600',
+        labelClass: 'bg-amber-700',
         areaClass: 'bg-amber-50',
         borderClass: 'border-amber-200',
         color: '#d97706',
     },
     B: {
         arabic: 'جيد',
-        labelClass: 'bg-emerald-600',
+        labelClass: 'bg-emerald-700',
         areaClass: 'bg-emerald-50',
         borderClass: 'border-emerald-200',
         color: '#059669',
     },
     C: {
         arabic: 'مقبول',
-        labelClass: 'bg-sky-600',
+        labelClass: 'bg-sky-700',
         areaClass: 'bg-sky-50',
         borderClass: 'border-sky-200',
         color: '#0284c7',

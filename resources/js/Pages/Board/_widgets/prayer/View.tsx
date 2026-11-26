@@ -8,6 +8,7 @@ import type { WidgetProps } from '../../_lib/types';
 import { configCity, prayerWidget, type PrayerConfig } from './index';
 import { useLocationPreference, resolvePrayerParams } from '@/Domain/location/preference';
 import { nextPrayer } from '@/Domain/prayer/nextPrayer';
+import { prayerTimeZone } from '@/Domain/prayer/times';
 import { readStoredMethod } from '@/Domain/settings/prefs';
 
 function countdown(to: Date, now: Date): string {
@@ -40,7 +41,9 @@ export default function PrayerView({ config }: WidgetProps<PrayerConfig>) {
   const timings: Record<string, string> | undefined = query.data?.timings;
   // A tile this small says "today's prayers are over" instead of showing
   // tomorrow's Fajr: rollover off, the one named difference from the pages.
-  const next = timings ? nextPrayer(timings, now, { rollover: false }) : null;
+  // Timings are wall-clock times at the location, so place them in its zone.
+  const timeZone = prayerTimeZone({ ...location, city: governorate }, query.data?.timezone);
+  const next = timings ? nextPrayer(timings, now, { rollover: false, timeZone }) : null;
   const hijri = query.data?.hijri;
 
   return (

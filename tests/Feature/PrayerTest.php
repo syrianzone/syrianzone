@@ -40,6 +40,7 @@ function prayerPayload(string $fajr = '04:00', string $hijriDay = '6'): array {
           'year' => '1448',
         ],
       ],
+      'meta' => ['timezone' => 'Asia/Damascus'],
     ],
   ];
 }
@@ -262,4 +263,22 @@ test('account settings accept every method id the prayer table defines', functio
   $this->actingAs($user)
     ->postJson('/api/user/settings', ['settings' => ['muslimMethod' => 99]])
     ->assertStatus(422);
+});
+
+test('passes the location time zone through', function () {
+  Http::fake(['*' => Http::response(prayerPayload(), 200)]);
+
+  $this->getJson('/api/prayer-times?governorate=aleppo')
+    ->assertOk()
+    ->assertJsonPath('timezone', 'Asia/Damascus');
+});
+
+test('drops an unknown upstream time zone', function () {
+  $payload = prayerPayload();
+  $payload['data']['meta']['timezone'] = 'Not/AZone<script>';
+  Http::fake(['*' => Http::response($payload, 200)]);
+
+  $this->getJson('/api/prayer-times?governorate=aleppo')
+    ->assertOk()
+    ->assertJsonPath('timezone', null);
 });

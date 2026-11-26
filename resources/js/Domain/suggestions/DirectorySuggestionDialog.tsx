@@ -170,6 +170,13 @@ export default function DirectorySuggestionDialog({
     const [saving, setSaving] = useState(false);
     const [submittedMessage, setSubmittedMessage] = useState<string | null>(null);
     const doneRef = useRef<HTMLDivElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
+    // Bumped only when a submit fails, so focus moves after the errors render.
+    const [failedSubmit, setFailedSubmit] = useState(0);
+    // Picking or clearing a target unmounts the focused control: say where focus goes next.
+    const pickerFocusRef = useRef<'change' | 'search' | null>(null);
+    const changeTargetRef = useRef<HTMLButtonElement>(null);
+    const targetSearchRef = useRef<HTMLInputElement>(null);
 
     const resetFields = (nextKind: SuggestionKind, nextTargetId: string) => {
         setKind(nextKind);
@@ -203,6 +210,20 @@ export default function DirectorySuggestionDialog({
             doneRef.current?.focus();
         }
     }, [submittedMessage]);
+
+    useEffect(() => {
+        const next = pickerFocusRef.current;
+        if (!next) return;
+        pickerFocusRef.current = null;
+        (next === 'change' ? changeTargetRef.current : targetSearchRef.current)?.focus();
+    }, [selectedTargetId]);
+
+    // After a failed submit, land on the first invalid control instead of
+    // leaving focus on the submit button.
+    useEffect(() => {
+        if (!failedSubmit) return;
+        formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    }, [failedSubmit]);
 
     const filteredTargets = useMemo(() => {
         if (!targets.length) return [];
@@ -274,6 +295,7 @@ export default function DirectorySuggestionDialog({
             setSubmittedMessage(res.message);
         } catch (err) {
             setErrors(apiFieldErrors(err));
+            setFailedSubmit((n) => n + 1);
             notify.error(apiErrorMessage(err, 'تعذّر إرسال الاقتراح، يرجى التحقق من الحقول.'));
         } finally {
             setSaving(false);
@@ -348,7 +370,7 @@ export default function DirectorySuggestionDialog({
                         </div>
                     </div>
                 ) : (
-                    <form onSubmit={submit} className="space-y-4" noValidate>
+                    <form ref={formRef} onSubmit={submit} className="space-y-4" noValidate>
                         {/* Mode Toggle (hidden when opened for a specific item) */}
                         {fixedTarget ? (
                             <div className="rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2.5 text-sm">
@@ -425,7 +447,11 @@ export default function DirectorySuggestionDialog({
                                             size="icon"
                                             className="h-7 w-7 shrink-0"
                                             aria-label="تغيير العنصر المحدد"
-                                            onClick={() => setSelectedTargetId('')}
+                                            ref={changeTargetRef}
+                                            onClick={() => {
+                                                pickerFocusRef.current = 'search';
+                                                setSelectedTargetId('');
+                                            }}
                                         >
                                             <X className="h-4 w-4" aria-hidden="true" />
                                         </Button>
@@ -439,10 +465,12 @@ export default function DirectorySuggestionDialog({
                                             />
                                             <Input
                                                 id="suggestion-target-search"
+                                                ref={targetSearchRef}
                                                 value={targetQuery}
                                                 onChange={(e) => setTargetQuery(e.target.value)}
                                                 placeholder={copy.targetSearchPlaceholder}
                                                 className="bg-background ps-9"
+                                                {...fieldA11y('suggestion-target-error', errors.target_id)}
                                             />
                                         </div>
                                         <div className="max-h-36 overflow-y-auto rounded-lg border border-border/70 bg-background">
@@ -456,6 +484,7 @@ export default function DirectorySuggestionDialog({
                                                         key={item.id}
                                                         type="button"
                                                         onClick={() => {
+                                                            pickerFocusRef.current = 'change';
                                                             setSelectedTargetId(item.id);
                                                             setTargetQuery('');
                                                         }}

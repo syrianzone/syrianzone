@@ -37,6 +37,7 @@ import type { StudioDraftPayload } from '../_types/admin'
 import { transitApi } from '../_lib/api'
 import { ROUTE_PALETTE, TRANSIT_MAP_COLORS, getRouteColor, buildColorMatch } from '../_lib/mapColors'
 import { BottomSheet } from '@/Components/BottomSheet'
+import { useIsMobile } from '@/Lib/useIsMobile'
 import {
   Accordion,
   AccordionItem,
@@ -48,6 +49,7 @@ import { Input } from '@/Components/ui/input'
 import { Textarea } from '@/Components/ui/textarea'
 import { Badge } from '@/Components/ui/badge'
 import { notify } from '@/Lib/notify'
+import { confirmDialog } from '@/Lib/confirm'
 import {
   Select,
   SelectContent,
@@ -246,6 +248,13 @@ function TransitStudioPageContent() {
   const [submitting,         setSubmitting]         = useState(false)
   const [accordionValue,     setAccordionValue]     = useState<string>('line')
   const [lastSubmittedIsAnon, setLastSubmittedIsAnon] = useState(false)
+  // One copy of the controls: two copies duplicated every id (stop-input-N,
+  // label targets) and a lookup could land on the hidden one. The server
+  // renders the side panel; the sheet replaces it below md after mount.
+  const isMobile = useIsMobile('md')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const showSheet = mounted && isMobile
 
   const { data: refData } = useMapData(cityId || undefined)
   const activeCities = cities.filter(c => c.status === 'active')
@@ -413,7 +422,8 @@ function TransitStudioPageContent() {
     setTimeout(() => {
       const inputEl = document.getElementById(`stop-input-${stopId}`)
       if (inputEl) {
-        inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        inputEl.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
         inputEl.focus()
       }
     }, 150)
@@ -421,7 +431,9 @@ function TransitStudioPageContent() {
 
   // Restore pending session after login redirect
   useEffect(() => {
-    const pending = localStorage.getItem('transit:studio:pending')
+    // storage can throw (blocked site data, private mode): treat that as "nothing pending"
+    let pending: string | null = null
+    try { pending = localStorage.getItem('transit:studio:pending') } catch { /* unavailable */ }
     if (pending) {
       try {
         const s = JSON.parse(pending)
@@ -446,7 +458,7 @@ function TransitStudioPageContent() {
         useStudioStore.setState(patch)
         notify.success('تمت استعادة مسارك لتقديمه تحت حسابك المسجل')
       } catch { /* */ }
-      localStorage.removeItem('transit:studio:pending')
+      try { localStorage.removeItem('transit:studio:pending') } catch { /* unavailable */ }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -901,7 +913,16 @@ function TransitStudioPageContent() {
     notify.info('انقر على الخريطة لبدء رسم المسار')
   }
 
-  const handleRedraw = () => {
+  const handleRedraw = async () => {
+    if (drawnLine && drawnLine.length > 0) {
+      const ok = await confirmDialog({
+        title: 'إعادة رسم المسار؟',
+        description: 'سيُحذف الخط المرسوم حالياً وتبدأ الرسم من جديد.',
+        confirmText: 'إعادة الرسم',
+        destructive: true,
+      })
+      if (!ok) return
+    }
     setDrawnLine(null)
     setConflictWarning(false)
     setAccordionValue('line')
@@ -941,11 +962,28 @@ function TransitStudioPageContent() {
     setActiveStopPixel(null)
   }
 
-  const handleReset = () => {
+  const resetStudio = () => {
     setMode('idle')
     reset()
     setAccordionValue('line')
     notify.info('تمت إعادة ضبط الاستوديو')
+  }
+
+  // The draft-panel reset discards unsent work, so it asks first; the success
+  // panel's "new route" follows a submission and resets straight away.
+  const handleReset = async () => {
+    const hasWork = (drawnLine?.length ?? 0) > 0 || stops.length > 0 || nameAr.trim() !== ''
+      || nameEn.trim() !== '' || String(price ?? '').trim() !== '' || notes.trim() !== ''
+    if (hasWork) {
+      const ok = await confirmDialog({
+        title: 'إعادة ضبط المسودة؟',
+        description: 'سيُحذف الخط والمحطات والتفاصيل التي أدخلتها.',
+        confirmText: 'إعادة الضبط',
+        destructive: true,
+      })
+      if (!ok) return
+    }
+    resetStudio()
   }
 
   // Supports anonymous and authenticated submission.
@@ -957,6 +995,8 @@ function TransitStudioPageContent() {
     if (!nameAr.trim()) {
       notify.error('اسم المسار بالعربية مطلوب')
       setAccordionValue('details')
+      // after the accordion section has opened and rendered the field
+      setTimeout(() => document.getElementById('studio-name-ar')?.focus(), 150)
       return
     }
     if (!drawnLine || drawnLine.length < 2) {
@@ -967,7 +1007,13 @@ function TransitStudioPageContent() {
 
     if (requireLogin && !user) {
       const stateToSave = { cityId, drawnLine, stops, nameAr, nameEn, price, notes, editingRouteId, editingDraftId }
-      localStorage.setItem('transit:studio:pending', JSON.stringify(stateToSave))
+      try {
+        localStorage.setItem('transit:studio:pending', JSON.stringify(stateToSave))
+      } catch {
+        // without storage the drawing cannot survive the login redirect: stay here
+        notify.error('تعذر حفظ المسار مؤقتاً قبل تسجيل الدخول، تحقق من إعدادات المتصفح')
+        return
+      }
       notify.info('يرجى تسجيل الدخول بحساب Google لتُنسب المساهمة لك')
       window.location.href = '/auth/google?redirect=' + encodeURIComponent(window.location.pathname + window.location.search)
       return
@@ -1062,7 +1108,7 @@ function TransitStudioPageContent() {
           isEditMode={isEditMode}
           isPublishedRouteEdit={!!editingRouteId}
           isAnonymous={lastSubmittedIsAnon}
-          onReset={handleReset}
+          onReset={resetStudio}
           onEdit={() => { setSubmittedDraftId(null); setAccordionValue('details') }}
           onExit={() => router.visit(cityId ? `/transit/city/${cityId}` : '/transit')}
         />
@@ -1134,7 +1180,7 @@ function TransitStudioPageContent() {
                   {conflictWarning && !conflictDismissed && (
                     <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[11px] text-amber-700 dark:text-amber-300 flex items-start justify-between gap-2">
                       <span>⚠ يوجد مسار قريب بالفعل. تأكد أن مسارك يختلف أو يكمل الخطوط الحالية.</span>
-                      <button type="button" onClick={() => setConflictDismissed(true)} className="text-amber-500 hover:text-amber-700">✕</button>
+                      <button type="button" onClick={() => setConflictDismissed(true)} aria-label="إخفاء التحذير" className="text-amber-500 hover:text-amber-700"><span aria-hidden="true">✕</span></button>
                     </div>
                   )}
 
@@ -1165,9 +1211,9 @@ function TransitStudioPageContent() {
                       </div>
 
                       <p className="text-[11px] text-muted-foreground leading-snug">
-                        • **التعديل**: اسحب أي نقطة حمراء على الخريطة مباشرة (تتحرك المحطات تلقائياً متبعةً الخط).<br />
-                        • **إنهاء التعديل**: انقر مرتين أو اضغط مرتين (Double Tap) لإنهاء التعديل.<br />
-                        • **الحذف**: انقر يميناً على أي نقطة للحذف.
+                        • <strong>التعديل</strong>: اسحب أي نقطة حمراء على الخريطة مباشرة (تتحرك المحطات تلقائياً متبعةً الخط).<br />
+                        • <strong>إنهاء التعديل</strong>: انقر مرتين أو اضغط مرتين (Double Tap) لإنهاء التعديل.<br />
+                        • <strong>الحذف</strong>: انقر يميناً على أي نقطة للحذف.
                       </p>
 
                       <Button type="button" variant="ghost" size="sm" onClick={handleRedraw} className="w-full h-7 text-xs text-muted-foreground hover:text-destructive">
@@ -1241,6 +1287,7 @@ function TransitStudioPageContent() {
                             </span>
                             <Input
                               id={`stop-input-${stop.id}`}
+                              aria-label={`اسم المحطة ${i + 1}`}
                               type="text"
                               value={stop.nameAr}
                               onFocus={() => setActiveStopId(stop.id)}
@@ -1296,6 +1343,7 @@ function TransitStudioPageContent() {
                           key={idx}
                           type="button"
                           onClick={() => setColorIndex(idx)}
+                          aria-pressed={isSelected}
                           className={`relative flex h-8 w-full items-center justify-center rounded-lg border-2 transition-all ${
                             isSelected
                               ? 'scale-105 border-primary ring-2 ring-primary/30 shadow-md'
@@ -1332,10 +1380,11 @@ function TransitStudioPageContent() {
               <AccordionContent>
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                      اسم المسار بالعربية <span className="text-destructive">*</span>
+                    <label htmlFor="studio-name-ar" className="text-xs font-semibold text-foreground flex items-center gap-1">
+                      اسم المسار بالعربية <span className="text-destructive" aria-hidden="true">*</span>
                     </label>
-                    <Input aria-label="الاسم بالعربية"
+                    <Input
+                      id="studio-name-ar"
                       type="text"
                       required
                       value={nameAr}
@@ -1346,10 +1395,11 @@ function TransitStudioPageContent() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label htmlFor="studio-name-en" className="text-xs font-medium text-muted-foreground">
                       الاسم بالإنجليزية (اختياري)
                     </label>
-                    <Input aria-label="e.g. Bab Touma — Baramkeh"
+                    <Input
+                      id="studio-name-en"
                       type="text"
                       value={nameEn}
                       onChange={(e) => setMeta({ nameEn: e.target.value })}
@@ -1360,11 +1410,13 @@ function TransitStudioPageContent() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label htmlFor="studio-price" className="text-xs font-medium text-muted-foreground">
                       التعرفة / سعر التذكرة (ل.س - اختياري)
                     </label>
-                    <Input aria-label="السعر"
+                    <Input
+                      id="studio-price"
                       type="number"
+                      inputMode="numeric"
                       min="0"
                       value={price}
                       onChange={(e) => setMeta({ price: e.target.value })}
@@ -1375,10 +1427,11 @@ function TransitStudioPageContent() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label htmlFor="studio-notes" className="text-xs font-medium text-muted-foreground">
                       ملاحظات إضافية (اختياري)
                     </label>
-                    <Textarea aria-label="ملاحظات الخط"
+                    <Textarea
+                      id="studio-notes"
                       value={notes}
                       onChange={(e) => setMeta({ notes: e.target.value })}
                       placeholder="محطات بارزة، جداول التشغيل، تفاصيل إضافية..."
@@ -1433,7 +1486,8 @@ function TransitStudioPageContent() {
                       <Button
                         type="button"
                         onClick={() => handleSubmit(false)}
-                        disabled={submitting || !nameAr.trim() || !drawnLine}
+                        // only busy-disabled: a missing field is explained on click, not by a dead button
+                        disabled={submitting}
                         variant="outline"
                         className="w-full h-9 text-xs font-semibold gap-2 border-primary/40 hover:bg-primary/5"
                       >
@@ -1448,7 +1502,8 @@ function TransitStudioPageContent() {
                       <Button
                         type="button"
                         onClick={() => handleSubmit(true)}
-                        disabled={submitting || !nameAr.trim() || !drawnLine}
+                        // only busy-disabled: a missing field is explained on click, not by a dead button
+                        disabled={submitting}
                         className="w-full h-9 text-xs font-bold gap-2"
                       >
                         <Sparkles className="h-4 w-4" />
@@ -1466,7 +1521,8 @@ function TransitStudioPageContent() {
                       <Button
                         type="button"
                         onClick={() => handleSubmit(false)}
-                        disabled={submitting || !nameAr.trim() || !drawnLine}
+                        // only busy-disabled: a missing field is explained on click, not by a dead button
+                        disabled={submitting}
                         className="w-full h-9 text-xs font-bold gap-2"
                       >
                         {submitting ? (
@@ -1498,25 +1554,27 @@ function TransitStudioPageContent() {
   )
 
   return (
-    <div dir="rtl" className="studio-root min-h-screen bg-background text-foreground font-sans">
+    <div dir="rtl" className="studio-root h-full bg-background text-foreground font-sans">
       
       <h1 className="sr-only">استوديو ترانزيت</h1>
 
-      <div className="studio-body relative flex h-screen overflow-hidden">
-        <aside className="hidden md:flex studio-sidebar w-80 md:w-96 border-e border-border bg-card shrink-0 flex-col z-20">
-          {sidebarControlsContent}
-        </aside>
-
-        <div className="block md:hidden">
-          <BottomSheet
-            storageKey="transit:studio:sheet-height"
-            initialHeight={340}
-            hideBreakpoint="md"
-            className="border-t border-border shadow-2xl z-30"
-          >
+      <div className="studio-body relative flex h-full overflow-hidden">
+        {showSheet ? (
+          <div className="block md:hidden">
+            <BottomSheet
+              storageKey="transit:studio:sheet-height"
+              initialHeight={340}
+              hideBreakpoint="md"
+              className="border-t border-border shadow-2xl z-30"
+            >
+              {sidebarControlsContent}
+            </BottomSheet>
+          </div>
+        ) : (
+          <aside className="hidden md:flex studio-sidebar w-80 md:w-96 border-e border-border bg-card shrink-0 flex-col z-20">
             {sidebarControlsContent}
-          </BottomSheet>
-        </div>
+          </aside>
+        )}
 
         <div className="studio-map-wrapper flex-1 relative h-full">
           {!mapReady && (

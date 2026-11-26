@@ -37,20 +37,23 @@ function MemberCard({ member, root = false }: { member: Member; root?: boolean }
         <div
             className={cn(
                 'relative flex items-center gap-3 rounded-xl border bg-card p-3',
-                detained ? 'border-red-500/60 ring-1 ring-red-500/40' : 'border-border',
+                detained ? 'border-destructive/60 ring-1 ring-destructive/40' : 'border-border',
                 root && 'shadow-sm'
             )}
             title={detained ? 'مدرج في قائمة الموقوفين' : undefined}
         >
             {detained && (
-                <span className="absolute -top-2.5 -left-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white shadow ring-2 ring-background">
+                <span
+                    aria-hidden="true"
+                    className="absolute -top-2.5 -end-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow ring-2 ring-background"
+                >
                     <X className="h-4 w-4" strokeWidth={3} />
                 </span>
             )}
             {member.photo ? (
                 <img
                     src={member.photo}
-                    alt={member.name}
+                    alt=""
                     loading="lazy"
                     className={cn('shrink-0 rounded-xl object-cover border border-border bg-muted', root ? 'h-16 w-16' : 'h-12 w-12')}
                 />
@@ -61,11 +64,13 @@ function MemberCard({ member, root = false }: { member: Member; root?: boolean }
                         root ? 'h-16 w-16' : 'h-12 w-12'
                     )}
                 >
-                    <User className={root ? 'h-7 w-7' : 'h-6 w-6'} />
+                    <User className={root ? 'h-7 w-7' : 'h-6 w-6'} aria-hidden="true" />
                 </div>
             )}
             <div className="min-w-0">
-                <div className={cn('font-bold text-foreground leading-snug', root && 'text-lg')}>{member.name}</div>
+                <div className={cn('font-bold text-foreground leading-snug', root && 'text-lg')}>{member.name}
+                    {detained && <span className="sr-only"> (موقوف)</span>}
+                </div>
                 {member.role && (
                     <div className={cn('text-xs leading-snug text-muted-foreground', root && 'text-primary')}>{member.role}</div>
                 )}
@@ -94,7 +99,7 @@ export default function JusticePage() {
                     <h2 id="tree-heading" className="text-2xl md:text-3xl font-bold text-foreground text-center mb-6">القائمة السوداء</h2>
                     {anyDetained && (
                         <p className="text-xs text-muted-foreground text-center">
-                            الإشارة <span className="text-red-500 font-semibold">✕</span> تعني أن الاسم مدرج ضمن قائمة الموقوفين.
+                            الإشارة <span className="text-destructive font-semibold">✕</span> تعني أن الاسم مدرج ضمن قائمة الموقوفين.
                         </p>
                     )}
 
@@ -153,13 +158,13 @@ export default function JusticePage() {
                                     {person.photo ? (
                                         <img
                                             src={person.photo}
-                                            alt={person.name}
+                                            alt=""
                                             loading="lazy"
                                             className="h-20 w-20 shrink-0 rounded-xl object-cover border border-border bg-muted"
                                         />
                                     ) : (
                                         <div className="h-20 w-20 shrink-0 rounded-xl border border-border bg-muted flex items-center justify-center text-muted-foreground">
-                                            <User className="h-8 w-8" />
+                                            <User className="h-8 w-8" aria-hidden="true" />
                                         </div>
                                     )}
                                     <div className="min-w-0">

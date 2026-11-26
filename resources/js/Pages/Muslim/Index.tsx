@@ -1,6 +1,6 @@
 import { listBookmarks } from '@/Domain/quran/bookmarksApi';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useEffect, useState } from 'react';
+import { Link } from '@inertiajs/react';
 import { Bookmark, ChevronLeft, MoonStar } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { formatDuration } from '../../Lib/format';
@@ -8,6 +8,7 @@ import { SURAH_NAMES_AR } from '../../Domain/quran/quran';
 import { hijriDateLabel } from '../../Domain/prayer/hijri';
 import { nextPrayer } from '../../Domain/prayer/nextPrayer';
 import { usePrayerTimes } from '../../Domain/prayer/times';
+import { useNow } from '../../Domain/prayer/useNow';
 import { useLocationPreference } from '../../Domain/location/preference';
 import { useMuslimPrefs } from '../../Domain/settings/prefs';
 import { TOOLS, toolHref } from '../../Domain/muslim/tools';
@@ -40,20 +41,50 @@ function warmQuranData(): void {
   document.head.appendChild(link);
 }
 
+/**
+ * The hub's prayer line. It owns the one-second tick, so only this link
+ * re-renders every second (not the whole hub), and it pauses in hidden tabs.
+ */
+function NextPrayerLink({ timings, timeZone, hijriLabel }: {
+  timings: Record<string, string> | null;
+  timeZone: string | undefined;
+  hijriLabel: string | null;
+}) {
+  const now = useNow();
+  // The hub lists the five prayers only, but it still rolls over after Isha.
+  const upcoming = now ? nextPrayer(timings, now, { includeSunrise: false, timeZone }) : null;
+
+  return (
+    <Link
+      href={toolHref('prayer')}
+      className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-start no-underline transition-colors hover:bg-primary/10"
+    >
+      <span className="flex min-w-0 items-center gap-2.5">
+        <MoonStar className="h-5 w-5 shrink-0 text-primary" />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-bold">
+            {upcoming ? `صلاة ${upcoming.label}` : 'مواقيت الصلاة'}
+          </span>
+          <span className="block text-[11px] text-muted-foreground">
+            {hijriLabel ? `${hijriLabel} هـ` : '…'}
+          </span>
+        </span>
+      </span>
+      <span dir="ltr" className="shrink-0 font-mono text-lg font-bold tabular-nums text-primary">
+        {upcoming ? formatDuration(upcoming.remainingMs) : '--:--:--'}
+      </span>
+    </Link>
+  );
+}
+
 export default function Index() {
   const { prefs, isLoggedIn } = useMuslimPrefs();
   const location = useLocationPreference();
   const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
-  const [now, setNow] = useState(() => new Date());
   const [lastBookmark, setLastBookmark] = useState<LastBookmark | null>(null);
-  const { timings, hijri } = usePrayerTimes(location, prefs.method, { timeoutMs: null });
+  const { timings, hijri, timeZone } = usePrayerTimes(location, prefs.method, { timeoutMs: null });
   const apiHijri = hijriDateLabel(hijri);
-
-  useEffect(() => {
-    const t = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(t);
-  }, []);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -71,9 +102,6 @@ export default function Index() {
     return () => { live = false; };
   }, [isLoggedIn]);
 
-  // The hub lists the five prayers only, but it still rolls over after Isha.
-  const upcoming = useMemo(() => nextPrayer(timings, now, { includeSunrise: false }), [timings, now]);
-
   const quranWarmProps = {
     onPointerEnter: warmQuranData,
     onFocus: warmQuranData,
@@ -82,14 +110,6 @@ export default function Index() {
 
   return (
     <MainLayout>
-      <Head>
-        
-        
-        
-        
-        <link rel="preload" href="/fonts/quran-hafs.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-      </Head>
-
       <div
         className="min-h-[calc(100svh-var(--sz-navbar-h))] bg-background text-foreground"
         dir="rtl"
@@ -101,32 +121,14 @@ export default function Index() {
             <p className="text-sm text-muted-foreground">أدواتك اليومية في مكان واحد</p>
           </div>
 
-          <Link
-            href={toolHref('prayer')}
-            className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-right no-underline transition-colors hover:bg-primary/10"
-          >
-            <span className="flex min-w-0 items-center gap-2.5">
-              <MoonStar className="h-5 w-5 shrink-0 text-primary" />
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-bold">
-                  {upcoming ? `صلاة ${upcoming.label}` : 'مواقيت الصلاة'}
-                </span>
-                <span className="block text-[11px] text-muted-foreground">
-                  {apiHijri ? `${apiHijri} هـ` : '…'}
-                </span>
-              </span>
-            </span>
-            <span dir="ltr" className="shrink-0 font-mono text-lg font-bold tabular-nums text-primary">
-              {upcoming ? formatDuration(upcoming.remainingMs) : '--:--:--'}
-            </span>
-          </Link>
+          <NextPrayerLink timings={timings} timeZone={timeZone} hijriLabel={apiHijri} />
 
           {lastBookmark && (
             <Link
               href={toolHref('quran')}
               onClick={() => setTargetAyah(`${lastBookmark.surah}:${lastBookmark.ayah}`)}
               {...quranWarmProps}
-              className="mb-4 flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-right no-underline transition-colors hover:border-primary/40"
+              className="mb-4 flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-start no-underline transition-colors hover:border-primary/40"
             >
               <span className="rounded-lg bg-primary/10 p-2 text-primary">
                 <Bookmark className="h-4 w-4" />

@@ -15,6 +15,11 @@ export function TransitSidebar({ pathname }: TransitSidebarProps) {
   const cityId = getCityIdFromPath(pathname)
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
   const prevCityIdRef = useRef(cityId)
+  // The route whose detail was last open: going back to the list returns focus to its card.
+  const lastRouteIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (selectedRouteId) lastRouteIdRef.current = selectedRouteId
+  }, [selectedRouteId])
 
   // The city page carries its own route list; any other transit page has none.
   // The city list is a page prop on every transit page (the server renders it
@@ -47,7 +52,7 @@ export function TransitSidebar({ pathname }: TransitSidebarProps) {
     return <SidebarRouteDetail route={route} city={city} stops={stops} />
   }
 
-  return <SidebarRoutes city={city} cities={cities} routes={routes ?? []} />
+  return <SidebarRoutes city={city} cities={cities} routes={routes ?? []} returnFocusRouteId={lastRouteIdRef.current} />
 }
 
 function getCityIdFromPath(path: string): string | null {

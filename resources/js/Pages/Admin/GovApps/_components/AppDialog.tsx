@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
@@ -31,6 +31,12 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
 
     const [iconFile, setIconFile] = useState<File | null>(null);
     const [iconPreview, setIconPreview] = useState<string | null>(null);
+    // Release the blob behind a local preview once it is replaced or the
+    // dialog unmounts; server URLs are left alone.
+    useEffect(() => () => {
+        if (iconPreview?.startsWith('blob:')) URL.revokeObjectURL(iconPreview);
+    }, [iconPreview]);
+    const iconInputRef = useRef<HTMLInputElement>(null);
 
     const [processing, setProcessing] = useState(false);
 
@@ -177,7 +183,7 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="font-semibold text-xs">أيقونة التطبيق (Logo)</Label>
+                        <Label id="icon_file-label" className="font-semibold text-xs">أيقونة التطبيق (Logo)</Label>
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-2xl overflow-hidden bg-muted border flex items-center justify-center relative flex-shrink-0">
                                 {iconPreview ? (
@@ -187,11 +193,16 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
                                 )}
                             </div>
                             <div className="flex-1">
-                                <Label htmlFor="icon_file" className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-muted transition-colors">
-                                    <Upload className="w-4 h-4" />
-                                    <span>اختر صورة أو أيقونة</span>
-                                </Label>
-                                <Input id="icon_file" type="file" accept="image/*" className="hidden" onChange={handleIconChange} />
+                                <button
+                                    type="button"
+                                    onClick={() => iconInputRef.current?.click()}
+                                    aria-labelledby="icon_file-label icon_file-action"
+                                    className="cursor-pointer inline-flex items-center gap-2 leading-none px-3 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                >
+                                    <Upload className="w-4 h-4" aria-hidden="true" />
+                                    <span id="icon_file-action">اختر صورة أو أيقونة</span>
+                                </button>
+                                <input ref={iconInputRef} type="file" accept="image/*" className="hidden" aria-hidden="true" tabIndex={-1} onChange={handleIconChange} />
                             </div>
                         </div>
                     </div>

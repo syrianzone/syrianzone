@@ -87,6 +87,14 @@ export function gpsAvailable(): boolean {
   return typeof navigator !== 'undefined' && !!navigator.geolocation;
 }
 
+/** The browser refused location permission (as opposed to a timeout or no fix). */
+export class GpsPermissionDeniedError extends Error {
+  constructor() {
+    super('تم رفض إذن الموقع — فعّله من المتصفح أو استخدم التعرف عبر IP');
+    this.name = 'GpsPermissionDeniedError';
+  }
+}
+
 export function resolveGps(): Promise<GeoPoint> {
   return new Promise((resolve, reject) => {
     if (!gpsAvailable()) {
@@ -123,7 +131,7 @@ export function resolveGps(): Promise<GeoPoint> {
     // and first-fix failures instead of dead-ending at "try again".
     attempt({ enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }, (err) => {
       if (err.code === err.PERMISSION_DENIED) {
-        reject(new Error('تم رفض إذن الموقع — فعّله من المتصفح أو استخدم التعرف عبر IP'));
+        reject(new GpsPermissionDeniedError());
         return;
       }
       if (err.code !== err.TIMEOUT && err.code !== err.POSITION_UNAVAILABLE) {
@@ -132,7 +140,7 @@ export function resolveGps(): Promise<GeoPoint> {
       }
       attempt({ enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }, (err2) => {
         if (err2.code === err2.PERMISSION_DENIED) {
-          reject(new Error('تم رفض إذن الموقع — فعّله من المتصفح أو استخدم التعرف عبر IP'));
+          reject(new GpsPermissionDeniedError());
         } else if (err2.code === err2.TIMEOUT) {
           reject(new Error('تعذر التقاط إشارة كافية — جرّب قرب نافذة أو فعّل الـ WiFi ثم أعد المحاولة'));
         } else {

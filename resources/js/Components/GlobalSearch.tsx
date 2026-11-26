@@ -108,6 +108,71 @@ export const FILTER_TABS: Array<{ id: FilterScope; label: string }> = [
     { id: 'directory', label: 'الأدلة والمعابر' },
 ];
 
+/**
+ * The scope filter row shared by the palette and the inline searches. Each pill
+ * is a toggle (`aria-pressed`), so the active scope is announced and not only
+ * shown by its fill.
+ */
+export function ScopePills({
+    scope,
+    onScopeChange,
+    className,
+}: {
+    scope: FilterScope;
+    onScopeChange: (scope: FilterScope) => void;
+    className: string;
+}) {
+    return (
+        <div role="group" aria-label="نطاق البحث" className={className}>
+            {FILTER_TABS.map((tab) => {
+                const active = scope === tab.id;
+                return (
+                    <button
+                        key={tab.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => onScopeChange(tab.id)}
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors ${
+                            active
+                                ? 'bg-primary text-primary-foreground shadow-2xs'
+                                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                    >
+                        {tab.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+/**
+ * A visually hidden live region for a search field: the results change in
+ * place as the visitor types, so a screen reader is told how many there are
+ * (or that none match) without leaving the field. Silent while nothing is
+ * being searched for.
+ */
+export function SearchStatus({
+    active,
+    loading,
+    count,
+}: {
+    active: boolean;
+    loading: boolean;
+    count: number;
+}) {
+    let message = '';
+    if (active) {
+        if (loading) message = 'جارٍ البحث…';
+        else message = count === 0 ? 'لا توجد نتائج' : `عدد النتائج: ${count}`;
+    }
+    return (
+        <p role="status" className="sr-only">
+            {message}
+        </p>
+    );
+}
+
 export function useGlobalSearchData(query: string, scope: FilterScope, enabled = true) {
     const [remote, setRemote] = useState<RemoteSearchResults>(EMPTY_REMOTE);
     const [loadingRemote, setLoadingRemote] = useState(false);
@@ -296,10 +361,79 @@ export function DesktopSearchTrigger({ className = '' }: { className?: string })
     );
 }
 
+/** Whether SearchResultsContent renders cmdk items (the palette) or plain rows. */
+const CmdkModeContext = React.createContext(true);
+
+const ROW_CLASS =
+    'w-full text-right outline-none hover:bg-accent/60 active:bg-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring';
+
+function GroupWrapper({ heading, children }: { heading: string; children: React.ReactNode }) {
+    if (React.useContext(CmdkModeContext)) {
+        return <CommandGroup heading={heading}>{children}</CommandGroup>;
+    }
+    return (
+        <div className="py-1.5 text-foreground">
+            <p className="px-1 pb-1.5 text-xs font-bold text-muted-foreground/80">{heading}</p>
+            <div className="flex flex-col gap-1">{children}</div>
+        </div>
+    );
+}
+
+/**
+ * One result row. In the palette it is a cmdk item (arrow keys, Enter); in the
+ * inline mounts a row with `href` is a real link, so it can be opened in a new
+ * tab, prefetched and announced as a link, and only an action without a URL
+ * stays a button.
+ */
+function ItemRow({
+    value,
+    onSelect,
+    href,
+    external = false,
+    onNavigate,
+    className,
+    children,
+}: {
+    value: string;
+    onSelect: () => void;
+    href?: string;
+    external?: boolean;
+    onNavigate?: () => void;
+    className?: string;
+    children: React.ReactNode;
+}) {
+    if (React.useContext(CmdkModeContext)) {
+        return (
+            <CommandItem value={value} onSelect={onSelect} className={className}>
+                {children}
+            </CommandItem>
+        );
+    }
+    if (href && external) {
+        return (
+            <a href={href} target="_blank" rel="noopener noreferrer" onClick={onNavigate} className={cn(ROW_CLASS, className)}>
+                {children}
+            </a>
+        );
+    }
+    if (href) {
+        return (
+            <Link href={href} onClick={onNavigate} className={cn(ROW_CLASS, className)}>
+                {children}
+            </Link>
+        );
+    }
+    return (
+        <button type="button" onClick={onSelect} className={cn(ROW_CLASS, className)}>
+            {children}
+        </button>
+    );
+}
+
 /**
  * Shared rendering of all searchable groups (Tools TileGrid + Cities + Muslim/Surahs + Games + Crossings + Live API results).
  * - When `useCmdkPrimitives` is true (Desktop Ctrl+K modal), items render as `<CommandGroup>` + `<CommandItem>` for arrow-key navigation.
- * - When `useCmdkPrimitives` is false (Mobile Menu Sheet / Homepage inline search), items render as plain native `<section>` + `<button>` elements so cmdk never calls `scrollIntoView()` and never jumps the viewport.
+ * - When `useCmdkPrimitives` is false (Mobile Menu Sheet / Homepage inline search), items render as plain links (or a `<button>` for an action without a URL) so cmdk never calls `scrollIntoView()` and never jumps the viewport.
  */
 export function SearchResultsContent({
     data,
@@ -412,60 +546,16 @@ export function SearchResultsContent({
         );
     };
 
-    const GroupWrapper = ({
-        heading,
-        children,
-    }: {
-        heading: string;
-        children: React.ReactNode;
-    }) => {
-        if (useCmdkPrimitives) {
-            return <CommandGroup heading={heading}>{children}</CommandGroup>;
-        }
-        return (
-            <div className="py-1.5 text-foreground">
-                <p className="px-1 pb-1.5 text-xs font-bold text-muted-foreground/80">
-                    {heading}
-                </p>
-                <div className="flex flex-col gap-1">{children}</div>
-            </div>
-        );
-    };
-
-    const ItemRow = ({
-        value,
-        onSelect,
-        className,
-        children,
-    }: {
-        value: string;
-        onSelect: () => void;
-        className?: string;
-        children: React.ReactNode;
-    }) => {
-        if (useCmdkPrimitives) {
-            return (
-                <CommandItem value={value} onSelect={onSelect} className={className}>
-                    {children}
-                </CommandItem>
-            );
-        }
-        return (
-            <button
-                type="button"
-                onClick={onSelect}
-                className={cn(
-                    'w-full text-right outline-none hover:bg-accent/60 active:bg-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring',
-                    className,
-                )}
-            >
-                {children}
-            </button>
-        );
-    };
+    /** An ItemRow that opens `href`: a cmdk item navigates on select, a plain row is a real link. */
+    const linkTo = (href: string, external = false) => ({
+        href,
+        external,
+        onSelect: () => navigateTo(href, external),
+        onNavigate: onClose,
+    });
 
     return (
-        <>
+        <CmdkModeContext.Provider value={useCmdkPrimitives}>
             {totalVisibleResults === 0 && !loadingRemote && (
                 useCmdkPrimitives ? (
                     <CommandEmpty className="py-10 text-center">
@@ -553,9 +643,9 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`route-${route.id}`}
                             value={`route-${route.id}-${route.nameAr}`}
-                            onSelect={() =>
-                                navigateTo(`/transit/city/${route.cityId}?route=${encodeURIComponent(route.id)}`)
-                            }
+                            {...linkTo(
+                                `/transit/city/${encodeURIComponent(route.cityId)}?route=${encodeURIComponent(route.id)}`,
+                            )}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -588,7 +678,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`city-${city.id}`}
                                 value={`city-${city.id}-${city.nameAr}`}
-                                onSelect={() => navigateTo(`/transit/city/${city.id}`)}
+                                {...linkTo(`/transit/city/${encodeURIComponent(city.id)}`)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -625,7 +715,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`muslim-${tool.slug}`}
                                 value={`muslim-${tool.slug}-${tool.title}`}
-                                onSelect={() => navigateTo(toolHref(tool.slug))}
+                                {...linkTo(toolHref(tool.slug))}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -683,7 +773,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`game-${game.slug}`}
                                 value={`game-${game.slug}-${game.title}`}
-                                onSelect={() => navigateTo(gameEntryHref(game), game.external)}
+                                {...linkTo(gameEntryHref(game), game.external)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -712,7 +802,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`crossing-${crossing.n}`}
                                 value={`crossing-${crossing.n}-${crossing.name}`}
-                                onSelect={() => navigateTo(`/crossings?c=${crossing.n}`)}
+                                {...linkTo(`/crossings?c=${encodeURIComponent(crossing.n)}`)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -751,7 +841,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`place-${place.id}`}
                             value={`place-${place.id}-${place.name}`}
-                            onSelect={() => navigateTo(`/mishwar?place=${place.id}`)}
+                            {...linkTo(`/mishwar?place=${encodeURIComponent(place.id)}`)}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -777,9 +867,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`phone-${entry.id}`}
                             value={`phone-${entry.id}-${entry.nameAr}-${entry.number}`}
-                            onSelect={() =>
-                                navigateTo(`/phonebook?q=${encodeURIComponent(entry.nameAr)}`)
-                            }
+                            {...linkTo(`/phonebook?q=${encodeURIComponent(entry.nameAr)}`)}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -818,7 +906,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`govtcv-${person.id}`}
                                 value={`govtcv-${person.id}-${person.nameAr}-${person.roleTitleAr ?? ''}`}
-                                onSelect={() => navigateTo(`/govtcvs/${encodeURIComponent(person.slug)}`)}
+                                {...linkTo(`/govtcvs/${encodeURIComponent(person.slug)}`)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -860,9 +948,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`official-${official.id}`}
                             value={`official-${official.id}-${official.nameAr}`}
-                            onSelect={() =>
-                                navigateTo(`/syofficial?q=${encodeURIComponent(official.nameAr)}`)
-                            }
+                            {...linkTo(`/syofficial?q=${encodeURIComponent(official.nameAr)}`)}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -888,7 +974,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`govapp-${app.id}`}
                             value={`govapp-${app.id}-${app.nameAr}`}
-                            onSelect={() => navigateTo('/govapps')}
+                            {...linkTo('/govapps')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -906,7 +992,7 @@ export function SearchResultsContent({
                     ))}
                 </GroupWrapper>
             )}
-        </>
+        </CmdkModeContext.Provider>
     );
 }
 
@@ -948,13 +1034,15 @@ export function MobileMenuSearchSection({
                             id="sz-mobile-menu-search"
                             ref={inputRef}
                             type="text"
+                            inputMode="search"
+                            enterKeyHint="search"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="اكتب للبحث الفوري في المنصة..."
                             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                         />
                         {data.loadingRemote && (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                            <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
                         )}
                         {query && (
                             <button
@@ -964,7 +1052,7 @@ export function MobileMenuSearchSection({
                                     inputRef.current?.focus();
                                 }}
                                 aria-label="مسح البحث"
-                                className="rounded-lg p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                className="-m-0.5 rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -973,29 +1061,20 @@ export function MobileMenuSearchSection({
                 </div>
 
                 {/* Category Filter Pills — always visible */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                    {FILTER_TABS.map((tab) => {
-                        const active = scope === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setScope(tab.id)}
-                                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors ${
-                                    active
-                                        ? 'bg-primary text-primary-foreground shadow-2xs'
-                                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        );
-                    })}
-                </div>
+                <ScopePills
+                    scope={scope}
+                    onScopeChange={setScope}
+                    className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar"
+                />
             </div>
 
             {/* Always-on Searchable Content (Sections Grid + Cities + Muslim + Games + Crossings + Live Results) */}
-            <div className="flex flex-col gap-2">
+            <SearchStatus
+                active={data.trimmedQuery.length > 0}
+                loading={data.loadingRemote}
+                count={data.totalVisibleResults}
+            />
+            <div className="flex flex-col gap-2" aria-busy={data.loadingRemote}>
                 <SearchResultsContent
                     data={data}
                     pathname={pathname}
@@ -1032,7 +1111,8 @@ export function HomeInlineSearchSection({
             const input = inputRef.current;
             if (!input) return;
             input.focus();
-            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            input.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
         });
         return () => registerInlineSearch(null);
     }, [registerInlineSearch]);
@@ -1076,6 +1156,8 @@ export function HomeInlineSearchSection({
                         id="sz-home-inline-search"
                         ref={inputRef}
                         type="text"
+                        inputMode="search"
+                        enterKeyHint="search"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={(e) => {
@@ -1089,7 +1171,7 @@ export function HomeInlineSearchSection({
                         className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
                     />
                     {data.loadingRemote && (
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
                     )}
                     {query ? (
                         <button
@@ -1114,30 +1196,24 @@ export function HomeInlineSearchSection({
                 </div>
 
                 {/* Category Filter Pills */}
-                <div className="flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto pt-0.5 pb-1 no-scrollbar">
-                    {FILTER_TABS.map((tab) => {
-                        const active = scope === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setScope(tab.id)}
-                                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors ${
-                                    active
-                                        ? 'bg-primary text-primary-foreground shadow-2xs'
-                                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        );
-                    })}
-                </div>
+                <ScopePills
+                    scope={scope}
+                    onScopeChange={setScope}
+                    className="flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto pt-0.5 pb-1 no-scrollbar"
+                />
             </div>
 
+            <SearchStatus
+                active={isSearching}
+                loading={data.loadingRemote}
+                count={data.totalVisibleResults}
+            />
             {/* In-Place Replacement: Search Results when active, Default Homepage Grids when idle */}
             {isSearching ? (
-                <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 sm:p-6">
+                <div
+                    className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 sm:p-6"
+                    aria-busy={data.loadingRemote}
+                >
                     <SearchResultsContent
                         data={data}
                         pathname="/"

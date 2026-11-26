@@ -54,7 +54,7 @@ export default function ResponsiveSettingsDialog({
           dir="rtl"
           className="flex max-h-[85dvh] flex-col rounded-t-3xl border-b-0 p-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
         >
-          <SheetHeader className="shrink-0 px-6 pt-6 text-right">
+          <SheetHeader className="shrink-0 px-6 pt-6 text-start">
             <SheetTitle>{title}</SheetTitle>
             {description && <SheetDescription>{description}</SheetDescription>}
           </SheetHeader>

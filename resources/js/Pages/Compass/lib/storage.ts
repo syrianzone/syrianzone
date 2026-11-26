@@ -25,9 +25,18 @@ function safeParse<T>(raw: string | null, fallback: T): T {
   }
 }
 
+/** getItem throws when storage is blocked (private mode, disabled cookies). */
+function readItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 export function loadProgress(): Progress | null {
   if (typeof window === 'undefined') return null;
-  return safeParse<Progress | null>(localStorage.getItem(KEY_PROGRESS), null);
+  return safeParse<Progress | null>(readItem(KEY_PROGRESS), null);
 }
 export function saveProgress(p: Progress) {
   if (typeof window === 'undefined') return;
@@ -44,7 +53,8 @@ export function clearProgress() {
 
 export function loadResults(): CompassResult[] {
   if (typeof window === 'undefined') return [];
-  return safeParse<CompassResult[]>(localStorage.getItem(KEY_RESULTS), []);
+  const results = safeParse<unknown>(readItem(KEY_RESULTS), []);
+  return Array.isArray(results) ? (results as CompassResult[]) : [];
 }
 export function addResult(r: CompassResult) {
   if (typeof window === 'undefined') return;
@@ -98,7 +108,7 @@ export function removeLocalResult(id: string | number | undefined | null): Compa
 }
 
 function removePendingResult(id?: string | number | null): void {
-  const pending = safeParse<{ id?: string | number } | null>(localStorage.getItem(KEY_PENDING_SAVE), null);
+  const pending = safeParse<{ id?: string | number } | null>(readItem(KEY_PENDING_SAVE), null);
   if (id == null || (pending && String(pending.id) === String(id))) {
     localStorage.removeItem(KEY_PENDING_SAVE);
     pendingSaveRevision++;

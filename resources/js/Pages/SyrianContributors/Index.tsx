@@ -56,8 +56,8 @@ const WinnerCard = ({ contributor, metric }: { contributor: Contributor; metric:
           <div className="relative mb-4">
             <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-30"></div>
             <Avatar className="relative w-24 h-24 mx-auto border-[3px] border-yellow-400 shadow-lg">
-              <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt={contributor.username} />
-              <AvatarFallback className="text-xl font-bold bg-yellow-100 text-yellow-800">
+              <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt="" />
+              <AvatarFallback aria-hidden="true" className="text-xl font-bold bg-yellow-100 text-yellow-800">
                 {contributor.username.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -71,12 +71,12 @@ const WinnerCard = ({ contributor, metric }: { contributor: Contributor; metric:
           <Badge className="bg-yellow-400 text-yellow-900 text-sm px-3 py-1 mb-3">🏆 المتصدر الأول</Badge>
 
           <div className="bg-muted/40 backdrop-blur-sm rounded-lg p-4 mb-4 border border-border/20">
-            <div className="text-3xl font-bold text-yellow-600 mb-1">{contributor[metric]}</div>
+            <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-400 mb-1">{contributor[metric]}</div>
             <div className="text-sm text-muted-foreground">{getMetricLabel(metric)}</div>
           </div>
 
           <Button asChild
-            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded-lg shadow-lg transition-all duration-200 hover:scale-105 w-full"
+            className="bg-yellow-500 hover:bg-yellow-600 text-yellow-950 font-semibold px-4 py-2 rounded-lg shadow-lg transition-all duration-200 hover:scale-105 w-full"
           >
             <a href={`https://github.com/${contributor.username}`} target="_blank" rel="noopener noreferrer">
               <Github className="w-4 h-4 me-2" />
@@ -101,7 +101,7 @@ const TopThreeCard = ({
   metric: keyof Contributor
   icon: React.ReactNode
 }) => {
-  const sortedContributors = [...contributors].sort((a, b) => (b[metric] as number) - (a[metric] as number))
+  const sortedContributors = contributors.toSorted((a, b) => (b[metric] as number) - (a[metric] as number))
   const winner = sortedContributors[0]
   const runnerUps = sortedContributors.slice(1, 3)
 
@@ -129,8 +129,8 @@ const TopThreeCard = ({
             <CardContent className="p-6 text-center">
               <div className="relative mb-4">
                 <Avatar className="w-20 h-20 mx-auto border-[3px] border-border shadow-lg">
-                  <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt={contributor.username} />
-                  <AvatarFallback className="text-lg font-semibold">
+                  <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt="" />
+                  <AvatarFallback aria-hidden="true" className="text-lg font-semibold">
                     {contributor.username.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -166,7 +166,7 @@ const ContributorsList = ({
   contributors: Contributor[]
   metric: keyof Contributor
 }) => {
-  const sortedContributors = [...contributors].sort((a, b) => (b[metric] as number) - (a[metric] as number)).slice(3)
+  const sortedContributors = contributors.toSorted((a, b) => (b[metric] as number) - (a[metric] as number)).slice(3)
 
   if (sortedContributors.length === 0) {
     return null
@@ -187,8 +187,8 @@ const ContributorsList = ({
               <div className="flex items-center space-x-4">
                 <span className="text-lg font-bold text-muted-foreground w-8">#{index + 4}</span>
                 <Avatar className="w-12 h-12">
-                  <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt={contributor.username} />
-                  <AvatarFallback className="text-sm">{contributor.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt="" />
+                  <AvatarFallback aria-hidden="true" className="text-sm">{contributor.username.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="font-semibold text-foreground">{contributor.username}</p>
@@ -248,7 +248,10 @@ export default function SyrianContributorsPage({ contributors: initial = [] }: {
 
     if (initial.length === 0) fetchContributors()
 
-    const interval = setInterval(fetchContributors, 60 * 60 * 1000)
+    // A background tab skips the hourly refresh; the next visible tick catches up.
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchContributors()
+    }, 60 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -310,8 +313,11 @@ export default function SyrianContributorsPage({ contributors: initial = [] }: {
           <div className="text-center mb-12 relative" style={{ paddingTop: '24px' }}>
             <div className="mb-6 flex justify-center">
               <div className="relative">
-                <div
-                  className="inline-block rounded shadow-lg overflow-hidden cursor-pointer"
+                <button
+                  type="button"
+                  aria-pressed={isEagleLogo}
+                  aria-label="إظهار شعار النسر السوري"
+                  className="inline-block rounded shadow-lg overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   onClick={handleFlagClick}
                 >
                   {isEagleLogo ? (
@@ -331,7 +337,7 @@ export default function SyrianContributorsPage({ contributors: initial = [] }: {
                       style={{ display: "block" }}
                     />
                   )}
-                </div>
+                </button>
               </div>
             </div>
 

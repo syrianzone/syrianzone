@@ -91,9 +91,17 @@ export default function CrossingShow({ slug }: CrossingShowProps) {
             setNowMin(syriaMinutes());
             setTzOffset(syriaOffsetLabel());
         };
+        // A hidden tab skips the refresh and catches up the moment it is shown.
+        const updateIfVisible = () => {
+            if (!document.hidden) update();
+        };
         update();
-        const id = window.setInterval(update, 30_000);
-        return () => window.clearInterval(id);
+        const id = window.setInterval(updateIfVisible, 30_000);
+        document.addEventListener('visibilitychange', updateIfVisible);
+        return () => {
+            window.clearInterval(id);
+            document.removeEventListener('visibilitychange', updateIfVisible);
+        };
     }, []);
 
     const status = statusOf(crossing, nowMin);
@@ -113,16 +121,24 @@ export default function CrossingShow({ slug }: CrossingShowProps) {
                 {/* Breadcrumb & Hero */}
                 <section className="border-b border-border bg-card">
                     <div className="container mx-auto max-w-5xl px-4 py-6">
-                        <nav aria-label="مسار التنقل" className="mb-5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                            <Link href="/" className="transition-colors hover:text-foreground">
-                                الرئيسية
-                            </Link>
-                            <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                            <Link href="/crossings" className="transition-colors hover:text-foreground">
-                                المنافذ الحدودية
-                            </Link>
-                            <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                            <span className="truncate font-medium text-foreground">{crossing.name}</span>
+                        <nav aria-label="مسار التنقل" className="mb-5 text-xs text-muted-foreground">
+                            <ol className="flex flex-wrap items-center gap-1.5">
+                                <li className="flex items-center gap-1.5">
+                                    <Link href="/" className="transition-colors hover:text-foreground">
+                                        الرئيسية
+                                    </Link>
+                                    <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                                </li>
+                                <li className="flex items-center gap-1.5">
+                                    <Link href="/crossings" className="transition-colors hover:text-foreground">
+                                        المنافذ الحدودية
+                                    </Link>
+                                    <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                                </li>
+                                <li className="min-w-0">
+                                    <span aria-current="page" className="block truncate font-medium text-foreground">{crossing.name}</span>
+                                </li>
+                            </ol>
                         </nav>
 
                         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -217,6 +233,7 @@ export default function CrossingShow({ slug }: CrossingShowProps) {
                                                     <div key={idx} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5 text-sm">
                                                         <div className="flex items-center gap-2.5">
                                                             <span
+                                                                aria-hidden="true"
                                                                 className={cn(
                                                                     'h-2 w-2 shrink-0 rounded-full',
                                                                     open === null
@@ -226,6 +243,7 @@ export default function CrossingShow({ slug }: CrossingShowProps) {
                                                                             : 'bg-red-500',
                                                                 )}
                                                             />
+                                                            {open !== null && <span className="sr-only">{open ? 'مفتوح الآن' : 'مغلق الآن'}، </span>}
                                                             <span className="font-semibold text-foreground">
                                                                 {win.label ? `حركة ${win.label}` : 'ساعات العمل اليومية'}
                                                             </span>

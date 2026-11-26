@@ -1,6 +1,6 @@
 import React, { useState, useMemo, Suspense, useEffect } from 'react';
 import {
-    Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Search, Tag, Eye, Palette
+    Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Tag, Eye, Palette
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { notify } from '@/Lib/notify';
@@ -30,7 +30,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/Components/ui/select";
-import { Input } from "@/Components/ui/input";
 
 const SyriaMap = React.lazy(() => import('./SyriaMap'));
 
@@ -146,7 +145,6 @@ export default function SyidClient() {
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [geoJsonData, setGeoJsonData] = useState<any>(null);
     const [selectedGov, setSelectedGov] = useState<string>("full");
-    const [govSearch, setGovSearch] = useState("");
     const [mapLoaded, setMapLoaded] = useState(false);
     const [loadingMap, setLoadingMap] = useState(false);
     const [loadFontPreview, setLoadFontPreview] = useState(false);
@@ -161,6 +159,10 @@ export default function SyidClient() {
                 GOVERNORATE_ICONS.map(async (icon) => {
                     try {
                         const res = await fetch(`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`);
+                        // A 404 page or proxy error is not artwork: fall back to the static <img>.
+                        if (!res.ok || !(res.headers.get('content-type') ?? '').includes('svg')) {
+                            throw new Error(`icon ${icon.file}: ${res.status}`);
+                        }
                         const text = await res.text();
                         loaded[icon.file] = text;
                     } catch {
@@ -210,12 +212,6 @@ export default function SyidClient() {
             .sort((a: any, b: any) => a.nameAr.localeCompare(b.nameAr, 'ar'));
     }, [geoJsonData]);
 
-    const filteredGovernorates = useMemo(() => {
-        return governorates.filter((gov: any) =>
-            gov.nameAr.includes(govSearch)
-        );
-    }, [governorates, govSearch]);
-
     const handleExportSVG = async () => {
         if (!geoJsonData) {
             await loadMapData();
@@ -244,7 +240,8 @@ export default function SyidClient() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // Revoking in the same task can cancel the download in some browsers.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
 
         notify.success(`تم تحميل ملف SVG بنجاح`);
     };
@@ -274,7 +271,8 @@ export default function SyidClient() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // Revoking in the same task can cancel the download in some browsers.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
 
         notify.success(`تم تحميل ملف GeoJSON بنجاح`);
     };
@@ -585,7 +583,13 @@ export default function SyidClient() {
                     <Card className="border border-border/80 rounded-xl overflow-hidden">
                         <CardContent className="p-6 overflow-x-auto">
                             <div className="flag-diagram-wrapper my-2">
-                                <div className="flag-diagram-container">
+                                {/* One described image: the dimension labels alone are a list of
+                                    bare numbers to a screen reader. */}
+                                <div
+                                    className="flag-diagram-container"
+                                    role="img"
+                                    aria-label="مخطط نسب العلم السوري: العرض 36 وحدة والارتفاع 24 وحدة (نسبة 2:3)، ثلاثة أشرطة أفقية متساوية ارتفاع كل منها 8 وحدات، الأخضر في الأعلى ثم الأبيض ثم الأسود. في الشريط الأبيض ثلاث نجوم حمراء خماسية، عرض كل نجمة وارتفاعها 6 وحدات، بينها فراغان من 3 وحدات، وهامش 6 وحدات من كل طرف."
+                                >
                                     <div className="flag-visual">
                                         <div className="stripe green"></div>
                                         <div className="stripe white">
@@ -797,6 +801,7 @@ export default function SyidClient() {
                                 <button
                                     key={theme.id}
                                     type="button"
+                                    aria-pressed={isActive}
                                     onClick={() => setActivePosterTheme(theme.id)}
                                     className={`inline-flex items-center gap-2 text-xs px-3.5 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
                                         isActive
@@ -805,6 +810,7 @@ export default function SyidClient() {
                                     }`}
                                 >
                                     <span
+                                        aria-hidden="true"
                                         className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
                                         style={{ backgroundColor: theme.primary }}
                                     />
@@ -831,7 +837,8 @@ export default function SyidClient() {
                                 document.body.appendChild(link);
                                 link.click();
                                 document.body.removeChild(link);
-                                URL.revokeObjectURL(url);
+                                // Revoking in the same task can cancel the download in some browsers.
+                                setTimeout(() => URL.revokeObjectURL(url), 1000);
                                 notify.success(`تم تنزيل أيقونة ${icon.name} - ${currentTheme.name}`);
                             };
 
@@ -842,12 +849,15 @@ export default function SyidClient() {
                                     onClick={handleDownload}
                                     title={`انقر لتنزيل أيقونة ${icon.name} (${icon.landmark}) - ${currentTheme.name} Theme`}
                                     style={{ backgroundColor: currentTheme.bg }}
-                                    className="w-full aspect-[312/436] flex items-center justify-center transition-transform hover:scale-[1.06] focus:outline-none cursor-pointer group p-1.5 rounded-xl border border-border/40 overflow-hidden shadow-2xs"
+                                    className="w-full aspect-[312/436] flex items-center justify-center transition-transform hover:scale-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer group p-1.5 rounded-xl border border-border/40 overflow-hidden shadow-2xs"
                                 >
                                     {recoloredSvg ? (
-                                        <div
-                                            className="w-full h-full [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-xs"
-                                            dangerouslySetInnerHTML={{ __html: recoloredSvg }}
+                                        // An image, not inline markup: each SVG keeps its own
+                                        // .st0-.st4 classes and ids instead of sharing the page's.
+                                        <img
+                                            src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(recoloredSvg)}`}
+                                            alt=""
+                                            className="w-full h-full object-contain drop-shadow-xs"
                                         />
                                     ) : (
                                         <img
@@ -878,20 +888,10 @@ export default function SyidClient() {
                                                 <SelectValue placeholder="اختر المحافظة..." />
                                             </SelectTrigger>
                                             <SelectContent className="bg-popover border border-border shadow-md rounded-lg">
-                                                <div className="p-2 sticky top-0 bg-popover border-b border-border mb-1">
-                                                    <div className="relative">
-                                                        <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                                                        <Input aria-label="بحث..."
-                                                            placeholder="بحث..."
-                                                            value={govSearch}
-                                                            onChange={(e) => setGovSearch(e.target.value)}
-                                                            className="h-7 ps-8 text-xs border-none bg-muted/40"
-                                                            onKeyDown={(e) => e.stopPropagation()}
-                                                        />
-                                                    </div>
-                                                </div>
+                                                {/* 14 items: Select's own type-ahead finds one; a text
+                                                    input inside a listbox is not reachable as one. */}
                                                 <SelectItem value="full">سوريا كاملة</SelectItem>
-                                                {filteredGovernorates.map((gov: any) => (
+                                                {governorates.map((gov: any) => (
                                                     <SelectItem key={gov.id} value={gov.id}>
                                                         {gov.nameAr}
                                                     </SelectItem>

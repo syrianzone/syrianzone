@@ -8,6 +8,8 @@ import {
 import { SURAH_NAMES_AR } from '../../../Domain/quran/quran';
 import { readGuestBookmarks, toggleGuestBookmark } from '../../../Domain/quran/guestBookmarks';
 import { useAppShell } from '@/Lib/appShell';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 
 interface SavedAyah {
   surah: number;
@@ -30,6 +32,7 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
   const [items, setItems] = useState<SavedAyah[]>([]);
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -40,12 +43,14 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
     }
     let live = true;
     setLoading(true);
+    setLoadError(null);
     listBookmarks()
       .then((list) => {
         if (live) setItems(list);
       })
-      .catch(() => {
-        // an empty list is the honest fallback; the modal retries on next open
+      .catch((err: unknown) => {
+        // the modal retries on next open; say so instead of an empty list
+        if (live) setLoadError(apiErrorMessage(err, 'تعذّر تحميل العلامات — أعد فتح النافذة للمحاولة مجدداً'));
       })
       .finally(() => {
         if (live) setLoading(false);
@@ -64,8 +69,8 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
     try {
       await removeBookmark(b.surah, b.ayah);
       setItems((prev) => prev.filter((x) => !(x.surah === b.surah && x.ayah === b.ayah)));
-    } catch {
-      // silent
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذّرت إزالة العلامة'));
     } finally {
       setRemoving(null);
     }
@@ -74,7 +79,7 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent dir="rtl" className="max-h-[80dvh] overflow-hidden sm:max-w-md">
-        <DialogHeader className="text-right sm:text-right">
+        <DialogHeader className="text-start sm:text-start">
           <DialogTitle className="flex items-center gap-2">
             <Bookmark className="h-4 w-4 text-primary" /> علامات الآيات
           </DialogTitle>
@@ -90,9 +95,12 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
             لا علامات بعد — اضغط على أي آية ثم على زر العلامة لحفظها على هذا الجهاز.
           </p>
         ) : loading ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
+          <div role="status" className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            <span className="sr-only">جاري تحميل العلامات…</span>
           </div>
+        ) : loadError ? (
+          <p role="alert" className="py-6 text-center text-sm text-destructive">{loadError}</p>
         ) : items.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             لا علامات بعد — اضغط على أي آية ثم على زر العلامة لحفظها.
@@ -107,7 +115,8 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
                   className="flex items-center gap-2 rounded-lg border border-border/50 bg-card/40 p-2.5"
                 >
                   <button
-                    className="min-w-0 flex-1 text-right"
+                    type="button"
+                    className="min-w-0 flex-1 text-start"
                     onClick={() => {
                       setOpen(false);
                       onJump(b.page, key);
@@ -120,7 +129,7 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
                       صفحة {b.page} · جزء {b.juz}
                     </span>
                   </button>
-                  <Button aria-label="إزالة العلامة"
+                  <Button aria-label={`إزالة علامة ${SURAH_NAMES_AR[b.surah] ?? `سورة ${b.surah}`} آية ${b.ayah}`}
                     variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                     title="إزالة العلامة"
                     disabled={removing === key}

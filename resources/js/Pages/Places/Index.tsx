@@ -7,6 +7,7 @@ import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
 import { ViewToggle } from './_components/ViewToggle';
 import { BottomSheet } from '@/Components/BottomSheet';
+import { useIsMobile } from '@/Lib/useIsMobile';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
@@ -30,6 +31,8 @@ export default function Index() {
   const [listPlaces, setListPlaces] = useState<Paginated<PlaceListItem> | null>(null);
   const [listLoading, setListLoading] = useState(false);
   const [addMode, setAddMode] = useState(false);
+  // bumping it asks the map to pick its current centre (the keyboard path for add mode)
+  const [pickCenterKey, setPickCenterKey] = useState(0);
   const [focus, setFocus] = useState<{ lng: number; lat: number; zoom?: number; key: number } | null>(null);
   const [highlight, setHighlight] = useState<LatLng | null>(null);
   // which q the current listPlaces was fetched for; guards the dropdown against stale results
@@ -45,6 +48,14 @@ export default function Index() {
   const [view, setView] = useState<'map' | 'grid'>(() =>
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'grid' ? 'grid' : 'map',
   );
+
+  // One panel instance: the sheet below `md`, the side panel from `md` up. The
+  // server renders the side panel (CSS-hidden on phones); the sheet replaces it
+  // after mount so hydration still matches the server markup.
+  const isMobile = useIsMobile('md');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const showSheet = mounted && isMobile;
 
   // stale-response guard for the debounced list fetch
   const requestRef = useRef(0);
@@ -256,6 +267,24 @@ export default function Index() {
     setSelectedType('place');
   }
 
+  const panel = (
+    <PlacesPanel
+      places={listPlaces?.data ?? []}
+      loading={listLoading}
+      selectedId={selectedId}
+      selectedType={selectedType}
+      onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
+      onClose={handleClose}
+      onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
+      hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
+      onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
+      onSelectGuide={selectGuide}
+      addMode={addMode}
+      onAddToggle={() => setAddMode((v) => !v)}
+      className="min-h-0 flex-1"
+    />
+  );
+
   return (
     <MainLayout>
       
@@ -273,6 +302,7 @@ export default function Index() {
             onPinClick={(id) => handlePinClick(id, 'place')}
             onHotelPinClick={(id) => handlePinClick(id, 'hotel')}
             onMapClick={handleMapClick}
+            pickCenterKey={pickCenterKey}
             // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
             className="absolute inset-0"
           />
@@ -316,7 +346,13 @@ export default function Index() {
             <div className="flex justify-center">
               <span className="pointer-events-auto flex items-center gap-2 rounded-full border border-primary/40 bg-card/95 px-3 py-1 text-xs text-foreground shadow-sm">
                 مساهمات {guide.name}
-                <button type="button" aria-label="إلغاء التصفية" onClick={() => selectGuide(null)}>
+                <button
+                  type="button"
+                  aria-label="إلغاء التصفية"
+                  onClick={() => selectGuide(null)}
+                  // 24px hit area; the negative margins keep the pill its original size
+                  className="-my-1 -me-1.5 inline-flex size-6 items-center justify-center rounded-full hover:bg-accent"
+                >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </span>
@@ -326,6 +362,14 @@ export default function Index() {
             <div className="flex justify-center">
               <span className="pointer-events-auto flex items-center gap-2 rounded-full border border-border bg-card/95 px-3 py-1 text-xs text-muted-foreground shadow-sm">
                 انقر على الخريطة لتحديد الموقع
+                {/* keyboard and screen-reader path: the map canvas itself takes no clicks from them */}
+                <button
+                  type="button"
+                  onClick={() => setPickCenterKey((k) => k + 1)}
+                  className="rounded-full font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  أو استخدم مركز الخريطة
+                </button>
               </span>
             </div>
           )}
@@ -334,43 +378,15 @@ export default function Index() {
         {/* FAB and the sheet/panel are conditionally unmounted in grid view (not css-hidden) */}
         {view === 'map' && (
           <>
-            {/* Desktop sidebar */}
-            <div className="hidden md:flex absolute top-0 right-0 h-full w-96 flex-col bg-card border-l border-border z-10">
-              <PlacesPanel
-                places={listPlaces?.data ?? []}
-                loading={listLoading}
-                selectedId={selectedId}
-                selectedType={selectedType}
-                onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
-                onClose={handleClose}
-                onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
-                hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
-                onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
-                onSelectGuide={selectGuide}
-                addMode={addMode}
-                onAddToggle={() => setAddMode((v) => !v)}
-                className="min-h-0 flex-1"
-              />
-            </div>
-
-            {/* Mobile bottom sheet */}
-            <BottomSheet storageKey="mishwar-sheet-height">
-              <PlacesPanel
-                places={listPlaces?.data ?? []}
-                loading={listLoading}
-                selectedId={selectedId}
-                selectedType={selectedType}
-                onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
-                onClose={handleClose}
-                onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
-                hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
-                onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
-                onSelectGuide={selectGuide}
-                addMode={addMode}
-                onAddToggle={() => setAddMode((v) => !v)}
-                className="min-h-0 flex-1"
-              />
-            </BottomSheet>
+            {showSheet ? (
+              <BottomSheet storageKey="mishwar-sheet-height" hideBreakpoint="md">
+                {panel}
+              </BottomSheet>
+            ) : (
+              <div className="hidden md:flex absolute top-0 start-0 h-full w-96 flex-col bg-card border-e border-border z-10">
+                {panel}
+              </div>
+            )}
           </>
         )}
 

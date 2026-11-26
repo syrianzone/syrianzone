@@ -148,8 +148,9 @@ export default function RouteLayer({ data }: RouteLayerProps) {
             {props.nameAr}
           </span>
           <button
+            type="button"
             onClick={() => { setActiveRoute(null); setSelectedRouteId(null) }}
-            className="shrink-0 rounded-full p-0.5 text-white/70 transition-colors hover:text-white"
+            className="-m-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors hover:text-white"
             aria-label="إغلاق"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

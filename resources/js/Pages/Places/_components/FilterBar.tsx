@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, MapPin, Search, SlidersHorizontal } from 'lucide-react';
 import { Card } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
-import { Badge, badgeVariants } from '@/Components/ui/badge';
+import { Badge } from '@/Components/ui/badge';
+import { FilterChip } from '@/Components/ui/filter-chip';
 import { cn } from '@/Lib/utils';
 import { CATEGORIES, CATEGORY_LABELS } from '@/Domain/places/categories';
 import type { GeoSuggestion, LatLng, PlaceCategory, PlaceListItem } from '@/Domain/places/types';
@@ -156,12 +157,18 @@ export function FilterBar(props: {
   }
 
   const hasActiveFilter = props.category !== null || props.viewFilter !== 'all';
+  // announced through a status region outside the listbox: options are only read on arrowing
+  const resultsStatus = !showDropdown || props.coordCandidate
+    ? ''
+    : props.resultsLoading
+      ? 'جاري البحث'
+      : optionCount === 0 ? 'لا توجد نتائج' : `${optionCount} نتيجة`;
 
   return (
     // relative here: the dropdown and popover anchor to the whole bar, not the narrow pill/button
     <div dir="rtl" className={cn('relative flex items-center gap-2', props.className)}>
       <div className="relative min-w-0 flex-1">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input aria-label="ابحث عن مكان أو إحداثيات"
           ref={inputRef}
           type="search"
@@ -181,6 +188,7 @@ export function FilterBar(props: {
           placeholder="ابحث عن مكان أو إحداثيات"
           className="h-9 rounded-full border-border bg-card/95 ps-9 shadow-md"
         />
+        <span role="status" className="sr-only">{resultsStatus}</span>
         {showDropdown && (
           <Card
             id="place-search-listbox"
@@ -188,7 +196,7 @@ export function FilterBar(props: {
             // preventDefault keeps the input focused so onBlur does not close before row clicks land
             onMouseDown={(e) => e.preventDefault()}
             // width is viewport-clamped: the pill itself can be ~110px on phones, too narrow for results
-            className="absolute right-0 top-full mt-1 z-20 max-h-72 w-[min(24rem,calc(100vw-1.5rem))] overflow-y-auto p-1 shadow-md"
+            className="absolute start-0 top-full mt-1 z-20 max-h-72 w-[min(24rem,calc(100vw-1.5rem))] overflow-y-auto p-1 shadow-md"
           >
             {props.coordCandidate ? (
               <button
@@ -197,7 +205,7 @@ export function FilterBar(props: {
                 role="option"
                 aria-selected={activeIndex === 0}
                 className={cn(
-                  'flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-right',
+                  'flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-start',
                   activeIndex === 0 && 'bg-accent',
                 )}
                 onClick={() => activate(0)}
@@ -205,7 +213,7 @@ export function FilterBar(props: {
               >
                 <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span>الانتقال إلى النقطة</span>
-                <span dir="ltr" className="mr-auto text-xs text-muted-foreground">
+                <span dir="ltr" className="ms-auto text-xs text-muted-foreground">
                   {props.coordCandidate.lat}, {props.coordCandidate.lng}
                 </span>
               </button>
@@ -224,7 +232,7 @@ export function FilterBar(props: {
                   role="option"
                   aria-selected={activeIndex === i}
                   className={cn(
-                    'flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-sm text-right',
+                    'flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-sm text-start',
                     activeIndex === i && 'bg-accent',
                   )}
                   onClick={() => activate(i)}
@@ -245,7 +253,7 @@ export function FilterBar(props: {
                   role="option"
                   aria-selected={activeIndex === i}
                   className={cn(
-                    'flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-right',
+                    'flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-start',
                     activeIndex === i && 'bg-accent',
                   )}
                   onClick={() => activate(i)}
@@ -294,7 +302,7 @@ export function FilterBar(props: {
         {filterOpen && (
           <div
             id="place-filter-popover"
-            className="absolute right-0 top-full z-20 mt-1 w-[min(16rem,calc(100vw-1.5rem))] rounded-lg border border-border bg-popover p-2 shadow-md"
+            className="absolute start-0 top-full z-20 mt-1 w-[min(16rem,calc(100vw-1.5rem))] rounded-lg border border-border bg-popover p-2 shadow-md"
           >
             <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">النوع</p>
             <div className="mb-3 flex flex-wrap gap-1.5">
@@ -303,42 +311,39 @@ export function FilterBar(props: {
                 { key: 'places' as const, label: 'أماكن' },
                 { key: 'hotels' as const, label: 'فنادق' },
               ]).map((v) => (
-                <button
+                <FilterChip
                   key={v.key}
-                  type="button"
-                  className={cn(badgeVariants({ variant: props.viewFilter === v.key ? 'default' : 'outline' }), 'cursor-pointer')}
+                  active={props.viewFilter === v.key}
                   onClick={() => props.onViewFilterChange(v.key)}
                 >
                   {v.label}
-                </button>
+                </FilterChip>
               ))}
             </div>
             {props.viewFilter !== 'hotels' && (
               <>
                 <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">الفئة</p>
                 <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    className={cn(badgeVariants({ variant: props.category === null ? 'default' : 'outline' }), 'cursor-pointer')}
+                  <FilterChip
+                    active={props.category === null}
                     onClick={() => {
                       props.onCategoryChange(null);
                       setFilterOpen(false);
                     }}
                   >
                     الكل
-                  </button>
+                  </FilterChip>
                   {CATEGORIES.map((c) => (
-                    <button
+                    <FilterChip
                       key={c.key}
-                      type="button"
-                      className={cn(badgeVariants({ variant: props.category === c.key ? 'default' : 'outline' }), 'cursor-pointer')}
+                      active={props.category === c.key}
                       onClick={() => {
                         props.onCategoryChange(props.category === c.key ? null : c.key);
                         setFilterOpen(false);
                       }}
                     >
                       {c.label}
-                    </button>
+                    </FilterChip>
                   ))}
                 </div>
               </>

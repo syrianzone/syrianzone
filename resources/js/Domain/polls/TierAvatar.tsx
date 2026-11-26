@@ -12,8 +12,10 @@ export function TierAvatar({ className, size = 36, alt = "", src, ...rest }: Pro
             height={size}
             src={src ?? ""}
             alt={alt}
-            loading="eager"
-            decoding="sync"
+            // The board holds dozens of candidates; the exporter loads its own
+            // copies, so these can wait for the viewport and decode off-thread.
+            loading="lazy"
+            decoding="async"
             draggable={false}
             {...rest}
         />

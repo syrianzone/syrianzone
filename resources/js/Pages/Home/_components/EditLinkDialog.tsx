@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useId, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { Label } from "@/Components/ui/label";
 import { Input } from "@/Components/ui/input";
@@ -24,6 +24,7 @@ export default function EditLinkDialog({
     const [url, setUrl] = useState('');
     const [icon, setIcon] = useState('');
     const [urlError, setUrlError] = useState('');
+    const fieldId = useId();
 
     useEffect(() => {
         if (link) {
@@ -71,8 +72,9 @@ export default function EditLinkDialog({
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4 text-start">
                     <div className="space-y-2">
-                        <Label>الاسم</Label>
+                        <Label htmlFor={`${fieldId}-name`}>الاسم</Label>
                         <Input
+                            id={`${fieldId}-name`}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="اسم الرابط"
@@ -80,19 +82,24 @@ export default function EditLinkDialog({
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>الرابط (URL)</Label>
-                        <Input aria-label="رابط الموقع"
+                        <Label htmlFor={`${fieldId}-url`}>الرابط (URL)</Label>
+                        <Input
+                            id={`${fieldId}-url`}
                             type="url"
+                            autoComplete="url"
+                            aria-invalid={urlError ? true : undefined}
+                            aria-describedby={urlError ? `${fieldId}-url-error` : undefined}
                             value={url}
                             onChange={(e) => { setUrl(e.target.value); if (urlError) setUrlError(''); }}
                             placeholder="https://example.com"
                             required
                         />
-                        {urlError && <p className="text-xs text-destructive">{urlError}</p>}
+                        {urlError && <p id={`${fieldId}-url-error`} role="alert" className="text-xs text-destructive">{urlError}</p>}
                     </div>
                     <div className="space-y-2">
-                        <Label>أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)</Label>
+                        <Label htmlFor={`${fieldId}-icon`}>أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)</Label>
                         <Input
+                            id={`${fieldId}-icon`}
                             value={icon}
                             onChange={(e) => setIcon(e.target.value)}
                             placeholder="تلقائي (Favicon)"

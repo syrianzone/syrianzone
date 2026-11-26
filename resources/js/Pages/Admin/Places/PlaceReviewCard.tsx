@@ -132,7 +132,9 @@ export function PlaceReviewCard(props: {
           className="hidden"
           onChange={(e) => addSelected(e.target.files?.[0])}
         />
-        {place.photos.length > 0 && (
+        {/* The add-photo tile lives in this strip, so a place without photos
+            still needs the strip when the moderator can add one. */}
+        {(place.photos.length > 0 || canEdit) && (
           <div className="flex gap-2 overflow-x-auto">
             {place.photos.map((photo) => (
               <div key={photo.id} className="relative shrink-0">
@@ -197,7 +199,7 @@ export function PlaceReviewCard(props: {
             )}
           </div>
         )}
-        {photoError && <p className="text-sm text-destructive">{photoError}</p>}
+        {photoError && <p role="alert" className="text-sm text-destructive">{photoError}</p>}
 
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-base font-bold">{place.name}</h2>

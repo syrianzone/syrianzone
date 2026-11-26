@@ -46,6 +46,9 @@ export default function SortableList({ items: initialItems, endpoint, canReorder
     const [savedItems, setSavedItems] = useState<SortableListItem[]>(initialItems);
     const [saving, setSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+    // Spoken after an arrow-button move: the row moves under the focused
+    // button, so nothing else tells a screen reader where it landed.
+    const [announcement, setAnnouncement] = useState('');
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -56,6 +59,12 @@ export default function SortableList({ items: initialItems, endpoint, canReorder
         if (to < 0 || to >= items.length) return;
         setItems(arrayMove(items, from, to));
         setHasChanges(true);
+    };
+
+    const moveByButton = (from: number, to: number) => {
+        if (to < 0 || to >= items.length) return;
+        move(from, to);
+        setAnnouncement(`«${items[from].label}» في الموضع ${to + 1} من ${items.length}`);
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -109,12 +118,13 @@ export default function SortableList({ items: initialItems, endpoint, canReorder
                                 index={index}
                                 count={items.length}
                                 canReorder={canReorder}
-                                onMove={move}
+                                onMove={moveByButton}
                             />
                         ))}
                     </div>
                 </SortableContext>
             </DndContext>
+            <p role="status" className="sr-only">{announcement}</p>
         </div>
     );
 }
@@ -166,8 +176,8 @@ function SortableRow({ item, index, count, canReorder, onMove }: {
                         variant="ghost"
                         aria-label={`تحريك ${item.label} للأعلى`}
                         title="تحريك للأعلى"
-                        className="h-8 w-8"
-                        disabled={index === 0}
+                        className="h-8 w-8 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                        aria-disabled={index === 0}
                         onClick={() => onMove(index, index - 1)}
                     >
                         <ArrowUp className="h-4 w-4" aria-hidden="true" />
@@ -178,8 +188,8 @@ function SortableRow({ item, index, count, canReorder, onMove }: {
                         variant="ghost"
                         aria-label={`تحريك ${item.label} للأسفل`}
                         title="تحريك للأسفل"
-                        className="h-8 w-8"
-                        disabled={index === count - 1}
+                        className="h-8 w-8 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                        aria-disabled={index === count - 1}
                         onClick={() => onMove(index, index + 1)}
                     >
                         <ArrowDown className="h-4 w-4" aria-hidden="true" />

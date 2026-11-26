@@ -17,6 +17,7 @@ export function PhotoGallery(props: { photos: PlacePhoto[]; name: string }) {
       <button
         type="button"
         onClick={() => setLightbox(true)}
+        aria-label={`عرض صورة ${name} مكبّرة`}
         className="block w-full cursor-zoom-in"
       >
         <img
@@ -35,11 +36,13 @@ export function PhotoGallery(props: { photos: PlacePhoto[]; name: string }) {
               key={photo.id}
               type="button"
               onClick={() => setActive(i)}
+              aria-label={`صورة ${i + 1} من ${photos.length}`}
+              aria-current={i === active ? 'true' : undefined}
               className={`shrink-0 rounded-md ${i === active ? 'ring-2 ring-primary' : ''}`}
             >
               <img
                 src={photo.thumb_url}
-                alt={name}
+                alt=""
                 loading="lazy"
                 decoding="async"
                 className="h-14 w-14 rounded-md object-cover"

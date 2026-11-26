@@ -140,7 +140,6 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
         map.flyTo({
           center: item.coordinates,
           zoom: 15,
-          essential: true
         })
       }
     } else if (item.type === 'place') {
@@ -161,7 +160,7 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
           .addTo(map)
         marker.togglePopup()
         poiMarkerRef.current = marker
-        map.flyTo({ center: item.coordinates, zoom: 16, essential: true })
+        map.flyTo({ center: item.coordinates, zoom: 16 })
       }
     }
   }
@@ -216,7 +215,8 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
             <button
               type="button"
               onClick={() => { setQuery(''); setIsOpen(false) }}
-              className="rounded-full p-0.5 hover:text-foreground transition-colors"
+              // 24px hit area; the negative margin keeps the field's layout unchanged
+              className="-m-1 inline-flex size-6 items-center justify-center rounded-full hover:text-foreground transition-colors"
               aria-label="مسح البحث"
             >
               <X className="h-3.5 w-3.5" />
@@ -233,8 +233,8 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
             className="absolute right-0 top-full mt-1.5 z-20 max-h-80 w-full overflow-y-auto p-1.5 shadow-lg border-border bg-card/95 backdrop-blur-md rounded-xl"
           >
             {results.routes.length > 0 && (
-              <div className="mb-2">
-                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
+              <div className="mb-2" role="group" aria-labelledby="transit-search-group-routes">
+                <div id="transit-search-group-routes" className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
                   <Bus className="h-3 w-3" />
                   <span>الخطوط</span>
                 </div>
@@ -267,8 +267,8 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
             )}
 
             {results.stops.length > 0 && (
-              <div>
-                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
+              <div role="group" aria-labelledby="transit-search-group-stops">
+                <div id="transit-search-group-stops" className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
                   <span>المواقف</span>
                 </div>
@@ -301,8 +301,8 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
             )}
 
             {places.length > 0 && (
-              <div>
-                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
+              <div role="group" aria-labelledby="transit-search-group-places">
+                <div id="transit-search-group-places" className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
                   <Landmark className="h-3 w-3" />
                   <span>أماكن</span>
                 </div>

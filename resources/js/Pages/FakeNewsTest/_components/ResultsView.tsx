@@ -32,7 +32,6 @@ import {
   getHardestClaims,
 } from '@/Domain/fakenewstest/claims';
 import type { ClaimKind, FakeNewsStats, RoundSummary } from '@/Domain/fakenewstest/types';
-import { exportElementAsPng, renderElementAsPngFile } from '@/Lib/exportElementAsPng';
 import { notify } from '@/Lib/notify';
 import { useThemeId } from '@/Lib/theme';
 import { cn } from '@/Lib/utils';
@@ -76,6 +75,8 @@ export default function ResultsView({ summary, stats, onPlayAgain, onOpenStats }
     setImageBusy(true);
     const filename = `syrianzone-fakenews-${summary.score}-of-${summary.total}.png`;
     try {
+      // html2canvas is heavy and most players never share: load it on demand.
+      const { exportElementAsPng, renderElementAsPngFile } = await import('@/Lib/exportElementAsPng');
       const file = await renderElementAsPngFile(shareCardRef.current, filename);
       const nav = navigator as Navigator & {
         canShare?: (data: ShareData) => boolean;
@@ -144,7 +145,8 @@ export default function ResultsView({ summary, stats, onPlayAgain, onOpenStats }
 
           <h1
             id="fakenewstest-results-title"
-            className="text-2xl font-extrabold text-foreground"
+            tabIndex={-1}
+            className="text-2xl font-extrabold text-foreground focus:outline-none"
           >
             {summary.rank.title}
           </h1>

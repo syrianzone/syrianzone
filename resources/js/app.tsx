@@ -1,13 +1,13 @@
 import '../css/app.css';
 
-import { Suspense, type ComponentType } from 'react';
-import { createRoot } from 'react-dom/client';
+import { type ComponentType } from 'react';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { pageResolver } from '@/Lib/pages';
 import { watchSystemTheme } from '@/Lib/theme';
+import { watchFontStorage } from '@/Lib/font';
 import { loadAnalytics, trackPageView } from '@/Lib/analyticsConsent';
-import { QueryProvider } from '@/Providers/QueryProvider';
-import { DirectionProvider } from '@radix-ui/react-direction';
+import { AppRoot } from '@/Providers/AppRoot';
 
 // errors + sampled tracing. no-op locally: the dsn is only injected in ci builds.
 // rate comes from the VITE_SENTRY_TRACES_SAMPLE_RATE repo variable (baked at build).
@@ -29,10 +29,25 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     });
 }
 
-// keep data-theme in sync with the device scheme while the preference is 'system'
+// keep data-theme in sync with the device scheme while the preference is
+// 'system', and theme/font with choices made in other tabs
 watchSystemTheme();
+watchFontStorage();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Syrian Zone';
+
+// React reports a Suspense boundary the server could not finish (error #419)
+// as a recoverable error, then renders that part in the browser. That is the
+// expected path for the lazily loaded maps and board widgets: they never
+// resolve during the server's renderToString. Every other recoverable error,
+// a real hydration mismatch included, is still reported the way React does by
+// default.
+function reportRecoverableError(error: unknown): void {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/#419\b|could not finish this Suspense boundary/.test(message)) return;
+    if (typeof window.reportError === 'function') window.reportError(error);
+    else console.error(error);
+}
 
 const pages = import.meta.glob<{ default: ComponentType }>('./Pages/**/*.tsx');
 
@@ -42,19 +57,23 @@ createInertiaApp({
     title: (title) => title || appName,
     resolve: pageResolver(pages),
     setup({ el, App, props }) {
-        const root = createRoot(el);
-        root.render(
-            <DirectionProvider dir="rtl">
-                <QueryProvider>
-                    <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-muted-foreground">جاري التحميل...</div>}>
-                        <App {...props} />
-                    </Suspense>
-                </QueryProvider>
-            </DirectionProvider>
+        const tree = (
+            <AppRoot>
+                <App {...props} />
+            </AppRoot>
         );
+        // Hydrate the server-rendered markup instead of discarding it. When the
+        // SSR server was unavailable the container is empty (Inertia falls back
+        // to client rendering), and there is nothing to hydrate.
+        if (el.hasChildNodes()) {
+            hydrateRoot(el, tree, { onRecoverableError: reportRecoverableError });
+        } else {
+            createRoot(el).render(tree);
+        }
     },
     progress: {
-        color: '#2563eb',
+        // the active theme's primary, not a fixed blue that no theme uses
+        color: 'hsl(var(--primary))',
     },
 });
 

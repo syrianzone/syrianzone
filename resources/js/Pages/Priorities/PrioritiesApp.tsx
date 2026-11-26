@@ -23,7 +23,6 @@ import {
   GitFork,
   UserCheck,
   Sparkles,
-  X,
   ChevronDown,
   ChevronUp,
   Info,
@@ -42,6 +41,7 @@ import { Instagram } from '@/Components/ui/icons';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
 import { THEME_REGISTRY, getThemeById, hexToRgbString, shareCardPalette, useThemeId } from '@/Lib/theme';
 import { Button } from "@/Components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 
 import {
   INITIAL_TOPICS,
@@ -50,6 +50,7 @@ import {
   Topic,
   SubFile
 } from './data';
+import { decodeShareState, encodeShareState, shareStateUrl } from './shareState';
 
 const TOPIC_ICONS: Record<string, React.ComponentType<any>> = {
   economy: Briefcase,
@@ -216,36 +217,22 @@ export default function PrioritiesApp() {
   const storyCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const bannerDismissed = localStorage.getItem('sz-priorities-banner-dismissed');
-    if (bannerDismissed === 'true') {
-      setShowBanner(false);
+    try {
+      if (localStorage.getItem('sz-priorities-banner-dismissed') === 'true') setShowBanner(false);
+    } catch {
+      // Storage can be blocked (private mode, disabled cookies); keep the banner.
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const stateParam = params.get('state');
-    if (stateParam) {
-      try {
-        const decoded = decodeURIComponent(escape(atob(stateParam)));
-        const [pointsStr, subsStr] = decoded.split('|');
-        if (pointsStr) {
-          const pointsMap = pointsStr.split(',').reduce((acc, item) => {
-            const [id, val] = item.split(':');
-            if (id && val) acc[id] = parseInt(val, 10);
-            return acc;
-          }, {} as Record<string, number>);
-
-          setTopics(prev => prev.map(t => ({
-            ...t,
-            points: pointsMap[t.id] !== undefined ? pointsMap[t.id] : t.points
-          })));
-        }
-        if (subsStr) {
-          const subsArray = subsStr.split(',').filter(Boolean);
-          setSelectedSubFiles(new Set(subsArray));
-        }
-      } catch (e) {
-        console.error('Failed to parse URL state', e);
-      }
+    const stateParam = new URLSearchParams(window.location.search).get('state');
+    const shared = stateParam ? decodeShareState(stateParam, {
+      topics: INITIAL_TOPICS.map(t => t.id),
+      subFiles: INITIAL_TOPICS.flatMap(t => t.subFiles.map(s => s.id)),
+      budget: BUDGET_LIMIT,
+      maxSubFiles: MAX_SUBFILES_CHECKED,
+    }) : null;
+    if (shared) {
+      setTopics(prev => prev.map(t => ({ ...t, points: shared.points[t.id] ?? t.points })));
+      setSelectedSubFiles(new Set(shared.subFiles));
     }
   }, []);
 
@@ -324,7 +311,11 @@ export default function PrioritiesApp() {
 
   const dismissBanner = () => {
     setShowBanner(false);
-    localStorage.setItem('sz-priorities-banner-dismissed', 'true');
+    try {
+      localStorage.setItem('sz-priorities-banner-dismissed', 'true');
+    } catch {
+      // Storage unavailable: the banner just returns on the next visit.
+    }
   };
 
   const interdependencyInfo = useMemo(() => {
@@ -424,7 +415,7 @@ export default function PrioritiesApp() {
   const persona = useMemo(() => {
     if (totalAllocated < 100) return null;
 
-    const sorted = [...topics].sort((a, b) => b.points - a.points);
+    const sorted = topics.toSorted((a, b) => b.points - a.points);
     const highest = sorted[0];
 
     const details: Record<string, { emoji: string; tag: string; tagClass: string; title: string; desc: string }> = {
@@ -512,7 +503,7 @@ export default function PrioritiesApp() {
     textToCopy += `لقد قمت بموازنة الـ 100 نقطة اهتمام، وحصلت على بروفايل: *"${personaName}"*\n\n`;
     textToCopy += `💡 *ترتيب الأولويات الثلاث الكبرى لدي:* \n`;
 
-    const sortedTopics = [...topics].sort((a, b) => b.points - a.points);
+    const sortedTopics = topics.toSorted((a, b) => b.points - a.points);
     sortedTopics.slice(0, 3).forEach((t, i) => {
       textToCopy += `${i + 1}. ${t.emoji} ${t.name}: %${t.points} \n`;
     });
@@ -542,10 +533,8 @@ export default function PrioritiesApp() {
       return;
     }
 
-    const statePoints = topics.map(t => `${t.id}:${t.points}`).join(',');
-    const stateSubs = Array.from(selectedSubFiles).join(',');
-    const encoded = btoa(unescape(encodeURIComponent(`${statePoints}|${stateSubs}`)));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?state=${encoded}`;
+    const encoded = encodeShareState(Object.fromEntries(topics.map(t => [t.id, t.points])), [...selectedSubFiles]);
+    const shareUrl = shareStateUrl(window.location, encoded);
 
     void copyText(shareUrl, {
       successMessage: "🔗 تم نسخ رابط بروفايلك الخاص المشفّر بنجاح! يمكن لزوار الرابط تصفح ومقارنة اختياراتك بدقة.",
@@ -580,7 +569,7 @@ export default function PrioritiesApp() {
   };
 
   const sortedTopicsForCard = useMemo(() => {
-    return [...topics].sort((a, b) => b.points - a.points);
+    return topics.toSorted((a, b) => b.points - a.points);
   }, [topics]);
 
   const activeSubNames = useMemo(() => {
@@ -630,12 +619,15 @@ export default function PrioritiesApp() {
         </div>
       </div>
 
-      {showWarning && (
-        <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2 animate-pulse">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
-          <span>لقد استنفدت نقاطك المتاحة. لزيادة نقاط هذا الملف، يرجى تقليل نقاط ملف آخر أولاً.</span>
-        </div>
-      )}
+      {/* The live region stays mounted so screen readers announce the warning. */}
+      <div role="status" className="empty:hidden">
+        {showWarning && (
+          <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2 motion-safe:animate-pulse">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" aria-hidden="true" />
+            <span>لقد استنفدت نقاطك المتاحة. لزيادة نقاط هذا الملف، يرجى تقليل نقاط ملف آخر أولاً.</span>
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
@@ -688,11 +680,14 @@ export default function PrioritiesApp() {
                       <div>
                         <h4 className="font-bold text-sm text-foreground">{topic.name}</h4>
                         <button
+                          type="button"
                           onClick={() => toggleTopicDetails(topic.id)}
+                          aria-expanded={isExpanded}
+                          aria-controls={`priorities-topic-${topic.id}-details`}
                           className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 mt-0.5"
                         >
                           <span>تخصيص الملفات الفرعية والترابط</span>
-                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" /> : <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />}
                         </button>
                       </div>
                     </div>
@@ -724,6 +719,7 @@ export default function PrioritiesApp() {
                       <input
                         type="range"
                         aria-label={`نسبة ${getShortTopicName(topic.id, topic.name)}`}
+                        aria-valuetext={`${topic.points}%`}
                         min="0"
                         max="100"
                         step="1"
@@ -737,7 +733,7 @@ export default function PrioritiesApp() {
                   </div>
 
                   {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-border/60 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div id={`priorities-topic-${topic.id}-details`} className="mt-4 pt-4 border-t border-border/60 animate-in fade-in slide-in-from-top-1 duration-200">
                       <p className="text-xs text-muted-foreground mb-3 leading-relaxed bg-card p-3 rounded-xl border border-border shadow-sm">
                         <span className="font-bold text-foreground block mb-1">وصف الملف الوطني:</span>
                         {topic.desc}
@@ -813,13 +809,15 @@ export default function PrioritiesApp() {
             </div>
 
             <div className="mb-4 border-t border-border/60 pt-4">
-              <label className="text-xs font-bold text-foreground block mb-2 font-sans">مقارنة بروفايلك الخاص مع:</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-xl text-[10px] sm:text-xs font-medium border border-border">
+              <p id="priorities-comparison-label" className="text-xs font-bold text-foreground block mb-2 font-sans">مقارنة بروفايلك الخاص مع:</p>
+              <div role="group" aria-labelledby="priorities-comparison-label" className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-xl text-[10px] sm:text-xs font-medium border border-border">
                 {Object.entries(COMPARISONS).map(([key, comp]) => {
                   const isActive = activeComparisonKey === key;
                   return (
                     <button
                       key={key}
+                      type="button"
+                      aria-pressed={isActive}
                       onClick={() => setActiveComparisonKey(key)}
                       className={`py-2 px-1 rounded-md text-center transition-all ${isActive
                         ? 'bg-card text-foreground shadow-sm font-bold border border-border'
@@ -833,9 +831,28 @@ export default function PrioritiesApp() {
               </div>
             </div>
 
-            <div className="relative w-full h-[260px] flex items-center justify-center bg-muted/20 rounded-xl border border-border p-2 mb-4">
+            <div className="sr-only"><table>
+              <caption>مقارنة نقاط موازنتك مع {COMPARISONS[activeComparisonKey]?.title}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">الملف</th>
+                  <th scope="col">نقاط موازنتك الحالية</th>
+                  <th scope="col">{COMPARISONS[activeComparisonKey]?.title}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.map(row => (
+                  <tr key={row.topic}>
+                    <th scope="row">{row.topic}</th>
+                    <td>{row.current}%</td>
+                    <td>{row.comparison}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+            <div aria-hidden="true" className="relative w-full h-[260px] flex items-center justify-center bg-muted/20 rounded-xl border border-border p-2 mb-4">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData} accessibilityLayer={false}>
                   <PolarGrid stroke="rgba(128, 128, 128, 0.15)" />
                   <PolarAngleAxis
                     dataKey="topic"
@@ -984,7 +1001,7 @@ export default function PrioritiesApp() {
               <div className="space-y-2">
                 <Button
                   onClick={openStoryModal}
-                  className="w-full text-white font-bold text-sm py-6 bg-primary hover:bg-primary/95 transition-all shadow-md shadow-primary/10"
+                  className="w-full text-primary-foreground font-bold text-sm py-6 bg-primary hover:bg-primary/95 transition-all shadow-md shadow-primary/10"
                 >
                   <Instagram className="w-5 h-5 me-2" />
                   تصميم وتنزيل صورة لـ ستوري إنستغرام / سناب
@@ -1016,22 +1033,18 @@ export default function PrioritiesApp() {
         </div>
       </div>
 
-      {isStoryModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <Card className="bg-card text-card-foreground border-border border shadow-2xl p-6 max-w-lg w-full flex flex-col items-center">
+      <Dialog open={isStoryModalOpen} onOpenChange={setIsStoryModalOpen}>
+        <DialogContent className="bg-card text-card-foreground border-border shadow-2xl p-6 max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto flex flex-col items-center gap-0">
 
-            <div className="w-full flex items-center justify-between pb-3 mb-4 border-b border-border">
-              <h3 className="font-extrabold text-foreground text-base flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
+            <DialogHeader className="w-full pb-3 pe-8 mb-4 border-b border-border">
+              <DialogTitle className="font-extrabold text-foreground text-base flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" aria-hidden="true" />
                 تصدير بطاقة القصة (Instagram Story)
-              </h3>
-              <button
-                onClick={() => setIsStoryModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                معاينة بطاقة القصة مع اختيار لونها وتنزيلها كصورة.
+              </DialogDescription>
+            </DialogHeader>
 
             <div className="w-full flex justify-center py-2 overflow-x-auto">
 
@@ -1316,10 +1329,10 @@ export default function PrioritiesApp() {
             </div>
 
             <div className="w-full mt-4 mb-2" dir="rtl">
-              <label className="block text-xs font-bold text-muted-foreground text-right mb-2">
+              <p id="priorities-story-theme-label" className="block text-xs font-bold text-muted-foreground text-right mb-2">
                 اختر لون المظهر للبطاقة:
-              </label>
-              <div className="flex flex-wrap justify-start gap-2">
+              </p>
+              <div role="group" aria-labelledby="priorities-story-theme-label" className="flex flex-wrap justify-start gap-2">
                 {THEME_REGISTRY.filter(t => t.id !== 'system').map((theme) => {
                   const themeKey = theme.id;
                   const colors = {
@@ -1334,6 +1347,8 @@ export default function PrioritiesApp() {
                   return (
                     <button
                       key={themeKey}
+                      type="button"
+                      aria-pressed={isActive}
                       onClick={() => setStoryTheme(themeKey)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${isActive
                         ? 'border-transparent text-white shadow-sm scale-105'
@@ -1343,7 +1358,7 @@ export default function PrioritiesApp() {
                         backgroundColor: isActive ? colors.primary : undefined,
                       }}
                     >
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors.primary }}></span>
+                      <span className="w-2.5 h-2.5 rounded-full" aria-hidden="true" style={{ backgroundColor: colors.primary }}></span>
                       <span>{themeMeta.emoji} {themeMeta.ar}</span>
                     </button>
                   );
@@ -1371,9 +1386,8 @@ export default function PrioritiesApp() {
               </Button>
             </div>
 
-          </Card>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

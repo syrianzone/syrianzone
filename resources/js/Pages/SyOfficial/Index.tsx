@@ -26,6 +26,14 @@ interface SyOfficialClientProps {
 
 type Language = 'ar' | 'en' | 'tr' | 'ku';
 
+/** BCP 47 tag and direction for each interface language (Kurmanji is Latin-script, LTR). */
+const LANGUAGE_META: Record<Language, { lang: string; dir: 'rtl' | 'ltr'; name: string }> = {
+    ar: { lang: 'ar', dir: 'rtl', name: 'العربية' },
+    en: { lang: 'en', dir: 'ltr', name: 'English' },
+    tr: { lang: 'tr', dir: 'ltr', name: 'Türkçe' },
+    ku: { lang: 'ku', dir: 'ltr', name: 'Kurdî' },
+};
+
 const TRANSLATIONS = {
     ar: {
         title: 'روابط الحسابات الرسمية السورية',
@@ -162,6 +170,15 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
     }, [filteredData, currentCategory, categoryList]);
 
     const t = TRANSLATIONS[language];
+    const ui = LANGUAGE_META[language];
+    // Entity names and descriptions exist only in Arabic and English.
+    const contentLang = language === 'ar' ? undefined : 'en';
+    const contentDir = language === 'ar' ? undefined : 'ltr';
+    // Icon-only links: name the platform and the entity, in the page's language.
+    const socialLinkLabel = (plat: string, item: OfficialEntity) =>
+        language === 'ar'
+            ? `${socialPlatformLabel(plat, 'ar')} — ${item.name_ar || item.name}`
+            : `${socialPlatformLabel(plat, 'en')} — ${item.name}`;
 
     const getCategoryLabel = (key: string) => {
         const cat = categoryList.find(c => c.key === key);
@@ -208,7 +225,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                 <div className="container mx-auto px-4 text-center relative z-10 max-w-4xl">
 
                     <div className="flex items-center justify-center gap-3 mb-4">
-                        <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
+                        <h1 lang={ui.lang} dir={ui.dir} className="text-3xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
                             {t.title}
                         </h1>
                         {canOpenPanel && (
@@ -216,23 +233,27 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                 href="/admin/syofficial"
                                 className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md flex items-center gap-1 text-xs font-bold shrink-0"
                                 title="إدارة وإضافة وتعديل الحسابات الرسمية"
+                                aria-label="لوحة التحكم: إدارة الحسابات الرسمية"
                             >
-                                <Settings className="w-4 h-4" />
+                                <Settings className="w-4 h-4" aria-hidden="true" />
                                 <span className="hidden sm:inline">لوحة التحكم</span>
                             </a>
                         )}
                     </div>
 
-                    <p className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto mb-8 leading-relaxed">
+                    <p lang={ui.lang} dir={ui.dir} className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto mb-8 leading-relaxed">
                         {t.description}
                     </p>
 
-                    <div className="flex justify-center gap-2 mb-6">
+                    <div className="flex justify-center gap-2 mb-6" role="group" aria-label="لغة العرض">
                         {(['ar', 'en', 'tr', 'ku'] as Language[]).map(lang => (
                             <Button
                                 key={lang}
                                 variant={language === lang ? "default" : "secondary"}
                                 size="sm"
+                                aria-pressed={language === lang}
+                                lang={LANGUAGE_META[lang].lang}
+                                title={LANGUAGE_META[lang].name}
                                 onClick={() => setLanguage(lang)}
                                 className="rounded-full gap-1.5 px-3"
                             >
@@ -336,8 +357,9 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                 href={`/admin/syofficial?edit=${item.id}`}
                                                                 className="absolute top-2 start-2 z-10 p-1.5 rounded-lg bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border border-border/70 shadow-md transition-all duration-200 opacity-90 hover:opacity-100 hover:scale-110 flex items-center gap-1 text-xs font-bold"
                                                                 title="تعديل هذا الكرت في لوحة التحكم"
+                                                                aria-label={`تعديل ${item.name_ar || item.name} في لوحة التحكم`}
                                                             >
-                                                                <Pencil className="w-3.5 h-3.5" />
+                                                                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                                                                 <span className="hidden sm:inline">تعديل</span>
                                                             </a>
                                                         )}
@@ -364,11 +386,11 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
 
                                                     <CardContent className="p-3.5 text-center flex-1 flex flex-col justify-between">
                                                         <div>
-                                                            <h3 className="font-bold text-sm sm:text-base text-foreground mb-1.5 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                                            <h3 lang={contentLang} dir={contentDir} className="font-bold text-sm sm:text-base text-foreground mb-1.5 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                                                                 {language === 'ar' ? item.name_ar : item.name}
                                                             </h3>
                                                             {(item.description || item.description_ar) && (
-                                                                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+                                                                <p lang={contentLang} dir={contentDir} className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-3">
                                                                     {language === 'ar' ? (item.description_ar || item.description) : item.description}
                                                                 </p>
                                                             )}
@@ -386,8 +408,9 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                             rel="noopener noreferrer"
                                                                             className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${visual.hoverClass}`}
                                                                             title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                                            aria-label={socialLinkLabel(plat, item)}
                                                                         >
-                                                                            <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} />
+                                                                            <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} aria-hidden="true" />
                                                                         </a>
                                                                     );
                                                                 })}
@@ -404,7 +427,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                             <div className="bg-card/90 rounded-2xl shadow-sm border border-border/60 overflow-hidden backdrop-blur-sm">
                                 <Table>
                                     <TableHeader className="bg-muted/60">
-                                        <TableRow className="border-border/60">
+                                        <TableRow lang={ui.lang} className="border-border/60">
                                             <TableHead className="text-start font-bold">{t.tableName}</TableHead>
                                             <TableHead className="text-start font-bold">{t.tableCategory}</TableHead>
                                             <TableHead className="text-start font-bold">{t.tableDesc}</TableHead>
@@ -429,7 +452,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                 }}
                                                             />
                                                         </div>
-                                                        <span className="text-foreground font-semibold text-sm">{language === 'ar' ? item.name_ar : item.name}</span>
+                                                        <span lang={contentLang} dir={contentDir} className="text-foreground font-semibold text-sm">{language === 'ar' ? item.name_ar : item.name}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -438,7 +461,9 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground text-xs max-w-xs truncate">
-                                                    {language === 'ar' ? (item.description_ar || item.description) : item.description}
+                                                    <span lang={contentLang} dir={contentDir}>
+                                                        {language === 'ar' ? (item.description_ar || item.description) : item.description}
+                                                    </span>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -452,8 +477,9 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                     rel="noopener noreferrer"
                                                                     className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${visual.hoverClass}`}
                                                                     title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                                            aria-label={socialLinkLabel(plat, item)}
                                                                 >
-                                                                    <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} />
+                                                                    <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} aria-hidden="true" />
                                                                 </a>
                                                             );
                                                         })}
@@ -477,7 +503,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                 href={`/admin/syofficial?edit=${item.id}`}
                                                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-colors"
                                                             >
-                                                                <Pencil className="w-3.5 h-3.5" />
+                                                                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                                                                 تعديل
                                                             </a>
                                                         )}

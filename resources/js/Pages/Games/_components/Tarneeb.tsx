@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { SUIT_LABEL, type Card, type Suit } from '@/Domain/games/cards';
+import { SUIT_LABEL, SUIT_NAME_AR, cardName, type Card, type Suit } from '@/Domain/games/cards';
 import { applyRound, createMatch, isMatchOver, type MatchState } from '../_lib/cardGames/match';
 import { power } from '../_lib/cardGames/hand';
 import { readStats, recordMatch, type MatchStats } from '../_lib/scores';
@@ -29,6 +29,7 @@ import PlayingCard from '@/Domain/games/PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
 import GameMenu from './GameMenu';
 import { useCardDrag } from '../_lib/useCardDrag';
+import { useFocusRescue } from '../_lib/useFocusRescue';
 import './table.css';
 
 /** Seat 0 is the player; 1 on the left, 2 opposite (the partner), 3 on the right. */
@@ -40,6 +41,46 @@ const SUIT_ORDER: Record<Suit, number> = { S: 0, H: 1, D: 2, C: 3 };
 const SUITS: Suit[] = ['S', 'H', 'D', 'C'];
 /** How long an AI seat "thinks" before acting, so the table is followable. */
 const AI_DELAY = 750;
+
+/** "X took the trick", with the second person for the player. */
+const TOOK_TRICK = ['أكلتَ الطرنيب', 'أكل يسارك الطرنيب', 'أكل شريكك الطرنيب', 'أكل يمينك الطرنيب'];
+
+const allPlays = (round: TarneebRound) => [...round.history.flatMap((trick) => trick.plays), ...round.trick];
+
+/**
+ * What changed at the table since the last state, as one sentence for the
+ * polite live region: the AI seats' bids and cards, the trump, who took each
+ * trick, and the player's turn. The player's own moves are not repeated.
+ */
+function describeTarneeb(prev: TarneebRound | null, next: TarneebRound): string {
+  const parts: string[] = [];
+  // A new round starts with a new, empty auction.
+  const fresh =
+    !prev ||
+    (next.auction.actions.length === 0 && next.auction !== prev.auction) ||
+    next.history.length < prev.history.length;
+  const base = fresh ? null : prev;
+  if (fresh) parts.push('توزيع جديد');
+
+  for (const action of next.auction.actions.slice(base?.auction.actions.length ?? 0)) {
+    if (action.seat === HUMAN) continue;
+    parts.push('pass' in action ? `${SEAT_NAMES[action.seat]} مرّر` : `${SEAT_NAMES[action.seat]} طلب ${action.value}`);
+  }
+  if (next.trump && next.trump !== base?.trump) parts.push(`الحكم ${SUIT_NAME_AR[next.trump]}`);
+  for (const play of allPlays(next).slice(base ? allPlays(base).length : 0)) {
+    if (play.seat !== HUMAN) parts.push(`${SEAT_NAMES[play.seat]}: ${cardName(play.card)}`);
+  }
+  for (const trick of next.history.slice(base?.history.length ?? 0)) parts.push(TOOK_TRICK[trick.winner]);
+  if (next.phase === 'complete' && base?.phase !== 'complete') parts.push('انتهى الدست');
+
+  const yourTurn = next.turn === HUMAN && (base?.turn !== HUMAN || base?.phase !== next.phase);
+  if (yourTurn) {
+    if (next.phase === 'bidding') parts.push('دورك للمزايدة');
+    else if (next.phase === 'trump') parts.push('اختر الحكم');
+    else if (next.phase === 'playing') parts.push('دورك');
+  }
+  return parts.join('، ');
+}
 
 const createFreshMatch = () =>
   createMatch({ players: TARNEEB_PLAYERS, units: TARNEEB_TEAMS, target: DEFAULT_TARNEEB.target });
@@ -57,6 +98,9 @@ export default function Tarneeb() {
   /** The card picked on a touch screen, waiting for a second tap to play it. */
   const [selected, setSelected] = useState<string | null>(null);
 
+  /** The live region's text, and the round it was worked out against. */
+  const [announcement, setAnnouncement] = useState('');
+  const announced = useRef<TarneebRound | null>(null);
   const recorded = useRef<MatchState | null>(null);
   const seenHistory = useRef(0);
 
@@ -101,6 +145,13 @@ export default function Tarneeb() {
   }, [round]);
 
   useEffect(() => {
+    if (!round) return;
+    const text = describeTarneeb(announced.current, round);
+    announced.current = round;
+    if (text) setAnnouncement(text);
+  }, [round]);
+
+  useEffect(() => {
     if (!match || !isMatchOver(match) || recorded.current === match) return;
     recorded.current = match;
     setStats(recordMatch('tarneeb', match.winner === teamOf(HUMAN) ? 'win' : 'loss'));
@@ -108,7 +159,7 @@ export default function Tarneeb() {
 
   const hand = useMemo(() => {
     if (!round) return [];
-    return [...round.hands[HUMAN]].sort(
+    return round.hands[HUMAN].toSorted(
       (a, b) => SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit] || power(b) - power(a),
     );
   }, [round]);
@@ -116,11 +167,14 @@ export default function Tarneeb() {
   // Hooks run before the loading return below; the drop handler reaches the
   // current render's `play` through a ref.
   const playRef = useRef<(card: Card) => void>(() => {});
-  const { drag, startDrag, isTouchPick } = useCardDrag<Card>({
+  const { drag, ghostRef, startDrag, isTouchPick } = useCardDrag<Card>({
     onDrop: (element, card) => {
       if (element?.closest('.sz-tbl')) playRef.current(card);
     },
   });
+  // Every move unmounts the focused control (a played card, the bid buttons);
+  // this puts focus back on the table instead of <body>.
+  const tableRef = useFocusRescue<HTMLDivElement>(['.sz-tbl__actions', '.sz-tbl__hand']);
 
   if (!match || !round) {
     return <div className="py-16 text-center text-sm text-muted-foreground">جاري التوزيع…</div>;
@@ -198,7 +252,9 @@ export default function Tarneeb() {
   };
 
   return (
-    <div className="flex h-full select-none flex-col">
+    <div ref={tableRef} className="flex h-full select-none flex-col">
+      {/* One persistent polite region for everything the other seats do. */}
+      <div role="status" className="sr-only">{announcement}</div>
       {/* The two buttons portal into the shell header, beside القوانين. Only the
           contract line stays here; its height is reserved so the table never
           moves as the contract appears. */}
@@ -252,18 +308,23 @@ export default function Tarneeb() {
         <Seat name={SEAT_NAMES[3]} count={round.hands[3].length} action={lastAction(3)} orientation="v" className="sz-tbl__seat--east" />
 
         <div className="sz-tbl__centre">
-          <div className="sz-tbl__trick">
-            <Slot position="n" card={cardAt(2)} win={trickWinnerSeat === 2} large={large} />
-            <Slot position="w" card={cardAt(1)} win={trickWinnerSeat === 1} large={large} />
+          <div className="sz-tbl__trick" role="group" aria-label="الطاولة">
+            <Slot position="n" seatName={SEAT_NAMES[2]} card={cardAt(2)} win={trickWinnerSeat === 2} large={large} />
+            <Slot position="w" seatName={SEAT_NAMES[1]} card={cardAt(1)} win={trickWinnerSeat === 1} large={large} />
             <div className="sz-tbl__slot sz-tbl__slot--c">
-              {round.trump ? <span className="sz-tbl__trump">{SUIT_LABEL[round.trump]}</span> : null}
+              {round.trump ? (
+                <span className="sz-tbl__trump">
+                  <span aria-hidden="true">{SUIT_LABEL[round.trump]}</span>
+                  <span className="sr-only">الحكم {SUIT_NAME_AR[round.trump]}</span>
+                </span>
+              ) : null}
             </div>
-            <Slot position="e" card={cardAt(3)} win={trickWinnerSeat === 3} large={large} />
-            <Slot position="s" card={cardAt(HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
+            <Slot position="e" seatName={SEAT_NAMES[3]} card={cardAt(3)} win={trickWinnerSeat === 3} large={large} />
+            <Slot position="s" seatName={SEAT_NAMES[HUMAN]} card={cardAt(HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
           </div>
         </div>
 
-        <div className="sz-tbl__hand">
+        <div className="sz-tbl__hand" data-focus-group="hand">
           {hand.map((card) => (
             <PlayingCard
               key={card.id}
@@ -280,7 +341,7 @@ export default function Tarneeb() {
       </div>
 
       {/* A fixed-height action strip, so the board above it never shifts. */}
-      <div className="sz-tbl__actions mt-2 shrink-0">
+      <div className="sz-tbl__actions mt-2 shrink-0" data-focus-group="actions">
         {paused ? (
           <Button onClick={proceed}>كمّل</Button>
         ) : round.phase === 'bidding' ? (
@@ -297,7 +358,13 @@ export default function Tarneeb() {
               <>
                 <span className="text-sm font-bold">اختر الحكم:</span>
                 {SUITS.map((suit) => (
-                  <button key={suit} type="button" onClick={() => nameTrump(suit)} className="sz-tbl__suit">
+                  <button
+                    key={suit}
+                    type="button"
+                    aria-label={SUIT_NAME_AR[suit]}
+                    onClick={() => nameTrump(suit)}
+                    className="sz-tbl__suit"
+                  >
                     {SUIT_LABEL[suit]}
                   </button>
                 ))}
@@ -307,7 +374,7 @@ export default function Tarneeb() {
             )}
           </div>
         ) : round.phase === 'playing' ? (
-          <span aria-live="polite" className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground">
             {humanTurn ? 'دورك — نزّل ورقة' : `دور ${SEAT_NAMES[round.turn ?? 0]}…`}
           </span>
         ) : (
@@ -346,6 +413,7 @@ export default function Tarneeb() {
       {/* The card following the finger while it is dragged out to play. */}
       {drag && (
         <div
+          ref={ghostRef}
           className="sz-tbl__ghost"
           style={
             {
@@ -459,10 +527,24 @@ function Seat({
   );
 }
 
-function Slot({ position, card, win, large }: { position: string; card?: Card; win: boolean; large: boolean }) {
+function Slot({
+  position,
+  seatName,
+  card,
+  win,
+  large,
+}: {
+  position: string;
+  seatName: string;
+  card?: Card;
+  win: boolean;
+  large: boolean;
+}) {
   return (
     <div className={`sz-tbl__slot sz-tbl__slot--${position} ${win ? 'sz-tbl__slot--win' : ''}`}>
       {card && <PlayingCard card={card} decorative large={large} />}
+      {/* The drawn card is decorative; this is what a screen reader hears. */}
+      {card && <span className="sr-only">{`${seatName}: ${cardName(card)}${win ? '، الأعلى' : ''}`}</span>}
     </div>
   );
 }

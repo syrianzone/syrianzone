@@ -8,7 +8,7 @@ import {
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 import MainLayout from '@/Layouts/MainLayout';
-import { applyTheme as persistTheme, getThemePreference, useColorScheme } from '@/Lib/theme';
+import { applyTheme as persistTheme, getThemePreference } from '@/Lib/theme';
 import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
 import AppearanceMenu from '@/Components/AppearanceMenu';
@@ -42,6 +42,7 @@ import { WeatherIcon } from '@/Domain/weather/WeatherIcon';
 import { getLastPage } from '@/Lib/visit';
 import { usePageDialog } from '@/Lib/appShell';
 import { formatGregorianSyrian } from '@/Lib/syrian-date';
+import { confirmDialog } from '@/Lib/confirm';
 
 const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/HomeSettingsDialog'));
 const AddLinkDialog = React.lazy(() => import('@/Pages/Home/_components/AddLinkDialog'));
@@ -76,7 +77,6 @@ export default function Home() {
     const [lastPage, setLastPage] = useState<string | null>(null);
     const location = useLocationPreference();
     const [mounted, setMounted] = useState(false);
-    const scheme = useColorScheme();
 
     const [eventsGovernorate, setEventsGovernorateState] = useState('all');
 
@@ -84,7 +84,7 @@ export default function Home() {
     const { showWeather, showPrayerTimes, showEvents } = displayPrefs;
 
     const { weather } = useWeather(location, { enabled: mounted && showWeather, sessionCache: true });
-    const { timings: prayerTimes } = usePrayerTimes(location, readStoredMethod(), {
+    const { timings: prayerTimes, timeZone: prayerTimeZone } = usePrayerTimes(location, readStoredMethod(), {
         enabled: mounted && showPrayerTimes,
         timeoutMs: null,
         sessionCache: true,
@@ -135,8 +135,6 @@ export default function Home() {
         setMounted(true);
     }, []);
 
-    const isDark = scheme === 'dark';
-
     const addCustomLink = (link: CustomLink) => {
         const updated = [...customLinks, link];
         setCustomLinks(updated);
@@ -155,7 +153,7 @@ export default function Home() {
         saveCustomLinks(updated, Boolean(user));
     };
 
-    const prayerMini = showPrayerTimes ? nextPrayer(prayerTimes, new Date()) : null;
+    const prayerMini = showPrayerTimes ? nextPrayer(prayerTimes, new Date(), { timeZone: prayerTimeZone }) : null;
     const weatherMini = showWeather && weather ? weather : null;
 
     /** Mirror a location edit into the account settings (device storage is the module's). */
@@ -183,10 +181,17 @@ export default function Home() {
                     <div className="mx-auto max-w-6xl px-3 pt-1.5 pb-3 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-5">
                         <a href="/" className="flex items-center shrink-0">
+                            {/* Both logos ship in the HTML; CSS picks one, so the server
+                                render already shows the right one (no swap on hydration). */}
                             <img
-                                src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
+                                src="/assets/logo-lightmode.svg"
                                 alt="المساحة السورية"
-                                className="h-10 w-auto"
+                                className="h-10 w-auto dark:hidden"
+                            />
+                            <img
+                                src="/assets/logo-darkmode.svg"
+                                alt="المساحة السورية"
+                                className="hidden h-10 w-auto dark:block"
                             />
                         </a>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -211,7 +216,7 @@ export default function Home() {
                             )}
                             {mounted && (
                                 <span className="whitespace-nowrap font-medium text-foreground">
-                                    {formatGregorianSyrian(new Date())} • {formatHijriDate(new Date())}
+                                    {formatGregorianSyrian(new Date())} <span aria-hidden="true">•</span> {formatHijriDate(new Date())}
                                 </span>
                             )}
                         </div>
@@ -242,7 +247,9 @@ export default function Home() {
                 </header>
 
                 <div className="container mx-auto px-4 pt-6 pb-12 max-w-6xl">
-                    <div className="flex flex-col items-center gap-1 mb-6 lg:hidden">
+                    {/* Both rows fill in after mount (device clock, stored location):
+                        their heights are reserved so the page below does not jump. */}
+                    <div className="flex flex-col items-center gap-1 mb-6 min-h-12 lg:hidden">
                         {mounted && (
                             <>
                                 <span className="text-base font-bold text-foreground">{formatGregorianSyrian(new Date())}</span>
@@ -251,7 +258,7 @@ export default function Home() {
                         )}
                     </div>
 
-                    <div className="flex items-center justify-center gap-4 mb-6 text-sm lg:hidden">
+                    <div className={`flex items-center justify-center gap-4 mb-6 text-sm lg:hidden ${showWeather || showPrayerTimes ? 'min-h-5' : ''}`}>
                         {showWeather && weather && (
                             <span className="flex items-center gap-1.5 text-muted-foreground">
                                 <span className="[&>svg]:w-5 [&>svg]:h-5"><WeatherIcon code={weather.icon} /></span>
@@ -446,8 +453,11 @@ export default function Home() {
                                     return (
                                         <div key={link.id} className="relative group">
                                             {editMode ? (
+                                                // A pointer shortcut only: keyboard and screen-reader users
+                                                // reach the same action through the named edit button.
                                                 <div
                                                     onClick={() => setEditingLink(link)}
+                                                    aria-hidden="true"
                                                     className="block h-full cursor-pointer"
                                                 >
                                                     <div className="flex h-full flex-col items-center justify-between gap-2 rounded-lg px-1 py-1 text-center ring-2 ring-primary/40">
@@ -455,8 +465,9 @@ export default function Home() {
                                                             <>
                                                                 <img
                                                                     src={faviconUrl}
-                                                                    alt={link.name}
+                                                                    alt=""
                                                                     loading="lazy"
+                                                                    referrerPolicy="no-referrer"
                                                                     className="w-12 h-12 shrink-0 object-contain"
                                                                     onError={(e) => {
                                                                         e.currentTarget.style.display = 'none';
@@ -485,8 +496,9 @@ export default function Home() {
                                                             <>
                                                                 <img
                                                                     src={faviconUrl}
-                                                                    alt={link.name}
+                                                                    alt=""
                                                                     loading="lazy"
+                                                                    referrerPolicy="no-referrer"
                                                                     className="w-12 h-12 shrink-0 object-contain transition-transform group-hover:scale-110"
                                                                     onError={(e) => {
                                                                         e.currentTarget.style.display = 'none';
@@ -515,7 +527,7 @@ export default function Home() {
 
                                             {editMode && (
                                                 <div className="absolute -top-2.5 -end-2.5 flex gap-1 z-20 opacity-100 pointer-events-auto">
-                                                    <Button aria-label="تعديل الرابط"
+                                                    <Button aria-label={`تعديل الرابط ${link.name}`}
                                                         variant="secondary"
                                                         size="icon"
                                                         className="h-8 w-8 rounded-full shadow-md bg-background border border-border hover:bg-accent text-foreground opacity-100"
@@ -528,13 +540,14 @@ export default function Home() {
                                                     >
                                                         <Edit className="h-3.5 w-3.5" />
                                                     </Button>
-                                                    <Button aria-label="حذف الرابط"
+                                                    <Button aria-label={`حذف الرابط ${link.name}`}
                                                         variant="destructive"
                                                         size="icon"
                                                         className="h-8 w-8 rounded-full shadow-md opacity-100"
-                                                        onClick={(e) => {
+                                                        onClick={async (e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
+                                                            if (!(await confirmDialog({ title: 'حذف هذا الرابط؟', destructive: true, confirmText: 'حذف', cancelText: 'إلغاء' }))) return;
                                                             removeCustomLink(link.id);
                                                         }}
                                                         title="حذف الرابط"
@@ -571,17 +584,17 @@ export default function Home() {
                                 <Info className="h-4 w-4" />
                                 <span>عن المنصة</span>
                             </a>
-                            <span>•</span>
+                            <span aria-hidden="true">•</span>
                             <a href="/stats" className="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 <BarChart3 className="h-4 w-4" />
                                 <span>الإحصائيات</span>
                             </a>
-                            <span>•</span>
+                            <span aria-hidden="true">•</span>
                             <a href="/privacy" className="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 <Shield className="h-4 w-4" />
                                 <span>سياسة الخصوصية</span>
                             </a>
-                            <span>•</span>
+                            <span aria-hidden="true">•</span>
                             <a href="/terms" className="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 <FileText className="h-4 w-4" />
                                 <span>الشروط والأحكام</span>

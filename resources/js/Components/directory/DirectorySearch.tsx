@@ -38,6 +38,8 @@ export function DirectorySearch({
                 />
                 <Input
                     type="text"
+                    inputMode="search"
+                    enterKeyHint="search"
                     value={value}
                     onChange={(event) => onChange(event.target.value)}
                     placeholder={placeholder}

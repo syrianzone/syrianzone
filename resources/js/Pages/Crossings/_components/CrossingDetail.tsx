@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { Link } from '@inertiajs/react';
 import { Clock, Globe2, MapPin, Share2, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
@@ -19,11 +20,14 @@ export function CrossingDetail({
     nowMin,
     interactive = true,
     onClose,
+    headingRef,
 }: {
     crossing: Crossing;
     nowMin: number | null;
     interactive?: boolean;
     onClose: () => void;
+    /** Lets the page move focus here when a crossing is picked from the list. */
+    headingRef?: Ref<HTMLHeadingElement>;
 }) {
     const status = statusOf(crossing, nowMin);
 
@@ -36,7 +40,7 @@ export function CrossingDetail({
         >
             <div className="mb-3 flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                    <h2 className="font-bold leading-snug text-foreground">{crossing.name}</h2>
+                    <h2 ref={headingRef} tabIndex={-1} className="font-bold leading-snug text-foreground focus:outline-none">{crossing.name}</h2>
                     {crossing.country && (
                         <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Globe2 className="h-3.5 w-3.5" />
@@ -74,12 +78,16 @@ export function CrossingDetail({
                             return (
                                 <div key={i} className="flex items-center gap-2 text-muted-foreground">
                                     {crossing.windows.length > 1 ? (
-                                        <span
-                                            className={cn(
-                                                'h-1.5 w-1.5 shrink-0 rounded-full',
-                                                open === null ? 'bg-muted-foreground/40' : open ? 'bg-emerald-500' : 'bg-red-500'
-                                            )}
-                                        />
+                                        <>
+                                            <span
+                                                aria-hidden="true"
+                                                className={cn(
+                                                    'h-1.5 w-1.5 shrink-0 rounded-full',
+                                                    open === null ? 'bg-muted-foreground/40' : open ? 'bg-emerald-500' : 'bg-red-500'
+                                                )}
+                                            />
+                                            {open !== null && <span className="sr-only">{open ? 'مفتوح الآن' : 'مغلق الآن'}، </span>}
+                                        </>
                                     ) : (
                                         <Clock className="h-3.5 w-3.5 shrink-0" />
                                     )}

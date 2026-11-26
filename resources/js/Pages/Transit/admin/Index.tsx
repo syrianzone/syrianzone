@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
+import { useIsMobile } from '@/Lib/useIsMobile'
 import type maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection } from 'geojson'
@@ -124,6 +125,13 @@ function TransitAdminPageContent() {
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
+  // Below lg the list view collapses the map to h-0/opacity-0 (it stays mounted
+  // so MapLibre keeps real dimensions); inert keeps its controls out of the tab
+  // order. Applied after mount so the server markup still hydrates.
+  const isBelowLg = useIsMobile('lg')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const mapHidden = mounted && isBelowLg && mobileView === 'list'
   const [adminTab, setAdminTab] = useState<string>('drafts')
 
   const [publishedRoutes, setPublishedRoutes] = useState<PublishedRoute[]>([])
@@ -196,7 +204,7 @@ function TransitAdminPageContent() {
     if (href) {
       notify.success(msg, {
         duration: 8000,
-        action: { label: linkLabel ?? 'عرض', onClick: () => { window.location.href = href } },
+        action: { label: linkLabel ?? 'عرض', onClick: () => router.visit(href) },
       })
       return
     }
@@ -383,7 +391,11 @@ function TransitAdminPageContent() {
     } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [selectedDraft, rejectReason, showToast, queryClient, drafts, statusFilter, cityFilter])
 
+  // Picking routes in quick succession must not let an older route's full
+  // geometry arrive last and replace the newer selection on the map.
+  const routeRequestRef = useRef(0)
   const handleSelectRoute = useCallback(async (route: PublishedRoute) => {
+    const requestId = ++routeRequestRef.current
     setSelectedRoute(route)
     setMobileView('map')
 
@@ -399,6 +411,7 @@ function TransitAdminPageContent() {
 
     try {
       const full = await transitApi.routeGeoJson(route.id)
+      if (requestId !== routeRequestRef.current) return
       const fullGeojson = normalizeFeatureCollection(full)
       setSelectedRouteGeoJson(fullGeojson)
       if (mapRef.current) {
@@ -590,6 +603,7 @@ function TransitAdminPageContent() {
           <Button
             type="button"
             variant={mobileView === 'list' ? 'default' : 'outline'}
+            aria-pressed={mobileView === 'list'}
             size="sm"
             className="flex-1 h-8 text-xs gap-1.5"
             onClick={() => setMobileView('list')}
@@ -599,6 +613,7 @@ function TransitAdminPageContent() {
           <Button
             type="button"
             variant={mobileView === 'map' ? 'default' : 'outline'}
+            aria-pressed={mobileView === 'map'}
             size="sm"
             className="flex-1 h-8 text-xs gap-1.5"
             onClick={() => setMobileView('map')}
@@ -774,7 +789,9 @@ function TransitAdminPageContent() {
                   <div key={route.id} role="button" tabIndex={0}
                     className={`w-full max-w-full box-border text-right p-3 rounded-lg border transition-colors cursor-pointer ${selectedRoute?.id === route.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}
                     onClick={() => handleSelectRoute(route)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelectRoute(route) }}>
+                    aria-pressed={selectedRoute?.id === route.id}
+                    // preventDefault: Space would otherwise also scroll the list
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectRoute(route) } }}>
                     <div className="flex items-start justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <span className="w-3 h-3 rounded-full shrink-0 border border-black/10 shadow-xs" style={{ backgroundColor: getRouteColor(route.color_index ?? 0) }} title={`لون المسار ${((route.color_index ?? 0) % ROUTE_COLOR_COUNT) + 1}`} />
@@ -851,7 +868,7 @@ function TransitAdminPageContent() {
       </aside>
 
       {/* Map panel — always rendered so MapLibre has real dimensions on init */}
-      <div className={`relative overflow-hidden ${mobileView === 'map' ? 'flex-1' : 'h-0 opacity-0 pointer-events-none'} lg:h-auto lg:opacity-100 lg:pointer-events-auto lg:flex-1`}>
+      <div inert={mapHidden} className={`relative overflow-hidden ${mobileView === 'map' ? 'flex-1' : 'h-0 opacity-0 pointer-events-none'} lg:h-auto lg:opacity-100 lg:pointer-events-auto lg:flex-1`}>
         <div ref={mapContainer} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
         {selectedDraft && adminTab === 'drafts' && (
@@ -862,7 +879,7 @@ function TransitAdminPageContent() {
                   <CardTitle className="text-base">{selectedDraft.name_ar}</CardTitle>
                   {selectedDraft.name_en && <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{selectedDraft.name_en}</p>}
                 </div>
-                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => setSelectedDraft(null)}>✕</Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => setSelectedDraft(null)} aria-label="إغلاق"><span aria-hidden="true">✕</span></Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
@@ -885,13 +902,14 @@ function TransitAdminPageContent() {
                 <div className="space-y-2 pt-1 border-t border-border/50">
                   {canInCity('transit.approve', selectedDraft.city_id) && (
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-muted-foreground block">اختيار لون الخط على الخريطة:</label>
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <span id="approve-color-label" className="text-[11px] font-semibold text-muted-foreground block">اختيار لون الخط على الخريطة:</span>
+                      <div role="group" aria-labelledby="approve-color-label" className="flex items-center gap-1.5 flex-wrap">
                         {ROUTE_PALETTE.map((colorHex, idx) => (
                           <button aria-label={`لون ${idx + 1}`}
                             key={idx}
                             type="button"
                             onClick={() => setApproveColorIndex(idx)}
+                            aria-pressed={approveColorIndex === idx}
                             className={`w-6 h-6 rounded-full border-2 transition-all ${approveColorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
                             style={{ backgroundColor: colorHex }}
                             title={`لون ${idx + 1}`}
@@ -949,7 +967,7 @@ function TransitAdminPageContent() {
                   </div>
                   {selectedRoute.name_en && <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{selectedRoute.name_en}</p>}
                 </div>
-                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => { setSelectedRoute(null); setSelectedRouteGeoJson(null) }}>✕</Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => { setSelectedRoute(null); setSelectedRouteGeoJson(null) }} aria-label="إغلاق"><span aria-hidden="true">✕</span></Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
@@ -963,14 +981,15 @@ function TransitAdminPageContent() {
 
               {canEditSelectedRoute && (
                 <div className="space-y-1 pt-1 border-t border-border/50">
-                  <label className="text-[11px] font-semibold text-muted-foreground block">تغيير لون المسار سريعاً:</label>
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <span id="quick-color-label" className="text-[11px] font-semibold text-muted-foreground block">تغيير لون المسار سريعاً:</span>
+                  <div role="group" aria-labelledby="quick-color-label" className="flex items-center gap-1.5 flex-wrap">
                     {ROUTE_PALETTE.map((colorHex, idx) => (
                       <button aria-label={`تغيير للون ${idx + 1}`}
                         key={idx}
                         type="button"
                         disabled={actionLoading}
                         onClick={() => handleQuickUpdateColor(idx)}
+                        aria-pressed={selectedRoute.color_index === idx}
                         className={`w-6 h-6 rounded-full border-2 transition-all ${selectedRoute.color_index === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
                         style={{ backgroundColor: colorHex }}
                         title={`تغيير للون ${idx + 1}`}
@@ -1082,39 +1101,39 @@ function TransitAdminPageContent() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">المدينة</label>
+              <label htmlFor="combine-city" className="text-xs font-medium">المدينة</label>
               <Select value={combineCityId} onValueChange={v => { setCombineCityId(v); setCombineRouteAId(''); setCombineRouteBId('') }}>
-                <SelectTrigger className="h-9 text-xs" aria-label="اختر المدينة…"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
+                <SelectTrigger id="combine-city" className="h-9 text-xs"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
                 <SelectContent>{visibleCities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">الخط الأول (البداية)</label>
+              <label htmlFor="combine-route-a" className="text-xs font-medium">الخط الأول (البداية)</label>
               <Select value={combineRouteAId} onValueChange={setCombineRouteAId} disabled={!combineCityId}>
-                <SelectTrigger className="h-9 text-xs" aria-label="اختر الخط…"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
+                <SelectTrigger id="combine-route-a" className="h-9 text-xs"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
                 <SelectContent>{publishedRoutes.filter(r => r.city_id === combineCityId && r.status === 'published').map(r => <SelectItem key={r.id} value={r.id}>{r.name_ar}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">الخط الثاني (الامتداد)</label>
+              <label htmlFor="combine-route-b" className="text-xs font-medium">الخط الثاني (الامتداد)</label>
               <Select value={combineRouteBId} onValueChange={setCombineRouteBId} disabled={!combineCityId}>
-                <SelectTrigger className="h-9 text-xs" aria-label="اختر الخط…"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
+                <SelectTrigger id="combine-route-b" className="h-9 text-xs"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
                 <SelectContent>{publishedRoutes.filter(r => r.city_id === combineCityId && r.status === 'published' && r.id !== combineRouteAId).map(r => <SelectItem key={r.id} value={r.id}>{r.name_ar}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium">الاسم بالعربية</label>
-                <Input aria-label="اسم الخط المدموج" value={combineNameAr} onChange={e => setCombineNameAr(e.target.value)} placeholder="مثال: الدوار الجنوبي" className="h-9 text-xs" />
+                <label htmlFor="combine-name-ar" className="text-xs font-medium">الاسم بالعربية</label>
+                <Input id="combine-name-ar" value={combineNameAr} onChange={e => setCombineNameAr(e.target.value)} placeholder="مثال: الدوار الجنوبي" className="h-9 text-xs" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium">الاسم بالإنجليزية</label>
-                <Input aria-label="الاسم بالإنجليزية للخط المدموج" value={combineNameEn} onChange={e => setCombineNameEn(e.target.value)} placeholder="e.g. Southern Ring" className="h-9 text-xs" dir="ltr" />
+                <label htmlFor="combine-name-en" className="text-xs font-medium">الاسم بالإنجليزية</label>
+                <Input id="combine-name-en" value={combineNameEn} onChange={e => setCombineNameEn(e.target.value)} placeholder="e.g. Southern Ring" className="h-9 text-xs" dir="ltr" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">التعرفة الجديدة (ل.س)</label>
-              <Input aria-label="اترك فارغاً للحفاظ على التعرفة الأصلية" type="number" value={combinePrice} onChange={e => setCombinePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الأصلية" className="h-9 text-xs" />
+              <label htmlFor="combine-price" className="text-xs font-medium">التعرفة الجديدة (ل.س)</label>
+              <Input id="combine-price" type="number" inputMode="numeric" value={combinePrice} onChange={e => setCombinePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الأصلية" className="h-9 text-xs" />
             </div>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">
@@ -1134,9 +1153,9 @@ function TransitAdminPageContent() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">نقطة التقسيم</label>
+              <label htmlFor="split-stop" className="text-xs font-medium">نقطة التقسيم</label>
               <Select value={splitAtStopId} onValueChange={setSplitAtStopId}>
-                <SelectTrigger className="h-9 text-xs" aria-label="اختر محطة…"><SelectValue placeholder="اختر محطة…" /></SelectTrigger>
+                <SelectTrigger id="split-stop" className="h-9 text-xs"><SelectValue placeholder="اختر محطة…" /></SelectTrigger>
                 <SelectContent>
                   {routeStops.map((stop, i) => {
                     if (i === 0 || i === routeStops.length - 1) return null
@@ -1146,10 +1165,10 @@ function TransitAdminPageContent() {
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الأول (عربي)</label><Input value={splitNameAAr} onChange={e => setSplitNameAAr(e.target.value)} className="h-9 text-xs" /></div>
-              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الأول (إنجليزي)</label><Input value={splitNameAEn} onChange={e => setSplitNameAEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
-              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الثاني (عربي)</label><Input value={splitNameBAr} onChange={e => setSplitNameBAr(e.target.value)} className="h-9 text-xs" /></div>
-              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الثاني (إنجليزي)</label><Input value={splitNameBEn} onChange={e => setSplitNameBEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
+              <div className="space-y-1.5"><label htmlFor="split-a-ar" className="text-xs font-medium">اسم القسم الأول (عربي)</label><Input id="split-a-ar" value={splitNameAAr} onChange={e => setSplitNameAAr(e.target.value)} className="h-9 text-xs" /></div>
+              <div className="space-y-1.5"><label htmlFor="split-a-en" className="text-xs font-medium">اسم القسم الأول (إنجليزي)</label><Input id="split-a-en" value={splitNameAEn} onChange={e => setSplitNameAEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
+              <div className="space-y-1.5"><label htmlFor="split-b-ar" className="text-xs font-medium">اسم القسم الثاني (عربي)</label><Input id="split-b-ar" value={splitNameBAr} onChange={e => setSplitNameBAr(e.target.value)} className="h-9 text-xs" /></div>
+              <div className="space-y-1.5"><label htmlFor="split-b-en" className="text-xs font-medium">اسم القسم الثاني (إنجليزي)</label><Input id="split-b-en" value={splitNameBEn} onChange={e => setSplitNameBEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
             </div>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">
@@ -1168,9 +1187,9 @@ function TransitAdminPageContent() {
             <DialogDescription>نقل <strong>{selectedRoute?.name_ar}</strong> والمواقف غير المشتركة مع خطوط أخرى.</DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium">المدينة المستهدفة</label>
+            <label htmlFor="move-city" className="text-xs font-medium">المدينة المستهدفة</label>
             <Select value={targetCityId} onValueChange={setTargetCityId}>
-              <SelectTrigger className="h-9 text-xs" aria-label="اختر مدينة…"><SelectValue placeholder="اختر مدينة…" /></SelectTrigger>
+              <SelectTrigger id="move-city" className="h-9 text-xs"><SelectValue placeholder="اختر مدينة…" /></SelectTrigger>
               <SelectContent>{visibleCities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -1191,21 +1210,22 @@ function TransitAdminPageContent() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">الاسم بالعربية</label>
-              <Input value={editRouteNameAr} onChange={e => setEditRouteNameAr(e.target.value)} className="h-9 text-xs" />
+              <label htmlFor="edit-route-name-ar" className="text-xs font-medium">الاسم بالعربية</label>
+              <Input id="edit-route-name-ar" value={editRouteNameAr} onChange={e => setEditRouteNameAr(e.target.value)} className="h-9 text-xs" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">الاسم بالإنجليزية</label>
-              <Input value={editRouteNameEn} onChange={e => setEditRouteNameEn(e.target.value)} className="h-9 text-xs" dir="ltr" />
+              <label htmlFor="edit-route-name-en" className="text-xs font-medium">الاسم بالإنجليزية</label>
+              <Input id="edit-route-name-en" value={editRouteNameEn} onChange={e => setEditRouteNameEn(e.target.value)} className="h-9 text-xs" dir="ltr" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium block">لون المسار على الخريطة</label>
-              <div className="flex items-center gap-2 flex-wrap">
+              <span id="edit-route-color-label" className="text-xs font-medium block">لون المسار على الخريطة</span>
+              <div role="group" aria-labelledby="edit-route-color-label" className="flex items-center gap-2 flex-wrap">
                 {ROUTE_PALETTE.map((colorHex, idx) => (
                   <button aria-label={`لون ${idx + 1}`}
                     key={idx}
                     type="button"
                     onClick={() => setEditRouteColorIndex(idx)}
+                    aria-pressed={editRouteColorIndex === idx}
                     className={`w-7 h-7 rounded-full border-2 transition-all ${editRouteColorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary' : 'border-transparent opacity-75 hover:opacity-100'}`}
                     style={{ backgroundColor: colorHex }}
                     title={`لون ${idx + 1}`}
@@ -1214,8 +1234,8 @@ function TransitAdminPageContent() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium">التعرفة (ل.س)</label>
-              <Input aria-label="اترك فارغاً للحفاظ على التعرفة الحالية" type="number" value={editRoutePrice} onChange={e => setEditRoutePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الحالية" className="h-9 text-xs" />
+              <label htmlFor="edit-route-price" className="text-xs font-medium">التعرفة (ل.س)</label>
+              <Input id="edit-route-price" type="number" inputMode="numeric" value={editRoutePrice} onChange={e => setEditRoutePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الحالية" className="h-9 text-xs" />
             </div>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">

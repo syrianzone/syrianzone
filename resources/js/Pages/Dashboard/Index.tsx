@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DEFAULT_POLL_TIMEZONE, isCorePollSlug } from '@/Domain/polls/core';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { apiErrorMessage } from '@/Lib/api';
 import { accountApi } from './_lib/api';
 import {
@@ -166,7 +166,9 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
       </div>
 
       {avatarMessage && (
-        <div className={cn(
+        <div
+          role={avatarMessage.type === 'error' ? 'alert' : 'status'}
+          className={cn(
           'p-4 rounded-lg text-sm',
           avatarMessage.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/15 text-destructive'
         )}>
@@ -230,10 +232,14 @@ export default function Dashboard({
   // Declared above the tab state because the default tab is chosen with the
   // same gates the sidebar renders with, so the landing tab is always one whose
   // button is actually on screen.
+  // The page URL from Inertia is the same on the server and the client, so the
+  // landing tab can be derived from it without a hydration mismatch.
+  const { url: pageUrl } = usePage();
   const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(() => {
     // ?tab=profile deep link from the navbar dropdown; profile is the only tab
     // every account has, so it is always a safe landing place.
-    if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
+    const query = pageUrl.includes('?') ? pageUrl.slice(pageUrl.indexOf('?')) : '';
+    if (new URLSearchParams(query).get('tab') === 'profile') return 'profile';
 
     // Check canManagePolls first so a poll manager who may also submit routes
     // lands on the Polls tab rather than on their (possibly empty) route
@@ -472,7 +478,13 @@ export default function Dashboard({
 
   const handleCreatePoll = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!createTitle.trim() || !createSlug.trim()) return;
+    if (creating) return;
+    // `required` lets whitespace through; send focus to the blank field
+    // instead of ignoring the submit.
+    if (!createTitle.trim() || !createSlug.trim()) {
+      document.getElementById(!createTitle.trim() ? 'create-poll-title' : 'create-poll-slug')?.focus();
+      return;
+    }
     setCreating(true);
     try {
       const created = await pollsApi.create({
@@ -667,16 +679,16 @@ export default function Dashboard({
                               </Button>
                             )}
                             {!auth.user.is_banned && (
-                              <a href={`/transit/studio?edit=${draft.id}`}>
-                                <Button variant="outline" size="sm">تعديل</Button>
-                              </a>
+                              <Button asChild variant="outline" size="sm">
+                                <a href={`/transit/studio?edit=${draft.id}`}>تعديل</a>
+                              </Button>
                             )}
                             {draft.status === 'approved' && draft.route_id && (
-                              <a href={`/transit/city/${draft.city_id}?route=${draft.route_id}`}>
-                                <Button variant="outline" size="sm" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-emerald-600">
+                              <Button asChild variant="outline" size="sm" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-emerald-600">
+                                <a href={`/transit/city/${draft.city_id}?route=${draft.route_id}`}>
                                   عرض الخط المنشور
-                                </Button>
-                              </a>
+                                </a>
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -710,15 +722,16 @@ export default function Dashboard({
                       <p className="text-lg">لا توجد استبيانات مسجلة في الوقت الحالي.</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-right border-collapse">
+                    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="الاستبيانات">
+                      <table className="w-full text-start border-collapse">
+                        <caption className="sr-only">الاستبيانات وحالتها وخيارات إدارتها</caption>
                         <thead>
                           <tr className="border-b border-border text-muted-foreground text-xs">
                             <th className="pb-3 font-bold">اسم الاستبيان</th>
                             <th className="pb-3 font-bold">الرابط الفرعي (Slug)</th>
                             <th className="pb-3 font-bold text-center">المرشحين</th>
                             <th className="pb-3 font-bold text-center">الحالة</th>
-                            <th className="pb-3 font-bold text-left">خيارات</th>
+                            <th className="pb-3 font-bold text-end">خيارات</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -734,7 +747,7 @@ export default function Dashboard({
                                   {poll.is_active ? 'نشط' : 'معطل'}
                                 </Badge>
                               </td>
-                              <td className="py-4 text-left">
+                              <td className="py-4 text-end">
                                 <div className="flex justify-end gap-2">
                                   <a
                                     href={pollPublicUrl(poll.slug)}
@@ -742,8 +755,9 @@ export default function Dashboard({
                                     rel="noreferrer"
                                     className="p-1.5 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded border border-border transition-colors"
                                     title="عرض صفحة التصويت"
+                                    aria-label={`عرض صفحة التصويت: ${poll.title}`}
                                   >
-                                    <Eye className="h-4 w-4" />
+                                    <Eye className="h-4 w-4" aria-hidden="true" />
                                   </a>
                                   <a
                                     href={pollLeaderboardUrl(poll.slug)}
@@ -751,8 +765,9 @@ export default function Dashboard({
                                     rel="noreferrer"
                                     className="p-1.5 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded border border-border transition-colors"
                                     title="عرض النتائج"
+                                    aria-label={`عرض النتائج: ${poll.title}`}
                                   >
-                                    <BarChart3 className="h-4 w-4" />
+                                    <BarChart3 className="h-4 w-4" aria-hidden="true" />
                                   </a>
                                   <button aria-label={
                                       !canEditPolls
@@ -811,18 +826,18 @@ export default function Dashboard({
                         <div className="flex items-center gap-2">
                           {editingPoll && (
                             <>
-                              <a href={pollPublicUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
-                                <Button variant="outline" size="sm">
-                                  <Eye className="h-4 w-4 me-1" />
+                              <Button asChild variant="outline" size="sm">
+                                <a href={pollPublicUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
+                                  <Eye className="h-4 w-4 me-1" aria-hidden="true" />
                                   عرض
-                                </Button>
-                              </a>
-                              <a href={pollLeaderboardUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
-                                <Button variant="outline" size="sm">
-                                  <BarChart3 className="h-4 w-4 me-1" />
+                                </a>
+                              </Button>
+                              <Button asChild variant="outline" size="sm">
+                                <a href={pollLeaderboardUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
+                                  <BarChart3 className="h-4 w-4 me-1" aria-hidden="true" />
                                   النتائج
-                                </Button>
-                              </a>
+                                </a>
+                              </Button>
                             </>
                           )}
                           <Button variant="ghost" size="icon" onClick={closePollEditor} title="إغلاق" aria-label="إغلاق">
@@ -940,7 +955,7 @@ export default function Dashboard({
                         </div>
                         <DialogFooter className="flex-row-reverse gap-2">
                           <Button type="button" variant="outline" size="sm" onClick={() => setCreateOpen(false)}>إلغاء</Button>
-                          <Button type="submit" size="sm" disabled={creating || !createTitle.trim() || !createSlug.trim()}>
+                          <Button type="submit" size="sm" disabled={creating}>
                             {creating ? 'جاري الإنشاء…' : 'إنشاء ومتابعة التحرير'}
                           </Button>
                         </DialogFooter>

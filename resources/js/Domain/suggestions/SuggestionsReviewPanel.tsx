@@ -57,19 +57,20 @@ function safeExternalUrl(url: string | null | undefined): string | null {
     }
 }
 
+// Reviewers read times in Syrian time whatever their device zone says.
+const TIMESTAMP_FORMAT = new Intl.DateTimeFormat('ar-SY', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Damascus',
+});
+
 function formatTimestamp(iso: string | null): string {
     if (!iso) return '';
-    try {
-        return new Date(iso).toLocaleString('ar-SY', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    } catch {
-        return iso;
-    }
+    const date = new Date(iso);
+    return Number.isNaN(date.getTime()) ? iso : TIMESTAMP_FORMAT.format(date);
 }
 
 export interface SuggestionsReviewPanelProps {
@@ -147,6 +148,7 @@ export default function SuggestionsReviewPanel({
                                 type="button"
                                 size="sm"
                                 variant={active ? 'default' : 'outline'}
+                                aria-pressed={active}
                                 onClick={() => setStatus(tab.value)}
                                 className="gap-1.5"
                             >
@@ -351,6 +353,7 @@ export default function SuggestionsReviewPanel({
                                                     }))
                                                 }
                                                 placeholder="ملاحظة تحريرية داخلية (اختياري)..."
+                                                aria-label={`ملاحظة تحريرية داخلية على «${item.title}» (اختياري)`}
                                                 className="h-9 flex-1 text-xs"
                                                 maxLength={1000}
                                             />

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
     Phone, MessageSquare, MessageSquarePlus, Copy, Check, ExternalLink, Search, Info, Settings, PencilLine
@@ -69,6 +69,11 @@ export default function Index({ initialData, categories: serverCategories = [] }
     const initialQuery = new URLSearchParams(page.url.split('?')[1] ?? '').get('q') ?? '';
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const copiedTimerRef = useRef<number | null>(null);
+
+    useEffect(() => () => {
+        if (copiedTimerRef.current !== null) window.clearTimeout(copiedTimerRef.current);
+    }, []);
 
     // The chips are the server's active categories in its own order, so a chip
     // and the admin row it edits name the same thing (`category_id`). Only a
@@ -109,7 +114,9 @@ export default function Index({ initialData, categories: serverCategories = [] }
     const handleCopy = async (number: string, id: string) => {
         if (!await copyText(number)) return;
         setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2000);
+        // Restart the window on every copy so an older timer can't clear a newer tick.
+        if (copiedTimerRef.current !== null) window.clearTimeout(copiedTimerRef.current);
+        copiedTimerRef.current = window.setTimeout(() => setCopiedId(null), 2000);
     };
 
     const getTelUrl = (number: string) => {
@@ -277,21 +284,23 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                         </div>
 
                                         <div className="space-y-2">
-                                            <button aria-label="انقر لنسخ الرقم"
+                                            <button
+                                                type="button"
                                                 onClick={() => handleCopy(item.number, item.id)}
                                                 className="w-full text-center py-2 bg-muted/50 hover:bg-muted/80 rounded-xl border border-border/60 font-mono text-base font-extrabold text-foreground tracking-wide transition-colors cursor-pointer group flex items-center justify-center gap-2"
                                                 title="انقر لنسخ الرقم"
                                             >
-                                                <span>{item.number}</span>
+                                                <bdi dir="ltr">{item.number}</bdi>
+                                                <span className="sr-only">— نسخ رقم {item.name_ar}</span>
                                                 {copiedId === item.id ? (
-                                                    <Check className="h-4 w-4 text-emerald-500 animate-in zoom-in-50" />
+                                                    <Check className="h-4 w-4 text-emerald-500 animate-in zoom-in-50" aria-hidden="true" />
                                                 ) : (
-                                                    <Copy className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                                    <Copy className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" aria-hidden="true" />
                                                 )}
                                             </button>
 
                                             <div className="flex items-center gap-2 pt-1">
-                                                <Button aria-label="اتصال هاتفي"
+                                                <Button aria-label={`اتصال هاتفي بـ ${item.name_ar}`}
                                                     variant="outline"
                                                     size="sm"
                                                     asChild
@@ -299,13 +308,13 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                     title="اتصال هاتفي"
                                                 >
                                                     <a href={getTelUrl(item.number)}>
-                                                        <Phone className="h-3.5 w-3.5 text-primary" />
+                                                        <Phone className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                                                         <span>اتصال</span>
                                                     </a>
                                                 </Button>
 
                                                 {item.is_whatsapp && (
-                                                    <Button aria-label="مراسلة عبر واتساب"
+                                                    <Button aria-label={`مراسلة ${item.name_ar} عبر واتساب (تفتح في نافذة جديدة)`}
                                                         variant="outline"
                                                         size="sm"
                                                         asChild
@@ -313,7 +322,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         title="مراسلة عبر واتساب"
                                                     >
                                                         <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
-                                                            <MessageSquare className="h-3.5 w-3.5 text-emerald-500" />
+                                                            <MessageSquare className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
                                                             <span>واتساب</span>
                                                         </a>
                                                     </Button>
@@ -332,8 +341,8 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         rel="noopener noreferrer"
                                                         className="text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1 font-normal"
                                                     >
-                                                        <span>المصدر</span>
-                                                        <ExternalLink className="h-3 w-3" />
+                                                        <span>المصدر<span className="sr-only">: {item.name_ar} (يفتح في نافذة جديدة)</span></span>
+                                                        <ExternalLink className="h-3 w-3" aria-hidden="true" />
                                                     </a>
                                                 ) : (
                                                     <span className="text-muted-foreground/40 text-[10px]">بدون مصدر</span>
@@ -366,7 +375,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                     <span className="text-[10px] text-muted-foreground font-normal">{item.category_ar}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="font-mono text-sm font-extrabold text-foreground">{item.number}</TableCell>
+                                            <TableCell className="font-mono text-sm font-extrabold text-foreground"><bdi dir="ltr">{item.number}</bdi></TableCell>
                                             <TableCell>
                                                 {item.is_whatsapp ? (
                                                     <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-semibold">
@@ -386,8 +395,8 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         rel="noopener noreferrer" 
                                                         className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold"
                                                     >
-                                                        <span>عرض المصدر</span>
-                                                        <ExternalLink className="h-3 w-3" />
+                                                        <span>عرض المصدر<span className="sr-only">: {item.name_ar} (يفتح في نافذة جديدة)</span></span>
+                                                        <ExternalLink className="h-3 w-3" aria-hidden="true" />
                                                     </a>
                                                 ) : (
                                                     <span className="text-xs text-muted-foreground font-normal">-</span>
@@ -396,7 +405,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                             <TableCell>
                                                 <div className="flex items-center gap-1.5">
                                                     
-                                                    <Button aria-label="نسخ الرقم"
+                                                    <Button aria-label={`نسخ رقم ${item.name_ar} ${item.number}`}
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => handleCopy(item.number, item.id)}
@@ -404,13 +413,13 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         title="نسخ الرقم"
                                                     >
                                                         {copiedId === item.id ? (
-                                                            <Check className="h-4 w-4 text-emerald-500" />
+                                                            <Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />
                                                         ) : (
-                                                            <Copy className="h-4 w-4" />
+                                                            <Copy className="h-4 w-4" aria-hidden="true" />
                                                         )}
                                                     </Button>
 
-                                                    <Button aria-label="اتصال هاتفي"
+                                                    <Button aria-label={`اتصال هاتفي بـ ${item.name_ar}`}
                                                         variant="ghost"
                                                         size="icon"
                                                         asChild
@@ -418,12 +427,12 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         title="اتصال هاتفي"
                                                     >
                                                         <a href={getTelUrl(item.number)}>
-                                                            <Phone className="h-4 w-4" />
+                                                            <Phone className="h-4 w-4" aria-hidden="true" />
                                                         </a>
                                                     </Button>
 
                                                     {item.is_whatsapp && (
-                                                        <Button aria-label="مراسلة عبر واتساب"
+                                                        <Button aria-label={`مراسلة ${item.name_ar} عبر واتساب (تفتح في نافذة جديدة)`}
                                                             variant="ghost"
                                                             size="icon"
                                                             asChild
@@ -431,7 +440,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                             title="مراسلة عبر واتساب"
                                                         >
                                                             <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
-                                                                <MessageSquare className="h-4 w-4" />
+                                                                <MessageSquare className="h-4 w-4" aria-hidden="true" />
                                                             </a>
                                                         </Button>
                                                     )}

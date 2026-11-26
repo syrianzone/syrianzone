@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Label } from '@/Components/ui/label';
 import { resolveGps, resolveIp, setGeo, type LocMode } from './location';
@@ -15,8 +15,11 @@ interface Props {
 export default function LocationModeSelector({ mode, onChange }: Props) {
   const [busy, setBusy] = useState<'gps' | 'ip' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const labelId = useId();
 
   const select = async (id: LocMode) => {
+    // aria-disabled (not disabled) while resolving, so the pressed option keeps focus
+    if (busy !== null) return;
     // Manual city and manual coords switch instantly; GPS/IP (re-)resolve
     // on every tap so the position can be refreshed. Failures keep the
     // previous mode.
@@ -39,8 +42,8 @@ export default function LocationModeSelector({ mode, onChange }: Props) {
   };
 
   return (
-    <div className="space-y-2">
-      <Label className="text-sm font-semibold">مصدر الموقع</Label>
+    <div role="group" aria-labelledby={labelId} className="space-y-2">
+      <Label id={labelId} className="text-sm font-semibold">مصدر الموقع</Label>
       {([
         { id: 'gps', title: 'موقع الجهاز (GPS)', desc: 'الأدق — يطلب إذن المتصفح لمرة واحدة' },
         { id: 'ip', title: 'التعرف عبر الإنترنت', desc: 'تقريبي لمدينتك عبر عنوان IP — بلا أذونات' },
@@ -55,8 +58,9 @@ export default function LocationModeSelector({ mode, onChange }: Props) {
             type="button"
             onClick={() => void select(o.id)}
             aria-pressed={activeOpt}
-            disabled={busy !== null}
-            className={`flex w-full items-center gap-3 rounded-lg border p-3 text-right transition-colors disabled:opacity-70 ${
+            aria-disabled={busy !== null}
+            aria-busy={loading}
+            className={`flex w-full items-center gap-3 rounded-lg border p-3 text-start transition-colors aria-disabled:opacity-70 ${
               activeOpt ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/20' : 'border-border/50 bg-card/20 hover:bg-muted/20'
             }`}
           >
@@ -72,7 +76,7 @@ export default function LocationModeSelector({ mode, onChange }: Props) {
         );
       })}
       {error && (
-        <p className="text-[11px] leading-relaxed text-destructive">{error}</p>
+        <p role="alert" className="text-[11px] leading-relaxed text-destructive">{error}</p>
       )}
     </div>
   );

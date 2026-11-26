@@ -665,8 +665,8 @@ export default function GovtCvsAdminEdit({
     };
 
     const sortableCvItems = useMemo<SortableListItem[]>(() => {
-        return [...(official?.cv_entries ?? [])]
-            .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        return (official?.cv_entries ?? [])
+            .toSorted((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
             .map((entry) => ({
                 id: entry.id,
                 label: entry.title_ar,
@@ -844,6 +844,7 @@ export default function GovtCvsAdminEdit({
                                         <Label htmlFor="full_name_ar">الاسم الكامل بالعربية *</Label>
                                         <Input
                                             id="full_name_ar"
+                                            aria-required="true"
                                             value={form.full_name_ar}
                                             onChange={(e) =>
                                                 setField('full_name_ar', e.target.value)
@@ -863,6 +864,7 @@ export default function GovtCvsAdminEdit({
                                         <Label htmlFor="display_name_ar">اسم العرض المختصر *</Label>
                                         <Input
                                             id="display_name_ar"
+                                            aria-required="true"
                                             value={form.display_name_ar}
                                             onChange={(e) =>
                                                 setField('display_name_ar', e.target.value)
@@ -2161,6 +2163,7 @@ export default function GovtCvsAdminEdit({
                                                     >
                                                         <SelectTrigger
                                                             id="cv_section"
+                                                            aria-required="true"
                                                             aria-label="قسم السيرة الذاتية"
                                                         >
                                                             <SelectValue />
@@ -2486,6 +2489,7 @@ export default function GovtCvsAdminEdit({
                                                 >
                                                     <SelectTrigger
                                                         id="ev_type"
+                                                        aria-required="true"
                                                         aria-label="نوع المصدر"
                                                     >
                                                         <SelectValue />

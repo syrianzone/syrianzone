@@ -129,7 +129,12 @@ export default function QuestionAverage({ questions, scope, scopeLabel }: Props)
                                 </div>
                             </div>
 
-                            <div className="mt-3 flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                            <ul className="sr-only" aria-label="توزيع الإجابات">
+                                {qScope.counts.map((c, i) => (
+                                    <li key={i}>{OPTION_LABELS[i]}: {c}</li>
+                                ))}
+                            </ul>
+                            <div aria-hidden="true" className="mt-3 flex h-3 w-full overflow-hidden rounded-full bg-muted">
                                 {qScope.counts.map((c, i) => {
                                     const total = qScope.counts.reduce((s, x) => s + x, 0) || 1;
                                     const color = i < 2 ? 'bg-destructive/70' : i === 2 ? 'bg-muted-foreground/40' : 'bg-primary/70';

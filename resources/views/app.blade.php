@@ -3,6 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    {{-- Lets the OS text-size setting scale the root font size: every size is
+         rem-based and no root font-size is set, so the layout scales with it. --}}
+    <meta name="text-scale" content="scale">
     {{-- Lets the browser theme native UI and the pre-CSS canvas. The inline
          theme script below rewrites it to the resolved theme's scheme. --}}
     <meta name="color-scheme" content="light dark">

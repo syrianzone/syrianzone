@@ -27,6 +27,8 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
   const hasMultipleImages = images.length > 1;
 
   const rawDescription = hotel?.description_ar || hotel?.description || '';
+  // scraped third-party data: only an http(s) URL may reach an href (no javascript: etc.)
+  const sourceUrl = hotel && /^https?:\/\//i.test(hotel.source_url) ? hotel.source_url : null;
 
   return (
     <div dir="rtl" className="flex h-full min-h-0 flex-col">
@@ -34,7 +36,8 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
         <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="رجوع">
           <ArrowRight className="h-4 w-4" />
         </Button>
-        <p className="truncate font-medium text-foreground">{hotel?.name_ar ?? hotel?.name ?? 'تفاصيل الفندق'}</p>
+        {/* PlacesPanel moves focus here when the detail replaces the list */}
+        <p data-panel-title tabIndex={-1} className="truncate font-medium text-foreground focus:outline-none">{hotel?.name_ar ?? hotel?.name ?? 'تفاصيل الفندق'}</p>
       </div>
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
         {error && (
@@ -98,22 +101,24 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
                 </p>
               </div>
             )}
-            <a
-              href={hotel.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline"
-            >
-              اقرأ المزيد على HalaSyria
-            </a>
+            {sourceUrl && (
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                اقرأ المزيد على HalaSyria
+              </a>
+            )}
           </>
         )}
       </div>
 
-      {hotel && (
+      {sourceUrl && (
         <div className="border-t border-border p-3">
           <a
-            href={hotel.source_url}
+            href={sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent/50"

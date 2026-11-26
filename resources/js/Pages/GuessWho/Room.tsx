@@ -71,6 +71,21 @@ function CharacterCard({
   onToggleEliminate: (id: number) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  // The face that is turned away is inert, so the focused button would drop to
+  // <body> on every flip. Focus follows the flip instead: onto "نعم" when the
+  // question shows, back onto the button that asked it when it closes.
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const flipped = useRef(false);
+  useEffect(() => {
+    if (confirming) {
+      flipped.current = true;
+      confirmRef.current?.focus();
+    } else if (flipped.current) {
+      flipped.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [confirming]);
 
   const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -116,6 +131,7 @@ function CharacterCard({
             
             {gameState === 'lobby' && (
               <Button
+                ref={triggerRef}
                 onClick={handleActionClick}
                 className="w-full py-1 sm:py-1.5 h-auto text-[10px] sm:text-xs bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold rounded-lg"
               >
@@ -127,6 +143,7 @@ function CharacterCard({
               <div className="flex flex-col gap-1 sm:gap-1.5">
                 {!char.eliminated && (
                   <Button
+                    ref={triggerRef}
                     onClick={handleActionClick}
                     disabled={!myTurn}
                     className="w-full py-1 h-auto text-[10px] sm:text-[11px] bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
@@ -168,6 +185,7 @@ function CharacterCard({
 
           <div className="flex flex-col w-full gap-1 mt-1 sm:mt-2">
             <Button
+              ref={confirmRef}
               onClick={handleConfirm}
               className="w-full py-1 h-auto text-[10px] sm:text-xs bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold rounded-lg flex items-center justify-center gap-1"
             >
@@ -291,8 +309,14 @@ export default function GameRoom({ game }: GameProps) {
   }, [game.room_code, sessionUuid]);
 
   useEffect(() => {
+    // Fisher–Yates on a fresh copy: a random comparator in sort() is biased
+    // and engine-dependent.
     const items = game.category.characters.map(c => ({ ...c, eliminated: false }));
-    setBoard([...items].sort(() => Math.random() - 0.5));
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+    setBoard(items);
   }, [game]);
 
   useEffect(() => {
@@ -424,6 +448,22 @@ export default function GameRoom({ game }: GameProps) {
     sendAction('pass_turn', {});
   };
 
+  // One persistent polite region for everything that changes without the
+  // player's own action: the opponent arriving or leaving, the turn passing
+  // and the result. It is mounted with the room so screen readers register it.
+  const announcement =
+    gameState === 'ended'
+      ? winMessage ?? 'انتهت اللعبة'
+      : peerDisconnected
+        ? 'انقطع اتصال الخصم. في انتظار إعادة الاتصال'
+        : gameState === 'playing'
+          ? myTurn
+            ? 'دورك لطرح الأسئلة والتخمين'
+            : `دور ${opponentName}`
+          : peerConnected
+            ? `انضم ${opponentName} إلى الغرفة`
+            : 'بانتظار انضمام الخصم';
+
   if (loadingJoin) {
     return (
       <MainLayout>
@@ -436,7 +476,7 @@ export default function GameRoom({ game }: GameProps) {
               <div className="p-4 bg-primary/10 rounded-full border border-primary/20 animate-pulse">
                 <Gamepad2 className="h-10 w-10 text-primary animate-spin" style={{ animationDuration: '3s' }} />
               </div>
-              <h2 className="text-2xl font-black text-foreground">جاري التحقق من الغرفة...</h2>
+              <h1 className="text-2xl font-black text-foreground">جاري التحقق من الغرفة...</h1>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 نقوم بالاتصال بخوادم اللعبة والتأكد من توفر مقعد شاغر لك. يرجى الانتظار لحظة.
               </p>
@@ -452,6 +492,8 @@ export default function GameRoom({ game }: GameProps) {
       <div className="min-h-screen bg-background text-foreground p-6 font-sans" dir="rtl">
         
         <div className="max-w-6xl mx-auto">
+          <div role="status" className="sr-only">{announcement}</div>
+          <h1 className="sr-only">غرفة لعبة من هو؟ — {game.category.name_ar}</h1>
           <style>{`
             .perspective-1000 {
               perspective: 1000px;
@@ -496,8 +538,8 @@ export default function GameRoom({ game }: GameProps) {
 
           <div className="flex flex-col md:flex-row justify-between items-center bg-card border border-border p-4 rounded-xl mb-6 gap-4">
             <div className="flex items-center gap-3">
-              <Link href="/guesswho" className="p-2 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition">
-                <ArrowRight className="h-5 w-5" />
+              <Link href="/guesswho" aria-label="العودة إلى لعبة من هو" className="p-2 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition">
+                <ArrowRight className="h-5 w-5" aria-hidden="true" />
               </Link>
               <div>
                 <span className="text-muted-foreground text-xs block">الفئة المحددة</span>

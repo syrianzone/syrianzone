@@ -65,7 +65,7 @@ export function getFeatureStyle(
         const rData = findRainData(feature, rainfallData);
         if (rData && rData.length > 0) {
             // Use the latest available year, not a pinned calendar year.
-            const target = [...rData].sort((a: any, b: any) => a.year - b.year)[rData.length - 1];
+            const target = rData.toSorted((a: any, b: any) => a.year - b.year)[rData.length - 1];
             value = target.rainfall;
         }
         

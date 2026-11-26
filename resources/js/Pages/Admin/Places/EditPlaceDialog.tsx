@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { inSyriaBox } from '@/Domain/geography/syria';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -40,6 +41,14 @@ export function EditPlaceDialog(props: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // After a 422, move focus to the first invalid field so its message is
+  // announced and the moderator can fix it straight away.
+  useEffect(() => {
+    if (Object.keys(fieldErrors).length === 0) return;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [fieldErrors]);
 
   useEffect(() => {
     if (!open) return;
@@ -61,7 +70,9 @@ export function EditPlaceDialog(props: {
     lat !== String(place.lat) ||
     lng !== String(place.lng);
 
-  async function save() {
+  async function save(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (busy) return;
     const latNum = Number(lat);
     const lngNum = Number(lng);
     if (Number.isNaN(latNum) || Number.isNaN(lngNum) || !inSyriaBox({ lat: latNum, lng: lngNum })) {
@@ -119,8 +130,11 @@ export function EditPlaceDialog(props: {
       >
         <DialogHeader className="text-right">
           <DialogTitle>تعديل المكان</DialogTitle>
+          <DialogDescription>غيّر بيانات المكان كما ستظهر على الخريطة العامة.</DialogDescription>
         </DialogHeader>
 
+        {/* display:contents keeps the dialog's grid layout while Enter submits. */}
+        <form ref={formRef} onSubmit={save} className="contents">
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor={`edit-name-${place.id}`}>الاسم</Label>
@@ -135,10 +149,10 @@ export function EditPlaceDialog(props: {
           </div>
 
           <div className="space-y-1.5">
-            <Label>التصنيف</Label>
+            <Label htmlFor={`edit-category-${place.id}`}>التصنيف</Label>
             <Select value={category} onValueChange={(v) => setCategory(v as PlaceCategory)}>
               <SelectTrigger
-                aria-label="التصنيف"
+                id={`edit-category-${place.id}`}
                 {...fieldA11y(`edit-category-${place.id}-error`, fieldErrors.category)}
               >
                 <SelectValue />
@@ -206,7 +220,7 @@ export function EditPlaceDialog(props: {
           <Button type="button" variant="outline" disabled={busy} onClick={() => onOpenChange(false)}>
             إلغاء
           </Button>
-          <Button type="button" disabled={busy} onClick={save}>
+          <Button type="submit" disabled={busy}>
             {busy ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -217,6 +231,7 @@ export function EditPlaceDialog(props: {
             )}
           </Button>
         </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

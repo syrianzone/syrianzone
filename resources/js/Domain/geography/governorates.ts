@@ -125,7 +125,7 @@ export function governorateNameForF3aliaProvince(province: string): string | und
 
 /** The prayer picker's order, which the board's governorate widgets share. */
 export function governoratesByPickerOrder(): Governorate[] {
-  return [...GOVERNORATES].sort((a, b) => a.pickerOrder - b.pickerOrder);
+  return GOVERNORATES.toSorted((a, b) => a.pickerOrder - b.pickerOrder);
 }
 
 /** Picker-order `{ value, label }` pairs for a `<Select>`. */

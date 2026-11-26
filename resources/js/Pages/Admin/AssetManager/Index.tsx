@@ -320,7 +320,7 @@ export default function AssetManagerIndex() {
                                                     <div className="flex items-center gap-3 overflow-hidden">
                                                         {isImageFile(item.filename) ? (
                                                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0 border">
-                                                                <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                                                <img src={item.url} alt="" width={40} height={40} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                                             </div>
                                                         ) : (
                                                             <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
@@ -362,11 +362,11 @@ export default function AssetManagerIndex() {
                                                             {copiedUrl === item.url ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                                                         </Button>
 
-                                                        <a href={item.url} download target="_blank" rel="noreferrer">
-                                                            <Button aria-label="تنزيل الملف" size="icon" variant="ghost" className="h-8 w-8" title="تنزيل الملف">
-                                                                <Download className="h-4 w-4" />
-                                                            </Button>
-                                                        </a>
+                                                        <Button asChild size="icon" variant="ghost" className="h-8 w-8">
+                                                            <a href={item.url} download target="_blank" rel="noreferrer" aria-label={`تنزيل ${item.filename}`} title="تنزيل الملف">
+                                                                <Download className="h-4 w-4" aria-hidden="true" />
+                                                            </a>
+                                                        </Button>
 
                                                         <Button aria-label="حذف الملف"
                                                             size="icon"
@@ -450,7 +450,7 @@ export default function AssetManagerIndex() {
                                     </div>
 
                                     {uploadError && (
-                                        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg">
+                                        <div role="alert" className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg">
                                             {uploadError}
                                         </div>
                                     )}

@@ -20,6 +20,8 @@ export default function SourceList({ sources }: { sources: PromiseSourceData[] }
                 const url = safeHref(s.url);
                 const archive = safeHref(s.archiveUrl);
                 const screenshot = safeHref(s.screenshotUrl);
+                // Every row repeats the same link text: name the outlet for screen readers.
+                const context = `: ${s.outlet || hostOf(s.url)}${s.publishedDate ? ` — ${formatDate(s.publishedDate)}` : ''}`;
 
                 return (
                     <li key={s.id} className="flex flex-col gap-1.5 py-3 first:pt-0 last:pb-0">
@@ -32,18 +34,18 @@ export default function SourceList({ sources }: { sources: PromiseSourceData[] }
                             {s.publishedDate && <span className="text-muted-foreground">{formatDate(s.publishedDate)}</span>}
                             {url && (
                                 <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline">
-                                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />فتح المصدر
+                                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />فتح المصدر<span className="sr-only">{context} (يفتح في نافذة جديدة)</span>
                                     {s.videoTimestamp && <span className="text-muted-foreground">(عند الدقيقة <span dir="ltr">{s.videoTimestamp}</span>)</span>}
                                 </a>
                             )}
                             {archive && (
                                 <a href={archive} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-                                    <Archive className="h-3.5 w-3.5" aria-hidden="true" />نسخة مؤرشفة
+                                    <Archive className="h-3.5 w-3.5" aria-hidden="true" />نسخة مؤرشفة<span className="sr-only">{context} (يفتح في نافذة جديدة)</span>
                                 </a>
                             )}
                             {screenshot && (
                                 <a href={screenshot} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-                                    <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />لقطة شاشة
+                                    <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />لقطة شاشة<span className="sr-only">{context} (يفتح في نافذة جديدة)</span>
                                 </a>
                             )}
                         </div>

@@ -89,7 +89,7 @@ export function PhotoPicker(props: {
               type="button"
               aria-label="إزالة الصورة"
               onClick={() => removeAt(i)}
-              className="absolute top-1 left-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+              className="absolute top-1 left-1 inline-flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
             >
               <X className="h-3 w-3" />
             </button>

@@ -19,6 +19,7 @@ import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/Components/ui/table';
 import { Compass, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
+import { Textarea } from '@/Components/ui/textarea';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { AXES } from '@/Domain/compass/axes';
@@ -140,7 +141,14 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
     const setRange = (axis: string, bound: 'min' | 'max', value: string) =>
         setForm((f) => ({ ...f, ranges: { ...f.ranges, [axis]: { ...f.ranges[axis], [bound]: value } } }));
 
-    const handleSave = () => {
+    const handleSave = (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (saving) return;
+        // `required` lets whitespace through; send focus back to the name.
+        if (!form.name.trim()) {
+            document.getElementById('p-name')?.focus();
+            return;
+        }
         setSaving(true);
         const center: Record<string, number | null> = {};
         for (const a of AXES) {
@@ -306,11 +314,13 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                         </DialogDescription>
                     </DialogHeader>
 
+                    {/* display:contents keeps the dialog's grid layout while Enter submits. */}
+                    <form className="contents" onSubmit={handleSave}>
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="p-name">الاسم</Label>
-                                <Input id="p-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                                <Input id="p-name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                             </div>
                             <div className="space-y-2">
                                 <Label id="p-icon-label">الأيقونة</Label>
@@ -348,9 +358,9 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
 
                         <div className="space-y-2">
                             <Label htmlFor="p-factoid">اللمحة التاريخية</Label>
-                            <textarea
+                            <Textarea
                                 id="p-factoid"
-                                className="min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                className="min-h-[110px] bg-background"
                                 value={form.factoid}
                                 onChange={(e) => setForm((f) => ({ ...f, factoid: e.target.value }))}
                             />
@@ -366,16 +376,16 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                             <div className="space-y-2">
                                 {form.stances.map((s, i) => (
                                     <div key={i} className="flex items-center gap-2">
-                                        <Input value={s} onChange={(e) => setStance(i, e.target.value)} />
+                                        <Input aria-label={`موقف ${i + 1}`} value={s} onChange={(e) => setStance(i, e.target.value)} />
                                         <Button
                                             type="button"
                                             variant="ghost"
                                             size="icon"
                                             className="text-destructive shrink-0"
                                             onClick={() => removeStance(i)}
-                                            aria-label="حذف الموقف"
+                                            aria-label={`حذف الموقف ${i + 1}`}
                                         >
-                                            <X className="h-4 w-4" />
+                                            <X className="h-4 w-4" aria-hidden="true" />
                                         </Button>
                                     </div>
                                 ))}
@@ -399,6 +409,7 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                                             min={-1}
                                             max={1}
                                             className="w-20"
+                                            aria-label={a.name}
                                             value={form.center[a.id] ?? ''}
                                             onChange={(e) => setCenter(a.id, e.target.value)}
                                         />
@@ -416,7 +427,7 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                                 {AXES.map((a) => (
                                     <div key={a.id} className="flex items-center gap-2">
                                         <span className="min-w-0 flex-1 truncate text-xs">{a.name}</span>
-                                        <Input aria-label="من"
+                                        <Input aria-label={`${a.name} — من`}
                                             type="number"
                                             step="0.05"
                                             min={-1}
@@ -426,7 +437,7 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                                             value={form.ranges[a.id]?.min ?? ''}
                                             onChange={(e) => setRange(a.id, 'min', e.target.value)}
                                         />
-                                        <Input aria-label="إلى"
+                                        <Input aria-label={`${a.name} — إلى`}
                                             type="number"
                                             step="0.05"
                                             min={-1}
@@ -443,12 +454,13 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                     </div>
 
                     <DialogFooter className="flex-row-reverse gap-2">
-                        <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-                        <Button onClick={handleSave} disabled={saving || !form.name.trim()} className="gap-2">
+                        <Button type="button" variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
+                        <Button type="submit" disabled={saving} className="gap-2">
                             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                             {editing ? 'حفظ التعديلات' : 'إضافة'}
                         </Button>
                     </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
         </MainLayout>

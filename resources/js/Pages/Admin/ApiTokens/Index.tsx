@@ -1,14 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
-import { apiErrorMessage } from '@/Lib/api';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import { apiTokensApi } from './_lib/api';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { notify as toastNotify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
+import { confirmDialog } from '@/Lib/confirm';
 import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -80,9 +82,31 @@ export default function ApiTokensIndex(props: ApiTokensData) {
     const [name, setName] = useState('');
     const [ttl, setTtl] = useState<string>(ttlOptions[1]?.value ?? '30d');
     const [selected, setSelected] = useState<string[]>([]);
+    const [errors, setErrors] = useState<{ user_id?: string; name?: string; permissions?: string }>({});
+    const formRef = useRef<HTMLFormElement>(null);
+    // Bumped on each rejected submit (not on every edit that clears an error),
+    // so focus only moves right after a submit attempt.
+    const [rejectedSubmits, setRejectedSubmits] = useState(0);
+
+    // After a rejected submit, move focus to the first field that needs fixing
+    // so its inline message is announced in context.
+    useEffect(() => {
+        const form = formRef.current;
+        if (!form || rejectedSubmits === 0) return;
+        const target = form.querySelector<HTMLElement>('[aria-invalid="true"]')
+            ?? form.querySelector<HTMLElement>('[aria-describedby="permissions-error"] input[type="checkbox"]');
+        target?.focus();
+    }, [rejectedSubmits]);
 
     const [issued, setIssued] = useState<{ token: string; message: string } | null>(null);
     const [copied, setCopied] = useState(false);
+    const issuedRef = useRef<HTMLDivElement>(null);
+
+    // The new token appears above the form; move focus to it so screen-reader
+    // and keyboard users land on the one-time secret instead of missing it.
+    useEffect(() => {
+        if (issued) issuedRef.current?.focus();
+    }, [issued]);
 
     const notify = (msg: string, ok = true) => {
         if (ok) toastNotify.success(msg);
@@ -106,21 +130,25 @@ export default function ApiTokensIndex(props: ApiTokensData) {
         [capabilities, capabilityGroups],
     );
 
-    const toggle = (permission: string) =>
+    const toggle = (permission: string) => {
+        setErrors((prev) => ({ ...prev, permissions: undefined }));
         setSelected((prev) =>
             prev.includes(permission)
                 ? prev.filter((p) => p !== permission)
                 : [...prev, permission],
         );
+    };
 
-    const submit = async () => {
-        if (!ownerId || !name.trim() || selected.length === 0) {
-            notify(
-                selfService
-                    ? 'سمِّ الرمز واختر صلاحية واحدة على الأقل.'
-                    : 'اختر المستخدم، وسم الرمز، وصلاحية واحدة على الأقل.',
-                false,
-            );
+    const submit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (saving) return;
+        const missing: typeof errors = {};
+        if (!ownerId) missing.user_id = 'اختر المستخدم.';
+        if (!name.trim()) missing.name = 'سمِّ الرمز.';
+        if (selected.length === 0) missing.permissions = 'اختر صلاحية واحدة على الأقل.';
+        setErrors(missing);
+        if (Object.keys(missing).length > 0) {
+            setRejectedSubmits((n) => n + 1);
             return;
         }
         setSaving(true);
@@ -135,14 +163,30 @@ export default function ApiTokensIndex(props: ApiTokensData) {
             setName('');
             setSelected([]);
             router.reload({ only: ['tokens'] });
-        } catch (e) {
-            notify(apiErrorMessage(e, 'تعذّر إنشاء الرمز.'), false);
+        } catch (err) {
+            const fields = apiFieldErrors(err);
+            const permissionsError = Object.entries(fields)
+                .find(([key]) => key === 'permissions' || key.startsWith('permissions.'))?.[1];
+            const inline = { user_id: fields.user_id, name: fields.name, permissions: permissionsError };
+            if (inline.user_id || inline.name || inline.permissions) {
+                setErrors(inline);
+                setRejectedSubmits((n) => n + 1);
+            } else {
+                notify(apiErrorMessage(err, 'تعذّر إنشاء الرمز.'), false);
+            }
         } finally {
             setSaving(false);
         }
     };
 
     const revoke = async (id: number) => {
+        const ok = await confirmDialog({
+            title: 'إبطال هذا الرمز؟',
+            description: 'سيتوقف أي وكيل يستخدمه فوراً، ولا يمكن التراجع عن الإبطال.',
+            destructive: true,
+            confirmText: 'إبطال',
+        });
+        if (!ok) return;
         try {
             const res = await apiTokensApi.revoke(id);
             notify(res.message);
@@ -153,6 +197,13 @@ export default function ApiTokensIndex(props: ApiTokensData) {
     };
 
     const revokeAll = async (userId: number) => {
+        const ok = await confirmDialog({
+            title: 'إبطال كل رموز هذا المستخدم؟',
+            description: 'تُبطل كل رموز الوكلاء الخاصة به وتنتهي جلساته على الهاتف، ولا يمكن التراجع.',
+            destructive: true,
+            confirmText: 'إبطال الكل',
+        });
+        if (!ok) return;
         try {
             const res = await apiTokensApi.revokeAllForUser(userId);
             notify(res.message);
@@ -219,10 +270,15 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                 </Card>
 
                 {issued && (
-                    <Card className="border-green-500/50 bg-green-500/5">
+                    <Card
+                        ref={issuedRef}
+                        tabIndex={-1}
+                        aria-labelledby="issued-token-title"
+                        className="border-green-500/50 bg-green-500/5 focus-visible:outline-none"
+                    >
                         <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2 text-green-600 dark:text-green-400">
-                                <Check className="w-5 h-5" />
+                            <CardTitle id="issued-token-title" className="text-base flex items-center gap-2 text-green-600 dark:text-green-400">
+                                <Check className="w-5 h-5" aria-hidden="true" />
                                 تم إنشاء الرمز
                             </CardTitle>
                             <CardDescription>{issued.message}</CardDescription>
@@ -261,17 +317,30 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                     : 'يُمنح الرمز ما يملكه المستخدم بالفعل فقط. لا يوجد خيار «الكل» — عمداً، حتى لا يتفوق الرمز على صاحبه.'}
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-5">
+                        <CardContent>
+                          <form ref={formRef} onSubmit={submit} noValidate className="space-y-5">
                             <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor="owner">المستخدم</Label>
                                     {selfService ? (
-                                        <p id="owner" className="h-10 flex items-center text-sm font-medium">
-                                            {owners[0]?.name ?? '—'}
-                                        </p>
+                                        <>
+                                            {/* Not a control, so a plain caption rather than a <label>. */}
+                                            <p className="text-sm font-medium leading-none">المستخدم</p>
+                                            <p className="h-10 flex items-center text-sm font-medium">
+                                                {owners[0]?.name ?? '—'}
+                                            </p>
+                                        </>
                                     ) : (
-                                    <Select value={ownerId} onValueChange={setOwnerId} dir="rtl">
-                                        <SelectTrigger id="owner" aria-label="اختر مستخدماً">
+                                    <>
+                                    <Label htmlFor="owner">المستخدم</Label>
+                                    <Select
+                                        value={ownerId}
+                                        onValueChange={(value) => {
+                                            setOwnerId(value);
+                                            setErrors((prev) => ({ ...prev, user_id: undefined }));
+                                        }}
+                                        dir="rtl"
+                                    >
+                                        <SelectTrigger id="owner" {...fieldA11y('owner-error', errors.user_id)}>
                                             <SelectValue placeholder="اختر مستخدماً" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -282,6 +351,8 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    <FieldError id="owner-error" message={errors.user_id} />
+                                    </>
                                     )}
                                 </div>
 
@@ -290,10 +361,17 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                     <Input
                                         id="name"
                                         value={name}
-                                        onChange={(e) => setName(e.target.value)}
+                                        onChange={(e) => {
+                                            setName(e.target.value);
+                                            setErrors((prev) => ({ ...prev, name: undefined }));
+                                        }}
                                         placeholder="claude-code"
                                         dir="ltr"
+                                        spellCheck={false}
+                                        autoComplete="off"
+                                        {...fieldA11y('name-error', errors.name)}
                                     />
+                                    <FieldError id="name-error" message={errors.name} />
                                     <p className="text-xs text-muted-foreground">يظهر في سجل التدقيق.</p>
                                 </div>
 
@@ -312,8 +390,13 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
-                                <Label>الصلاحيات</Label>
+                            <div
+                                className="space-y-3"
+                                role="group"
+                                aria-labelledby="permissions-label"
+                                aria-describedby={errors.permissions ? 'permissions-error' : undefined}
+                            >
+                                <p id="permissions-label" className="text-sm font-medium leading-none">الصلاحيات</p>
                                 {selectedOwner?.role === 'superadmin' && (
                                     <p className="text-xs text-muted-foreground">
                                         هذا المستخدم مدير عام، فيُمنح الرمز ما تختاره بالضبط — بقية الصلاحيات تبقى خارج الرمز.
@@ -321,8 +404,13 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                 )}
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     {grouped.map(({ group, label, perms }) => (
-                                        <div key={group} className="rounded-lg border border-border p-3 space-y-2">
-                                            <p className="text-sm font-bold">{label}</p>
+                                        <div
+                                            key={group}
+                                            role="group"
+                                            aria-labelledby={`perm-group-${group}`}
+                                            className="rounded-lg border border-border p-3 space-y-2"
+                                        >
+                                            <p id={`perm-group-${group}`} className="text-sm font-bold">{label}</p>
                                             <div className="space-y-1.5">
                                                 {perms.map(([permission, permLabel]) => {
                                                     const checked = selected.includes(permission);
@@ -332,11 +420,11 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                                                 type="checkbox"
                                                                 checked={checked}
                                                                 onChange={() => toggle(permission)}
-                                                                className="sr-only"
+                                                                className="peer sr-only"
                                                             />
                                                             <span
                                                                 aria-hidden
-                                                                className={`w-4 h-4 shrink-0 rounded-sm border flex items-center justify-center transition-all ${
+                                                                className={`w-4 h-4 shrink-0 rounded-sm border flex items-center justify-center transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background ${
                                                                     checked
                                                                         ? 'bg-primary border-primary text-primary-foreground'
                                                                         : 'border-input'
@@ -357,11 +445,13 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                         {selected.length} صلاحية محددة
                                     </p>
                                 )}
+                                <FieldError id="permissions-error" message={errors.permissions} />
                             </div>
 
-                            <Button onClick={submit} disabled={saving}>
+                            <Button type="submit" disabled={saving}>
                                 {saving ? 'جارٍ الإصدار...' : 'إصدار الرمز'}
                             </Button>
+                          </form>
                         </CardContent>
                     </Card>
                 )}

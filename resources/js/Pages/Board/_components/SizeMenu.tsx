@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Maximize2 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,47 +32,61 @@ const WIDTH_LABELS: Record<number, string> = {
   12: 'كامل (12)',
 };
 
+// The shared dropdown has no radio item yet, so the items take the
+// menuitemradio role themselves (Radix lets the role be overridden) and the
+// current size is exposed by aria-checked, not by font weight alone.
 export function SizeMenu(props: {
+  /** The widget's display name, so the trigger is not one of many "الحجم". */
+  name: string;
   def: WidgetDeclaration;
   size: WidgetSize;
   onResize: (size: WidgetSize) => void;
 }) {
   const { widths, heights } = allowedSizes(props.def);
+  const id = useId();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="الحجم"
-          className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+          aria-label={`حجم ${props.name}`}
+          className="inline-flex min-h-6 min-w-6 items-center justify-center rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <Maximize2 className="h-3.5 w-3.5" />
         </button>
       </DropdownMenuTrigger>
       {/* direction comes from the app-level DirectionProvider */}
       <DropdownMenuContent align="end" className="w-36">
-        <DropdownMenuLabel>العرض</DropdownMenuLabel>
+        <DropdownMenuLabel id={`${id}-w`}>العرض</DropdownMenuLabel>
+        <div role="group" aria-labelledby={`${id}-w`}>
         {widths.map((w) => (
           <DropdownMenuItem
             key={w}
+            role="menuitemradio"
+            aria-checked={props.size.w === w}
             onSelect={() => props.onResize({ w, h: props.size.h })}
             className={props.size.w === w ? 'font-semibold text-foreground' : undefined}
           >
             {WIDTH_LABELS[w] ?? String(w)}
           </DropdownMenuItem>
         ))}
+        </div>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel>الارتفاع</DropdownMenuLabel>
+        <DropdownMenuLabel id={`${id}-h`}>الارتفاع</DropdownMenuLabel>
+        <div role="group" aria-labelledby={`${id}-h`}>
         {heights.map((h) => (
           <DropdownMenuItem
             key={h}
+            role="menuitemradio"
+            aria-checked={props.size.h === h}
             onSelect={() => props.onResize({ w: props.size.w, h })}
             className={props.size.h === h ? 'font-semibold text-foreground' : undefined}
           >
             {LABELS[h] ?? String(h)}
           </DropdownMenuItem>
         ))}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

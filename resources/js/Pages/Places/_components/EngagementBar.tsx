@@ -5,6 +5,8 @@ import { Button } from '@/Components/ui/button';
 import { cn } from '@/Lib/utils';
 import { shareOrCopy } from '@/Lib/webShare';
 import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import { ReportButton } from './ReportButton';
 
 export function EngagementBar(props: {
@@ -27,6 +29,7 @@ export function EngagementBar(props: {
   useEffect(() => () => clearTimeout(shareTimer.current), []);
 
   const toggleSave = async () => {
+    if (saveBusy) return;
     if (!user) {
       setShowLogin(true);
       return;
@@ -39,7 +42,8 @@ export function EngagementBar(props: {
       const res = next ? await api.save(placeId) : await api.unsave(placeId);
       setSaved(res.saved);
       setSaves(res.saves_count);
-    } catch {
+    } catch (e) {
+      notify.error(apiErrorMessage(e));
       setSaved(!next);
       setSaves((n) => n + (next ? -1 : 1));
     } finally {
@@ -69,7 +73,10 @@ export function EngagementBar(props: {
           type="button"
           variant={saved ? 'default' : 'outline'}
           size="sm"
-          disabled={saveBusy}
+          // aria-disabled rather than disabled: a disabled button drops keyboard focus mid-toggle
+          aria-disabled={saveBusy}
+          aria-pressed={saved}
+          aria-label={`حفظ المكان (${saves})`}
           onClick={toggleSave}
         >
           <Bookmark className={cn('h-4 w-4', saved && 'fill-current')} />

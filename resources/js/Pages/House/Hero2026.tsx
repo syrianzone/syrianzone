@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { OMran_SOURCE_URL } from './members2026';
 
-export default function Hero2026({ total, female, male }: { total: number; female: number; male: number }) {
+export default function Hero2026({ total, female, male, onOpenArchive }: { total: number; female: number; male: number; onOpenArchive?: () => void }) {
     return (
         <Card className="overflow-hidden">
             <CardContent className="p-6 md:p-8 space-y-4">
@@ -22,7 +22,7 @@ export default function Hero2026({ total, female, male }: { total: number; femal
                     تجدون هناك أيضاً بيانات إضافية لكل عضو: طريقة التعيين، صفة العضوية، العرق والديانة والمذهب، الفئة العمرية، القطاع والفصيل، والتحصيل العلمي.
                 </p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                    ملاحظة: أبقينا بيانات المرحلة الانتقالية (الهيئات الناخبة، المرشحون، الفائزون) في <a href="#historical-archive" className="underline font-semibold text-primary">قسم البيانات التاريخية أسفل الصفحة</a> للرجوع إليها عند الحاجة.
+                    ملاحظة: أبقينا بيانات المرحلة الانتقالية (الهيئات الناخبة، المرشحون، الفائزون) في <a href="#historical-archive" onClick={onOpenArchive} className="underline font-semibold text-primary">قسم البيانات التاريخية أسفل الصفحة</a> للرجوع إليها عند الحاجة.
                 </p>
             </CardContent>
         </Card>

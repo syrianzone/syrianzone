@@ -57,8 +57,10 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
 
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roomCodeInput.trim()) return;
-    router.visit(`/guesswho/room/${roomCodeInput.trim()}`);
+    const code = roomCodeInput.trim();
+    if (!code) return;
+    // A path segment, not a path: "a/b" or "../x" must not route elsewhere.
+    router.visit(`/guesswho/room/${encodeURIComponent(code)}`);
   };
 
   return (
@@ -82,7 +84,7 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
           </div>
 
           {errorMessage && (
-            <div className="mb-8 p-4 bg-destructive/10 border border-destructive/30 text-destructive rounded-2xl flex items-center justify-between gap-3 text-sm font-bold">
+            <div role="alert" className="mb-8 p-4 bg-destructive/10 border border-destructive/30 text-destructive rounded-2xl flex items-center justify-between gap-3 text-sm font-bold">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="h-5 w-5 shrink-0" />
                 <span>{errorMessage}</span>
@@ -214,6 +216,10 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
                         placeholder="أدخل الرمز هنا (مثال: AB12)"
                         className="w-full bg-muted/40 border border-input rounded-2xl p-4 text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-center font-mono text-xl uppercase tracking-widest placeholder:text-muted-foreground/50 placeholder:font-sans placeholder:tracking-normal"
                         required
+                        autoComplete="off"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
                       />
                     </div>
 

@@ -62,10 +62,11 @@ import {
     useLocationPreference,
     type LocationPatch,
 } from '@/Domain/location/preference';
-import { PRAYER_KEYS, PRAYER_LABELS } from '@/Domain/prayer/methods';
+import { DEFAULT_PRAYER_METHOD, PRAYER_KEYS, PRAYER_LABELS, PRAYER_METHODS } from '@/Domain/prayer/methods';
 import { formatHijriDate, hijriDateLabel } from '@/Domain/prayer/hijri';
 import { prayerSchedule } from '@/Domain/prayer/nextPrayer';
 import { usePrayerTimes } from '@/Domain/prayer/times';
+import { wallDateIn } from '@/Domain/prayer/zonedTime';
 import { PrayerIcon } from '@/Domain/prayer/PrayerIcon';
 import PrayerSettingsFields from '@/Domain/prayer/PrayerSettingsFields';
 import ResponsiveSettingsDialog from '@/Domain/prayer/ResponsiveSettingsDialog';
@@ -80,25 +81,13 @@ import {
     GOVERNORATES_BY_ID,
     governorateNameForF3aliaProvince,
 } from '@/Domain/geography/governorates';
+import { variableHolidays, type VariableHolidayId } from './_lib/variableHolidays';
 
-const VARIABLE_HOLIDAYS_MAP: Record<number, Record<string, { month: number; day: number }>> = {
-    2026: {
-        'eid-fitr': { month: 3, day: 20 },
-        'eid-adha': { month: 5, day: 27 },
-        'hijri-new-year': { month: 6, day: 16 },
-        'mawlid': { month: 8, day: 26 },
-        'western-easter': { month: 4, day: 5 },
-        'eastern-easter': { month: 4, day: 12 },
-    },
-    2027: {
-        'eid-fitr': { month: 3, day: 10 },
-        'eid-adha': { month: 5, day: 16 },
-        'hijri-new-year': { month: 6, day: 6 },
-        'mawlid': { month: 8, day: 15 },
-        'western-easter': { month: 3, day: 28 },
-        'eastern-easter': { month: 5, day: 2 },
-    }
-};
+/** Upstream event links reach an href: only http(s) passes, else the platform. */
+const F3ALIA_HOME = 'https://app.f3alia.com';
+function safeEventUrl(raw: string | null | undefined): string {
+    return typeof raw === 'string' && /^https?:\/\//i.test(raw.trim()) ? raw.trim() : F3ALIA_HOME;
+}
 
 // The six rows the card lists, in clock-of-day order.
 const PRAYER_EVENTS = PRAYER_KEYS.map((key) => ({ key, label: PRAYER_LABELS[key] }));
@@ -111,7 +100,16 @@ interface ActiveHoliday {
     isNew?: boolean;
 }
 
-// Fixed national holidays + the variable (lunar/Easter) ones we have dates for.
+const VARIABLE_HOLIDAYS: Array<{ id: VariableHolidayId; nameAr: string; nameEn: string; description: string }> = [
+    { id: 'eid-fitr', nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', description: 'عطلة عيد الفطر السعيد (3 أيام).' },
+    { id: 'eid-adha', nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
+    { id: 'hijri-new-year', nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', description: 'رأس السنة الهجرية الجديدة.' },
+    { id: 'mawlid', nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', description: 'ذكرى المولد النبوي الشريف.' },
+    { id: 'western-easter', nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', description: 'عيد الفصح المجيد (التقويم الغربي).' },
+    { id: 'eastern-easter', nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', description: 'عيد الفصح المجيد (التقويم الشرقي).' },
+];
+
+// Fixed national holidays + the variable (lunar/Easter) ones (reviewed or computed).
 function holidaysForYear(year: number): ActiveHoliday[] {
     const list: ActiveHoliday[] = [
         { nameAr: 'رأس السنة الميلادية', nameEn: "New Year's Day", date: new Date(year, 0, 1), description: 'بداية العام الميلادي الجديد' },
@@ -123,16 +121,17 @@ function holidaysForYear(year: number): ActiveHoliday[] {
         { nameAr: 'عيد الميلاد المجيد', nameEn: 'Christmas Day', date: new Date(year, 11, 25), description: 'ذكرى ميلاد السيد المسيح عليه السلام.' }
     ];
 
-    const vars = VARIABLE_HOLIDAYS_MAP[year];
-    if (vars) {
-        list.push(
-            { nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', date: new Date(year, vars['eid-fitr'].month - 1, vars['eid-fitr'].day), description: 'عطلة عيد الفطر السعيد (3 أيام).' },
-            { nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', date: new Date(year, vars['eid-adha'].month - 1, vars['eid-adha'].day), description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
-            { nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', date: new Date(year, vars['hijri-new-year'].month - 1, vars['hijri-new-year'].day), description: 'رأس السنة الهجرية الجديدة.' },
-            { nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', date: new Date(year, vars['mawlid'].month - 1, vars['mawlid'].day), description: 'ذكرى المولد النبوي الشريف.' },
-            { nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', date: new Date(year, vars['western-easter'].month - 1, vars['western-easter'].day), description: 'عيد الفصح المجيد (التقويم الغربي).' },
-            { nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', date: new Date(year, vars['eastern-easter'].month - 1, vars['eastern-easter'].day), description: 'عيد الفصح المجيد (التقويم الشرقي).' }
-        );
+    // Reviewed dates where the table has the year, computed ones past it.
+    const vars = variableHolidays(year);
+    for (const holiday of VARIABLE_HOLIDAYS) {
+        for (const at of vars[holiday.id] ?? []) {
+            list.push({
+                nameAr: holiday.nameAr,
+                nameEn: holiday.nameEn,
+                date: new Date(year, at.month - 1, at.day),
+                description: holiday.description,
+            });
+        }
     }
 
     return list.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -145,6 +144,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
     // stored on this device and mirrored to the account, the same as /muslim.
     const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();
     const method = prefs.method;
+    const chosenMethod = PRAYER_METHODS.find((m) => m.id === method);
     const [roznamaSettingsOpen, setRoznamaSettingsOpen] = usePageDialog('roznama-settings');
 
     const handleMethodChange = (next: number) => {
@@ -158,6 +158,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
         hijri,
         loading,
         error: prayerError,
+        timeZone: prayerTimeZone,
     } = usePrayerTimes(location, method, { enabled: mounted });
     const error = prayerError
         ? prayerError.timedOut
@@ -174,14 +175,21 @@ export default function Index({ serverYear }: { serverYear?: number }) {
         return events.length > 0 ? events[0] : null;
     }, [events]);
     
+    // Storage can throw (blocked site data, private mode): the toggle still works.
     const [hidePassed, setHidePassed] = useState<boolean>(() => {
-        if (typeof window !== 'undefined') {
+        if (typeof window === 'undefined') return false;
+        try {
             return localStorage.getItem('sz-hide-passed-holidays') === 'true';
+        } catch {
+            return false;
         }
-        return false;
     });
     useEffect(() => {
-        localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
+        try {
+            localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
+        } catch {
+            // not persisted on this device
+        }
     }, [hidePassed]);
 
     useEffect(() => {
@@ -218,7 +226,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                     description: e.description,
                     address: e.address,
                     isOnline: e.is_online,
-                    eventLink: e.url,
+                    eventLink: safeEventUrl(e.url),
                     province: e.province,
                     provinceName: e.provinceName,
                     isFree: e.is_free,
@@ -251,21 +259,35 @@ export default function Index({ serverYear }: { serverYear?: number }) {
         if (isLoggedIn && Object.keys(accountPatch).length > 0) saveAccountSettings(accountPatch);
     };
 
+    // The clock and dates are labelled with the place, so they read in the
+    // place's zone (Damascus for a governorate), not this device's.
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: prayerTimeZone });
     };
 
-    const formatDateGregorian = (date: Date) => formatGregorianSyrian(date);
+    const formatDateGregorian = (date: Date) => {
+        if (!prayerTimeZone) return formatGregorianSyrian(date);
+        const wall = wallDateIn(date, prayerTimeZone);
+        return formatGregorianSyrian(new Date(wall.year, wall.month - 1, wall.day));
+    };
+
+    /** An event's `YYYY-MM-DD` is a calendar date: never parse it as UTC midnight. */
+    const formatEventDate = (value: string) => {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        return m ? formatGregorianSyrian(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))) : formatGregorianSyrianShort(value);
+    };
 
     // Active and next prayer, one implementation shared with /muslim, Home and
     // the board widget.
     const schedule = useMemo(
-        () => prayerSchedule(prayerTimes, currentTime),
-        [prayerTimes, currentTime],
+        () => prayerSchedule(prayerTimes, currentTime, { timeZone: prayerTimeZone }),
+        [prayerTimes, currentTime, prayerTimeZone],
     );
     const apiHijri = hijriDateLabel(hijri);
 
-    const holidays = useMemo(() => holidaysForYear(currentTime.getFullYear()), [currentTime]);
+    // Once per year, not once per clock tick.
+    const currentYear = currentTime.getFullYear();
+    const holidays = useMemo(() => holidaysForYear(currentYear), [currentYear]);
 
     // The national calendar day, not this browser's: the same boundary the
     // prayer log and the timings API use. One value for the holiday filter, the
@@ -274,11 +296,11 @@ export default function Index({ serverYear }: { serverYear?: number }) {
     const startOfToday = useMemo(() => todayInSyria(currentTime), [syriaDayKey]);
 
     const nextHoliday = useMemo(() => {
-        const next = holidays.find(h => h.date >= startOfToday) ?? holidaysForYear(currentTime.getFullYear() + 1)[0];
+        const next = holidays.find(h => h.date >= startOfToday) ?? holidaysForYear(currentYear + 1)[0];
 
         const daysLeft = Math.ceil((next.date.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
         return { ...next, daysLeft };
-    }, [holidays, currentTime, startOfToday]);
+    }, [holidays, currentYear, startOfToday]);
 
     const filteredHolidays = useMemo(() => {
         if (!hidePassed) return holidays;
@@ -321,7 +343,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                             </h2>
                             <ul className="divide-y divide-border/50 text-sm">
                                 {holidaysForYear(serverYear ?? 2026).map((h) => (
-                                    <li key={h.nameEn} className="py-2.5">
+                                    <li key={`${h.nameEn}-${h.date.getTime()}`} className="py-2.5">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="font-semibold text-foreground">{h.nameAr}</span>
                                             <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">
@@ -373,7 +395,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                             {formatDateGregorian(currentTime)}
                                         </div>
                                         <div className="text-xs text-primary font-medium mt-1">
-                                            {apiHijri || formatHijriDate(currentTime)}
+                                            {apiHijri || formatHijriDate(currentTime, prayerTimeZone)}
                                         </div>
                                     </div>
 
@@ -400,7 +422,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
 
                             {nextHoliday && (
                                 <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm overflow-hidden relative flex-1 flex flex-col justify-center">
-                                    <div className="absolute top-0 left-0 bg-primary/10 text-primary px-3 py-1 text-xs font-semibold rounded-br-lg border-b border-r border-primary/20">
+                                    <div className="absolute top-0 end-0 bg-primary/10 text-primary px-3 py-1 text-xs font-semibold rounded-es-lg border-b border-s border-primary/20">
                                         المناسبة القادمة
                                     </div>
                                     <CardContent className="p-6">
@@ -445,11 +467,11 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                         <span className="font-semibold text-foreground/80">
                                                             {governorateNameForF3aliaProvince(nextEvent.province) || nextEvent.provinceName}
                                                         </span>
-                                                        <span>•</span>
-                                                        <span>{formatDateGregorian(new Date(nextEvent.eventDate))}</span>
+                                                        <span aria-hidden="true">•</span>
+                                                        <span>{formatEventDate(nextEvent.eventDate)}</span>
                                                         {nextEvent.eventTime && (
                                                             <>
-                                                                <span>•</span>
+                                                                <span aria-hidden="true">•</span>
                                                                 <span className="font-mono">{nextEvent.eventTime}</span>
                                                             </>
                                                         )}
@@ -510,8 +532,8 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div className="text-left font-mono">
-                                                    <span className="text-xs text-foreground/70 block text-right font-medium">المتبقي</span>
+                                                <div className="text-end font-mono">
+                                                    <span className="text-xs text-foreground/70 block text-start font-medium">المتبقي</span>
                                                     <span className="text-xl font-bold text-primary tracking-wider">
                                                         {formatDuration(schedule.next.remainingMs)}
                                                     </span>
@@ -522,9 +544,9 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                         {loading ? (
                                             <div className="min-h-[348px]" aria-hidden="true" />
                                         ) : error ? (
-                                            <div className="text-center py-8 text-sm text-red-500 flex flex-col items-center gap-2">
-                                                <AlertCircle className="h-8 w-8 text-red-500" />
-                                                <p>{error}</p>
+                                            <div className="text-center py-8 text-sm text-destructive flex flex-col items-center gap-2">
+                                                <AlertCircle className="h-8 w-8 text-destructive" />
+                                                <p role="alert">{error}</p>
                                             </div>
                                         ) : prayerTimes ? (
                                             <div className="space-y-2">
@@ -547,7 +569,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                                     isActive
                                                                         ? 'text-primary-foreground'
                                                                         : ev.key === 'Sunrise'
-                                                                            ? 'text-orange-500'
+                                                                            ? 'text-orange-600 dark:text-orange-400'
                                                                             : 'text-primary'
                                                                 }`} />
                                                                 <span className="font-semibold text-sm">{ev.label}</span>
@@ -568,7 +590,9 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                     </div>
 
                                     <div className="text-[10px] text-muted-foreground mt-4 text-center leading-relaxed">
-                                        طريقة رابطة العالم الإسلامي (فجر 18° وعشاء 17°)، معتمد من وزارة الأوقاف.
+                                        {method === DEFAULT_PRAYER_METHOD || !chosenMethod
+                                            ? 'طريقة رابطة العالم الإسلامي (فجر 18° وعشاء 17°)، معتمد من وزارة الأوقاف.'
+                                            : `طريقة ${chosenMethod.nameAr} (${chosenMethod.detail}) — اخترتها في الإعدادات.`}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -636,7 +660,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                                 </span>
                                                                 {holiday.description && (
                                                                     <>
-                                                                        <span>•</span>
+                                                                        <span aria-hidden="true">•</span>
                                                                         <span>{holiday.description}</span>
                                                                     </>
                                                                 )}
@@ -708,9 +732,9 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                     {loadingEvents ? (
                                         <div className="min-h-[340px]" aria-hidden="true" />
                                     ) : eventsError ? (
-                                        <div className="text-center py-8 text-sm text-red-500 flex flex-col items-center gap-2">
-                                            <AlertCircle className="h-8 w-8 text-red-500" />
-                                            <p>{eventsError}</p>
+                                        <div className="text-center py-8 text-sm text-destructive flex flex-col items-center gap-2">
+                                            <AlertCircle className="h-8 w-8 text-destructive" />
+                                            <p role="alert">{eventsError}</p>
                                         </div>
                                     ) : events.length === 0 ? (
                                         <div className="text-center py-12 text-sm text-muted-foreground">
@@ -743,11 +767,11 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                             <span className="font-semibold text-foreground/75">
                                                                 {governorateNameForF3aliaProvince(event.province) || event.provinceName}
                                                             </span>
-                                                            <span>•</span>
-                                                            <span>{formatDateGregorian(new Date(event.eventDate))}</span>
+                                                            <span aria-hidden="true">•</span>
+                                                            <span>{formatEventDate(event.eventDate)}</span>
                                                             {event.eventTime && (
                                                                 <>
-                                                                    <span>•</span>
+                                                                    <span aria-hidden="true">•</span>
                                                                     <span className="font-mono">{event.eventTime}</span>
                                                                 </>
                                                             )}
@@ -758,7 +782,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                         <Badge 
                                                             className={`${
                                                                 event.isFree 
-                                                                    ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15 border-emerald-500/20' 
+                                                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 border-emerald-500/30' 
                                                                     : 'bg-primary/10 text-primary hover:bg-primary/15 border-primary/20'
                                                             } border text-[10px] font-bold h-5 px-1.5`}
                                                         >

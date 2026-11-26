@@ -50,9 +50,10 @@ export function WidgetGallery(props: {
                           variant="outline"
                           size="sm"
                           disabled={disabled}
+                          aria-label={disabled ? `${def.name}: مضاف` : `إضافة ${def.name}`}
                           onClick={() => props.onAdd(def)}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-4 w-4" aria-hidden="true" />
                           {disabled ? 'مضاف' : 'إضافة'}
                         </Button>
                       </div>

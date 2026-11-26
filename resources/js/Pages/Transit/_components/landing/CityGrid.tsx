@@ -9,7 +9,7 @@ interface CityGridProps {
 export default function CityGrid({ cities: allCities }: CityGridProps) {
   const cities = allCities.filter((c) => c.status === 'active')
   
-  const sortedCities = [...cities].sort((a, b) => {
+  const sortedCities = cities.toSorted((a, b) => {
     const aReady = a.routeCount > 0
     const bReady = b.routeCount > 0
     if (aReady && !bReady) return -1
@@ -25,7 +25,8 @@ export default function CityGrid({ cities: allCities }: CityGridProps) {
         <div className="mb-5 flex items-baseline justify-between">
           <h2 className="text-lg font-bold text-foreground sm:text-xl">المدن المتاحة</h2>
           <span className="text-xs text-muted-foreground" style={{ fontFamily: 'var(--font-mono)' }}>
-            {readyCount} / {cities.length}
+            <span aria-hidden="true">{readyCount} / {cities.length}</span>
+            <span className="sr-only">{readyCount} من {cities.length} مدينة فيها خطوط</span>
           </span>
         </div>
 

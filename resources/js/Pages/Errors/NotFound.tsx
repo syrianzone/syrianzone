@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     Home,
@@ -65,20 +65,21 @@ function detectSectionFromPath(path: string): NotFoundSection {
 const TILE_CLASS = 'group flex flex-col items-center gap-2 py-1 text-center no-underline';
 
 export default function NotFound({ path = '/404', section, transitCities = [] }: NotFoundProps) {
+    // The page URL comes from Inertia, so the server and the client agree.
+    const { url } = usePage();
     const resolvedSection: NotFoundSection = useMemo(() => {
-        if (typeof window !== 'undefined') {
-            const overrideSec = new URLSearchParams(window.location.search).get('section');
-            if (
-                overrideSec === 'general' ||
-                overrideSec === 'transit' ||
-                overrideSec === 'games' ||
-                overrideSec === 'muslim'
-            ) {
-                return overrideSec;
-            }
+        const query = url.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
+        const overrideSec = new URLSearchParams(query).get('section');
+        if (
+            overrideSec === 'general' ||
+            overrideSec === 'transit' ||
+            overrideSec === 'games' ||
+            overrideSec === 'muslim'
+        ) {
+            return overrideSec;
         }
         return section ?? detectSectionFromPath(path);
-    }, [path, section]);
+    }, [url, path, section]);
 
     const goBack = () => {
         if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -191,7 +192,7 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                     <button
                         type="button"
                         onClick={dealRandomGame}
-                        aria-label="اسحب لعبة عشوائية"
+                        aria-label={`اسحب لعبة عشوائية — ${pickedGame.title}`}
                         className="w-[var(--sz-card-w)] -translate-y-1.5 cursor-pointer transition-transform hover:-translate-y-2.5 sz-card sz-card--face sz-card--picked"
                     >
                         <span dir="rtl" className="contents">
@@ -444,9 +445,13 @@ function GeneralNotFound({ path, onBack }: { path: string; onBack: () => void })
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="ابحث في أدوات المساحة السورية..."
+                        aria-label="ابحث في أدوات المساحة السورية"
                         className="ps-9"
                     />
                 </div>
+                <p role="status" className={displayedTools.length === 0 ? 'mb-6 text-center text-sm text-muted-foreground' : 'sr-only'}>
+                    {query.trim() === '' ? '' : displayedTools.length === 0 ? 'لا توجد أدوات مطابقة' : `${displayedTools.length} نتيجة`}
+                </p>
 
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
                     {displayedTools.map((tool) => {

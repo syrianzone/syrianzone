@@ -174,6 +174,7 @@ export default function GovtCvsShow({
                                     resolvedPortraitUrl={official.resolved_portrait_url}
                                     size={96}
                                     className="ring-4 ring-primary/10"
+                                    priority
                                 />
                                 <div className="space-y-3">
                                     <div className="flex flex-wrap items-center gap-2">

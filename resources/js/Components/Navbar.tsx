@@ -16,7 +16,6 @@ import {
 
 import { useAuth } from '@/Contexts/AuthContext';
 import { useAppShell } from '@/Lib/appShell';
-import { useColorScheme } from '@/Lib/theme';
 import { cn } from '@/Lib/utils';
 import { Button } from '@/Components/ui/button';
 import {
@@ -56,7 +55,7 @@ const FOOTER_LINKS = [
  * button.
  */
 const NAV_TRIGGER_CLASS =
-  'group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=open]:text-accent-foreground data-[state=open]:bg-accent/50 data-[state=open]:hover:bg-accent data-[state=open]:focus:bg-accent';
+  'group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 data-[state=open]:text-accent-foreground data-[state=open]:bg-accent/50 data-[state=open]:hover:bg-accent data-[state=open]:focus:bg-accent';
 
 
 /**
@@ -229,7 +228,7 @@ function MorePanel({
       id="sz-more-panel"
       role="region"
       aria-label="المزيد من أقسام الموقع"
-      className="w-[min(1152px,92vw)] max-h-[calc(100vh-5.5rem)] overflow-y-auto rounded-xl border bg-popover text-popover-foreground shadow-lg"
+      className="w-[min(1152px,92vw)] max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-xl border bg-popover text-popover-foreground shadow-lg"
     >
       {header}
       <div className="p-4 space-y-4">
@@ -288,6 +287,35 @@ function MorePanel({
   );
 }
 
+/**
+ * The wordmark in both schemes. CSS picks the visible one from `data-scheme`
+ * (set before first paint), so the server markup is already right for a dark
+ * theme instead of swapping images after hydration; the intrinsic size from
+ * the SVG viewBox reserves the space before it loads.
+ */
+function SiteLogo({ className }: { className: string }) {
+  return (
+    <>
+      <img
+        src="/assets/logo-lightmode.svg"
+        width={571}
+        height={298}
+        decoding="async"
+        className={cn(className, 'w-auto dark:hidden')}
+        alt="Syrian Zone"
+      />
+      <img
+        src="/assets/logo-darkmode.svg"
+        width={571}
+        height={298}
+        decoding="async"
+        className={cn(className, 'hidden w-auto dark:block')}
+        alt="Syrian Zone"
+      />
+    </>
+  );
+}
+
 /** A desktop top-level nav link: inline icon + label, sharing the trigger look. */
 function NavTopLink({
   href,
@@ -315,8 +343,8 @@ function NavTopLink({
     <>
       {image && imageDark ? (
         <>
-          <img src={image} alt="" className="h-4 w-4 me-2 object-contain dark:hidden" />
-          <img src={imageDark} alt="" className="hidden h-4 w-4 me-2 object-contain dark:block" />
+          <img src={image} alt="" loading="lazy" decoding="async" className="h-4 w-4 me-2 object-contain dark:hidden" />
+          <img src={imageDark} alt="" loading="lazy" decoding="async" className="hidden h-4 w-4 me-2 object-contain dark:block" />
         </>
       ) : image ? (
         <img src={image} alt="" className="h-4 w-4 me-2 object-contain" />
@@ -382,7 +410,6 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const transitCityId = routeSegment(pathname, `${transitHref}/city`);
   const studioHref = transitCityId ? `${studioPath}?city=${transitCityId}` : studioPath;
   const [isOpen, setIsOpen] = React.useState(false);
-  const isDark = useColorScheme() === 'dark';
   const { user } = useAuth();
   const { navbarLinks, navbarTopLinks, navbarMoreLinks, groups } = useSiteNavigation();
 
@@ -396,7 +423,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   };
 
   // Desktop "المزيد" menu: click-only (no hover intent). Closes on an outside
-  // click, Escape, or any navigation.
+  // click, Escape, focus leaving it, or any navigation.
   const [moreOpen, setMoreOpen] = React.useState(false);
   const moreBtnRef = React.useRef<HTMLButtonElement>(null);
   const morePanelRef = React.useRef<HTMLDivElement>(null);
@@ -413,11 +440,20 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
         moreBtnRef.current?.focus();
       }
     };
+    // Tabbing past the panel's last link (or back before the trigger) closes it,
+    // so an open panel never covers what the keyboard has moved on to.
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target as Node;
+      if (morePanelRef.current?.contains(t) || moreBtnRef.current?.contains(t)) return;
+      setMoreOpen(false);
+    };
     document.addEventListener('pointerdown', onDown);
     document.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       document.removeEventListener('pointerdown', onDown);
       document.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocusIn);
     };
   }, [moreOpen]);
   React.useEffect(() => {
@@ -500,11 +536,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
               <SheetHeader className="flex-row items-center justify-between gap-2 space-y-0 px-4 pt-4 pb-2 text-right shrink-0">
                 <SheetTitle className="flex h-10 items-center">
                   <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
-                    <img
-                      src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
-                      className="h-8"
-                      alt="Syrian Zone"
-                    />
+                    <SiteLogo className="h-8" />
                   </Link>
                 </SheetTitle>
                 <SheetClose asChild>
@@ -583,11 +615,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
         {/* Logo */}
         <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex shrink-0 lg:me-3 xl:me-10">
           <Link href="/" className="flex items-center gap-2">
-            <img
-              src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
-              className="h-8 sm:h-10"
-              alt="Syrian Zone"
-            />
+            <SiteLogo className="h-8 sm:h-10" />
           </Link>
         </div>
 

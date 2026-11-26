@@ -6,7 +6,10 @@ import type { FeatureCollection, RouteProperties, StopProperties } from '../../_
 import type { TransitCity } from '@/Domain/transit/types'
 import TransitLayout from '../../layout'
 
-const MapView = lazy(() => import('../../_components/citymap/MapView'))
+// The map chunk only renders once the city data has arrived; starting its
+// download on mount lets the two load in parallel instead of one after the other.
+const loadMapView = () => import('../../_components/citymap/MapView')
+const MapView = lazy(loadMapView)
 
 interface CityPageProps {
   id: string
@@ -24,6 +27,11 @@ export default function CityPage({ id, city, cities = [] }: CityPageProps) {
   const groupNames = mapGroup.map((groupId) => cities.find((c) => c.id === groupId)?.nameAr ?? groupId)
   const didSyncUrlRef = useRef(false)
   const prevCityIdRef = useRef(id)
+
+  useEffect(() => {
+    // a failure here resurfaces when lazy() imports it for real
+    loadMapView().catch(() => {})
+  }, [])
 
   // A route selection must not leak across cities.
   useEffect(() => {

@@ -2,11 +2,19 @@ import * as React from "react"
 
 import { cn } from "@/Lib/utils"
 
+/**
+ * A table in a horizontally scrollable wrapper. Pass `regionLabel` when the
+ * table can be wider than its container: the wrapper then becomes a named,
+ * focusable region so keyboard users can scroll it with the arrow keys.
+ */
 const Table = React.forwardRef<
     HTMLTableElement,
-    React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto">
+    React.HTMLAttributes<HTMLTableElement> & { regionLabel?: string }
+>(({ className, regionLabel, ...props }, ref) => (
+    <div
+        className="relative w-full overflow-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        {...(regionLabel ? { role: "region", "aria-label": regionLabel, tabIndex: 0 } : {})}
+    >
         <table
             ref={ref}
             className={cn("w-full caption-bottom text-sm", className)}
@@ -15,6 +23,18 @@ const Table = React.forwardRef<
     </div>
 ))
 Table.displayName = "Table"
+
+const TableCaption = React.forwardRef<
+    HTMLTableCaptionElement,
+    React.HTMLAttributes<HTMLTableCaptionElement>
+>(({ className, ...props }, ref) => (
+    <caption
+        ref={ref}
+        className={cn("mt-4 text-sm text-muted-foreground", className)}
+        {...props}
+    />
+))
+TableCaption.displayName = "TableCaption"
 
 const TableHeader = React.forwardRef<
     HTMLTableSectionElement,
@@ -88,4 +108,5 @@ export {
     TableHead,
     TableRow,
     TableCell,
+    TableCaption,
 }

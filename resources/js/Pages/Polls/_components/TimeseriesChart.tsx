@@ -52,6 +52,21 @@ interface TimeseriesChartProps {
 }
 
 type Timeframe = "day" | "week" | "month" | "year"
+
+/**
+ * "YYYY-MM-DD" as a local calendar date. `new Date("YYYY-MM-DD")` is UTC
+ * midnight, which is the previous day west of Greenwich and makes the server
+ * and the browser disagree.
+ */
+function localDate(day: string): Date {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day)
+    return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(day)
+}
+
+/** A local date back to "YYYY-MM-DD" (toISOString would shift it to UTC). */
+function dayKey(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
 type Metric = "votes" | "score"
 type ViewMode = "cumulative" | "periodic"
 
@@ -177,22 +192,20 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
         if (timeframe === "day") {
             return dailyData.map(d => ({
                 ...d,
-                displayDate: new Date(d.date).toLocaleDateString('ar-SY')
+                displayDate: localDate(d.date).toLocaleDateString('ar-SY')
             }))
         }
 
         const aggregatedMap: { [key: string]: any } = {}
 
         dailyData.forEach(dayEntry => {
-            const dateObj = new Date(dayEntry.date)
+            const dateObj = localDate(dayEntry.date)
             let key = ""
 
             if (timeframe === "week") {
-                const d = new Date(dateObj)
-                const day = d.getDay()
-                const diff = d.getDate() - day + (day == 0 ? -6 : 1)
-                const monday = new Date(d.setDate(diff))
-                key = monday.toISOString().split('T')[0]
+                const day = dateObj.getDay()
+                const diff = dateObj.getDate() - day + (day === 0 ? -6 : 1)
+                key = dayKey(new Date(dateObj.getFullYear(), dateObj.getMonth(), diff))
             } else if (timeframe === "month") {
                 key = `${dateObj.getFullYear()}-${dateObj.getMonth() + 1}`
             } else if (timeframe === "year") {
@@ -218,7 +231,7 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
             } else if (timeframe === "year") {
                 aggregatedMap[key].displayDate = dateObj.toLocaleDateString('ar-SY-u-nu-latn', { year: 'numeric' })
             } else if (timeframe === "week") {
-                aggregatedMap[key].displayDate = new Date(key).toLocaleDateString('ar-SY-u-nu-latn', { day: 'numeric', month: 'numeric' })
+                aggregatedMap[key].displayDate = localDate(key).toLocaleDateString('ar-SY-u-nu-latn', { day: 'numeric', month: 'numeric' })
             }
         })
 
@@ -339,31 +352,59 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                     {/* Candidate Selector Pills */}
                     <div className="mt-6" data-chart-controls>
                         <div className="text-sm font-semibold mb-3 text-gray-400">اختر للعرض:</div>
-                        <div className="flex flex-wrap gap-2">
-                            <div
+                        <div role="group" aria-label="المرشحون المعروضون في المخطط" className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                aria-pressed={selectedCandidates.includes("all")}
                                 className={`cursor-pointer px-3 py-1 rounded-full text-xs border transition-colors ${selectedCandidates.includes("all") ? "bg-primary text-primary-foreground border-primary" : "bg-transparent text-gray-400 border-gray-700 hover:border-gray-500"}`}
                                 onClick={() => toggleCandidate("all")}
                             >
                                 الكل (أفضل 5)
-                            </div>
+                            </button>
                             {candidates.map(candidate => {
                                 const isSelected = selectedCandidates.includes(candidate.candidateId)
                                 const color = getCandidateColor(candidate.candidateId)
                                 return (
-                                    <div
+                                    <button
+                                        type="button"
                                         key={candidate.candidateId}
+                                        aria-pressed={isSelected}
                                         onClick={() => toggleCandidate(candidate.candidateId)}
-                                        className={`cursor-pointer px-3 py-1 rounded-full text-xs border flex items-center gap-2 transition-colors ${isSelected ? "text-white" : "text-gray-500 opacity-60 grayscale"}`}
+                                        className={`cursor-pointer px-3 py-1 rounded-full text-xs border flex items-center gap-2 transition-colors ${isSelected ? "text-white" : "text-gray-400"}`}
                                         style={{ borderColor: isSelected ? color : '#374151', backgroundColor: isSelected ? '#1e293b' : 'transparent' }}
                                     >
-                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></div>
+                                        <span aria-hidden="true" className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></span>
                                         {candidate.name}
-                                    </div>
+                                    </button>
                                 )
                             })}
                         </div>
                     </div>
                 </div>
+
+                {/* The chart is an SVG picture; this table is its text equivalent.
+                    It sits outside chartRef, so the PNG export never includes it. */}
+                <div className="sr-only"><table>
+                    <caption>{`${title}: ${METRICS.find((m) => m.value === metric)?.label ?? ""}، ${VIEW_MODES.find((v) => v.value === viewMode)?.label ?? ""}`}</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">التاريخ</th>
+                            {displayCandidates.map((c) => (
+                                <th key={c.candidateId} scope="col">{c.name}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {chartData.map((row) => (
+                            <tr key={row.originalDate}>
+                                <th scope="row">{row.displayDate}</th>
+                                {displayCandidates.map((c) => (
+                                    <td key={c.candidateId}>{row[c.candidateId] ?? 0}</td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table></div>
 
                 <div className="mt-4 flex justify-end">
                     <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">

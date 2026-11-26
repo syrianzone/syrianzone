@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -28,6 +28,7 @@ import type {
     GovAppDetail,
 } from '@/Domain/govapps/types';
 import { formatEntityImage } from '@/Lib/entityImage';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import { useCanAny } from '@/Lib/useCan';
 import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
 
@@ -97,23 +98,24 @@ function getAppleButtonLabel(source: GovAppAppleSource | null): string {
     return 'تحميل لآيفون';
 }
 
+/**
+ * The presenter sends `YYYY-MM-DD` calendar dates: format them with the shared
+ * Syrian month names so server and browser render the same text in any zone/ICU.
+ */
 function formatArabicDate(isoDate?: string | null): string | null {
     if (!isoDate) return null;
-    try {
-        return new Intl.DateTimeFormat('ar-SY', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        }).format(new Date(`${isoDate}T00:00:00`));
-    } catch {
-        return isoDate;
-    }
+    return formatGregorianSyrianShort(isoDate);
 }
 
 export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
     const canAny = useCanAny();
     const canEdit = canAny('govapps.edit');
     const [suggestionOpen, setSuggestionOpen] = useState(false);
+    // Stable identity: the dialog resets its fields whenever fixedTarget changes.
+    const suggestionTarget = useMemo(
+        () => ({ id: app.id, label: app.name, subtitle: app.description ?? null }),
+        [app.id, app.name, app.description],
+    );
 
     const androidLink = app.links?.android?.trim() || null;
     const appleLink = app.links?.apple?.trim() || null;
@@ -334,6 +336,7 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                                         src={src}
                                                         alt={`لقطة شاشة ${idx + 1} من ${app.name}`}
                                                         loading="lazy"
+                                                        decoding="async"
                                                         className="w-full h-auto object-cover"
                                                     />
                                                 </div>
@@ -389,6 +392,8 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                                 <img
                                                     src={formatEntityImage(app.publisher.image)}
                                                     alt=""
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>
@@ -493,6 +498,8 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                                     <img
                                                         src={rel.icon || DEFAULT_GOVAPP_ICON}
                                                         alt=""
+                                                        loading="lazy"
+                                                        decoding="async"
                                                         className="w-full h-full object-cover"
                                                         onError={(e) => {
                                                             (e.target as HTMLImageElement).src = DEFAULT_GOVAPP_ICON;
@@ -531,11 +538,7 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                 open={suggestionOpen}
                 onOpenChange={setSuggestionOpen}
                 defaultKind="edit"
-                fixedTarget={{
-                    id: app.id,
-                    label: app.name,
-                    subtitle: app.description ?? null,
-                }}
+                fixedTarget={suggestionTarget}
             />
         </MainLayout>
     );

@@ -139,7 +139,14 @@ export default function CompassFigures({ figures, categories, canViewStats }: Pr
         }
     };
 
-    const handleSave = () => {
+    const handleSave = (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (saving) return;
+        // `required` lets whitespace through; send focus back to the name.
+        if (!form.name.trim()) {
+            document.getElementById('fig-name')?.focus();
+            return;
+        }
         setSaving(true);
         const positions: Record<string, number | null> = {};
         for (const a of AXES) {
@@ -298,12 +305,15 @@ export default function CompassFigures({ figures, categories, canViewStats }: Pr
                         </DialogDescription>
                     </DialogHeader>
 
+                    {/* display:contents keeps the dialog's grid layout while Enter submits. */}
+                    <form className="contents" onSubmit={handleSave}>
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="fig-name">الاسم</Label>
                                 <Input
                                     id="fig-name"
+                                    required
                                     value={form.name}
                                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                                 />
@@ -400,6 +410,7 @@ export default function CompassFigures({ figures, categories, canViewStats }: Pr
                                             min={-1}
                                             max={1}
                                             className="w-20"
+                                            aria-label={a.name}
                                             value={form.positions[a.id] ?? ''}
                                             onChange={(e) => setPosition(a.id, e.target.value)}
                                         />
@@ -410,12 +421,13 @@ export default function CompassFigures({ figures, categories, canViewStats }: Pr
                     </div>
 
                     <DialogFooter className="flex-row-reverse gap-2">
-                        <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-                        <Button onClick={handleSave} disabled={saving || !form.name.trim()} className="gap-2">
+                        <Button type="button" variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
+                        <Button type="submit" disabled={saving} className="gap-2">
                             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                             {editing ? 'حفظ التعديلات' : 'إضافة'}
                         </Button>
                     </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
         </MainLayout>

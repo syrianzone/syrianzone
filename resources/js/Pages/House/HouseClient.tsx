@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId, useCallback } from 'react';
 import { useTabList } from '@/Lib/useTabList';
 import { HouseRow, PROVINCES, Mode } from './types';
 import { fetchHouseData } from './data';
 import { RotateCcw, ChartBar, Users, Sparkles } from 'lucide-react';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import DirectoryLoadMore from '@/Components/directory/DirectoryLoadMore';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -12,6 +13,19 @@ interface HouseClientProps {
     initialHeaders: string[];
     initialMode: Mode;
 }
+
+/** Recharts defaults to #666 ticks and a white tooltip; follow the theme instead. */
+const AXIS_TICK = { fill: 'hsl(var(--muted-foreground))', fontSize: 12 };
+const TOOLTIP_STYLE = {
+    contentStyle: {
+        backgroundColor: 'hsl(var(--popover))',
+        borderColor: 'hsl(var(--border))',
+        color: 'hsl(var(--popover-foreground))',
+        borderRadius: '8px',
+    },
+    itemStyle: { color: 'hsl(var(--popover-foreground))' },
+    labelStyle: { color: 'hsl(var(--popover-foreground))' },
+};
 
 const COLORS = {
     male: '#556A4E',
@@ -30,6 +44,12 @@ const MODE_LABELS: Record<Mode, string> = {
     presidential: 'الثلث الرئاسي',
 };
 
+/** Same ordering as `localeCompare(…, 'ar')`, without building a collator per comparison. */
+const AR_COLLATOR = new Intl.Collator('ar');
+
+/** A province's voter list runs to thousands of rows; render them a page at a time. */
+const PAGE_SIZE = 200;
+
 /** Module-level so the hook's memo sees one stable function. */
 const houseSearchText = (row: HouseRow) => `${row.__nameNorm} ${row.__placeNorm}`;
 
@@ -41,9 +61,33 @@ const AGE_GROUPS = [
     { value: '60p', label: '+60' },
 ];
 
+/** The charts' numbers for screen readers; the SVG charts are hidden from them. */
+function ChartTable({ caption, rows }: { caption: string; rows: { name: string; value: number }[] }) {
+    return (
+        <div className="sr-only"><table>
+            <caption>{caption}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">الفئة</th>
+                    <th scope="col">العدد</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map(row => (
+                    <tr key={row.name}>
+                        <th scope="row">{row.name}</th>
+                        <td>{row.value}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table></div>
+    );
+}
+
 export default function HouseClient({ initialData, initialHeaders, initialMode }: HouseClientProps) {
     const [mode, setMode] = useState<Mode>(initialMode);
     const tabs = useTabList({ ids: MODES, active: mode, onChange: setMode });
+    const fieldId = useId();
     const [province, setProvince] = useState('damascus');
     const [data, setData] = useState<HouseRow[]>(initialData);
     const [headers, setHeaders] = useState<string[]>(initialHeaders);
@@ -62,10 +106,34 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         { key: 'district', label: 'الدائرة الانتخابية', options: [], valueOf: (row) => mode === 'winners' ? (row['Electoral District (الدائرة الانتخابية)'] || '').trim() : undefined },
     ], [mode]);
 
+    const [sortColumn, setSortColumn] = useState('Name'); // or 'الاسم'
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+    const compareRows = useCallback((a: HouseRow, b: HouseRow) => {
+        const aVal = a[sortColumn];
+        const bVal = b[sortColumn];
+
+        if (!aVal && !bVal) return 0;
+        if (!aVal) return 1;
+        if (!bVal) return -1;
+
+        let res = 0;
+        if (sortColumn.includes('Year') || sortColumn.includes('Age') || sortColumn === 'سنة الميلاد') {
+            const aNum = Number(aVal.replace(/\D/g, '')) || 0;
+            const bNum = Number(bVal.replace(/\D/g, '')) || 0;
+            res = aNum - bNum;
+        } else {
+            res = AR_COLLATOR.compare(String(aVal), String(bVal));
+        }
+        return sortDirection === 'asc' ? res : -res;
+    }, [sortColumn, sortDirection]);
+
     const directory = useDirectory<HouseRow>({
         items: data,
         searchText: houseSearchText,
         facets,
+        sort: sortColumn ? compareRows : undefined,
+        pageSize: PAGE_SIZE,
     });
     const sexFilter = directory.filters.sex?.[0] ?? '';
     const ageFilter = directory.filters.age?.[0] ?? '';
@@ -80,17 +148,15 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         directory.setFilters(next);
     };
 
-    const [sortColumn, setSortColumn] = useState('Name'); // or 'الاسم'
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-
     useEffect(() => {
 
         let active = true;
+        const controller = new AbortController();
         const fetchData = async () => {
             setLoading(true);
             setLoadError(null);
             try {
-                const res = await fetchHouseData(mode, province);
+                const res = await fetchHouseData(mode, province, controller.signal);
                 if (active) {
                     setData(res.rows);
                     setHeaders(res.headers);
@@ -111,7 +177,10 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
             fetchData();
         }
 
-        return () => { active = false; };
+        return () => {
+            active = false;
+            controller.abort();
+        };
     }, [mode, province]);
 
     const districts = useMemo(() => {
@@ -123,27 +192,8 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
     const filteredData = directory.results;
 
-    const sortedData = useMemo(() => {
-        if (!sortColumn) return filteredData;
-        return [...filteredData].sort((a, b) => {
-            const aVal = a[sortColumn];
-            const bVal = b[sortColumn];
-
-            if (!aVal && !bVal) return 0;
-            if (!aVal) return 1;
-            if (!bVal) return -1;
-
-            let res = 0;
-            if (sortColumn.includes('Year') || sortColumn.includes('Age') || sortColumn === 'سنة الميلاد') {
-                const aNum = Number(aVal.replace(/\D/g, '')) || 0;
-                const bNum = Number(bVal.replace(/\D/g, '')) || 0;
-                res = aNum - bNum;
-            } else {
-                res = String(aVal).localeCompare(String(bVal), 'ar');
-            }
-            return sortDirection === 'asc' ? res : -res;
-        });
-    }, [filteredData, sortColumn, sortDirection]);
+    // The directory filters and sorts; `visible` is the rendered page of it.
+    const sortedData = directory.results;
 
     const stats = useMemo(() => {
         const total = filteredData.length;
@@ -252,12 +302,12 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                     {/* Province Selector (Voters/Winners). Presidential is a single national list. */}
                     {(mode === 'voters' || mode === 'winners') && (
                         <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">
+                            <label htmlFor={`${fieldId}-place`} className="block text-xs font-medium text-muted-foreground mb-1">
                                 {mode === 'winners' ? 'الدائرة الانتخابية' : 'المحافظة'}
                             </label>
                             {mode === 'winners' ? (
                                 <select
-                                    aria-label="الدائرة الانتخابية"
+                                    id={`${fieldId}-place`}
                                     className="w-full h-10 px-3 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={districtFilter}
                                     onChange={e => setFacet('district', e.target.value === 'all' ? '' : e.target.value)}
@@ -267,7 +317,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                                 </select>
                             ) : (
                                 <select
-                                    aria-label="المحافظة"
+                                    id={`${fieldId}-place`}
                                     className="w-full h-10 px-3 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={province}
                                     onChange={e => setProvince(e.target.value)}
@@ -279,7 +329,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                     )}
 
                     <div className={mode === 'candidates' ? "md:col-span-2" : "md:col-span-1"}>
-                        <label className="block text-xs font-medium text-muted-foreground mb-1">بحث</label>
+                        <span aria-hidden="true" className="block text-xs font-medium text-muted-foreground mb-1">بحث</span>
                         <DirectorySearch
                             value={directory.query}
                             onChange={directory.setQuery}
@@ -290,8 +340,9 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
                     <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">الجنس</label>
+                            <label htmlFor={`${fieldId}-sex`} className="block text-xs font-medium text-muted-foreground mb-1">الجنس</label>
                             <select
+                                id={`${fieldId}-sex`}
                                 className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                 value={sexFilter}
                                 onChange={e => setFacet('sex', e.target.value)}
@@ -302,8 +353,9 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">العمر</label>
+                            <label htmlFor={`${fieldId}-age`} className="block text-xs font-medium text-muted-foreground mb-1">العمر</label>
                             <select
+                                id={`${fieldId}-age`}
                                 className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                 value={ageFilter}
                                 onChange={e => setFacet('age', e.target.value)}
@@ -319,8 +371,9 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
                         {mode === 'voters' && (
                             <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">حالة الطعن</label>
+                                <label htmlFor={`${fieldId}-appeal`} className="block text-xs font-medium text-muted-foreground mb-1">حالة الطعن</label>
                                 <select
+                                    id={`${fieldId}-appeal`}
                                     className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={appealFilter}
                                     onChange={e => setFacet('appeal', e.target.value)}
@@ -334,8 +387,9 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
                         {mode === 'candidates' && (
                             <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">النتيجة</label>
+                                <label htmlFor={`${fieldId}-result`} className="block text-xs font-medium text-muted-foreground mb-1">النتيجة</label>
                                 <select
+                                    id={`${fieldId}-result`}
                                     className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={resultFilter}
                                     onChange={e => setFacet('result', e.target.value)}
@@ -392,9 +446,10 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         <h3 className="text-sm font-semibold mb-4 text-foreground flex items-center gap-2">
                             <Users className="h-4 w-4" /> توزيع الجنس
                         </h3>
-                        <div className="w-48">
+                        <ChartTable caption="توزيع الجنس" rows={sexChartData} />
+                        <div className="w-48" aria-hidden="true">
                             <ResponsiveContainer width="100%" height={192}>
-                                <PieChart>
+                                <PieChart accessibilityLayer={false}>
                                     <Pie
                                         data={sexChartData}
                                         cx="50%"
@@ -408,8 +463,8 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                                             <Cell key={entry.name} fill={index === 0 ? COLORS.male : COLORS.female} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
-                                    <Legend />
+                                    <Tooltip {...TOOLTIP_STYLE} />
+                                    <Legend wrapperStyle={{ color: 'hsl(var(--foreground))' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -418,12 +473,13 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         <h3 className="text-sm font-semibold mb-4 text-foreground flex items-center gap-2">
                             <ChartBar className="h-4 w-4" /> توزيع الأعمار
                         </h3>
-                        <div className="w-full h-48">
+                        <ChartTable caption="توزيع الأعمار" rows={ageChartData} />
+                        <div className="w-full h-48" aria-hidden="true">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={ageChartData}>
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
+                                <BarChart data={ageChartData} accessibilityLayer={false}>
+                                    <XAxis dataKey="name" tick={AXIS_TICK} stroke="hsl(var(--border))" />
+                                    <YAxis tick={AXIS_TICK} stroke="hsl(var(--border))" />
+                                    <Tooltip {...TOOLTIP_STYLE} cursor={{ fill: 'hsl(var(--muted))' }} />
                                     <Bar
                                         dataKey="value"
                                         fill={sexFilter === 'أنثى' ? COLORS.female : COLORS.male}
@@ -456,15 +512,15 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                 </div>
             )}
 
-            <div className={`bg-card rounded-lg shadow-sm border border-border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div aria-busy={loading} className={`bg-card rounded-lg shadow-sm border border-border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="px-6 py-4 border-b border-border bg-muted/50 flex justify-between items-center">
                     <div>
                         <h3 className="font-bold text-foreground">القائمة الرئيسية</h3>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p role="status" className="text-xs text-muted-foreground mt-1">
                             عرض {sortedData.length} سجل
                         </p>
                     </div>
-                    {loading && <div className="text-sm text-muted-foreground font-medium">جاري التحميل...</div>}
+                    <div role="status" className="text-sm text-muted-foreground font-medium">{loading ? 'جاري التحميل...' : ''}</div>
                 </div>
 
                 {loadError && sortedData.length === 0 && !loading && (
@@ -501,7 +557,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         </thead>
                         <tbody className="bg-card divide-y divide-border">
                             {sortedData.length > 0 ? (
-                                sortedData.map((row, idx) => {
+                                directory.visible.map((row, idx) => {
                                     const isAppealed = row.__appealStatus === 'مطعون';
                                     const isWinner = isWinnerRow(row);
 
@@ -532,6 +588,13 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         </tbody>
                     </table>
                 </div>
+                {directory.hasMore && (
+                    <DirectoryLoadMore
+                        onClick={directory.loadMore}
+                        label={`عرض المزيد (${directory.shown} من ${directory.total})`}
+                        className="mt-6 pb-6"
+                    />
+                )}
             </div>
             </div>
         </div>

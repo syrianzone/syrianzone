@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 import {
     Plus, Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Settings, Check, X, Phone, MessageSquare, ExternalLink, ArrowRight, Inbox
@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Badge } from "@/Components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/Components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/Components/ui/dialog";
+import FieldError, { fieldA11y } from "@/Components/ui/field-error";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import CategoryDialog from '@/Components/directory/CategoryDialog';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
@@ -72,6 +73,16 @@ export default function PhonebookAdminIndex({
 
     const [entryModalOpen, setEntryModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<PhonebookEntry | null>(null);
+    const [entrySaving, setEntrySaving] = useState(false);
+    const [entryErrors, setEntryErrors] = useState<Record<string, string>>({});
+    const entryFormRef = useRef<HTMLFormElement>(null);
+
+    // After a rejected save, move focus to the first invalid field so its
+    // message is announced and can be fixed straight away.
+    useEffect(() => {
+        if (Object.keys(entryErrors).length === 0) return;
+        entryFormRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    }, [entryErrors]);
     const [entryForm, setEntryForm] = useState({
         id: '',
         category_id: categories[0]?.id || 'emergency',
@@ -108,6 +119,7 @@ export default function PhonebookAdminIndex({
 
     const openCreateEntry = () => {
         setEditingEntry(null);
+        setEntryErrors({});
         setEntryForm({
             id: '',
             category_id: categories[0]?.id || 'emergency',
@@ -123,6 +135,7 @@ export default function PhonebookAdminIndex({
 
     const openEditEntry = (entry: PhonebookEntry) => {
         setEditingEntry(entry);
+        setEntryErrors({});
         setEntryForm({
             id: entry.id,
             category_id: entry.category_id ?? categories[0]?.id ?? 'emergency',
@@ -148,10 +161,23 @@ export default function PhonebookAdminIndex({
 
     const handleSaveEntry = (e: React.FormEvent) => {
         e.preventDefault();
+        if (entrySaving) return;
         const options = {
+            onStart: () => {
+                setEntrySaving(true);
+                setEntryErrors({});
+            },
+            onFinish: () => setEntrySaving(false),
             onSuccess: () => setEntryModalOpen(false),
-            onError: (errors: Record<string, string>) =>
-                notify.error(Object.values(errors)[0] ?? 'تعذر حفظ البيانات'),
+            onError: (errors: Record<string, string>) => {
+                setEntryErrors(errors);
+                // Errors on fields the form shows are rendered inline; anything
+                // else still needs a visible outcome.
+                const shown = ['name_ar', 'name_en', 'number', 'category_id', 'source_url'];
+                if (!Object.keys(errors).some((key) => shown.includes(key))) {
+                    notify.error(Object.values(errors)[0] ?? 'تعذر حفظ البيانات');
+                }
+            },
         };
         if (editingEntry) {
             router.post(`/api/v1/admin/phonebook/entries/${editingEntry.id}`, entryForm, options);
@@ -414,43 +440,54 @@ export default function PhonebookAdminIndex({
                         <DialogContent className="max-w-lg" dir="rtl">
                             <DialogHeader>
                                 <DialogTitle>{editingEntry ? 'تعديل بيانات الرقم' : 'إضافة رقم هاتف جديد'}</DialogTitle>
+                                <DialogDescription>الرقم وجهته وفئته كما تظهر في دليل الهاتف العام.</DialogDescription>
                             </DialogHeader>
-                            <form onSubmit={handleSaveEntry} className="space-y-4 py-2">
+                            <form ref={entryFormRef} onSubmit={handleSaveEntry} className="space-y-4 py-2">
                                 <div className="space-y-1">
-                                    <Label>اسم الجهة / الهيئة (بالعربية)</Label>
-                                    <Input aria-label="الاسم بالعربية"
+                                    <Label htmlFor="entry-name-ar">اسم الجهة / الهيئة (بالعربية)</Label>
+                                    <Input id="entry-name-ar"
+                                        {...fieldA11y('entry-name-ar-error', entryErrors.name_ar)}
                                         required
                                         value={entryForm.name_ar}
                                         onChange={(e) => setEntryForm({ ...entryForm, name_ar: e.target.value })}
                                         placeholder="مثال: الهلال الأحمر العربي السوري"
                                     />
+                                    <FieldError id="entry-name-ar-error" message={entryErrors.name_ar} />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <Label>الاسم (بالإنكليزية - اختياري)</Label>
-                                    <Input aria-label="الاسم بالإنجليزية"
+                                    <Label htmlFor="entry-name-en">الاسم (بالإنكليزية - اختياري)</Label>
+                                    <Input id="entry-name-en"
+                                        {...fieldA11y('entry-name-en-error', entryErrors.name_en)}
                                         value={entryForm.name_en}
                                         onChange={(e) => setEntryForm({ ...entryForm, name_en: e.target.value })}
                                         placeholder="Example: Syrian Arab Red Crescent"
                                     />
+                                    <FieldError id="entry-name-en-error" message={entryErrors.name_en} />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <Label>رقم الهاتف</Label>
-                                        <Input aria-label="رقم الهاتف"
+                                        <Label htmlFor="entry-number">رقم الهاتف</Label>
+                                        <Input id="entry-number"
+                                            {...fieldA11y('entry-number-error', entryErrors.number)}
+                                            type="tel"
+                                            dir="ltr"
+                                            autoComplete="off"
                                             required
                                             value={entryForm.number}
                                             onChange={(e) => setEntryForm({ ...entryForm, number: e.target.value })}
                                             placeholder="133 أو 011-2223334"
                                             className="font-mono"
                                         />
+                                        <FieldError id="entry-number-error" message={entryErrors.number} />
                                     </div>
 
                                     <div className="space-y-1">
-                                        <Label>الفئة</Label>
+                                        <Label htmlFor="entry-category">الفئة</Label>
                                         <select
-                                            aria-label="الفئة"
+                                            id="entry-category"
+                                            {...fieldA11y('entry-category-error', entryErrors.category_id)}
                                             value={entryForm.category_id}
                                             onChange={(e) => setEntryForm({ ...entryForm, category_id: e.target.value })}
                                             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
@@ -459,34 +496,39 @@ export default function PhonebookAdminIndex({
                                                 <option key={c.id} value={c.id}>{c.label_ar}</option>
                                             ))}
                                         </select>
+                                        <FieldError id="entry-category-error" message={entryErrors.category_id} />
                                     </div>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <Label>رابط المصدر الرسمي (اختياري)</Label>
-                                    <Input aria-label="الموقع الإلكتروني"
+                                    <Label htmlFor="entry-source-url">رابط المصدر الرسمي (اختياري)</Label>
+                                    <Input id="entry-source-url"
+                                        {...fieldA11y('entry-source-url-error', entryErrors.source_url)}
                                         type="url"
                                         value={entryForm.source_url}
                                         onChange={(e) => setEntryForm({ ...entryForm, source_url: e.target.value })}
                                         placeholder="https://..."
                                     />
+                                    <FieldError id="entry-source-url-error" message={entryErrors.source_url} />
                                 </div>
 
                                 <div className="flex justify-between items-center pt-2 border-t border-border">
                                     <div className="flex items-center gap-2">
                                         <Switch
+                                            id="entry-is-whatsapp"
                                             checked={entryForm.is_whatsapp}
                                             onCheckedChange={(val) => setEntryForm({ ...entryForm, is_whatsapp: val })}
                                         />
-                                        <Label className="cursor-pointer text-sm">يتوفر خط واتساب</Label>
+                                        <Label htmlFor="entry-is-whatsapp" className="cursor-pointer text-sm">يتوفر خط واتساب</Label>
                                     </div>
 
                                     <div className="flex items-center gap-2">
                                         <Switch
+                                            id="entry-is-active"
                                             checked={entryForm.is_active}
                                             onCheckedChange={(val) => setEntryForm({ ...entryForm, is_active: val })}
                                         />
-                                        <Label className="cursor-pointer text-sm">ظاهر في الواجهة</Label>
+                                        <Label htmlFor="entry-is-active" className="cursor-pointer text-sm">ظاهر في الواجهة</Label>
                                     </div>
                                 </div>
 
@@ -494,8 +536,8 @@ export default function PhonebookAdminIndex({
                                     <Button type="button" variant="outline" onClick={() => setEntryModalOpen(false)}>
                                         إلغاء
                                     </Button>
-                                    <Button type="submit">
-                                        حفظ البيانات
+                                    <Button type="submit" disabled={entrySaving}>
+                                        {entrySaving ? 'جارٍ الحفظ...' : 'حفظ البيانات'}
                                     </Button>
                                 </DialogFooter>
                             </form>

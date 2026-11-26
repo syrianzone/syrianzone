@@ -28,6 +28,12 @@ interface Props {
   setPage: (p: number) => void;
   isLoggedIn: boolean;
   reciterCode: string;
+  /**
+   * False until the saved preferences are read. The player persists every
+   * recitation it is given, so pushing the default before then would
+   * overwrite a guest's saved reciter.
+   */
+  recitationReady?: boolean;
   setReciterCode: (code: string) => void;
 }
 
@@ -47,7 +53,7 @@ function useIsDesktop(): boolean {
   return desktop;
 }
 
-export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, setReciterCode }: Props) {
+export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, recitationReady = true, setReciterCode }: Props) {
   const isDesktop = useIsDesktop();
   const step = isDesktop ? 2 : 1;
   // Desktop spread (RTL: right = page, left = page+1); mobile single page.
@@ -84,7 +90,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
 
   const go = useCallback((p: number) => {
     setPage(clampPage(p));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   }, [setPage]);
 
   // Madina 15-line pages from the vendored skill database (offline-capable).
@@ -110,8 +117,9 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   }, [page, isDesktop, fontSize]);
 
   useEffect(() => {
+    if (!recitationReady) return;
     useQuranPlayer.getState().setRecitation(reciterCode);
-  }, [reciterCode]);
+  }, [reciterCode, recitationReady]);
 
   useEffect(() => {
     if (playerSource !== 'reader' || !playerCurrent) return;
@@ -228,10 +236,15 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   // Keyboard: h/l page (RTL), [ ] Juz jump (~20 pages).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      // A focused ayah moves between ayahs itself; at the page edge it leaves
+      // the arrow unhandled so the page turns here.
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return;
+      // Single-key shortcuts stay out of open dialogs, menus and pickers.
+      if (el?.closest?.('[role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"], [cmdk-root], [data-radix-popper-content-wrapper]')) return;
+      if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return;
       if (e.key === 'ArrowLeft') {
         go(page + step);
         return;
@@ -323,8 +336,10 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
           <div className="flex min-w-0 items-center gap-1">
             <Popover open={surahSelectOpen} onOpenChange={setSurahSelectOpen}>
               <PopoverTrigger asChild>
-                <button 
-                  className="flex items-center gap-1 truncate text-sm font-bold text-primary bg-transparent outline-none cursor-pointer appearance-none px-1.5 py-0.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                <button
+                  type="button"
+                  aria-label={`اختر السورة — الحالية: ${currentAyah ? SURAH_NAMES_AR[currentAyah.surah] : surahs}`}
+                  className="flex items-center gap-1 truncate text-sm font-bold text-primary bg-transparent cursor-pointer appearance-none px-1.5 py-0.5 rounded hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                 >
                   <span className="truncate">{currentAyah ? SURAH_NAMES_AR[currentAyah.surah] : surahs}</span>
                   <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
@@ -371,19 +386,19 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
       )}
 
       {loading ? (
-        <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
+        <div role="status" className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
           <p className="text-xs">جاري تحميل الصفحة…</p>
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center gap-2 py-12 text-sm text-red-500">
-          <AlertCircle className="h-8 w-8" /><p>{error}</p>
+        <div className="flex flex-col items-center gap-2 py-12 text-sm text-destructive">
+          <AlertCircle className="h-8 w-8" /><p role="alert">{error}</p>
           <Button variant="outline" size="sm" onClick={() => go(page)}>إعادة المحاولة</Button>
         </div>
       ) : (
         <div ref={viewportRef} className="min-h-0 flex-1 overflow-hidden relative">
           {isFocused && (
-            <Button aria-label="إلغاء وضع التركيز" variant="secondary" size="icon" className="absolute top-4 right-4 z-50 h-10 w-10 rounded-full shadow-lg opacity-50 hover:opacity-100 transition-opacity" title="إلغاء وضع التركيز" onClick={() => setIsFocused(false)}>
+            <Button aria-label="إلغاء وضع التركيز" variant="secondary" size="icon" className="absolute top-4 start-4 z-50 h-10 w-10 rounded-full shadow-lg opacity-50 hover:opacity-100 transition-opacity" title="إلغاء وضع التركيز" onClick={() => setIsFocused(false)}>
               <Minimize className="h-5 w-5" />
             </Button>
           )}
@@ -483,7 +498,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
 
       <Dialog open={usageOpen} onOpenChange={setUsageOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
-          <DialogHeader className="text-right sm:text-right">
+          <DialogHeader className="text-start sm:text-start">
             <DialogTitle className="flex items-center gap-2">
               <HardDrive className="h-5 w-5 text-primary" />
               استهلاك البيانات

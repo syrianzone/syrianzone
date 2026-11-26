@@ -85,7 +85,7 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
               <button
                 type="button"
                 onClick={() => setProfile(g)}
-                className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-right hover:bg-accent/50"
+                className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-start hover:bg-accent/50"
               >
               <span dir="ltr" className="w-5 shrink-0 text-center text-sm font-semibold tabular-nums text-muted-foreground">
                 {g.rank}

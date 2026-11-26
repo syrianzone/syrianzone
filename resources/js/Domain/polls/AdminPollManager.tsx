@@ -6,6 +6,7 @@ import { useAuth } from "@/Contexts/AuthContext";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
+import FieldError, { fieldA11y } from "@/Components/ui/field-error";
 import { useTabList } from '@/Lib/useTabList';
 import { Plus, Trash2, Edit2, Save, X, MoreVertical, Star as StarIcon, ArrowLeft, ArrowRight, Archive, Undo2, Power, PowerOff } from "lucide-react";
 import { Badge } from "@/Components/ui/badge";
@@ -171,9 +172,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const [cHandle, setCHandle] = useState("");
     const [cImage, setCImage] = useState("");
     const [cGroupId, setCGroupId] = useState<string | null>(null);
+    const [nameError, setNameError] = useState<string | undefined>(undefined);
 
     const openAddCandidate = (groupId: string | null) => {
         setEditingCandidate(null);
+        setNameError(undefined);
         setCName("");
         setCTitle("");
         setCHandle("");
@@ -188,6 +191,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
 
     const openEditCandidate = (c: Candidate) => {
         setEditingCandidate(c);
+        setNameError(undefined);
         setCName(c.name);
         setCTitle(c.title || "");
         setCHandle(c.x_handle || "");
@@ -226,7 +230,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     };
 
     const handleSaveCandidate = async () => {
-        if (!cName.trim()) return;
+        if (!cName.trim()) {
+            setNameError("اكتب اسم المرشح");
+            document.getElementById("c-name")?.focus();
+            return;
+        }
 
         const payload: CandidateInput = {
             name: cName,
@@ -481,11 +489,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="inline-flex rounded-md border bg-background p-0.5 text-xs">
+                        <div role="group" aria-label="المرشحون المعروضون" className="inline-flex rounded-md border bg-background p-0.5 text-xs">
                             {(["active", "archived", "all"] as const).map(opt => (
                                 <button
                                     key={opt}
                                     type="button"
+                                    aria-pressed={statusFilter === opt}
                                     onClick={() => setStatusFilter(opt)}
                                     className={`px-2 py-1 rounded-sm transition-colors ${
                                         statusFilter === opt ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
@@ -559,21 +568,21 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         {canEdit && (
-                                            <Button aria-label="تعديل" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEditCandidate(candidate)} title="تعديل">
+                                            <Button aria-label={`تعديل ${candidate.name}`} variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEditCandidate(candidate)} title="تعديل">
                                                 <Edit2 className="h-3 w-3" />
                                             </Button>
                                         )}
                                         {canEdit && (isArchived ? (
-                                            <Button aria-label="إعادة تفعيل" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleRestore(candidate)} title="إعادة تفعيل">
+                                            <Button aria-label={`إعادة تفعيل ${candidate.name}`} variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleRestore(candidate)} title="إعادة تفعيل">
                                                 <Undo2 className="h-3 w-3" />
                                             </Button>
                                         ) : (
-                                            <Button aria-label="أرشفة" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openArchive(candidate)} title="أرشفة">
+                                            <Button aria-label={`أرشفة ${candidate.name}`} variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openArchive(candidate)} title="أرشفة">
                                                 <Archive className="h-3 w-3" />
                                             </Button>
                                         ))}
                                         {canDelete && (
-                                            <Button aria-label="حذف" variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDeleteCandidate(candidate.id)} title="حذف">
+                                            <Button aria-label={`حذف ${candidate.name}`} variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDeleteCandidate(candidate.id)} title="حذف">
                                                 <Trash2 className="h-3 w-3" />
                                             </Button>
                                         )}
@@ -596,10 +605,22 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                     <DialogHeader>
                         <DialogTitle>{editingCandidate ? "Edit Candidate" : "Add Candidate"}</DialogTitle>
                     </DialogHeader>
+                    {/* A form, so Enter in any field saves; validation stays in
+                        handleSaveCandidate (noValidate) to show the Arabic error. */}
+                    <form noValidate className="grid gap-4" onSubmit={(e) => { e.preventDefault(); void handleSaveCandidate(); }}>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="c-name" className="text-right">Name</Label>
-                            <Input id="c-name" value={cName} onChange={e => setCName(e.target.value)} className="col-span-3" />
+                            <div className="col-span-3 space-y-1">
+                                <Input
+                                    id="c-name"
+                                    value={cName}
+                                    required
+                                    onChange={e => { setCName(e.target.value); setNameError(undefined); }}
+                                    {...fieldA11y("c-name-error", nameError)}
+                                />
+                                <FieldError id="c-name-error" message={nameError} />
+                            </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="c-title" className="text-right">Title</Label>
@@ -610,9 +631,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                             <Input id="c-handle" value={cHandle} onChange={e => setCHandle(e.target.value)} placeholder="@username" dir="ltr" className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-start gap-4">
-                            <Label className="text-right pt-2">Image</Label>
+                            <Label htmlFor="c-image" className="text-right pt-2">Image</Label>
                             <div className="col-span-3 space-y-2">
-                                <div
+                                {/* A label for the file input: click, Enter and Space all open
+                                    the picker natively, and the input stays focusable. */}
+                                <label
+                                    htmlFor={canUploadImages ? "c-image-file" : undefined}
                                     {...(canUploadImages ? {
                                         onDragEnter: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); },
                                         onDragOver: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); },
@@ -623,11 +647,10 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             setIsDragging(false);
                                             if (!isUploading) handleDroppedFiles(e.dataTransfer.files);
                                         },
-                                        onClick: () => !isUploading && fileInputRef.current?.click(),
                                     } : {})}
                                     className={`flex items-center gap-3 rounded-md border-2 border-dashed p-3 transition-colors ${
                                         canUploadImages
-                                            ? `cursor-pointer ${isDragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"} ${isUploading ? "opacity-60 cursor-wait" : ""}`
+                                            ? `cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring ${isDragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"} ${isUploading ? "opacity-60 cursor-wait" : ""}`
                                             : "border-border"
                                     }`}
                                     title={canUploadImages ? undefined : "رفع الصور متاح للمدير العام فقط"}
@@ -641,10 +664,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                     </div>
                                     <input
                                         ref={fileInputRef}
+                                        id="c-image-file"
+                                        aria-label="رفع صورة المرشح (JPEG أو PNG أو WEBP)"
                                         type="file"
                                         accept="image/jpeg,image/png,image/webp"
-                                        className="hidden"
-                                        disabled={!canUploadImages}
+                                        className="sr-only"
+                                        disabled={!canUploadImages || isUploading}
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             if (file) startUpload([file]);
@@ -664,12 +689,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             type="button"
                                             variant="ghost"
                                             size="sm"
-                                            onClick={(e) => { e.stopPropagation(); setCImage(""); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCImage(""); }}
                                         >
                                             مسح
                                         </Button>
                                     )}
-                                </div>
+                                </label>
                                 <Input
                                     id="c-image"
                                     value={cImage}
@@ -678,7 +703,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                     className="text-left text-xs"
                                     dir="ltr"
                                 />
-                                {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+                                {uploadError && <p role="alert" className="text-xs text-destructive">{uploadError}</p>}
                             </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
@@ -699,11 +724,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCandidateModalOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveCandidate} disabled={editingCandidate ? !canEdit : !canCreate}>
+                        <Button type="button" variant="outline" onClick={() => setIsCandidateModalOpen(false)}>Cancel</Button>
+                        <Button type="submit" disabled={editingCandidate ? !canEdit : !canCreate}>
                             Save
                         </Button>
                     </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 

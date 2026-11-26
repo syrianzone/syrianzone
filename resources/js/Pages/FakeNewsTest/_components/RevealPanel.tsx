@@ -115,6 +115,8 @@ export default function RevealPanel({
       const now = performance.now();
       const delta = now - lastTickRef.current;
       lastTickRef.current = now;
+      // Time spent in a background tab is not reading time: hold the countdown.
+      if (document.visibilityState === 'hidden') return;
       setRemainingMs((prev) => {
         const next = Math.max(0, prev - delta);
         if (next === 0 && !committedRef.current) {
@@ -122,7 +124,7 @@ export default function RevealPanel({
         }
         return next;
       });
-    }, 50);
+    }, 100);
 
     return () => window.clearInterval(intervalId);
   }, [dragging, timerStopped, flyVector, dismissCard, claim.id]);
@@ -138,7 +140,8 @@ export default function RevealPanel({
     return () => window.removeEventListener('wheel', handleWheel);
   }, [timerStopped, claim.id]);
 
-  // Keyboard shortcuts: Enter / Space / Arrow keys dismiss to next card
+  // Keyboard shortcuts: Enter and the horizontal arrows dismiss to the next card.
+  // Space and the vertical arrows are left alone so the page still scrolls.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (committedRef.current || e.repeat) return;
@@ -155,18 +158,12 @@ export default function RevealPanel({
         return;
       }
 
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowLeft') {
+      if (e.key === 'Enter' || e.key === 'ArrowLeft') {
         e.preventDefault();
         dismissCard(-1, 0);
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         dismissCard(1, 0);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        dismissCard(0, -1);
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        dismissCard(0, 1);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -291,7 +288,11 @@ export default function RevealPanel({
         </div>
 
         <div className="flex items-center justify-between">
-          <h1 id="fakenewstest-reveal-title" className="text-sm font-bold text-muted-foreground">
+          <h1
+            id="fakenewstest-reveal-title"
+            tabIndex={-1}
+            className="text-sm font-bold text-muted-foreground focus:outline-none"
+          >
             هل تميّزها؟
           </h1>
           <span className="text-xs font-semibold tabular-nums text-muted-foreground">
@@ -336,8 +337,6 @@ export default function RevealPanel({
             )}
           >
             <CardHeader
-              role="status"
-              aria-live="polite"
               className={cn(
                 'flex-row items-center justify-between space-y-0 px-5 py-3.5',
                 isCorrect
@@ -403,22 +402,28 @@ export default function RevealPanel({
                 <BdiText text={claim.explain} />
               </p>
 
-              {/* Subtle 3-second auto-dismiss timer bar (tap/click card to stop) */}
+              {/* Reading-length auto-dismiss timer. Tapping the card stops it; the
+                  button is the keyboard and screen-reader equivalent (WCAG 2.2.1). */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  {timerStopped ? (
-                    <span className="inline-flex items-center gap-1 font-medium text-foreground">
-                      <Pause className="h-3 w-3" aria-hidden="true" />
-                      <span>تم إيقاف المؤقّت</span>
-                    </span>
-                  ) : (
-                    <span>اضغط على البطاقة لإيقاف المؤقّت</span>
-                  )}
+                <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <button
+                    type="button"
+                    aria-pressed={timerStopped}
+                    onClick={() => setTimerStopped((stopped) => !stopped)}
+                    className={cn(
+                      'inline-flex min-h-6 items-center gap-1 rounded-sm font-medium hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      timerStopped && 'text-foreground',
+                    )}
+                  >
+                    <Pause className="h-3 w-3" aria-hidden="true" />
+                    <span>إيقاف المؤقّت</span>
+                  </button>
+                  {!timerStopped && <span aria-hidden="true">أو اضغط على البطاقة</span>}
                 </div>
                 <div className="h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
                   <div
                     className={cn(
-                      'h-full rounded-full transition-[width] duration-75 ease-linear',
+                      'h-full rounded-full transition-[width] duration-100 ease-linear',
                       timerStopped
                         ? 'bg-muted-foreground/40'
                         : isCorrect
@@ -444,6 +449,7 @@ export default function RevealPanel({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setTimerStopped(true)}
+                onFocus={() => setTimerStopped(true)}
                 className="inline-flex items-center justify-center gap-2 text-center whitespace-normal"
               >
                 <ExternalLink className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />

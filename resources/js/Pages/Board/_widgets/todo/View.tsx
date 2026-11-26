@@ -35,9 +35,21 @@ export default function TodoView({ config, onConfigChange }: WidgetProps<TodoCon
     if (timer.current === null) setItems(readItems(config.items));
   }, [config.items]);
 
+  // the latest writer and the unsaved list, read by the unmount flush below
+  const save = useRef(onConfigChange);
+  const pending = useRef<TodoItem[] | null>(null);
+  useEffect(() => {
+    save.current = onConfigChange;
+  });
+
+  // Leaving the board inside the debounce window flushes the last list
+  // instead of dropping it.
   useEffect(() => {
     return () => {
       if (timer.current) window.clearTimeout(timer.current);
+      timer.current = null;
+      if (pending.current !== null) save.current({ items: pending.current });
+      pending.current = null;
     };
   }, []);
 
@@ -46,9 +58,11 @@ export default function TodoView({ config, onConfigChange }: WidgetProps<TodoCon
   // typing costs no writes at all.
   function commit(next: TodoItem[]) {
     setItems(next);
+    pending.current = next;
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
       timer.current = null;
+      pending.current = null;
       onConfigChange({ items: next });
     }, 400);
   }

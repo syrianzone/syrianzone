@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { api as client, apiErrorMessage, API_ROOT } from '@/Lib/api';
 import { PopulationGroups, DATA_TYPES, DATA_TYPE_CONFIG, RainfallData, DataSource } from './types';
 import {
@@ -7,7 +7,7 @@ import {
     Activity, AlertTriangle, TrendingDown, TrendingUp, Calendar, Cloud, Navigation,
     History, Users, Heart, MapPin, Clock, Compass, Thermometer, Leaf
 } from 'lucide-react';
-import { sortCitiesByOrder, getCanonicalGovernorateName, getGovernorateDatasetNameEn, getGovernoratePcode } from '@/Domain/geography/governorates';
+import { GOVERNORATES, sortCitiesByOrder, getCanonicalGovernorateName, getGovernorateDatasetNameEn, getGovernoratePcode, type Governorate } from '@/Domain/geography/governorates';
 import { buildLegend } from './utils/color-calculator';
 import { useIsMobile } from '@/Lib/useIsMobile';
 import { notify } from '@/Lib/notify';
@@ -31,6 +31,28 @@ const getWindDirection = (degrees: number) => {
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     return directions[Math.round(degrees / 45) % 8];
 };
+
+/** Keyboard and screen-reader route to the governorates the map makes clickable. */
+function GovernoratePicker({ governorates, onSelect }: { governorates: Governorate[]; onSelect: (governorate: Governorate) => void }) {
+    if (governorates.length === 0) return null;
+    return (
+        <ul aria-label="المحافظات" className="grid grid-cols-2 gap-2 w-full">
+            {governorates.map(governorate => (
+                <li key={governorate.id}>
+                    <button
+                        type="button"
+                        onClick={() => onSelect(governorate)}
+                        className="w-full rounded-md border border-border bg-muted/40 px-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        {governorate.nameAr}
+                    </button>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+const GOVERNORATES_BY_SORT_ORDER = GOVERNORATES.toSorted((a, b) => a.sortOrder - b.sortOrder);
 
 export default function PopulationClient() {
     const isMobile = useIsMobile();
@@ -58,36 +80,47 @@ export default function PopulationClient() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/assets/population/syr_admin1_opt.geojson')
-            .then(res => res.json())
+        const controller = new AbortController();
+        fetch('/assets/population/syr_admin1_opt.geojson', {
+            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
+        })
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
             .then(data => setGeoJsonData(data))
             // The governorate polygons are the atlas's map: without them the page
             // renders its panels over an empty canvas, so say so instead of logging.
-            .catch(err => notify.error(apiErrorMessage(err, 'تعذّر تحميل خريطة المحافظات')));
+            .catch(err => {
+                if (controller.signal.aborted) return;
+                notify.error(apiErrorMessage(err, 'تعذّر تحميل خريطة المحافظات'));
+            });
+        return () => controller.abort();
     }, []);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setIsLoading(true);
-                setError(null);
+        let active = true;
 
-                const masterData = await client.get<{ groups: PopulationGroups; rainfall_data: RainfallData }>(
-                    `${API_ROOT}/population/master`
-                );
+        // The climate report only feeds the environmental layer: fetch it in
+        // parallel and let the atlas render as soon as the master data lands.
+        client.get(`${API_ROOT}/population/env-report`)
+            .then(data => { if (active) setEnvironmentalData(data); })
+            .catch(err => { if (active) notify.error(apiErrorMessage(err, 'تعذّر تحميل البيانات البيئية')); });
 
+        client.get<{ groups: PopulationGroups; rainfall_data: RainfallData }>(`${API_ROOT}/population/master`)
+            .then(masterData => {
+                if (!active) return;
                 setLivePopulationData(masterData.groups);
                 setRainfallData(masterData.rainfall_data);
+            })
+            .catch(err => {
+                if (active) setError(apiErrorMessage(err, 'تعذّر تحميل بيانات الأطلس السكاني، حاول مجدداً لاحقاً.'));
+            })
+            .finally(() => {
+                if (active) setIsLoading(false);
+            });
 
-                setEnvironmentalData(await client.get(`${API_ROOT}/population/env-report`));
-            } catch (err) {
-                setError(apiErrorMessage(err, 'تعذّر تحميل بيانات الأطلس السكاني، حاول مجدداً لاحقاً.'));
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchData();
+        return () => { active = false; };
     }, []);
 
     // Rainfall is a single layer with no source rows, so it has no selected source.
@@ -150,6 +183,22 @@ export default function PopulationClient() {
         return stats;
     };
 
+    const showRainfallProvince = (nameAr: string, data: any[]) => {
+        setSelectedRainfallProvince({ name: nameAr, data });
+        if (isMobile) setIsPanelOpen(true);
+    };
+
+    const envCityData = (nameAr: string, rawName: string = nameAr) => {
+        const cities = environmentalData?.cities;
+        if (!cities) return undefined;
+        return cities[nameAr] || cities[getGovernorateDatasetNameEn(nameAr)] || cities[rawName];
+    };
+
+    const showEnvProvince = (nameAr: string, data: any) => {
+        setSelectedEnvProvince({ name: nameAr, data });
+        setIsPanelOpen(true);
+    };
+
     const comparisonData = useMemo(() => {
         if (selectedProvinces.length !== 2) return null;
         return {
@@ -157,6 +206,13 @@ export default function PopulationClient() {
             p2: { name: selectedProvinces[1], stats: getProvinceStats(selectedProvinces[1]) }
         };
     }, [selectedProvinces, livePopulationData, currentDataType, currentSource]);
+
+    const showComparison = !!comparisonData && currentDataType !== DATA_TYPES.RAINFALL && currentDataType !== DATA_TYPES.ENVIRONMENTAL;
+    const comparisonHeadingRef = useRef<HTMLHeadingElement>(null);
+    useEffect(() => {
+        // The overlay appears away from the list that triggered it; move focus there.
+        if (showComparison) comparisonHeadingRef.current?.focus();
+    }, [showComparison]);
 
     if (isLoading) {
         return (
@@ -203,15 +259,15 @@ export default function PopulationClient() {
     return (
         <div className="flex flex-col h-[calc(100vh-var(--sz-navbar-h))] overflow-hidden relative bg-background text-foreground" dir="rtl">
 
-            {comparisonData && currentDataType !== DATA_TYPES.RAINFALL && currentDataType !== DATA_TYPES.ENVIRONMENTAL && (
-                <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[1100] w-[90%] max-w-2xl bg-card border-2 border-primary rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
+            {showComparison && comparisonData && (
+                <div role="region" aria-labelledby="population-comparison-heading" className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[1100] w-[90%] max-w-2xl bg-card border-2 border-primary rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
                     <div className="flex justify-between items-center p-4 border-b border-border">
-                        <h2 className="text-lg font-bold flex items-center gap-2">
-                            <BarChart3 className="text-primary" size={20} />
+                        <h2 id="population-comparison-heading" ref={comparisonHeadingRef} tabIndex={-1} className="text-lg font-bold flex items-center gap-2 focus:outline-none">
+                            <BarChart3 className="text-primary" size={20} aria-hidden="true" />
                             مقارنة المحافظات
                         </h2>
-                        <button onClick={() => setSelectedProvinces([])} className="p-1 hover:bg-muted rounded-full transition-colors">
-                            <X size={20} />
+                        <button type="button" aria-label="إغلاق المقارنة" onClick={() => setSelectedProvinces([])} className="p-1 hover:bg-muted rounded-full transition-colors">
+                            <X size={20} aria-hidden="true" />
                         </button>
                     </div>
                     <div className="p-6">
@@ -310,22 +366,12 @@ export default function PopulationClient() {
                                     }
                                 }
 
-                                if (rData) {
-                                    setSelectedRainfallProvince({ name: nameAr, data: rData });
-                                    if (isMobile) setIsPanelOpen(true);
-                                }
+                                if (rData) showRainfallProvince(nameAr, rData);
                             }
 
                             else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
-                                if (environmentalData && environmentalData.cities) {
-                                    const englishName = getGovernorateDatasetNameEn(nameAr);
-                                    const data = environmentalData.cities[nameAr] || environmentalData.cities[englishName] || environmentalData.cities[name];
-
-                                    if (data) {
-                                        setSelectedEnvProvince({ name: nameAr, data: data });
-                                        setIsPanelOpen(true);
-                                    }
-                                }
+                                const data = envCityData(nameAr, name);
+                                if (data) showEnvProvince(nameAr, data);
                             }
                         }}
                     />
@@ -354,7 +400,8 @@ export default function PopulationClient() {
                     {isPanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                 </button>
 
-                <div className="p-4 border-b border-border bg-card">
+                {/* The toggle above stays reachable; the panel body is off-screen when closed. */}
+                <div className="p-4 border-b border-border bg-card" inert={!isPanelOpen}>
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Layers size={18} /> البيانات</h2>
                         <button aria-label="إغلاق" onClick={() => setIsPanelOpen(false)} className="md:hidden p-1 hover:bg-muted rounded-full transition-colors text-muted-foreground" title="إغلاق">
@@ -366,6 +413,8 @@ export default function PopulationClient() {
                         {Object.values(DATA_TYPES).map(type => (
                             <button
                                 key={type}
+                                type="button"
+                                aria-pressed={currentDataType === type}
                                 onClick={() => {
                                     setCurrentDataType(type);
                                     if (type === DATA_TYPES.RAINFALL) {
@@ -388,7 +437,7 @@ export default function PopulationClient() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-card">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-card" inert={!isPanelOpen}>
 
                     {currentDataType === DATA_TYPES.RAINFALL ? (
                         <div className="flex flex-col h-full">
@@ -399,10 +448,10 @@ export default function PopulationClient() {
                                             <h2 className="text-xl font-bold text-foreground">{selectedRainfallProvince.name}</h2>
                                             <p className="text-xs text-muted-foreground mt-1">تفاصيل الهطولات المطرية السنوية</p>
                                         </div>
-                                        <button onClick={() => setSelectedRainfallProvince(null)} className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground"><X size={18} /></button>
+                                        <button type="button" aria-label="إغلاق" onClick={() => setSelectedRainfallProvince(null)} className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground"><X size={18} aria-hidden="true" /></button>
                                     </div>
                                     <div className="grid grid-cols-1 gap-3">
-                                        {[...selectedRainfallProvince.data].sort((a, b) => b.year - a.year).map((item, idx) => (
+                                        {selectedRainfallProvince.data.toSorted((a, b) => b.year - a.year).map((item, idx) => (
                                             <div key={idx} className="bg-muted/40 p-3 rounded-lg border border-border/50 flex justify-between items-center group hover:bg-muted/60 transition-colors">
                                                 <div className="flex flex-col">
                                                     <span className="text-xs text-muted-foreground">السنة</span>
@@ -411,7 +460,7 @@ export default function PopulationClient() {
                                                 <div className="flex gap-6">
                                                     <div className="flex flex-col items-end">
                                                         <span className="text-[10px] text-muted-foreground">الهطول (ملم)</span>
-                                                        <span className="font-mono font-bold text-cyan-500">{item.rainfall.toFixed(1)}</span>
+                                                        <span className="font-mono font-bold text-cyan-700 dark:text-cyan-400">{item.rainfall.toFixed(1)}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -422,7 +471,11 @@ export default function PopulationClient() {
                                 <div className="flex flex-col items-center justify-center text-center h-full text-muted-foreground py-10 px-4">
                                     <CloudRain className="opacity-50 mb-4" size={48} />
                                     <h2 className="font-bold text-foreground mb-2">خريطة الأمطار</h2>
-                                    <p className="text-sm leading-relaxed mb-6">اختر محافظة من الخريطة لعرض إحصائيات الأمطار التاريخية والمتوسط السنوي.</p>
+                                    <p className="text-sm leading-relaxed mb-6">اختر محافظة من الخريطة أو من القائمة لعرض إحصائيات الأمطار التاريخية والمتوسط السنوي.</p>
+                                    <GovernoratePicker
+                                        governorates={GOVERNORATES_BY_SORT_ORDER.filter(g => rainfallData[g.pcode])}
+                                        onSelect={g => showRainfallProvince(g.nameAr, rainfallData[g.pcode])}
+                                    />
                                 </div>
                             )}
                         </div>
@@ -454,6 +507,8 @@ export default function PopulationClient() {
                                                 )}
                                             </div>
                                             <button
+                                                type="button"
+                                                aria-label="إغلاق"
                                                 onClick={() => setSelectedEnvProvince(null)}
                                                 className="p-1.5 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground backdrop-blur-sm"
                                             >
@@ -484,7 +539,7 @@ export default function PopulationClient() {
                                             <div className="flex items-center gap-3">
                                                 <div className="text-center">
                                                     <TrendingUp size={14} className="mx-auto text-red-400 mb-1" />
-                                                    <span className="text-lg font-bold text-red-400">
+                                                    <span className="text-lg font-bold text-red-700 dark:text-red-400">
                                                         {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_max_temp_c ?? '—'}°
                                                     </span>
                                                     <p className="text-[10px] text-muted-foreground">القصوى</p>
@@ -492,7 +547,7 @@ export default function PopulationClient() {
                                                 <div className="h-8 w-px bg-border/50"></div>
                                                 <div className="text-center">
                                                     <TrendingDown size={14} className="mx-auto text-blue-400 mb-1" />
-                                                    <span className="text-lg font-bold text-blue-400">
+                                                    <span className="text-lg font-bold text-blue-700 dark:text-blue-400">
                                                         {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_min_temp_c ?? '—'}°
                                                     </span>
                                                     <p className="text-[10px] text-muted-foreground">الدنيا</p>
@@ -500,7 +555,7 @@ export default function PopulationClient() {
                                             </div>
                                             <div className="text-center">
                                                 <CloudRain size={16} className="mx-auto text-cyan-400 mb-1" />
-                                                <span className="text-sm font-bold text-cyan-400">
+                                                <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400">
                                                     {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_precipitation_mm ?? '—'} ملم
                                                 </span>
                                                 <p className="text-[10px] text-muted-foreground">الهطول المتوقع</p>
@@ -580,10 +635,10 @@ export default function PopulationClient() {
                                                     : 'bg-gradient-to-br from-red-400/20 to-orange-500/20 border-2 border-red-500/50'
                                                 }`}>
                                                 <span className={`text-2xl font-bold ${selectedEnvProvince.data.air_quality.estimated_aqi <= 50
-                                                    ? 'text-green-500'
+                                                    ? 'text-green-700 dark:text-green-400'
                                                     : selectedEnvProvince.data.air_quality.estimated_aqi <= 100
-                                                        ? 'text-yellow-500'
-                                                        : 'text-red-500'
+                                                        ? 'text-yellow-700 dark:text-yellow-400'
+                                                        : 'text-red-700 dark:text-red-400'
                                                     }`}>
                                                     {selectedEnvProvince.data.air_quality.estimated_aqi}
                                                 </span>
@@ -606,12 +661,12 @@ export default function PopulationClient() {
                                             </h2>
                                             <div className="flex items-center gap-3 mb-3">
                                                 <div className={`px-3 py-1.5 rounded-full text-sm font-bold ${selectedEnvProvince.data.drought_risk?.drought_risk === 'Very High'
-                                                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                                    ? 'bg-red-500/20 text-red-700 dark:text-red-400 border border-red-500/30'
                                                     : selectedEnvProvince.data.drought_risk?.drought_risk === 'High'
-                                                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                                        ? 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border border-orange-500/30'
                                                         : selectedEnvProvince.data.drought_risk?.drought_risk === 'Moderate'
-                                                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                                                            : 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                            ? 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-500/30'
+                                                            : 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30'
                                                     }`}>
                                                     {selectedEnvProvince.data.drought_risk?.drought_risk || 'غير متوفر'}
                                                 </div>
@@ -620,11 +675,11 @@ export default function PopulationClient() {
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div className="bg-card/50 p-2 rounded-lg">
                                                     <span className="text-[10px] text-muted-foreground block">الهطول السنوي</span>
-                                                    <span className="text-sm font-bold text-cyan-400">{selectedEnvProvince.data.drought_risk?.annual_precipitation_mm?.toFixed(1) || 0} ملم</span>
+                                                    <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400">{selectedEnvProvince.data.drought_risk?.annual_precipitation_mm?.toFixed(1) || 0} ملم</span>
                                                 </div>
                                                 <div className="bg-card/50 p-2 rounded-lg">
                                                     <span className="text-[10px] text-muted-foreground block">أشهر الجفاف</span>
-                                                    <span className="text-sm font-bold text-amber-400">{selectedEnvProvince.data.drought_risk?.dry_season_months?.length || 0} أشهر</span>
+                                                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{selectedEnvProvince.data.drought_risk?.dry_season_months?.length || 0} أشهر</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -641,7 +696,7 @@ export default function PopulationClient() {
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                         <Thermometer size={12} /> انحراف الحرارة
                                                     </span>
-                                                    <span className={`text-xs font-bold flex items-center gap-1 ${selectedEnvProvince.data.climate_trends.temperature_trend_celsius < 0 ? 'text-blue-400' : 'text-red-400'
+                                                    <span className={`text-xs font-bold flex items-center gap-1 ${selectedEnvProvince.data.climate_trends.temperature_trend_celsius < 0 ? 'text-blue-700 dark:text-blue-400' : 'text-red-700 dark:text-red-400'
                                                         }`}>
                                                         {selectedEnvProvince.data.climate_trends.temperature_trend_celsius < 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
                                                         {selectedEnvProvince.data.climate_trends.temperature_trend_celsius}°C
@@ -655,7 +710,7 @@ export default function PopulationClient() {
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                         <CloudRain size={12} /> تغير الهطول
                                                     </span>
-                                                    <span className={`text-xs font-bold flex items-center gap-1 ${selectedEnvProvince.data.climate_trends.rainfall_trend_mm < 0 ? 'text-amber-400' : 'text-cyan-400'
+                                                    <span className={`text-xs font-bold flex items-center gap-1 ${selectedEnvProvince.data.climate_trends.rainfall_trend_mm < 0 ? 'text-amber-700 dark:text-amber-400' : 'text-cyan-700 dark:text-cyan-400'
                                                         }`}>
                                                         {selectedEnvProvince.data.climate_trends.rainfall_trend_mm < 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
                                                         {selectedEnvProvince.data.climate_trends.rainfall_trend_mm} ملم
@@ -692,9 +747,9 @@ export default function PopulationClient() {
                                                     <div className="flex justify-between items-center mb-1">
                                                         <span className="text-xs text-muted-foreground">نطاق الحرارة</span>
                                                         <span className="text-xs font-medium">
-                                                            <span className="text-blue-400">{selectedEnvProvince.data.historical_summary.avg_min_temp_c}°</span>
+                                                            <span className="text-blue-700 dark:text-blue-400">{selectedEnvProvince.data.historical_summary.avg_min_temp_c}°</span>
                                                             <span className="text-muted-foreground mx-1">—</span>
-                                                            <span className="text-red-400">{selectedEnvProvince.data.historical_summary.avg_max_temp_c}°</span>
+                                                            <span className="text-red-700 dark:text-red-400">{selectedEnvProvince.data.historical_summary.avg_max_temp_c}°</span>
                                                         </span>
                                                     </div>
                                                     <div className="h-2 bg-gradient-to-l from-blue-500 via-yellow-500 to-red-500 rounded-full"></div>
@@ -703,7 +758,7 @@ export default function PopulationClient() {
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                         <CloudRain size={12} /> إجمالي الهطول
                                                     </span>
-                                                    <span className="text-xs font-bold text-cyan-400">{selectedEnvProvince.data.historical_summary.total_precipitation_mm} ملم</span>
+                                                    <span className="text-xs font-bold text-cyan-700 dark:text-cyan-400">{selectedEnvProvince.data.historical_summary.total_precipitation_mm} ملم</span>
                                                 </div>
                                                 <div className="flex justify-between items-center bg-card/50 p-2 rounded-lg">
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -746,9 +801,14 @@ export default function PopulationClient() {
                                         </div>
                                         <h2 className="font-bold text-lg text-foreground mb-1">البيانات البيئية لسوريا</h2>
                                         <p className="text-xs text-muted-foreground">
-                                            اختر محافظة من الخريطة لعرض التفاصيل
+                                            اختر محافظة من الخريطة أو من القائمة لعرض التفاصيل
                                         </p>
                                     </div>
+
+                                    <GovernoratePicker
+                                        governorates={GOVERNORATES_BY_SORT_ORDER.filter(g => envCityData(g.nameAr))}
+                                        onSelect={g => showEnvProvince(g.nameAr, envCityData(g.nameAr))}
+                                    />
 
                                     <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg p-3 border border-amber-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
@@ -787,7 +847,7 @@ export default function PopulationClient() {
                                         </h2>
                                         <div className="flex flex-wrap gap-1.5">
                                             {environmentalData.country_level.climate_context.key_water_basins.map((basin: any, idx: number) => (
-                                                <span key={idx} className="text-[10px] bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded-full border border-cyan-500/20">
+                                                <span key={idx} className="text-[10px] bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-2 py-1 rounded-full border border-cyan-500/20">
                                                     {basin}
                                                 </span>
                                             ))}
@@ -838,19 +898,21 @@ export default function PopulationClient() {
 
                             return (
                                 <div key={source.source_id} className={`rounded-lg border transition-all duration-200 ${isExpanded ? 'border-primary bg-card shadow-md' : 'border-border bg-card/50 hover:bg-muted/50'}`}>
-                                    <div
-                                        className="p-3 flex flex-col gap-3 cursor-pointer select-none"
+                                    <button
+                                        type="button"
+                                        aria-expanded={isExpanded}
+                                        className="w-full text-start p-3 flex flex-col gap-3 cursor-pointer select-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         onClick={() => setCurrentSourceId(source.source_id)}
                                     >
-                                        <div className="flex flex-col gap-0.5">
+                                        <span className="flex flex-col gap-0.5">
                                             <span className="font-bold text-sm">
                                                 {source.note || DATA_TYPE_CONFIG[currentDataType as keyof typeof DATA_TYPE_CONFIG].labelAr}
                                             </span>
                                             {source.date && (
                                                 <span className="text-xs text-muted-foreground">{source.date}</span>
                                             )}
-                                        </div>
-                                    </div>
+                                        </span>
+                                    </button>
                                     {isExpanded && (
                                         <div className="px-3 pb-3 pt-0 animate-in slide-in-from-top-2 duration-200">
                                             <div className="mb-2 flex justify-between items-center px-1">
@@ -933,7 +995,7 @@ export default function PopulationClient() {
                 </div>
 
                 {currentDataType !== DATA_TYPES.RAINFALL && currentDataType !== DATA_TYPES.ENVIRONMENTAL && (
-                    <div className="p-4 bg-muted border-t border-border text-xs text-muted-foreground">
+                    <div className="p-4 bg-muted border-t border-border text-xs text-muted-foreground" inert={!isPanelOpen}>
                         <p className="flex items-center gap-1 mb-1">
                             <Info size={14} /> اختر محافظتين للمقارنة بينهما
                         </p>

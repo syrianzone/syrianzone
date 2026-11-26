@@ -16,7 +16,7 @@
         style="background-color: #1a1a1a; color: white;"
     >
         <span class="flex items-center justify-center gap-2">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+            <svg class="h-5 w-5" aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
                 <g transform="matrix(1, 0, 0, 1, 0, 0)">
                     <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.04,3.1v2.57h3.3c1.93,-1.78 3.04,-4.4 3.04,-7.47c0,-0.61 -0.05,-1.2 -0.16,-1.7c0,0 0,0 0,0Z" fill="#4285f4"/>
                     <path d="M12,20.7c2.43,0 4.47,-0.8 5.96,-2.18l-2.92,-2.27c-0.81,0.54 -1.85,0.87 -3.04,0.87c-2.34,0 -4.32,-1.58 -5.03,-3.7l-3.02,2.34c1.49,2.96 4.54,4.94 8.05,4.94Z" fill="#34a853"/>

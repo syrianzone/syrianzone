@@ -14,7 +14,7 @@ export function escapeHtml(v: unknown): string {
 
 export function generateRainChartHtml(name: string, data: any[]) {
     const displayName = escapeHtml(getCanonicalGovernorateName(name));
-    const sorted = [...data].sort((a, b) => a.year - b.year);
+    const sorted = data.toSorted((a, b) => a.year - b.year);
     const maxVal = Math.max(...sorted.map(d => d.rainfall));
 
     const barsHtml = sorted.map(d => {

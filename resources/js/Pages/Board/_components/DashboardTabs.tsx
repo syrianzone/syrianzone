@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, Pencil, Plus, X } from 'lucide-react';
 import { cn } from '@/Lib/utils';
 import { Input } from '@/Components/ui/input';
+import { confirmDialog } from '@/Lib/confirm';
 import { MAX_DASHBOARDS } from '../_lib/layout';
 import type { BoardDoc } from '../_lib/types';
 
@@ -16,6 +17,16 @@ export function DashboardTabs(props: {
 }) {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+
+  async function remove(id: string, name: string) {
+    const ok = await confirmDialog({
+      title: `حذف اللوحة «${name}»؟`,
+      description: 'ستُحذف كل الويدجت فيها',
+      confirmText: 'حذف',
+      destructive: true,
+    });
+    if (ok) props.onRemove(id);
+  }
 
   function commit() {
     const name = draft.trim();
@@ -47,7 +58,7 @@ export function DashboardTabs(props: {
                 onBlur={commit}
                 className="h-8 w-32"
               />
-              <button type="button" aria-label="حفظ" onClick={commit} className="rounded p-1 text-muted-foreground hover:text-foreground">
+              <button type="button" aria-label="حفظ" onClick={commit} className="inline-flex min-h-6 min-w-6 items-center justify-center rounded p-1 text-muted-foreground hover:text-foreground">
                 <Check className="h-3.5 w-3.5" />
               </button>
             </span>
@@ -62,7 +73,12 @@ export function DashboardTabs(props: {
               active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground',
             )}
           >
-            <button type="button" onClick={() => props.onSelect(d.id)} className="max-w-32 truncate">
+            <button
+              type="button"
+              aria-current={active ? 'true' : undefined}
+              onClick={() => props.onSelect(d.id)}
+              className="max-w-32 truncate"
+            >
               {d.name}
             </button>
 
@@ -72,7 +88,7 @@ export function DashboardTabs(props: {
                   type="button"
                   aria-label="إعادة تسمية"
                   onClick={() => { setRenaming(d.id); setDraft(d.name); }}
-                  className="opacity-70 hover:opacity-100"
+                  className="-my-0.5 inline-flex min-h-6 min-w-6 items-center justify-center opacity-70 hover:opacity-100"
                 >
                   <Pencil className="h-3 w-3" />
                 </button>
@@ -81,8 +97,8 @@ export function DashboardTabs(props: {
                   <button
                     type="button"
                     aria-label="حذف اللوحة"
-                    onClick={() => props.onRemove(d.id)}
-                    className="opacity-70 hover:opacity-100"
+                    onClick={() => void remove(d.id, d.name)}
+                    className="-my-0.5 inline-flex min-h-6 min-w-6 items-center justify-center opacity-70 hover:opacity-100"
                   >
                     <X className="h-3 w-3" />
                   </button>

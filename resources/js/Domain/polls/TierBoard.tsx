@@ -12,7 +12,7 @@ import { exportTierListFromData } from "./exportTierList";
 import { getDeviceId } from "@/Lib/deviceId";
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
-import JSZip from "jszip";
+import { confirmDialog } from '@/Lib/confirm';
 
 export type Candidate = {
     id: string;
@@ -95,6 +95,10 @@ export default function TierBoard({
     const [bank, setBank] = useState<Candidate[]>([]);
 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    // What the last move did, said by a persistent polite region, and the
+    // card that should take focus once the tier buttons that moved it unmount.
+    const [moveAnnouncement, setMoveAnnouncement] = useState("");
+    const [pendingFocus, setPendingFocus] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const tiersRef = useRef<HTMLDivElement>(null);
     const [submitStatus, setSubmitStatus] = useState<{
@@ -105,7 +109,6 @@ export default function TierBoard({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [nextSubmitAt, setNextSubmitAt] = useState<number | null>(null);
-    const [now, setNow] = useState<number>(Date.now());
 
     const cooldownKey = `submitCooldown:${pollId}:${voteDay}`;
 
@@ -113,33 +116,46 @@ export default function TierBoard({
         return { S: [], A: [], B: [], C: [], D: [], F: [] };
     }
 
+    // Storage can throw (private mode, disabled storage); the cooldown is a
+    // convenience, so a failure only means it is not remembered.
+    function readCooldown(): string | null {
+        try { return localStorage.getItem(cooldownKey); } catch { return null; }
+    }
+    function writeCooldown(ts: number | null) {
+        try {
+            if (ts === null) localStorage.removeItem(cooldownKey);
+            else localStorage.setItem(cooldownKey, String(ts));
+        } catch {
+            // background storage write: nothing to show the user
+        }
+    }
+
     useEffect(() => {
-        const stored = localStorage.getItem(cooldownKey);
+        const stored = readCooldown();
         if (stored) {
             const ts = parseInt(stored, 10);
             if (!Number.isNaN(ts) && ts > Date.now()) {
                 setNextSubmitAt(ts);
             } else if (!Number.isNaN(ts)) {
-                localStorage.removeItem(cooldownKey);
+                writeCooldown(null);
             }
         }
     }, []);
 
+    // One timer to the end of the cooldown rather than a re-render every second.
     useEffect(() => {
         if (!nextSubmitAt) return;
-        const id = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(id);
-    }, [nextSubmitAt]);
-
-    useEffect(() => {
-        if (nextSubmitAt && now >= nextSubmitAt) {
+        const id = setTimeout(() => {
             setNextSubmitAt(null);
-            localStorage.removeItem(cooldownKey);
-        }
-    }, [now, nextSubmitAt, cooldownKey]);
+            writeCooldown(null);
+        }, Math.max(0, nextSubmitAt - Date.now()));
+        return () => clearTimeout(id);
+    }, [nextSubmitAt, cooldownKey]);
 
+    // Only a success fades; an error stays until the next attempt, so it
+    // cannot vanish before it has been read.
     useEffect(() => {
-        if (!submitStatus) return;
+        if (!submitStatus?.ok) return;
         const id = setTimeout(() => setSubmitStatus(null), 5000);
         return () => clearTimeout(id);
     }, [submitStatus]);
@@ -167,6 +183,25 @@ export default function TierBoard({
         setBank(filtered);
     }, [selectedGroupId, shuffledInitial, groups]);
 
+    function announceMove(moved: Candidate[], target: TierKey | "bank") {
+        if (moved.length === 0) return;
+        const who = moved.length === 1 ? moved[0].name : `${moved.length} مرشحين`;
+        const where = target === "bank" ? "قائمة المرشحين" : `المستوى ${target} (${TIERS[target].arabic})`;
+        setMoveAnnouncement(`نُقل ${who} إلى ${where}`);
+    }
+
+    useEffect(() => {
+        if (!pendingFocus) return;
+        setPendingFocus(null);
+        // Only rescue focus that was lost; never steal it from a control.
+        const active = document.activeElement;
+        if (active && active !== document.body) return;
+        const card = containerRef.current?.querySelector<HTMLElement>(
+            `[data-candidate-id="${CSS.escape(pendingFocus)}"]`,
+        );
+        card?.focus();
+    }, [pendingFocus]);
+
     function moveCandidateTo(candidateId: string, target: TierKey | "bank") {
         const fromTierKey = TIER_KEYS.find((k) =>
             tiers[k].some((c) => c.id === candidateId)
@@ -192,6 +227,7 @@ export default function TierBoard({
         } else {
             setTiers((t) => ({ ...t, [target]: [...t[target], candidate!] }));
         }
+        announceMove([candidate], target);
     }
 
     function moveCandidatesTo(candidateIds: string[], target: TierKey | "bank") {
@@ -215,6 +251,8 @@ export default function TierBoard({
             return target === "bank" ? [...filtered, ...found] : filtered;
         });
         setSelectedIds(new Set());
+        announceMove(found, target);
+        if (found.length > 0) setPendingFocus(found[0].id);
     }
 
     function toggleSelected(id: string) {
@@ -290,7 +328,7 @@ export default function TierBoard({
             setSubmitStatus({ ok: true, message: "تم تسجيل التصويت" });
             const ts = Date.now() + 1 * 60 * 1000;
             setNextSubmitAt(ts);
-            localStorage.setItem(cooldownKey, String(ts));
+            writeCooldown(ts);
             setIsSubmitting(false);
         } catch (error) {
             setSubmitStatus({ ok: false, message: apiErrorMessage(error, "حدث خطأ أو تم التصويت اليوم") });
@@ -344,11 +382,13 @@ export default function TierBoard({
             await exportTierListFromData({
                 tiers: data,
                 basePath: BASE_PATH,
-                fileName: "tier-list.png",
+                fileName: "tier-list.jpg",
                 width: targetWidth,
                 scale: 2,
                 watermarkText: "syrian.zone/tierlist",
             });
+        } catch {
+            notify.error("تعذّر إنشاء صورة القائمة، حاول مرة أخرى");
         } finally {
             setIsSaving(false);
         }
@@ -430,6 +470,8 @@ export default function TierBoard({
     async function downloadAllImages(candidates: Candidate[], groupName?: string) {
         setIsDownloadingAll(true);
         try {
+            // Loaded on demand: only this button needs a zip writer.
+            const { default: JSZip } = await import("jszip");
             const zip = new JSZip();
             for (const c of candidates) {
                 const url = originalImageUrl(c);
@@ -498,7 +540,7 @@ export default function TierBoard({
                                     <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); downloadSingleCandidateImage(c); }}
-                                        className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                        className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity hover:bg-black/70"
                                         title="تحميل الصورة الأصلية"
                                         aria-label={`تحميل صورة ${c.name}`}
                                     >
@@ -517,6 +559,7 @@ export default function TierBoard({
                                     }
                                 }}
                                 role="button"
+                                data-candidate-id={c.id}
                                 aria-pressed={selected}
                                 tabIndex={0}
                                 className={`relative flex flex-col items-center gap-1 outline h-auto p-2 pt-3 cursor-pointer select-none rounded-md transition-all active:scale-95 ${selected
@@ -625,19 +668,19 @@ export default function TierBoard({
                     <span>ممتاز</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
-                    <span className="px-2 py-0.5 rounded-md text-white bg-amber-600 font-semibold">
+                    <span className="px-2 py-0.5 rounded-md text-white bg-amber-700 font-semibold">
                         A
                     </span>
                     <span>جيد جدًا</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
-                    <span className="px-2 py-0.5 rounded-md text-white bg-emerald-600 font-semibold">
+                    <span className="px-2 py-0.5 rounded-md text-white bg-emerald-700 font-semibold">
                         B
                     </span>
                     <span>جيد</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
-                    <span className="px-2 py-0.5 rounded-md text-white bg-sky-600 font-semibold">
+                    <span className="px-2 py-0.5 rounded-md text-white bg-sky-700 font-semibold">
                         C
                     </span>
                     <span>مقبول</span>
@@ -682,7 +725,7 @@ export default function TierBoard({
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); downloadSingleCandidateImage(c); }}
-                                                className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                                className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity hover:bg-black/70"
                                                 title="تحميل الصورة الأصلية"
                                         aria-label={`تحميل صورة ${c.name}`}
                                             >
@@ -701,6 +744,7 @@ export default function TierBoard({
                                             }
                                         }}
                                         role="button"
+                                        data-candidate-id={c.id}
                                         aria-pressed={selected}
                                         tabIndex={0}
                                         className={`relative flex flex-col items-center gap-1 ms-2 mb-2 outline h-auto p-2 pt-3 cursor-pointer select-none rounded-md transition-all active:scale-95 ${selected
@@ -803,7 +847,14 @@ export default function TierBoard({
                 <Button
                     type="button"
                     variant="destructive"
-                    onClick={() => {
+                    onClick={async () => {
+                        const ok = await confirmDialog({
+                            title: "مسح كل الاختيارات؟",
+                            description: "ستعود كل البطاقات إلى قائمة المرشحين.",
+                            confirmText: "مسح",
+                            destructive: true,
+                        });
+                        if (!ok) return;
                         setBank(shuffledInitial);
                         setTiers(createEmptyTiers());
                         setSelectedIds(new Set());
@@ -812,6 +863,7 @@ export default function TierBoard({
                     مسح الاختيارات
                 </Button>
             </div>
+            <div role="status" className="sr-only">{moveAnnouncement}</div>
             {submitStatus && (
                 <div className="px-4 pb-2">
                     <Alert variant={submitStatus.ok ? "default" : "destructive"}>

@@ -57,13 +57,12 @@ function followAvoid(deal: AvoidDeal, seat: Seat, legal: Card[], teams: boolean)
 function shedPlay(deal: ShedDeal, legal: Card[]): Card {
   const groups = groupBySuit(deal.hands[deal.turn]);
   return legal
-    .slice()
-    .sort((a, b) => groups[b.suit].length - groups[a.suit].length || power(b) - power(a))[0];
+    .toSorted((a, b) => groups[b.suit].length - groups[a.suit].length || power(b) - power(a))[0];
 }
 
 /** The contract the kingdom holder should name for this hand. */
 export function chooseContractFor(hands: Card[][], seat: Seat, remaining: Contract[]): Contract {
-  return remaining.slice().sort((a, b) => fit(hands[seat], b) - fit(hands[seat], a))[0];
+  return remaining.toSorted((a, b) => fit(hands[seat], b) - fit(hands[seat], a))[0];
 }
 
 /** How well a hand suits a contract — also used to hint a human king. */

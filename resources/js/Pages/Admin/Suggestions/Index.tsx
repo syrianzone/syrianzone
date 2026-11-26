@@ -136,7 +136,10 @@ function safeExternalUrl(url: string | null | undefined): string | null {
 function formatTimestamp(iso: string | null): string {
     if (!iso) return '';
     try {
+        // A fixed zone keeps the server render and the browser's hydration
+        // identical, and shows moderators Syrian local time.
         return new Date(iso).toLocaleString('ar-SY', {
+            timeZone: 'Asia/Damascus',
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -218,7 +221,7 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
         });
 
         if (sortOrder === 'oldest') {
-            return [...list].reverse();
+            return list.toReversed();
         }
         return list;
     }, [overview.items, sectionFilter, categoryFilter, query, sortOrder, sectionLabelMap]);
@@ -489,7 +492,7 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
                 <Card>
                     <CardContent className="space-y-3 p-4">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                            <div className="relative flex-1">
+                            <div role="search" className="relative flex-1">
                                 <Search
                                     className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                                     aria-hidden="true"

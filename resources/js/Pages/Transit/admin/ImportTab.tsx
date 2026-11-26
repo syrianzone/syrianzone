@@ -214,13 +214,14 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
           className="h-9 text-xs text-left"
         />
         <div className="flex items-center gap-2">
-          <label className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground cursor-pointer transition-colors">
+          {/* the input stays in the tab order (sr-only, not display:none); the label shows its focus */}
+          <label className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring">
             <FileUp className="h-3.5 w-3.5" />
             {file ? file.name : 'أو ارفع KML / KMZ / GeoJSON (للخرائط الخاصة)'}
             <input
               type="file"
               accept=".kml,.kmz,.geojson,.json,.xml"
-              className="hidden"
+              className="sr-only"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
           </label>
@@ -302,37 +303,38 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
             )}
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold">اسم الخط بالعربية <span className="text-destructive">*</span></label>
-              <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="h-8 text-xs" />
+              <label htmlFor="import-name-ar" className="text-xs font-semibold">اسم الخط بالعربية <span className="text-destructive" aria-hidden="true">*</span></label>
+              <Input id="import-name-ar" required value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="h-8 text-xs" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">الاسم بالإنجليزية</label>
-                <Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} dir="ltr" className="h-8 text-xs" />
+                <label htmlFor="import-name-en" className="text-xs text-muted-foreground">الاسم بالإنجليزية</label>
+                <Input id="import-name-en" value={nameEn} onChange={(e) => setNameEn(e.target.value)} dir="ltr" className="h-8 text-xs" />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">التعرفة (ل.س)</label>
-                <Input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} dir="ltr" className="h-8 text-xs" />
+                <label htmlFor="import-price" className="text-xs text-muted-foreground">التعرفة (ل.س)</label>
+                <Input id="import-price" type="number" inputMode="numeric" min="0" value={price} onChange={(e) => setPrice(e.target.value)} dir="ltr" className="h-8 text-xs" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">المدينة <span className="text-destructive">*</span></label>
+                <label htmlFor="import-city" className="text-xs text-muted-foreground">المدينة <span className="text-destructive" aria-hidden="true">*</span></label>
                 <Select value={cityId} onValueChange={setCityId}>
-                  <SelectTrigger className="h-8 text-xs" aria-label="اختر المدينة…"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
+                  <SelectTrigger id="import-city" className="h-8 text-xs" aria-required="true"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
                   <SelectContent>
                     {cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground block">لون الخط</label>
-                <div className="flex items-center gap-1 flex-wrap h-8">
+                <span id="import-color-label" className="text-xs text-muted-foreground block">لون الخط</span>
+                <div role="group" aria-labelledby="import-color-label" className="flex items-center gap-1 flex-wrap h-8">
                   {ROUTE_PALETTE.map((hex, idx) => (
                     <button aria-label={`لون ${idx + 1}`}
                       key={idx}
                       type="button"
                       onClick={() => setColorIndex(idx)}
+                      aria-pressed={colorIndex === idx}
                       className={`w-6 h-6 rounded-full border-2 transition-all ${colorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
                       style={{ backgroundColor: hex }}
                       title={`لون ${idx + 1}`}
@@ -342,8 +344,8 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">ملاحظات</label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-xs resize-none" />
+              <label htmlFor="import-notes" className="text-xs text-muted-foreground">ملاحظات</label>
+              <Textarea id="import-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-xs resize-none" />
             </div>
 
             <div className="space-y-1.5">

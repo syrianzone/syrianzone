@@ -81,6 +81,8 @@ export function ManagePlaceDialog(props: {
   const addInputRef = useRef<HTMLInputElement>(null);
 
   const [coords, setCoords] = useState('');
+  // errors wait for the first blur: flagging a half-typed coordinate is noise
+  const [coordsTouched, setCoordsTouched] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -106,6 +108,7 @@ export function ManagePlaceDialog(props: {
     setAddingPhoto(false);
     setPhotoError(null);
     setCoords(`${place.lat.toFixed(5)}, ${place.lng.toFixed(5)}`);
+    setCoordsTouched(false);
     setFeedback(null);
     setLocationSaving(false);
     setLocationError(null);
@@ -145,6 +148,7 @@ export function ManagePlaceDialog(props: {
   }, [coords, place]);
 
   const point = feedback?.kind === 'valid' ? feedback.point : null;
+  const coordsError = coordsTouched && (feedback?.kind === 'invalid' || feedback?.kind === 'outside');
 
   const trimmedName = name.trim();
   const trimmedDescription = description.trim();
@@ -468,15 +472,18 @@ export function ManagePlaceDialog(props: {
                   dir="ltr"
                   value={coords}
                   onChange={(e) => setCoords(e.target.value)}
+                  onBlur={() => setCoordsTouched(true)}
                   placeholder="34.73941, 36.67507"
+                  aria-invalid={coordsError}
+                  aria-describedby={coordsError ? 'manage-place-coords-error' : undefined}
                 />
-                {feedback?.kind === 'invalid' && (
-                  <p className="text-xs text-destructive">
+                {coordsError && feedback?.kind === 'invalid' && (
+                  <p id="manage-place-coords-error" role="alert" className="text-xs text-destructive">
                     صيغة الإحداثيات غير صحيحة، مثال: 34.73941, 36.67507
                   </p>
                 )}
-                {feedback?.kind === 'outside' && (
-                  <p className="text-xs text-destructive">
+                {coordsError && feedback?.kind === 'outside' && (
+                  <p id="manage-place-coords-error" role="alert" className="text-xs text-destructive">
                     الإحداثيات خارج حدود سوريا (خط العرض بين {SYRIA_LAT_MIN_LABEL} و {SYRIA_LAT_MAX_LABEL}، خط الطول بين {SYRIA_LNG_MIN_LABEL} و {SYRIA_LNG_MAX_LABEL})
                   </p>
                 )}

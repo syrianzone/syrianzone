@@ -4,6 +4,8 @@ import { Button } from '@/Components/ui/button';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import type { ConflictChoices, ConflictKey, SettingConflict } from './settingsSync';
 
 interface Props {
@@ -30,6 +32,9 @@ export default function SettingsConflictModal({ conflicts, onApply, onSnooze }: 
     setBusy(true);
     try {
       await onApply(choices);
+    } catch (err) {
+      // The dialog stays open with the choices kept, so the user can retry.
+      notify.error(apiErrorMessage(err, 'تعذّر حفظ الإعدادات — حاول مجدداً'));
     } finally {
       setBusy(false);
     }
@@ -38,7 +43,7 @@ export default function SettingsConflictModal({ conflicts, onApply, onSnooze }: 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onSnooze(); }}>
       <DialogContent dir="rtl" className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader className="text-right">
+        <DialogHeader className="text-start">
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-primary" />
             إعدادات مختلفة بين جهازك وحسابك
@@ -51,34 +56,42 @@ export default function SettingsConflictModal({ conflicts, onApply, onSnooze }: 
         <div className="space-y-4">
           {(conflicts ?? []).map((c) => {
             const picked = choices[c.key];
+            const labelId = `settings-conflict-${c.key}`;
             return (
               <div key={c.key} className="space-y-2 rounded-lg border border-border/60 p-3">
-                <div className="text-sm font-bold">{c.label}</div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div id={labelId} className="text-sm font-bold">{c.label}</div>
+                {/* A real radio group (arrow keys, one choice), styled as cards. */}
+                <div role="radiogroup" aria-labelledby={labelId} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {([
                     { side: 'local', title: 'هذا الجهاز', value: c.local },
                     { side: 'server', title: 'الحساب', value: c.server },
                   ] as const).map((o) => {
                     const active = picked === o.side;
                     return (
-                      <button
+                      <label
                         key={o.side}
-                        onClick={() => pick(c.key, o.side)}
-                        aria-pressed={active}
-                        className={`rounded-lg border p-2.5 text-right transition-colors ${
+                        className={`relative cursor-pointer rounded-lg border p-2.5 text-start transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring ${
                           active
                             ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/20'
                             : 'border-border/50 bg-card/20 hover:bg-muted/20'
                         }`}
                       >
+                        <input
+                          type="radio"
+                          name={labelId}
+                          value={o.side}
+                          checked={active}
+                          onChange={() => pick(c.key, o.side)}
+                          className="sr-only"
+                        />
                         <span className="mb-1 flex items-center gap-2">
-                          <span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${active ? 'border-primary' : 'border-muted-foreground/40'}`}>
+                          <span aria-hidden="true" className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${active ? 'border-primary' : 'border-muted-foreground/40'}`}>
                             {active && <span className="h-2 w-2 rounded-full bg-primary" />}
                           </span>
                           <span className="text-[11px] font-semibold text-muted-foreground">{o.title}</span>
                         </span>
                         <span className="block truncate text-xs font-bold" title={o.value}>{o.value}</span>
-                      </button>
+                      </label>
                     );
                   })}
                 </div>

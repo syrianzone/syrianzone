@@ -11,6 +11,9 @@ import { toast } from '@/Components/ui/sonner';
  * toasts are for *outcomes*.
  */
 const DEFAULT_DURATION = 3200;
+// Errors and warnings usually ask the visitor to do something, so they stay up
+// long enough to read twice (the toast also has a close button).
+const ATTENTION_DURATION = 8000;
 
 export const notify = {
   success: (message: string, options?: Record<string, unknown>) =>
@@ -18,14 +21,14 @@ export const notify = {
   // The message is required: the fallback text and the copy confirmation are
   // product copy owned by `Lib/api` and `Lib/copy`, so they are not restated here.
   error: (message: string, options?: Record<string, unknown>) =>
-    toast.error(message, { duration: 4200, ...options }),
+    toast.error(message, { duration: ATTENTION_DURATION, ...options }),
   info: (message: string, options?: Record<string, unknown>) =>
     toast.info(message, { duration: DEFAULT_DURATION, ...options }),
   warning: (message: string, options?: Record<string, unknown>) =>
-    toast.warning(message, { duration: 4200, ...options }),
+    toast.warning(message, { duration: ATTENTION_DURATION, ...options }),
   message: (message: string, options?: Record<string, unknown>) =>
     toast(message, { duration: DEFAULT_DURATION, ...options }),
-  copy: (message: string) => toast.success(message, { duration: 1800 }),
+  copy: (message: string) => toast.success(message, { duration: DEFAULT_DURATION }),
 };
 
 export type Notify = typeof notify;

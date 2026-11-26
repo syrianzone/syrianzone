@@ -20,7 +20,7 @@ export default function Index({ polls = [] }: PollsPageProps) {
         <MainLayout>
             <div className="min-h-screen bg-background text-foreground">
                 <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center mb-8">
+                    <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
                         <h1 className="text-3xl font-bold">الاستبيانات واستطلاعات الرأي</h1>
                         {canManage && (
                             <Button asChild variant="outline">
@@ -46,7 +46,7 @@ export default function Index({ polls = [] }: PollsPageProps) {
                                         {poll.title}
                                     </h2>
                                     <div className="flex items-center text-sm text-muted-foreground">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${poll.is_active ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${poll.is_active ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
                                             {poll.is_active ? 'نشط' : 'مغلق'}
                                         </span>
                                     </div>

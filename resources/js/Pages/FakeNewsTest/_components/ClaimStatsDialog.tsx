@@ -28,6 +28,11 @@ interface ClaimStatsDialogProps {
 
 type SortMode = 'hardest' | 'easiest';
 
+const SORT_OPTIONS: ReadonlyArray<{ value: SortMode; label: string }> = [
+  { value: 'hardest', label: 'الأصعب أولاً' },
+  { value: 'easiest', label: 'الأسهل أولاً' },
+];
+
 export default function ClaimStatsDialog({
   open,
   onOpenChange,
@@ -36,6 +41,8 @@ export default function ClaimStatsDialog({
 }: ClaimStatsDialogProps) {
   const [sortMode, setSortMode] = useState<SortMode>('hardest');
   const [loading, setLoading] = useState(false);
+  // Empty until the visitor reorders, so opening the dialog announces nothing extra.
+  const [sortAnnouncement, setSortAnnouncement] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -56,7 +63,7 @@ export default function ClaimStatsDialog({
 
   const rows = useMemo(() => {
     const items = getAllClaimOutcomeStats(stats);
-    return [...items].sort((a, b) => {
+    return items.toSorted((a, b) => {
       if (a.total === 0 && b.total === 0) return 0;
       if (a.total === 0) return 1;
       if (b.total === 0) return -1;
@@ -102,23 +109,25 @@ export default function ClaimStatsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-2 px-5 pb-3">
-          <Button
-            type="button"
-            size="sm"
-            variant={sortMode === 'hardest' ? 'default' : 'outline'}
-            onClick={() => setSortMode('hardest')}
-          >
-            الأصعب أولاً
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={sortMode === 'easiest' ? 'default' : 'outline'}
-            onClick={() => setSortMode('easiest')}
-          >
-            الأسهل أولاً
-          </Button>
+        <div className="flex items-center gap-2 px-5 pb-3" role="group" aria-label="ترتيب الأسئلة">
+          {SORT_OPTIONS.map((option) => (
+            <Button
+              key={option.value}
+              type="button"
+              size="sm"
+              variant={sortMode === option.value ? 'default' : 'outline'}
+              aria-pressed={sortMode === option.value}
+              onClick={() => {
+                setSortMode(option.value);
+                setSortAnnouncement(`رُتّبت الأسئلة: ${option.label}`);
+              }}
+            >
+              {option.label}
+            </Button>
+          ))}
+          <span className="sr-only" role="status" aria-live="polite">
+            {sortAnnouncement}
+          </span>
         </div>
 
         <Separator />

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api as client, apiErrorMessage } from '@/Lib/api';
 import { resolvePrayerParams, resolveWeatherPoint, type LocationPreference } from '../location/preference';
+import { SYRIA_TIMEZONE } from '../geography/syria';
+import { isValidTimeZone } from './zonedTime';
 
 /**
  * `/api/prayer-times` — the server proxy's response and its one client.
@@ -27,9 +29,26 @@ export interface PrayerTimesResponse {
   timings: Record<string, string>;
   /** Null when the upstream omitted it: the surface drops the line. */
   hijri: PrayerHijri | null;
+  /** The location's IANA zone, when the server forwards the upstream's. */
+  timezone?: string | null;
 }
 
 export const PRAYER_TIMES_URL = '/api/prayer-times';
+
+/**
+ * The IANA zone the timings are wall-clock times in. The server's zone wins
+ * when it sends a valid one; a Syrian governorate is Asia/Damascus; a device
+ * point (GPS/IP) or manual coordinates without a server zone fall back to this
+ * device's own zone (`undefined`), which is right for a point near the visitor.
+ */
+export function prayerTimeZone(
+  location: LocationPreference,
+  serverZone?: string | null,
+): string | undefined {
+  if (isValidTimeZone(serverZone)) return serverZone;
+  if ('governorate' in resolvePrayerParams(location, 0)) return SYRIA_TIMEZONE;
+  return undefined;
+}
 
 /** The request parameters for a location preference and a calculation method. */
 export function prayerTimesParams(
@@ -41,7 +60,7 @@ export function prayerTimesParams(
 
 /**
  * Home's per-day cache key: one entry per point/method/day under `sz_prayers_`
- * in `sessionStorage` (the value is the bare `timings` object).
+ * in `sessionStorage` (the value is a `CachedPrayerTimes` entry).
  */
 export function prayerTimesCacheKey(location: LocationPreference, method: number): string {
   const { lat, lon } = resolveWeatherPoint(location);
@@ -86,24 +105,52 @@ export interface PrayerTimesState {
   hijri: PrayerHijri | null;
   loading: boolean;
   error: PrayerTimesError | null;
+  /** The zone the timings are read in (see `prayerTimeZone`). */
+  timeZone: string | undefined;
   /** Retry the same request (PrayerView's "إعادة المحاولة"). */
   reload: () => void;
 }
 
-function readSessionTimings(key: string): Record<string, string> | null {
+/**
+ * One cached day: the timings and the zone the server read them in. The zone
+ * travels with the timings so a cache hit keeps counting down in the
+ * location's zone rather than the device's.
+ */
+export interface CachedPrayerTimes {
+  v: 2;
+  timings: Record<string, string>;
+  timezone: string | null;
+}
+
+/**
+ * Parse a cache entry. Older entries stored the bare `timings` object with no
+ * zone; they read as a miss so the next request refetches and stores both.
+ */
+export function parseCachedPrayerTimes(raw: string | null): CachedPrayerTimes | null {
+  if (!raw) return null;
   try {
-    const raw = window.sessionStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    return parsed && typeof parsed === 'object' ? parsed : null;
+    const parsed = JSON.parse(raw) as Partial<CachedPrayerTimes> | null;
+    if (!parsed || parsed.v !== 2) return null;
+    if (!parsed.timings || typeof parsed.timings !== 'object') return null;
+    const timezone = typeof parsed.timezone === 'string' ? parsed.timezone : null;
+    return { v: 2, timings: parsed.timings, timezone };
   } catch {
     return null;
   }
 }
 
-function writeSessionTimings(key: string, timings: Record<string, string>): void {
+function readSessionTimings(key: string): CachedPrayerTimes | null {
   try {
-    window.sessionStorage.setItem(key, JSON.stringify(timings));
+    return parseCachedPrayerTimes(window.sessionStorage.getItem(key));
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionTimings(key: string, timings: Record<string, string>, timezone: string | null): void {
+  const entry: CachedPrayerTimes = { v: 2, timings, timezone };
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(entry));
   } catch {
     // private mode / quota: the next request simply fetches again
   }
@@ -124,6 +171,7 @@ export function usePrayerTimes(
   const [hijri, setHijri] = useState<PrayerHijri | null>(() => initialData?.hijri ?? null);
   const [loading, setLoading] = useState(() => enabled && !initialData?.timings);
   const [error, setError] = useState<PrayerTimesError | null>(null);
+  const [serverZone, setServerZone] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
 
   const params = prayerTimesParams(location, method);
@@ -138,10 +186,14 @@ export function usePrayerTimes(
       return;
     }
 
+    // A zone belongs to one request; the fallback covers the gap.
+    setServerZone(null);
+
     if (cacheKey !== null) {
       const cached = readSessionTimings(cacheKey);
       if (cached) {
-        setTimings(cached);
+        setTimings(cached.timings);
+        setServerZone(cached.timezone);
         setLoading(false);
         setError(null);
         return;
@@ -165,7 +217,8 @@ export function usePrayerTimes(
         if (superseded) return;
         setTimings(result.timings);
         setHijri(result.hijri);
-        if (cacheKey !== null) writeSessionTimings(cacheKey, result.timings);
+        setServerZone(result.timezone ?? null);
+        if (cacheKey !== null) writeSessionTimings(cacheKey, result.timings, result.timezone ?? null);
       })
       .catch((cause: unknown) => {
         if (superseded) return;
@@ -189,5 +242,7 @@ export function usePrayerTimes(
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
-  return { timings, hijri, loading, error, reload };
+  const timeZone = prayerTimeZone(location, serverZone);
+
+  return { timings, hijri, loading, error, timeZone, reload };
 }

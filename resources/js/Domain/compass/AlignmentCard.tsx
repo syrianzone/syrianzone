@@ -61,15 +61,18 @@ export default function AlignmentCard({
           return (
             <div key={b.id} className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 text-xs w-28 shrink-0">
-                <Icon className="w-3.5 h-3.5" style={{ color: BLOC_COLORS[b.id] }} />
+                <Icon aria-hidden="true" className="w-3.5 h-3.5" style={{ color: BLOC_COLORS[b.id] }} />
                 {b.label}
               </span>
-              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+              <div aria-hidden="true" className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full"
                   style={{ width: `${(v / max) * 100}%`, background: BLOC_COLORS[b.id] }}
                 />
               </div>
+              <span className="w-10 shrink-0 text-left text-xs font-bold tabular-nums">
+                {total > 0 ? Math.round((v / total) * 100) : 0}%
+              </span>
             </div>
           );
         })}

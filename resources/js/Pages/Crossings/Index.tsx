@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Search, Signpost } from 'lucide-react';
 import { Input } from '@/Components/ui/input';
@@ -37,9 +37,17 @@ const SyriaClock = React.memo(function SyriaClock() {
             setTime(`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`);
         };
 
+        // A hidden tab skips the ticks and catches up the moment it is shown.
+        const tickIfVisible = () => {
+            if (!document.hidden) tick();
+        };
         tick();
-        const timer = setInterval(tick, 1000);
-        return () => clearInterval(timer);
+        const timer = setInterval(tickIfVisible, 1000);
+        document.addEventListener('visibilitychange', tickIfVisible);
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', tickIfVisible);
+        };
     }, []);
 
     return (
@@ -63,9 +71,16 @@ export default function CrossingsPage() {
     // (keeps SSR and the first client render identical) and refreshed every 30s.
     useEffect(() => {
         const sync = () => setNowMin(syriaMinutes());
+        const syncIfVisible = () => {
+            if (!document.hidden) sync();
+        };
         sync();
-        const timer = setInterval(sync, 30000);
-        return () => clearInterval(timer);
+        const timer = setInterval(syncIfVisible, 30000);
+        document.addEventListener('visibilitychange', syncIfVisible);
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', syncIfVisible);
+        };
     }, []);
 
     // ?c=17 deep links open one crossing, the way a shared card does.
@@ -102,9 +117,20 @@ export default function CrossingsPage() {
     const shownId = hoveredId ?? selectedId;
     const shown = shownId === null ? null : (crossings.find((c) => c.n === shownId) ?? null);
 
+    // The card renders after the list in the DOM: once a crossing is picked
+    // (not a hover preview), move focus to it so its details and actions follow.
+    const detailHeadingRef = useRef<HTMLHeadingElement>(null);
+    const focusDetailRef = useRef(false);
+    useEffect(() => {
+        if (selectedId === null || !focusDetailRef.current) return;
+        focusDetailRef.current = false;
+        detailHeadingRef.current?.focus({ preventScroll: true });
+    }, [selectedId]);
+
     const select = (n: number) => {
         const target = crossings.find((c) => c.n === n);
         if (!target) return;
+        focusDetailRef.current = true;
         setSelectedId(n);
         setHoveredId(null);
         setFocus({ lng: target.lon, lat: target.lat, zoom: CROSSING_ZOOM, key: Date.now() });
@@ -150,7 +176,7 @@ export default function CrossingsPage() {
                         </div>
 
                         <div className="relative">
-                            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Search aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 type="text"
                                 value={query}
@@ -160,6 +186,9 @@ export default function CrossingsPage() {
                                 aria-label="ابحث باسم المنفذ أو الدولة"
                             />
                         </div>
+                        <p role="status" className="sr-only">
+                            {query.trim() ? `${filtered.length} منفذ مطابق` : ''}
+                        </p>
 
                         {counts && (
                             <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] font-semibold">
@@ -227,6 +256,7 @@ export default function CrossingsPage() {
                                 nowMin={nowMin}
                                 interactive={hoveredId === null}
                                 onClose={closeDetail}
+                                headingRef={detailHeadingRef}
                             />
                         </div>
                     )}

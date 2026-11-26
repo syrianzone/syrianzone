@@ -30,7 +30,7 @@ const tiers: Tier[] = [
     },
     {
         rank: 'A',
-        color: 'text-orange-500',
+        color: 'text-orange-600 dark:text-orange-500',
         spots: [
             { name: 'Kamal Ayash', logo: '/assets/shawarma/Kamal-Ayash.webp', href: 'https://www.instagram.com/kamalayash1/', social: 'instagram' },
             { name: 'Paprika', logo: '/assets/shawarma/paprika.webp', href: 'https://www.instagram.com/paprika.syria', social: 'instagram' },
@@ -38,7 +38,7 @@ const tiers: Tier[] = [
     },
     {
         rank: 'B',
-        color: 'text-yellow-400',
+        color: 'text-yellow-700 dark:text-yellow-400',
         spots: [
             { name: 'Shawerha', logo: '/assets/shawarma/SHAWERHA.webp', href: 'https://www.instagram.com/shawerhaofficial/', social: 'instagram' },
             { name: 'Faruk', logo: '/assets/shawarma/faruk.webp', href: 'https://www.instagram.com/alfarouk.res/', social: 'instagram' },
@@ -47,7 +47,7 @@ const tiers: Tier[] = [
     },
     {
         rank: 'C',
-        color: 'text-green-500',
+        color: 'text-green-700 dark:text-green-500',
         spots: [
             { name: 'Alaga', logo: '/assets/shawarma/alaga.webp', href: 'https://www.facebook.com/alagha.Broast.shawarma/', social: 'facebook' },
         ],
@@ -58,7 +58,7 @@ export default function ShawarmaPage() {
     return (
         <MainLayout>
             
-            <div className="container mx-auto px-4 pt-6 pb-12" dir="ltr">
+            <div className="container mx-auto px-4 pt-6 pb-12" dir="ltr" lang="en">
                 <h1 className="text-3xl md:text-4xl font-extrabold text-center mb-8 text-foreground">
                     @macdoos&apos;s Shawarma Tier List
                 </h1>

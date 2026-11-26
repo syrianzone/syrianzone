@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { SUIT_LABEL, type Card, type Suit } from '@/Domain/games/cards';
+import { RANK_LABEL, SUIT_LABEL, SUIT_NAME_AR, cardName, type Card, type Suit } from '@/Domain/games/cards';
 import { power } from '../_lib/cardGames/hand';
 import type { Play } from '../_lib/cardGames/trick';
 import { readLargeCards, writeLargeCards } from '../_lib/cardDisplay';
@@ -31,6 +31,7 @@ import PlayingCard from '@/Domain/games/PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
 import GameMenu from './GameMenu';
 import { useCardDrag } from '../_lib/useCardDrag';
+import { useFocusRescue } from '../_lib/useFocusRescue';
 import './table.css';
 
 /** Seat 0 is the player; 1 left, 2 opposite, 3 right. */
@@ -43,6 +44,65 @@ const seatNames = (teams: boolean) => (teams ? SEAT_NAMES : SOLO_SEAT_NAMES);
 const SUITS: Suit[] = ['S', 'H', 'D', 'C'];
 const AI_DELAY = 700;
 
+const turnOf = (deal: TrixDeal) => (deal.contract === 'trix' ? deal.turn : deal.round.turn);
+
+/**
+ * What changed at the table since the last state, as one sentence for the
+ * polite live region: the contract, the other seats' cards and passes, who took
+ * each trick, who went out, and the player's turn. The player's own moves are
+ * not repeated.
+ */
+function describeTrix(prev: TrixGame | null, next: TrixGame): string {
+  const names = seatNames(next.options.teams);
+  const parts: string[] = [];
+
+  if (next.complete) return prev?.complete ? '' : 'انتهت اللعبة';
+  if (next.hands && kingOf(next) === HUMAN && !(prev?.hands && kingOf(prev) === HUMAN)) {
+    return 'أنت الملك، اختر الطلب';
+  }
+
+  const deal = next.deal;
+  if (!deal) return '';
+  // The contracts of a kingdom are distinct, so kingdom + contract names a deal.
+  const same = prev?.deal && prev.kingdom === next.kingdom && prev.deal.contract === deal.contract ? prev.deal : null;
+  if (!same) parts.push(`الطلب ${CONTRACT_INFO[deal.contract].name}، الملك ${names[kingOf(next)]}`);
+
+  if (deal.contract === 'trix') {
+    const before = same?.contract === 'trix' ? same : null;
+    if (before) {
+      const mover = before.turn;
+      if (mover !== HUMAN) {
+        const laid = SUITS.flatMap((suit) =>
+          (deal.layout.laid[suit] ?? []).slice((before.layout.laid[suit] ?? []).length).map((power) => ({ suit, power })),
+        );
+        if (laid.length > 0) {
+          for (const { suit, power } of laid) {
+            parts.push(`${names[mover]}: ${cardName({ suit, rank: power === 14 ? 1 : power })}`);
+          }
+        } else if (deal.turn !== before.turn) {
+          parts.push(`${names[mover]} باس`);
+        }
+      }
+      for (const seat of deal.out.slice(before.out.length)) {
+        parts.push(seat === HUMAN ? 'أنهيتَ أوراقك' : `${names[seat]} أنهى أوراقه`);
+      }
+    }
+  } else {
+    const before = same && same.contract !== 'trix' ? same.round : null;
+    const plays = (round: typeof deal.round) => [...round.history.flatMap((t) => t.plays), ...round.trick];
+    for (const play of plays(deal.round).slice(before ? plays(before).length : 0)) {
+      if (play.seat !== HUMAN) parts.push(`${names[play.seat]}: ${cardName(play.card)}`);
+    }
+    for (const trick of deal.round.history.slice(before?.history.length ?? 0)) {
+      parts.push(trick.winner === HUMAN ? 'أخذتَ الأكلة' : `أخذ ${names[trick.winner]} الأكلة`);
+    }
+  }
+
+  if (deal.phase === 'complete' && same?.phase !== 'complete') parts.push('انتهى الطلب');
+  if (deal.phase === 'playing' && turnOf(deal) === HUMAN && (!same || turnOf(same) !== HUMAN)) parts.push('دورك');
+  return parts.join('، ');
+}
+
 export default function Trix() {
   const [game, setGame] = useState<TrixGame | null>(null);
   const [large, setLarge] = useState(false);
@@ -52,6 +112,9 @@ export default function Trix() {
   const [selected, setSelected] = useState<string | null>(null);
   const seen = useRef(0);
   const recorded = useRef(false);
+  /** The live region's text, and the game state it was worked out against. */
+  const [announcement, setAnnouncement] = useState('');
+  const announced = useRef<TrixGame | null>(null);
 
   const fresh = (opts: TrixOptions) => {
     seen.current = 0;
@@ -120,21 +183,31 @@ export default function Trix() {
     if (!game?.deal) return [];
     const { deal } = game;
     const cards = deal.contract === 'trix' ? deal.hands[HUMAN] : deal.round.hands[HUMAN];
-    return [...cards].sort((a, b) => SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || power(a) - power(b));
+    return cards.toSorted((a, b) => SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || power(a) - power(b));
   }, [game]);
 
   useEffect(() => {
     setSelected(null);
   }, [game?.deal]);
 
+  useEffect(() => {
+    if (!game) return;
+    const text = describeTrix(announced.current, game);
+    announced.current = game;
+    if (text) setAnnouncement(text);
+  }, [game]);
+
   // Hooks run before the loading return below; the drop handler reaches the
   // current render's `play` through a ref.
   const playRef = useRef<(card: Card) => void>(() => {});
-  const { drag, startDrag, isTouchPick } = useCardDrag<Card>({
+  const { drag, ghostRef, startDrag, isTouchPick } = useCardDrag<Card>({
     onDrop: (element, card) => {
       if (element?.closest('.sz-tbl')) playRef.current(card);
     },
   });
+  // Every move unmounts the focused control (a played card, the bid buttons);
+  // this puts focus back on the table instead of <body>.
+  const tableRef = useFocusRescue<HTMLDivElement>(['.sz-tbl__actions', '.sz-tbl__hand']);
 
   if (!game) {
     return <div className="py-16 text-center text-sm text-muted-foreground">جاري التوزيع…</div>;
@@ -206,7 +279,9 @@ export default function Trix() {
   const isKing = game.hands !== null && kingOf(game) === HUMAN;
 
   return (
-    <div className="flex h-full select-none flex-col">
+    <div ref={tableRef} className="flex h-full select-none flex-col">
+      {/* One persistent polite region for everything the other seats do. */}
+      <div role="status" className="sr-only">{announcement}</div>
       {/* The two buttons portal into the shell header, beside القوانين. Only the
           running deal stays here. */}
       <GameMenu
@@ -226,13 +301,13 @@ export default function Trix() {
         options={
           <div className="space-y-3">
             <div className="flex items-stretch gap-2">
-              <Button aria-label="تبديل بين يهودية وفريقين"
+              <Button
                 variant="outline"
                 onClick={() => setMode(!game.options.teams)}
                 className="flex h-auto flex-col gap-1 rounded-xl px-3 py-2"
                 title="تبديل بين يهودية وفريقين"
               >
-                <span className="text-[13px]">⇄</span>
+                <span className="text-[13px]" aria-hidden="true">⇄</span>
                 <span className="text-[11px] font-bold">{game.options.teams ? 'فريقين' : 'يهودية'}</span>
               </Button>
               <CardStyleToggle large={large} onToggle={toggleLarge} />
@@ -260,22 +335,22 @@ export default function Trix() {
         <Seat name={names[3]} count={handCount(game, 3)} className="sz-tbl__seat--east" />
 
         <div className="sz-tbl__centre">
-          <div className="sz-tbl__trick">
+          <div className="sz-tbl__trick" role="group" aria-label="الطاولة">
             {deal?.contract === 'trix' ? (
               <Layout deal={deal} large={large} />
             ) : deal ? (
               <>
-                <Slot position="n" card={cardAtSeat(trickPlays, 2)} win={trickWinnerSeat === 2} large={large} />
-                <Slot position="w" card={cardAtSeat(trickPlays, 1)} win={trickWinnerSeat === 1} large={large} />
+                <Slot position="n" seatName={names[2]} card={cardAtSeat(trickPlays, 2)} win={trickWinnerSeat === 2} large={large} />
+                <Slot position="w" seatName={names[1]} card={cardAtSeat(trickPlays, 1)} win={trickWinnerSeat === 1} large={large} />
                 <div className="sz-tbl__slot sz-tbl__slot--c" />
-                <Slot position="e" card={cardAtSeat(trickPlays, 3)} win={trickWinnerSeat === 3} large={large} />
-                <Slot position="s" card={cardAtSeat(trickPlays, HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
+                <Slot position="e" seatName={names[3]} card={cardAtSeat(trickPlays, 3)} win={trickWinnerSeat === 3} large={large} />
+                <Slot position="s" seatName={names[HUMAN]} card={cardAtSeat(trickPlays, HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
               </>
             ) : null}
           </div>
         </div>
 
-        <div className="sz-tbl__hand">
+        <div className="sz-tbl__hand" data-focus-group="hand">
           {hand.map((card) => (
             <PlayingCard
               key={card.id}
@@ -294,6 +369,7 @@ export default function Trix() {
       {/* The card following the finger while it is dragged out to play. */}
       {drag && (
         <div
+          ref={ghostRef}
           className="sz-tbl__ghost"
           style={
             {
@@ -309,7 +385,7 @@ export default function Trix() {
         </div>
       )}
 
-      <div className="sz-tbl__actions mt-2 shrink-0">
+      <div className="sz-tbl__actions mt-2 shrink-0" data-focus-group="actions">
         {game.complete ? (
           <GameOver game={game} onNew={() => fresh(game.options)} />
         ) : isKing ? (
@@ -382,9 +458,16 @@ function Layout({ deal, large }: { deal: Extract<TrixDeal, { contract: 'trix' }>
     <div className="sz-tbl__layout">
       {SUITS.map((suit) => {
         const laid = new Set(deal.layout.laid[suit] ?? []);
+        const ranks = Array.from({ length: 13 }, (_, i) => i + 2)
+          .filter((power) => laid.has(power))
+          .map((power) => RANK_LABEL[power === 14 ? 1 : power]);
         return (
           <div key={suit} className="sz-tbl__run">
-            {laid.size === 0 && <span className="sz-tbl__run-suit">{SUIT_LABEL[suit]}</span>}
+            {/* The column is a picture of the run; this is its text. */}
+            <span className="sr-only">
+              {`${SUIT_NAME_AR[suit]}: ${ranks.length > 0 ? ranks.join(' ') : 'لا شيء بعد'}`}
+            </span>
+            {laid.size === 0 && <span className="sz-tbl__run-suit" aria-hidden="true">{SUIT_LABEL[suit]}</span>}
             {/* Slots run Ace (top) to 2 (bottom), so the Jack lands mid-column:
                 Q/K/A above it, 10 down to 2 below — the rank order, not the
                 order they were played, and the height is already reserved. */}
@@ -465,10 +548,24 @@ function Seat({ name, count, className = '' }: { name: string; count: number; cl
   );
 }
 
-function Slot({ position, card, win, large }: { position: string; card?: Card; win: boolean; large: boolean }) {
+function Slot({
+  position,
+  seatName,
+  card,
+  win,
+  large,
+}: {
+  position: string;
+  seatName: string;
+  card?: Card;
+  win: boolean;
+  large: boolean;
+}) {
   return (
     <div className={`sz-tbl__slot sz-tbl__slot--${position} ${win ? 'sz-tbl__slot--win' : ''}`}>
       {card && <PlayingCard card={card} decorative large={large} />}
+      {/* The drawn card is decorative; this is what a screen reader hears. */}
+      {card && <span className="sr-only">{`${seatName}: ${cardName(card)}${win ? '، الأعلى' : ''}`}</span>}
     </div>
   );
 }

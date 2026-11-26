@@ -40,7 +40,7 @@ export default function UpdatesPanel({ promise, today, canEdit, canRule, onSaved
     const [saving, setSaving] = useState(false);
 
     const undoableStatusId = promise.publishedAt === null
-        ? [...promise.updates].reverse().find((u) => u.type === 'status_change')?.id ?? null
+        ? promise.updates.findLast((u) => u.type === 'status_change')?.id ?? null
         : null;
 
     const add = async () => {
@@ -144,7 +144,7 @@ export default function UpdatesPanel({ promise, today, canEdit, canRule, onSaved
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="update-source">رابط المصدر{type !== 'note' ? ' (مطلوب)' : ''}</Label>
-                            <Input id="update-source" type="url" dir="ltr" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} {...fieldA11y('update-source-error', errors.source_url)} />
+                            <Input id="update-source" type="url" dir="ltr" aria-required={type !== 'note' ? true : undefined} value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} {...fieldA11y('update-source-error', errors.source_url)} />
                             <FieldError id="update-source-error" message={errors.source_url} />
                         </div>
                         <div className="space-y-1.5">

@@ -177,6 +177,10 @@ export default function GovAppsAdminIndex({
                                                             <img
                                                                 src={item.icon || DEFAULT_GOVAPP_ICON}
                                                                 alt=""
+                                                                width={40}
+                                                                height={40}
+                                                                loading="lazy"
+                                                                decoding="async"
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
                                                                     (e.target as HTMLImageElement).src = DEFAULT_GOVAPP_ICON;
@@ -194,9 +198,9 @@ export default function GovAppsAdminIndex({
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                        {item.links?.android && <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Android</Badge>}
-                                                        {item.links?.apple && <Badge variant="outline" className="text-[10px] bg-slate-500/10 text-slate-700 border-slate-500/20">iOS</Badge>}
-                                                        {item.links?.official && <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/20">Website</Badge>}
+                                                        {item.links?.android && <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">Android</Badge>}
+                                                        {item.links?.apple && <Badge variant="outline" className="text-[10px] bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20">iOS</Badge>}
+                                                        {item.links?.official && <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">Website</Badge>}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -209,7 +213,7 @@ export default function GovAppsAdminIndex({
                                                 <TableCell className="text-end">
                                                     <div className="flex items-center justify-end gap-1.5">
                                                         {canEdit && (
-                                                            <Button aria-label="تعديل البيانات"
+                                                            <Button aria-label={`تعديل بيانات ${item.name_ar || item.name}`}
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 onClick={() => {
@@ -218,17 +222,17 @@ export default function GovAppsAdminIndex({
                                                                 }}
                                                                 title="تعديل البيانات"
                                                             >
-                                                                <Edit3 className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                                                <Edit3 className="w-4 h-4 text-muted-foreground hover:text-primary" aria-hidden="true" />
                                                             </Button>
                                                         )}
                                                         {canDelete && (
-                                                            <Button aria-label="حذف"
+                                                            <Button aria-label={`حذف ${item.name_ar || item.name}`}
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 onClick={() => handleDeleteApp(item.id)}
                                                                 title="حذف"
                                                             >
-                                                                <Trash2 className="w-4 h-4 text-destructive" />
+                                                                <Trash2 className="w-4 h-4 text-destructive" aria-hidden="true" />
                                                             </Button>
                                                         )}
                                                     </div>

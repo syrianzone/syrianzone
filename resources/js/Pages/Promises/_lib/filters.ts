@@ -152,7 +152,7 @@ export function filterPromises(promises: PromiseCardData[], value: SmartFilterVa
 
 export function visiblePromises(base: PromiseCardData[], value: SmartFilterValue, dueSoonDays: number): PromiseCardData[] {
     const list = base.filter((p) => !value.filters.state?.length || value.filters.state.some((s) => matchesState(p, s, dueSoonDays)));
-    if (value.sort === 'newest') return [...list].sort((a, b) => b.statementDate.localeCompare(a.statementDate));
-    if (value.sort === 'deadline') return [...list].sort((a, b) => (a.deadlineDate ?? '9999').localeCompare(b.deadlineDate ?? '9999'));
+    if (value.sort === 'newest') return list.toSorted((a, b) => b.statementDate.localeCompare(a.statementDate));
+    if (value.sort === 'deadline') return list.toSorted((a, b) => (a.deadlineDate ?? '9999').localeCompare(b.deadlineDate ?? '9999'));
     return list;
 }

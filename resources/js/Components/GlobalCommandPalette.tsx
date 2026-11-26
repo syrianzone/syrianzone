@@ -17,6 +17,7 @@ import {
     DialogDescription,
     DialogTitle,
 } from '@/Components/ui/dialog';
+import { Command as CommandPrimitive } from 'cmdk';
 import {
     Command,
     CommandList,
@@ -24,7 +25,7 @@ import {
 import { useAppShell } from '@/Lib/appShell';
 import { pathnameOf } from '@/Lib/routes';
 import { useIsMac } from '@/Lib/platform';
-import { FILTER_TABS, SearchResultsContent, useGlobalSearchData } from './GlobalSearch';
+import { ScopePills, SearchResultsContent, SearchStatus, useGlobalSearchData } from './GlobalSearch';
 import type { FilterScope } from './GlobalSearch';
 
 export default function GlobalCommandPalette() {
@@ -61,18 +62,24 @@ export default function GlobalCommandPalette() {
 
                 <Command
                     shouldFilter={false}
+                    label="ابحث في المنصة"
                     className="bg-transparent text-foreground"
                 >
                     {/* Top Search Input Row */}
                     <div className="flex items-center gap-2.5 border-b border-border/80 px-3.5 py-3 bg-muted/25">
                         <Search className="h-5 w-5 text-primary shrink-0" />
-                        <input
+                        {/* cmdk's own input: it is the combobox that owns the
+                            listbox (aria-controls / aria-activedescendant), so a
+                            screen reader follows the highlighted result. */}
+                        <CommandPrimitive.Input
                             ref={inputRef}
-                            type="text"
                             value={query}
-                            onChange={(e) => setQuery(e.target.value)}
+                            onValueChange={setQuery}
+                            inputMode="search"
+                            enterKeyHint="search"
                             onKeyDown={(e) => {
-                                if (e.key !== 'Enter') return;
+                                // An IME's Enter confirms the composed word; it is not a selection.
+                                if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
                                 // cmdk highlights a result on pointer movement or
                                 // an arrow key, so a query that has just produced
                                 // results has nothing highlighted yet: open the
@@ -87,12 +94,11 @@ export default function GlobalCommandPalette() {
                                 first.click();
                             }}
                             placeholder="ابحث عن أداة، مسؤول، مدينة، خط سرفيس، سورة، معبر، أو رقم طوارئ..."
-                            aria-label="ابحث في المنصة"
                             autoFocus
                             className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
                         />
                         {data.loadingRemote && (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                            <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
                         )}
                         {query && (
                             <button
@@ -118,28 +124,20 @@ export default function GlobalCommandPalette() {
                     </div>
 
                     {/* Category Filter Pills */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border/60 bg-background/60 px-3 py-2 no-scrollbar">
-                        {FILTER_TABS.map((tab) => {
-                            const active = scope === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => setScope(tab.id)}
-                                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors ${
-                                        active
-                                            ? 'bg-primary text-primary-foreground shadow-2xs'
-                                            : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                    }`}
-                                >
-                                    {tab.label}
-                                </button>
-                            );
-                        })}
-                    </div>
+                    <ScopePills
+                        scope={scope}
+                        onScopeChange={setScope}
+                        className="flex items-center gap-1.5 overflow-x-auto border-b border-border/60 bg-background/60 px-3 py-2 no-scrollbar"
+                    />
+
+                    <SearchStatus
+                        active={data.trimmedQuery.length > 0}
+                        loading={data.loadingRemote}
+                        count={data.totalVisibleResults}
+                    />
 
                     {/* Results List */}
-                    <CommandList className="max-h-[60vh] sm:max-h-[420px] overflow-y-auto p-2">
+                    <CommandList className="max-h-[60dvh] sm:max-h-[420px] overflow-y-auto p-2">
                         <SearchResultsContent
                             data={data}
                             pathname={pathname}

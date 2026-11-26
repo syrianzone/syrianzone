@@ -133,7 +133,7 @@ function hemicycleWedges(active: Member2026[], groupOrder: string[], dim: Dim): 
 
         // Lay the row left→right, first group takes the rightmost slots
         let slot = 0;
-        [...groupOrder].reverse().forEach((g) => {
+        groupOrder.toReversed().forEach((g) => {
             const cnt = order.get(g) || 0;
             for (let s = 0; s < cnt; s++, slot++) {
                 const frac = (slot + 0.5) / cap;
@@ -227,16 +227,17 @@ export default function ParliamentChart2026({ members, dim, onDimChange, selecte
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 max-w-[520px] mx-auto" dir="rtl">
                     {groups.map(([k, v]) => (
-                        <button aria-label="تصفية الجدول بهذه الفئة"
+                        <button
                             key={k}
                             type="button"
+                            aria-pressed={selectedKey === k}
                             onClick={() => onLegendClick(dim, k)}
                             title="تصفية الجدول بهذه الفئة"
                             className={`inline-flex items-center gap-1.5 text-sm rounded px-1 -mx-1 cursor-pointer text-right transition ${hoverGroup === k ? 'bg-muted' : ''} ${selectedKey === k ? 'ring-1 ring-primary bg-primary/5' : ''}`}
                             onMouseEnter={() => setHoverGroup(k)}
                             onMouseLeave={() => setHoverGroup(null)}
                         >
-                            <span className="inline-block h-3 w-3 rounded-full border border-black/10 shrink-0" style={{ background: legendColor(k) }} />
+                            <span aria-hidden="true" className="inline-block h-3 w-3 rounded-full border border-black/10 shrink-0" style={{ background: legendColor(k) }} />
                             <span className="font-medium">{labelOf(k)}</span>
                             <span className="text-muted-foreground text-xs">{v} ({active.length ? ((v / active.length) * 100).toFixed(1) : '0'}%)</span>
                         </button>

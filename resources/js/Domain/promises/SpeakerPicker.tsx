@@ -17,6 +17,8 @@ interface Props {
     id?: string;
     invalid?: boolean;
     describedBy?: string;
+    /** Exposed as aria-required: the picker is a button, so it has no native `required`. */
+    required?: boolean;
 }
 
 /**
@@ -25,7 +27,7 @@ interface Props {
  * in one box. Picking someone not yet linked creates the link server-side on
  * save, so nobody is typed twice.
  */
-export default function SpeakerPicker({ endpoint, value, onChange, id, invalid, describedBy }: Props) {
+export default function SpeakerPicker({ endpoint, value, onChange, id, invalid, describedBy, required }: Props) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [options, setOptions] = useState<SpeakerOption[]>([]);
@@ -67,6 +69,7 @@ export default function SpeakerPicker({ endpoint, value, onChange, id, invalid, 
                     role="combobox"
                     aria-expanded={open}
                     aria-invalid={invalid}
+                    aria-required={required || undefined}
                     aria-describedby={describedBy}
                     className="h-auto min-h-10 w-full justify-between gap-2 py-2 font-normal"
                 >

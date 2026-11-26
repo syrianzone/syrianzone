@@ -24,6 +24,11 @@ interface Props {
 
 const MAX_SOURCES = 5;
 
+interface SourceRow {
+    id: number;
+    url: string;
+}
+
 interface FormState {
     speaker: SpeakerOption | null;
     newSpeaker: boolean;
@@ -34,7 +39,8 @@ interface FormState {
     statementDate: string;
     venue: string;
     deadlineWording: string;
-    sources: string[];
+    /** Each row carries a stable id so deleting one doesn't remount its neighbours. */
+    sources: SourceRow[];
     note: string;
 }
 
@@ -48,7 +54,7 @@ const emptyForm = (): FormState => ({
     statementDate: '',
     venue: 'other',
     deadlineWording: '',
-    sources: [''],
+    sources: [{ id: 0, url: '' }],
     note: '',
 });
 
@@ -72,6 +78,28 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
 
     const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
     const sourceError = (i: number) => errors[`source_urls.${i}`];
+    const nextSourceId = useRef(1);
+    const sourceInputs = useRef(new Map<number, HTMLInputElement>());
+    // Set when a row is removed: its trash button unmounts, so focus the neighbouring row.
+    const focusSourceId = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (focusSourceId.current === null) return;
+        sourceInputs.current.get(focusSourceId.current)?.focus();
+        focusSourceId.current = null;
+    }, [form.sources]);
+
+    const addSource = () => {
+        const id = nextSourceId.current;
+        nextSourceId.current = id + 1;
+        set('sources', [...form.sources, { id, url: '' }]);
+    };
+
+    const removeSource = (i: number) => {
+        const remaining = form.sources.filter((_, j) => j !== i);
+        focusSourceId.current = remaining[Math.min(i, remaining.length - 1)]?.id ?? null;
+        set('sources', remaining);
+    };
 
     // Move focus to the confirmation so keyboard and screen-reader users land
     // on it instead of on <body> when the submitted form unmounts.
@@ -100,7 +128,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                 statement_date: form.statementDate,
                 statement_venue: form.venue,
                 deadline_wording: form.deadlineWording || null,
-                source_urls: form.sources.map((s) => s.trim()).filter(Boolean),
+                source_urls: form.sources.map((s) => s.url.trim()).filter(Boolean),
                 note: form.note || null,
             });
             setDone(true);
@@ -179,6 +207,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                                             endpoint="/api/v1/promises/speakers"
                                             value={form.speaker}
                                             onChange={(s) => set('speaker', s)}
+                                            required
                                             invalid={!!errors.speaker_ref}
                                             describedBy={errors.speaker_ref ? 'speaker-error' : undefined}
                                         />
@@ -188,7 +217,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <div className="space-y-1.5">
                                             <Label htmlFor="speaker-name">الاسم</Label>
-                                            <Input id="speaker-name" value={form.speakerName} onChange={(e) => set('speakerName', e.target.value)} {...fieldA11y('speaker-name-error', errors.speaker_name)} />
+                                            <Input id="speaker-name" aria-required="true" value={form.speakerName} onChange={(e) => set('speakerName', e.target.value)} {...fieldA11y('speaker-name-error', errors.speaker_name)} />
                                             <FieldError id="speaker-name-error" message={errors.speaker_name} />
                                         </div>
                                         <div className="space-y-1.5">
@@ -211,18 +240,18 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                             <CardContent className="space-y-4">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="title">عنوان مختصر</Label>
-                                    <Input id="title" value={form.title} onChange={(e) => set('title', e.target.value)} maxLength={200} placeholder="مثال: 12 ساعة كهرباء يومياً قبل الصيف" {...fieldA11y('title-error', errors.title)} />
+                                    <Input id="title" aria-required="true" value={form.title} onChange={(e) => set('title', e.target.value)} maxLength={200} placeholder="مثال: 12 ساعة كهرباء يومياً قبل الصيف" {...fieldA11y('title-error', errors.title)} />
                                     <FieldError id="title-error" message={errors.title} />
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label htmlFor="quote">ماذا قال بالضبط؟</Label>
-                                    <Textarea id="quote" value={form.quote} onChange={(e) => set('quote', e.target.value)} rows={4} maxLength={5000} {...fieldA11y('quote-error', errors.quote)} />
+                                    <Textarea id="quote" aria-required="true" value={form.quote} onChange={(e) => set('quote', e.target.value)} rows={4} maxLength={5000} {...fieldA11y('quote-error', errors.quote)} />
                                     <FieldError id="quote-error" message={errors.quote} />
                                 </div>
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="space-y-1.5">
                                         <Label htmlFor="statement-date">متى قاله؟</Label>
-                                        <Input id="statement-date" type="date" dir="ltr" min={earliestDate} max={today} value={form.statementDate} onChange={(e) => set('statementDate', e.target.value)} {...fieldA11y('statement-date-error', errors.statement_date)} />
+                                        <Input id="statement-date" aria-required="true" type="date" dir="ltr" min={earliestDate} max={today} value={form.statementDate} onChange={(e) => set('statementDate', e.target.value)} {...fieldA11y('statement-date-error', errors.statement_date)} />
                                         <FieldError id="statement-date-error" message={errors.statement_date} />
                                     </div>
                                     <div className="space-y-1.5">
@@ -251,20 +280,25 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {form.sources.map((s, i) => (
-                                    <div key={i} className="space-y-1">
+                                    <div key={s.id} className="space-y-1">
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 type="url"
                                                 dir="ltr"
                                                 inputMode="url"
                                                 placeholder="https://"
-                                                value={s}
-                                                onChange={(e) => set('sources', form.sources.map((v, j) => (j === i ? e.target.value : v)))}
+                                                ref={(el) => {
+                                                    if (el) sourceInputs.current.set(s.id, el);
+                                                    else sourceInputs.current.delete(s.id);
+                                                }}
+                                                value={s.url}
+                                                onChange={(e) => set('sources', form.sources.map((v, j) => (j === i ? { ...v, url: e.target.value } : v)))}
                                                 aria-label={`رابط المصدر ${i + 1}`}
+                                                aria-required={i === 0 || undefined}
                                                 {...fieldA11y(`source-${i}-error`, sourceError(i) ?? (i === 0 ? errors.source_urls : undefined))}
                                             />
                                             {form.sources.length > 1 && (
-                                                <Button type="button" variant="ghost" size="icon" aria-label={`حذف المصدر ${i + 1}`} onClick={() => set('sources', form.sources.filter((_, j) => j !== i))}>
+                                                <Button type="button" variant="ghost" size="icon" aria-label={`حذف المصدر ${i + 1}`} onClick={() => removeSource(i)}>
                                                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                                                 </Button>
                                             )}
@@ -273,7 +307,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                                     </div>
                                 ))}
                                 {form.sources.length < MAX_SOURCES && (
-                                    <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => set('sources', [...form.sources, ''])}>
+                                    <Button type="button" variant="outline" size="sm" className="gap-1" onClick={addSource}>
                                         <Plus className="h-4 w-4" aria-hidden="true" />مصدر آخر
                                     </Button>
                                 )}

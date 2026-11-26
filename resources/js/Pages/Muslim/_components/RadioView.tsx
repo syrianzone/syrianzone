@@ -56,7 +56,13 @@ export default function RadioView({ onContinue }: Props) {
   // whether or not this page is still mounted (the visitor may be in the reader).
   const sleepRemaining = sleepUntil === null ? null : sleepUntil - now;
 
+  // The chosen preset, not one derived from the remaining time: "30 د" stays
+  // selected while it counts down through 29, 28… (undefined = chosen before
+  // this view mounted, so no preset is claimed).
+  const [selectedPreset, setSelectedPreset] = React.useState<number | null | undefined>(undefined);
+
   const selectSleep = (minutes: number | null) => {
+    setSelectedPreset(minutes);
     setSleepUntil(minutes === null ? null : Date.now() + minutes * 60_000);
   };
 
@@ -64,8 +70,6 @@ export default function RadioView({ onContinue }: Props) {
     if (current) toggle();
     else playContinuous({ recitationCode });
   };
-
-  const remainingMinutes = sleepRemaining === null ? null : Math.ceil(sleepRemaining / 60_000);
 
   return (
     <div className="space-y-5">
@@ -78,8 +82,8 @@ export default function RadioView({ onContinue }: Props) {
           <QuranWordWindow className="text-center" />
 
           {error && (
-            <div className="flex w-full flex-col items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-              <AlertCircle className="h-5 w-5" />
+            <div role="alert" className="flex w-full flex-col items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              <AlertCircle className="h-5 w-5" aria-hidden="true" />
               <p className="text-center">{error}</p>
             </div>
           )}
@@ -155,7 +159,7 @@ export default function RadioView({ onContinue }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             {SLEEP_OPTIONS.map((opt) => {
-              const isActive = opt.minutes === null ? remainingMinutes === null : remainingMinutes === opt.minutes;
+              const isActive = sleepUntil === null ? opt.minutes === null : selectedPreset === opt.minutes;
               return (
                 <Button
                   key={opt.label}

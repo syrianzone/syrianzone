@@ -20,7 +20,7 @@ export function ViewToggle(props: { view: 'map' | 'grid'; onChange: (v: 'map' | 
   );
 
   return (
-    <div dir="rtl" className={`flex h-9 items-center gap-1 rounded-full border border-border bg-card/90 p-1 shadow-md ${props.className ?? ''}`}>
+    <div dir="rtl" role="group" aria-label="طريقة العرض" className={`flex h-9 items-center gap-1 rounded-full border border-border bg-card/90 p-1 shadow-md ${props.className ?? ''}`}>
       {item('map', 'خريطة', MapIcon)}
       {item('grid', 'معرض', LayoutGrid)}
     </div>

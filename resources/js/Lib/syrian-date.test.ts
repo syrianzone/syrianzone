@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatGregorianSyrianShort } from './syrian-date';
+import { formatGregorianSyrianShort, formatSyrianDateTime } from './syrian-date';
 
 describe('formatGregorianSyrianShort', () => {
   it('reads a bare date as the calendar day, not as a UTC instant', () => {
@@ -16,5 +16,27 @@ describe('formatGregorianSyrianShort', () => {
 
   it('returns an unparseable string unchanged, so a value is never blanked', () => {
     expect(formatGregorianSyrianShort('قيد التوثيق')).toBe('قيد التوثيق');
+  });
+});
+
+describe('Syrian time for instants', () => {
+  it('reads a zoned timestamp in Damascus time, whatever the host zone', () => {
+    // 22:30 UTC is already the next day in Damascus (UTC+3)
+    expect(formatGregorianSyrianShort('2026-09-10T22:30:00Z')).toBe('١١ أيلول ٢٠٢٦');
+    expect(formatSyrianDateTime('2026-09-10T22:30:00.000000Z')).toBe('١١ أيلول ٢٠٢٦، ٠١:٣٠');
+    expect(formatSyrianDateTime('2026-09-10T14:30:00+03:00')).toBe('١٠ أيلول ٢٠٢٦، ١٤:٣٠');
+  });
+
+  it('reads a millisecond timestamp as an instant', () => {
+    expect(formatSyrianDateTime(Date.UTC(2026, 8, 10, 11, 5))).toBe('١٠ أيلول ٢٠٢٦، ١٤:٠٥');
+  });
+
+  it('keeps a Date and a zoneless timestamp on their own wall clock', () => {
+    expect(formatSyrianDateTime(new Date(2026, 8, 10, 9, 7))).toBe('١٠ أيلول ٢٠٢٦، ٠٩:٠٧');
+    expect(formatSyrianDateTime('2026-09-10T09:07:00')).toBe('١٠ أيلول ٢٠٢٦، ٠٩:٠٧');
+  });
+
+  it('returns an empty string for an invalid timestamp', () => {
+    expect(formatSyrianDateTime('not a date')).toBe('');
   });
 });

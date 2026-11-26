@@ -39,6 +39,20 @@ export function applyFont(font: FontPreference) {
   }
 }
 
+/**
+ * Apply a font picked in another tab (the `storage` event only fires in the
+ * other tabs). Call once at boot.
+ */
+export function watchFontStorage(): () => void {
+  const onStorage = (event: StorageEvent) => {
+    // key is null when another tab cleared storage altogether
+    if (event.key !== FONT_KEY && event.key !== null) return;
+    document.documentElement.setAttribute('data-font', getFontPreference());
+  };
+  window.addEventListener('storage', onStorage);
+  return () => window.removeEventListener('storage', onStorage);
+}
+
 function subscribeToFont(onChange: () => void): () => void {
   const observer =
     typeof document === 'undefined'

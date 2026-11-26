@@ -103,16 +103,14 @@ export default function SyriaMap({ geoJsonData, selectedGovId }: SyriaMapProps) 
     return (
         <div className="w-full h-full relative rounded-xl overflow-hidden border-2 border-border shadow-lg">
             <style>{`
-                .leaflet-container {
-                    -webkit-tap-highlight-color: transparent;
-                    outline: none;
-                }
+                .leaflet-container,
                 .leaflet-interactive {
-                    outline: none !important;
-                    -webkit-tap-highlight-color: transparent !important;
+                    -webkit-tap-highlight-color: transparent;
                 }
-                path.leaflet-interactive:focus {
-                    outline: none;
+                .leaflet-container:focus-visible,
+                path.leaflet-interactive:focus-visible {
+                    outline: 2px solid hsl(var(--ring));
+                    outline-offset: 2px;
                 }
                 .custom-tooltip {
                     background: rgba(0, 0, 0, 0.8) !important;

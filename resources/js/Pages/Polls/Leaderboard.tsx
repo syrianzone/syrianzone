@@ -137,13 +137,14 @@ function LeaderboardTable({
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
+                            <caption className="sr-only">{title}</caption>
                             <thead>
                                 <tr className="border-b">
-                                    <th className="p-3 text-right w-12">#</th>
-                                    <th className="p-3 text-right">المسؤول</th>
-                                    <th className="p-3 text-right w-20">النقاط</th>
-                                    <th className="p-3 text-right w-16">الأصوات</th>
-                                    <th className="p-3 text-right w-20">المعدّل</th>
+                                    <th scope="col" className="p-3 text-right w-12">#</th>
+                                    <th scope="col" className="p-3 text-right">المسؤول</th>
+                                    <th scope="col" className="p-3 text-right w-20">النقاط</th>
+                                    <th scope="col" className="p-3 text-right w-16">الأصوات</th>
+                                    <th scope="col" className="p-3 text-right w-20">المعدّل</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -226,11 +227,12 @@ function StatusToggle({ value, onChange }: { value: StatusFilter; onChange: (v: 
         { value: "all", label: "الكل" },
     ];
     return (
-        <div className="inline-flex rounded-md border bg-background p-0.5 text-sm">
+        <div role="group" aria-label="المسؤولون المعروضون" className="inline-flex rounded-md border bg-background p-0.5 text-sm">
             {options.map((o) => (
                 <button
                     key={o.value}
                     type="button"
+                    aria-pressed={value === o.value}
                     onClick={() => onChange(o.value)}
                     className={`px-3 py-1 rounded-sm transition-colors ${
                         value === o.value ? "bg-primary text-primary-foreground" : "text-gray-600 hover:bg-muted"
@@ -266,27 +268,24 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
             firstFetchRef.current = false;
             if (status === initialStatusRef.current) return;
         }
+        // A quick second switch must not let the slower, older response win.
+        let cancelled = false;
         setLoading(true);
         pollsApi.leaderboard<LeaderboardData>(initialProps.poll.slug ?? '', status)
             .then((next) => {
+                if (cancelled) return;
                 setData(next);
                 setLoading(false);
             })
             .catch((err) => {
+                if (cancelled) return;
                 notify.error(apiErrorMessage(err, 'تعذّر تحميل الترتيب'));
                 setLoading(false);
             });
+        return () => {
+            cancelled = true;
+        };
     }, [status]);
-
-    if (loading && !data) {
-        return (
-            <MainLayout>
-                <div className="container mx-auto px-4 pt-10 pb-8">
-                    <div className="text-center text-gray-600 dark:text-gray-400">جاري التحميل...</div>
-                </div>
-            </MainLayout>
-        );
-    }
 
     const groups = publishedGroups(data);
     const successorIndex = buildSuccessorIndex(groups, data);
@@ -298,12 +297,12 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
             
             <div className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
                 <div className="max-w-screen-md mx-auto mb-4 flex justify-end">
-                    <Link href="/tierlist">
-                        <Button variant="outline" className="gap-2">
-                            <Vote className="h-4 w-4" />
+                    <Button asChild variant="outline" className="gap-2">
+                        <Link href="/tierlist">
+                            <Vote className="h-4 w-4" aria-hidden="true" />
                             صوّت الآن
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                 </div>
 
                 <div className="max-w-screen-md mx-auto mb-4">
@@ -336,7 +335,7 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
                 )}
 
                 {groups.length > 0 && data.history && (
-                    <Tabs defaultValue={defaultKey} dir="rtl" className="w-full">
+                    <Tabs defaultValue={defaultKey} dir="rtl" className="w-full" aria-busy={loading}>
                         <div className="flex flex-col items-center gap-3 mb-6">
                             <TabsList className="flex h-auto w-full max-w-2xl flex-wrap justify-center gap-1">
                                 {groups.map((group) => (

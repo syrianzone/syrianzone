@@ -21,18 +21,32 @@ export default function NotesView({ config, onConfigChange }: WidgetProps<NotesC
     if (timer.current === null) setText(config.text ?? '');
   }, [config.text]);
 
-  // debounced so a keystroke does not churn the whole document
+  // the latest writer and the unsaved value, read by the unmount flush below
+  const save = useRef(onConfigChange);
+  const pending = useRef<string | null>(null);
+  useEffect(() => {
+    save.current = onConfigChange;
+  });
+
+  // debounced so a keystroke does not churn the whole document. Leaving the
+  // board (or switching dashboards) inside the window flushes the last value
+  // instead of dropping it.
   useEffect(() => {
     return () => {
       if (timer.current) window.clearTimeout(timer.current);
+      timer.current = null;
+      if (pending.current !== null) save.current({ text: pending.current });
+      pending.current = null;
     };
   }, []);
 
   function handleChange(value: string) {
     setText(value);
+    pending.current = value;
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
       timer.current = null;
+      pending.current = null;
       onConfigChange({ text: value });
     }, 400);
   }
@@ -44,6 +58,7 @@ export default function NotesView({ config, onConfigChange }: WidgetProps<NotesC
         value={text}
         maxLength={MAX_LENGTH}
         onChange={(e) => handleChange(e.target.value)}
+        aria-label="ملاحظات"
         placeholder="اكتب ملاحظاتك هنا"
         className="h-full w-full resize-none bg-transparent p-3 text-sm text-foreground outline-none placeholder:text-muted-foreground"
       />

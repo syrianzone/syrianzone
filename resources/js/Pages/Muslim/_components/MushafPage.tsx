@@ -1,8 +1,8 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useId, useLayoutEffect, useRef, useState } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import AyahMark from '@/Domain/quran/AyahMark';
-import { BASMALAH_LIGATURE, ensureRtlBidi, type QuranPage } from '../../../Domain/quran/quran';
+import { BASMALAH_LIGATURE, SURAH_NAMES_AR, ensureRtlBidi, type QuranPage } from '../../../Domain/quran/quran';
 import { splitPartTokens } from '../../../Domain/quran/quranAudio';
 import '@/Domain/quran/quran.css';
 
@@ -78,6 +78,63 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
   const wordCounters = new Map<string, number>();
 
   const frameWidth = data.lineWidth + 4; // line box + page padding (2px each side)
+
+  // Screen readers hear the Quran text itself (the part's content); the surah
+  // and ayah number ride along as a description, one hidden node per ayah.
+  const descPrefix = useId();
+  const descId = (key: string) => `${descPrefix}-${key.replace(':', '-')}`;
+  const ayahKeys: string[] = [];
+  for (const line of data.lines) {
+    if (line.isTitle || line.isBasmalah) continue;
+    for (const part of line.parts) {
+      if (part.realAyah <= 0) continue;
+      const key = `${part.surah + 1}:${part.realAyah}`;
+      if (!ayahKeys.includes(key)) ayahKeys.push(key);
+    }
+  }
+
+  // Roving focus: the page is one tab stop (the focused, else the current,
+  // else the first ayah); arrows move between ayahs in reading order.
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  const tabKey =
+    (focusKey && ayahKeys.includes(focusKey) && focusKey) ||
+    (currentAyahKey && ayahKeys.includes(currentAyahKey) && currentAyahKey) ||
+    ayahKeys[0] ||
+    null;
+  const tabStopPlaced = new Set<string>();
+
+  const focusAyah = (key: string) => {
+    pageRef.current
+      ?.querySelector<HTMLElement>(`.quran-part[data-key="${key}"]`)
+      ?.focus();
+  };
+
+  const onPartKeyDown = (e: React.KeyboardEvent<HTMLElement>, key: string) => {
+    if (e.target !== e.currentTarget) return; // the in-text bookmark button
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onSelectAyah(key);
+      return;
+    }
+    if (e.key === ' ' && onPlayAyah) {
+      e.preventDefault();
+      onPlayAyah(key);
+      return;
+    }
+    const at = ayahKeys.indexOf(key);
+    // RTL: the left arrow moves forward in reading order.
+    let target: string | undefined;
+    if (e.key === 'ArrowLeft') target = ayahKeys[at + 1];
+    else if (e.key === 'ArrowRight') target = ayahKeys[at - 1];
+    else if (e.key === 'Home') target = ayahKeys[0];
+    else if (e.key === 'End') target = ayahKeys[ayahKeys.length - 1];
+    else return;
+    // At the page edge the arrow falls through to the reader's page turn.
+    if (!target) return;
+    e.preventDefault();
+    setFocusKey(target);
+    focusAyah(target);
+  };
 
   const hoverAyah = (surah: number, ayah: number, on: boolean) => {
     pageRef.current
@@ -188,6 +245,17 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
           <span data-digits="3">﴿١٢٣﴾</span>
         </div>
 
+        <div hidden>
+          {ayahKeys.map((key) => {
+            const [surah, ayah] = key.split(':');
+            return (
+              <span key={key} id={descId(key)}>
+                {`سورة ${SURAH_NAMES_AR[Number(surah)] ?? surah}، الآية ${ayah}${savedKeys?.has(key) ? '، محفوظة' : ''}`}
+              </span>
+            );
+          })}
+        </div>
+
         <div className="mushaf-lines-container">
           {data.lines.map((line) => (
             <div key={line.lineNumber} className="quran-line" data-line-num={line.lineNumber}>
@@ -207,6 +275,8 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
                     const key = part.realAyah > 0 ? `${part.surah + 1}:${part.realAyah}` : null;
                     const active = key !== null && key === currentAyahKey;
                     const saved = key !== null && savedKeys?.has(key);
+                    const isTabStop = key !== null && key === tabKey && !tabStopPlaced.has(key);
+                    if (isTabStop) tabStopPlaced.add(key);
                     return (
                       <span
                         key={i}
@@ -214,28 +284,16 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
                         data-surah={part.surah}
                         data-ayah={part.ayah}
                         data-real-ayah={part.realAyah}
+                        data-key={key ?? undefined}
+                        // Name from content: the button reads the ayah text.
                         role={key ? (active && onToggleBookmark ? 'group' : 'button') : undefined}
-                        tabIndex={key ? 0 : undefined}
-                        aria-label={
-                          key
-                            ? `سورة ${part.surah + 1}، الآية ${part.realAyah}${saved ? '، محفوظة' : ''}`
-                            : undefined
-                        }
+                        tabIndex={key ? (isTabStop ? 0 : -1) : undefined}
+                        aria-describedby={key ? descId(key) : undefined}
+                        aria-current={active ? 'true' : undefined}
+                        onFocus={key ? (e) => { if (e.target === e.currentTarget) setFocusKey(key); } : undefined}
                         onClick={key ? () => onSelectAyah(key) : undefined}
                         onDoubleClick={key && onPlayAyah ? () => onPlayAyah(key) : undefined}
-                        onKeyDown={
-                          key
-                            ? (e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  onSelectAyah(key);
-                                } else if (e.key === ' ' && onPlayAyah) {
-                                  e.preventDefault();
-                                  onPlayAyah(key);
-                                }
-                              }
-                            : undefined
-                        }
+                        onKeyDown={key ? (e) => onPartKeyDown(e, key) : undefined}
                         onMouseEnter={() => hoverAyah(part.surah, part.ayah, true)}
                         onMouseLeave={() => hoverAyah(part.surah, part.ayah, false)}
                       >

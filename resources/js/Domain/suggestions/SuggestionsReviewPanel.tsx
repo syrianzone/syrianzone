@@ -147,6 +147,7 @@ export default function SuggestionsReviewPanel({
                                 type="button"
                                 size="sm"
                                 variant={active ? 'default' : 'outline'}
+                                aria-pressed={active}
                                 onClick={() => setStatus(tab.value)}
                                 className="gap-1.5"
                             >

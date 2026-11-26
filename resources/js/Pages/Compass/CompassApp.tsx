@@ -1,6 +1,6 @@
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
@@ -154,11 +154,16 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return;
+      // The answer radios own the arrow keys (native group navigation) but
+      // still take the digit shortcuts.
+      const isRadio = el instanceof HTMLInputElement && el.type === 'radio';
+      if (!isRadio && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable)) return;
       const map: Record<string, number> = { '1': -2, '2': -1, '3': 0, '4': 1, '5': 2 };
       if (e.key in map) {
         if (tag === 'BUTTON' || tag === 'A') return;
         answer(map[e.key]);
+      } else if (isRadio) {
+        return;
       // RTL: the previous button sits on the right, so ArrowRight goes back
       } else if (e.key === 'ArrowRight') goPrev();
       else if (e.key === 'ArrowLeft') goNext();
@@ -337,6 +342,7 @@ function QuizPanel({
   onPrev: () => void;
   answered: number;
 }) {
+  const titleId = useId();
   const progress = ((index + 1) / total) * 100;
   const options = [
     { v: -2, t: 'أعارض بشدة' },
@@ -356,28 +362,33 @@ function QuizPanel({
           <div className="bg-primary h-full transition-all" style={{ width: `${progress}%` }} />
         </div>
         <Badge variant="secondary" className="mt-3 w-fit text-[11px]">{label}</Badge>
-        <CardTitle className="text-lg leading-relaxed min-h-[4rem]">{text}</CardTitle>
+        <CardTitle id={titleId} className="text-lg leading-relaxed min-h-[4rem]">{text}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 gap-2">
+        <fieldset aria-labelledby={titleId} className="grid grid-cols-1 gap-2">
           {options.map((o) => {
             const active = value === o.v;
             return (
-              <button
+              <label
                 key={o.v}
-                type="button"
-                aria-pressed={active}
-                onClick={() => onAnswer(o.v)}
-                className={`flex items-center justify-between rounded-lg border px-4 py-3 text-right transition ${
+                className={`flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3 text-right transition has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 ${
                   active ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:bg-muted/50'
                 }`}
               >
+                <input
+                  type="radio"
+                  name="compass-answer"
+                  value={o.v}
+                  checked={active}
+                  onChange={() => onAnswer(o.v)}
+                  className="sr-only"
+                />
                 <span>{o.t}</span>
-                {active && <Check className="w-4 h-4" />}
-              </button>
+                {active && <Check className="w-4 h-4" aria-hidden="true" />}
+              </label>
             );
           })}
-        </div>
+        </fieldset>
       </CardContent>
       <CardFooter className="flex gap-3">
         <Button variant="outline" onClick={onPrev} disabled={index === 0} aria-label="السابق">

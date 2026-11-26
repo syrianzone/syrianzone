@@ -166,7 +166,9 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
       </div>
 
       {avatarMessage && (
-        <div className={cn(
+        <div
+          role={avatarMessage.type === 'error' ? 'alert' : 'status'}
+          className={cn(
           'p-4 rounded-lg text-sm',
           avatarMessage.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/15 text-destructive'
         )}>

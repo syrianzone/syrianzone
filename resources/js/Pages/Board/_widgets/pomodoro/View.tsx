@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play, RotateCcw, Timer } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import { notify } from '@/Lib/notify';
 import { WidgetShell } from '../../_components/WidgetShell';
 import type { WidgetProps } from '../../_lib/types';
 import type { PomodoroConfig } from './index';
@@ -53,12 +54,15 @@ export default function PomodoroView({ config }: WidgetProps<PomodoroConfig>) {
         endAt.current = null;
         setRemaining(0);
         setRunning(false);
+        // the countdown text is not a live region (it would speak every
+        // second), so the end of a phase is the one thing said aloud
+        notify.info(phase === 'work' ? 'انتهى وقت العمل، حان وقت الراحة' : 'انتهت الراحة');
         return;
       }
       setRemaining(left);
     }, 250);
     return () => window.clearInterval(tick);
-  }, [running]);
+  }, [running, phase]);
 
   function start() {
     if (remaining <= 0) return;

@@ -74,7 +74,7 @@ export default function NearbyTransitDrawer() {
 
   const panToLocation = () => {
     if (map && userLocation) {
-      map.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 16, essential: true })
+      map.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 16 })
     }
   }
 

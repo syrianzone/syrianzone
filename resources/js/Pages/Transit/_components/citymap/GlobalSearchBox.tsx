@@ -140,7 +140,6 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
         map.flyTo({
           center: item.coordinates,
           zoom: 15,
-          essential: true
         })
       }
     } else if (item.type === 'place') {
@@ -161,7 +160,7 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
           .addTo(map)
         marker.togglePopup()
         poiMarkerRef.current = marker
-        map.flyTo({ center: item.coordinates, zoom: 16, essential: true })
+        map.flyTo({ center: item.coordinates, zoom: 16 })
       }
     }
   }

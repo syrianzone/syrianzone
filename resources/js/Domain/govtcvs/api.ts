@@ -5,8 +5,8 @@ import type {
     GovtEvidenceItem,
     GovtMovementItem,
     GovtOfficeSlotItem,
+    GovtOfficialAdminSummary,
     GovtOfficialDetail,
-    GovtOfficialSummary,
 } from './types';
 
 /**
@@ -21,7 +21,7 @@ const ADMIN = `${API_V1}/admin/govtcvs`;
 export const govtCvsApi = {
     // Public endpoints
     list(params?: Record<string, unknown>, options?: ApiRequestConfig): Promise<{
-        officials: GovtOfficialSummary[];
+        officials: GovtOfficialAdminSummary[];
         stats: GovtCvsStats;
     }> {
         return client.get(PUBLIC, { ...options, params });

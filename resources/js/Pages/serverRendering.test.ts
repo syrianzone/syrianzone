@@ -158,4 +158,64 @@ describe('pages render their content on the server', () => {
         expect(html).toContain('/muslim/ramadan/aleppo');
         expect(html).toContain('مواقيت الصلاة في محافظات أخرى');
     });
+
+    it('renders only the first 30 govtcvs cards on SSR while keeping every official link in the index', async () => {
+        const officials = Array.from({ length: 45 }, (_, idx) => ({
+            id: `off-${idx + 1}`,
+            slug: `official-${idx + 1}`,
+            full_name_ar: `المسؤول رقم ${idx + 1}`,
+            display_name_ar: `المسؤول رقم ${idx + 1}`,
+            full_name_en: null,
+            honorific_ar: null,
+            bio_summary_ar: null,
+            birth_place_ar: null,
+            office_status: 'in_office',
+            highest_tier: 'minister',
+            cv_completeness: 'full_cv',
+            portrait_url: null,
+            first_seen_in_office_at: '2025-03-29',
+            tenures_count: 1,
+            active_tenure: {
+                institution_id: 'min-energy',
+                institution_name_ar: 'وزارة الطاقة',
+                role_title_ar: 'وزير الطاقة',
+                tier: 'minister',
+                government_phase: 'transitional_2025',
+                started_at: '2025-03-29',
+                start_date_precision: 'exact',
+                ended_at: null,
+                end_date_precision: null,
+                is_acting: false,
+            },
+        }));
+
+        const html = await renderOnServer(
+            'GovtCvs/Index',
+            {
+                officials,
+                stats: {
+                    total: 45,
+                    in_office: 45,
+                    out_of_office: 0,
+                    uncertain: 0,
+                    full_cv: 45,
+                    total_movements: 45,
+                },
+                institutions: [{ id: 'min-energy', name_ar: 'وزارة الطاقة' }],
+            },
+            '/govtcvs',
+        );
+
+        const cleanHtml = html.replace(/<!-- -->/g, '');
+        expect(cleanHtml.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml).toContain('عرض المزيد (تبقّى 15)');
+        expect(cleanHtml).toContain('جميع المسؤولين');
+        // 30 card headings + 1 directory index heading ("جميع المسؤولين")
+        expect(cleanHtml.match(/<h2[\s>]/g)).toHaveLength(31);
+        // Every official still has a real <a href> in SSR HTML
+        for (const official of officials) {
+            expect(cleanHtml).toContain(`href="/govtcvs/${official.slug}"`);
+        }
+    });
 });

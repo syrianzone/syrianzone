@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { SmartFilterValue } from '@/Lib/smartFilterSearch';
-import type { GovtOfficialSummary, GovtTenureItem } from '@/Domain/govtcvs/types';
+import type { GovtActiveTenure, GovtOfficialSummary } from '@/Domain/govtcvs/types';
 import {
     activeScoreboardTile,
     filterOfficials,
     govtFilterFacets,
     govtListUrl,
+    hasActiveGovtFilters,
     matchesStatus,
     readGovtFilters,
     selectScoreboardTile,
@@ -19,37 +20,22 @@ const facets = govtFilterFacets([
 
 const empty: SmartFilterValue = { search: '', filters: {}, sort: 'default' };
 
-const makeTenure = (patch: Partial<GovtTenureItem> = {}): GovtTenureItem => ({
-    id: 'tenure-1',
-    official_id: 'off-1',
-    office_slot_id: null,
-    office_slot_slug: null,
-    office_slot_title_ar: null,
+const makeTenure = (patch: Partial<GovtActiveTenure> = {}): GovtActiveTenure => ({
     institution_id: 'min-energy',
     institution_name_ar: 'وزارة الطاقة',
     role_title_ar: 'وزير الطاقة',
     tier: 'minister',
     government_phase: 'transitional_2025',
-    status: 'current',
     started_at: '2025-03-29',
     start_date_precision: 'exact',
-    start_decree_ref: null,
     ended_at: null,
     end_date_precision: null,
-    end_reason: null,
-    end_decree_ref: null,
-    first_operational_seen_at: null,
-    last_operational_seen_at: null,
-    operational_mentions_count: 0,
     is_acting: false,
-    notes_ar: null,
-    predecessor: null,
-    successor: null,
     ...patch,
 });
 
 const makeOfficial = (id: string, patch: Partial<GovtOfficialSummary> = {}): GovtOfficialSummary => {
-    const tenure = makeTenure({ official_id: id });
+    const tenure = makeTenure();
     return {
         id,
         slug: `official-${id}`,
@@ -59,24 +45,13 @@ const makeOfficial = (id: string, patch: Partial<GovtOfficialSummary> = {}): Gov
         honorific_ar: 'م.',
         office_status: 'in_office',
         highest_tier: 'minister',
-        birth_year: null,
         birth_place_ar: null,
-        gender: null,
         bio_summary_ar: null,
         portrait_url: null,
-        resolved_portrait_url: null,
         cv_completeness: 'full_cv',
-        verification_level: 'decree_verified',
-        publish_status: 'published',
         first_seen_in_office_at: '2025-03-29',
-        last_seen_in_office_at: null,
-        current_tenure: tenure,
-        latest_tenure: tenure,
+        active_tenure: tenure,
         tenures_count: 1,
-        cv_entries_count: 2,
-        evidence_count: 1,
-        version: 1,
-        updated_at: null,
         ...patch,
     };
 };
@@ -90,15 +65,7 @@ const officials = [
         highest_tier: 'minister',
         cv_completeness: 'full_cv',
         tenures_count: 3,
-        current_tenure: makeTenure({
-            official_id: '2',
-            institution_id: 'min-foreign',
-            institution_name_ar: 'وزارة الخارجية والمغتربين',
-            role_title_ar: 'وزير الخارجية والمغتربين',
-            started_at: '2024-12-21',
-        }),
-        latest_tenure: makeTenure({
-            official_id: '2',
+        active_tenure: makeTenure({
             institution_id: 'min-foreign',
             institution_name_ar: 'وزارة الخارجية والمغتربين',
             role_title_ar: 'وزير الخارجية والمغتربين',
@@ -112,15 +79,12 @@ const officials = [
         highest_tier: 'governor',
         cv_completeness: 'positions_only',
         tenures_count: 1,
-        current_tenure: null,
-        latest_tenure: makeTenure({
-            official_id: '3',
+        active_tenure: makeTenure({
             institution_id: null,
             institution_name_ar: 'محافظة دمشق',
             role_title_ar: 'محافظ دمشق',
             tier: 'governor',
             government_phase: 'caretaker_2024',
-            status: 'ended',
             started_at: '2024-12-15',
             ended_at: '2025-05-01',
         }),
@@ -220,5 +184,12 @@ describe('govtcvs scoreboard tiles', () => {
         expect(selectScoreboardTile(inOffice, 'full_cv').filters).toEqual({
             cv_completeness: ['full_cv'],
         });
+    });
+
+    it('detects active search or facet filters while ignoring sort-only state', () => {
+        expect(hasActiveGovtFilters(empty)).toBe(false);
+        expect(hasActiveGovtFilters({ ...empty, sort: 'newest' })).toBe(false);
+        expect(hasActiveGovtFilters({ ...empty, search: 'أسعد' })).toBe(true);
+        expect(hasActiveGovtFilters({ ...empty, filters: { status: ['in_office'] } })).toBe(true);
     });
 });

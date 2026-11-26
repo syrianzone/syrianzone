@@ -24,7 +24,7 @@ class GovtCvController extends Controller
 
     public function index(): Response
     {
-        return inertia('GovtCvs/Index', $this->directory->index(includeOptions: false));
+        return inertia('GovtCvs/Index', $this->directory->index(includeOptions: false, compact: true));
     }
 
     public function movements(): Response

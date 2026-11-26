@@ -23,7 +23,7 @@ interface Props {
  */
 export default function OfficialCard({ official, layout = 'grid', className }: Props) {
     const list = layout === 'list';
-    const activeTenure = official.current_tenure ?? official.latest_tenure;
+    const activeTenure = official.active_tenure;
     const roleTitle = activeTenure?.role_title_ar ?? TIER_LABELS[official.highest_tier] ?? 'مسؤول حكومي';
     const institutionName = activeTenure?.institution_name_ar;
     const fullTitle = [official.honorific_ar, official.display_name_ar || official.full_name_ar]
@@ -49,7 +49,6 @@ export default function OfficialCard({ official, layout = 'grid', className }: P
                         <OfficialAvatar
                             name={official.display_name_ar || official.full_name_ar}
                             portraitUrl={official.portrait_url}
-                            resolvedPortraitUrl={official.resolved_portrait_url}
                             size={list ? 44 : 52}
                         />
                         <div className="min-w-0">

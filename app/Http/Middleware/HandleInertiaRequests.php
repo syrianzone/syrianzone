@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\SiteSetting;
 use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -30,6 +31,8 @@ class HandleInertiaRequests extends Middleware
         $devMode = AutoLoginDevUser::isDevMode();
 
         $site = SiteSetting::shared();
+        $navVersion = (int) ($site['navigation']['version'] ?? 1);
+        $popupVersion = (int) ($site['popup']['version'] ?? 1);
 
         return [
             ...parent::share($request),
@@ -43,11 +46,13 @@ class HandleInertiaRequests extends Middleware
                     ? (new AutoLoginDevUser)->resolveRole($request)
                     : null,
             ],
-            'sitePopup' => $site['popup'],
+            'sitePopup' => Inertia::once(fn () => $site['popup'])->as("sitePopup:v{$popupVersion}"),
             // The site-module catalogue merged with the admin's stored override
             // row: `resources/data/site-modules.json` is the default, so the
-            // browser never falls back to a second, hand-written list.
-            'siteNavigation' => $site['navigation'],
+            // browser never falls back to a second, hand-written list. Keyed by
+            // its own `version` so Inertia omits it after the first load and
+            // re-fetches automatically after an admin edit.
+            'siteNavigation' => Inertia::once(fn () => $site['navigation'])->as("siteNavigation:v{$navVersion}"),
             // One resolved SEO object per request, rendered by the single
             // <SeoHead> component. The root view renders the same values
             // server-side when SSR is off. See docs/guidelines/seo.md.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { zipSync } from 'fflate';
 import { ChevronLeft, ChevronRight, Download, Loader2, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
@@ -19,6 +19,13 @@ export function Lightbox(props: {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const narrow = useIsMobile('sm');
+  // "download all" fetches every photo in turn: closing the lightbox cancels it
+  const downloadAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!open) downloadAbortRef.current?.abort();
+  }, [open]);
+  useEffect(() => () => downloadAbortRef.current?.abort(), []);
 
   useEffect(() => {
     if (open) {
@@ -83,20 +90,30 @@ export function Lightbox(props: {
   };
 
   const downloadAll = async () => {
+    downloadAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    downloadAbortRef.current = ctrl;
+    const { signal } = ctrl;
     setBusy('all');
     setError(null);
     setProgress({ done: 0, total: photos.length });
     const entries: Record<string, Uint8Array> = {};
     let failed = 0;
     for (let i = 0; i < photos.length; i++) {
+      if (signal.aborted) break;
       try {
-        const res = await fetch(photos[i].display_url);
+        const res = await fetch(photos[i].display_url, { signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         entries[`${safeName}-${i + 1}.webp`] = new Uint8Array(await res.arrayBuffer());
       } catch {
         failed++;
       }
       setProgress({ done: i + 1, total: photos.length });
+    }
+    if (signal.aborted) {
+      setBusy(null);
+      setProgress(null);
+      return;
     }
     if (Object.keys(entries).length > 0) {
       // webp is already compressed: store, don't deflate

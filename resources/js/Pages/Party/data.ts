@@ -1,5 +1,13 @@
 export type SocialPlatform = 'x' | 'instagram' | 'facebook' | 'youtube' | 'telegram';
 
+export const SOCIAL_LABEL: Record<SocialPlatform, string> = {
+    x: 'إكس',
+    instagram: 'إنستغرام',
+    facebook: 'فيسبوك',
+    youtube: 'يوتيوب',
+    telegram: 'تيليغرام',
+};
+
 /**
  * Organisation links come from submitted data: only an absolute http(s) URL
  * may reach an href (a `javascript:` or `data:` URL would run on click).

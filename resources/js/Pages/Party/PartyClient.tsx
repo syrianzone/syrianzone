@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { formatSocialUrl, getLanguageName, safeHttpUrl } from './data';
+import { formatSocialUrl, getLanguageName, safeHttpUrl, SOCIAL_LABEL } from './data';
 import { Organization } from './types';
 import {
     Search, MapPin, Globe, FileText, Users,
@@ -191,10 +191,10 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                                                         href={formatSocialUrl(s.key, s.url || '')}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        aria-label={`رابط ${s.key} — ${org.name}`}
+                                                                        aria-label={`${SOCIAL_LABEL[s.key]} — ${org.name}`}
                                                                         className="p-1.5 rounded-md bg-muted/60 text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all border border-border/40"
                                                                     >
-                                                                        <Icon className="h-3.5 w-3.5" />
+                                                                        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                                                                     </a>
                                                                 );
                                                             })}
@@ -240,22 +240,22 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                                     <div className="flex flex-wrap gap-2 text-muted-foreground">
                                                         {safeHttpUrl(org.website) && (
                                                             <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                                <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني">
-                                                                    <Globe className="h-4 w-4" />
+                                                                <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني" aria-label={`الموقع الإلكتروني — ${org.name}`}>
+                                                                    <Globe className="h-4 w-4" aria-hidden="true" />
                                                                 </a>
                                                             </Button>
                                                         )}
                                                         {org.socialX && formatSocialUrl('x', org.socialX) && (
                                                             <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                                                <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title="X">
-                                                                    <Twitter className="h-4 w-4" />
+                                                                <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.x} aria-label={`${SOCIAL_LABEL.x} — ${org.name}`}>
+                                                                    <Twitter className="h-4 w-4" aria-hidden="true" />
                                                                 </a>
                                                             </Button>
                                                         )}
                                                         {org.socialFb && formatSocialUrl('facebook', org.socialFb) && (
                                                             <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                                <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title="Facebook">
-                                                                    <Facebook className="h-4 w-4" />
+                                                                <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.facebook} aria-label={`${SOCIAL_LABEL.facebook} — ${org.name}`}>
+                                                                    <Facebook className="h-4 w-4" aria-hidden="true" />
                                                                 </a>
                                                             </Button>
                                                         )}

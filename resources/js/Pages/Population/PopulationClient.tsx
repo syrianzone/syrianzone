@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { api as client, apiErrorMessage, API_ROOT } from '@/Lib/api';
 import { PopulationGroups, DATA_TYPES, DATA_TYPE_CONFIG, RainfallData, DataSource } from './types';
 import {
@@ -196,6 +196,13 @@ export default function PopulationClient() {
         };
     }, [selectedProvinces, livePopulationData, currentDataType, currentSource]);
 
+    const showComparison = !!comparisonData && currentDataType !== DATA_TYPES.RAINFALL && currentDataType !== DATA_TYPES.ENVIRONMENTAL;
+    const comparisonHeadingRef = useRef<HTMLHeadingElement>(null);
+    useEffect(() => {
+        // The overlay appears away from the list that triggered it; move focus there.
+        if (showComparison) comparisonHeadingRef.current?.focus();
+    }, [showComparison]);
+
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--sz-navbar-h))] bg-background text-foreground gap-6">
@@ -241,11 +248,11 @@ export default function PopulationClient() {
     return (
         <div className="flex flex-col h-[calc(100vh-var(--sz-navbar-h))] overflow-hidden relative bg-background text-foreground" dir="rtl">
 
-            {comparisonData && currentDataType !== DATA_TYPES.RAINFALL && currentDataType !== DATA_TYPES.ENVIRONMENTAL && (
-                <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[1100] w-[90%] max-w-2xl bg-card border-2 border-primary rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
+            {showComparison && comparisonData && (
+                <div role="region" aria-labelledby="population-comparison-heading" className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[1100] w-[90%] max-w-2xl bg-card border-2 border-primary rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
                     <div className="flex justify-between items-center p-4 border-b border-border">
-                        <h2 className="text-lg font-bold flex items-center gap-2">
-                            <BarChart3 className="text-primary" size={20} />
+                        <h2 id="population-comparison-heading" ref={comparisonHeadingRef} tabIndex={-1} className="text-lg font-bold flex items-center gap-2 focus:outline-none">
+                            <BarChart3 className="text-primary" size={20} aria-hidden="true" />
                             مقارنة المحافظات
                         </h2>
                         <button type="button" aria-label="إغلاق المقارنة" onClick={() => setSelectedProvinces([])} className="p-1 hover:bg-muted rounded-full transition-colors">

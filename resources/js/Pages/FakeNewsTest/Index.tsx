@@ -45,6 +45,20 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
   const [statsOpen, setStatsOpen] = useState(false);
 
   const submittedRunRef = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const viewChangedRef = useRef(false);
+  // Always mounted, so screen readers announce the verdict when its text changes.
+  const [announcement, setAnnouncement] = useState('');
+
+  // Each phase swaps the whole view and unmounts the control that had focus:
+  // move focus to the new view's heading instead of leaving it on <body>.
+  useEffect(() => {
+    if (!viewChangedRef.current) {
+      viewChangedRef.current = true;
+      return;
+    }
+    rootRef.current?.querySelector<HTMLElement>('h1')?.focus();
+  }, [phase, index]);
 
   // Hydrate saved local run after mount so SSR and initial client render match.
   useEffect(() => {
@@ -125,6 +139,9 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
         record,
       ];
       setAnswers(nextAnswers);
+      setAnnouncement(
+        `${record.correct ? 'أصبت!' : 'انطلت عليك!'} ${activeClaim.label}`,
+      );
       setPhase('reveal');
       saveRun({
         order,
@@ -148,6 +165,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
   const summary = useMemo(() => computeSummary(order, answers), [order, answers]);
 
   const handleNext = useCallback(() => {
+    setAnnouncement('');
     if (index + 1 < order.length) {
       const nextIndex = index + 1;
       setIndex(nextIndex);
@@ -187,7 +205,11 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
   return (
     <MainLayout>
       {/* Cards are dragged and flown out past the column; clip only at the page edge. */}
-      <div className="min-h-[calc(100vh-8rem)] overflow-x-clip bg-background text-foreground">
+      <div ref={rootRef} className="min-h-[calc(100vh-8rem)] overflow-x-clip bg-background text-foreground">
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </p>
+
         {phase === 'opening' && (
           <OpeningView
             stats={stats}

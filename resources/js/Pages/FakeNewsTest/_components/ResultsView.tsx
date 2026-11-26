@@ -144,7 +144,8 @@ export default function ResultsView({ summary, stats, onPlayAgain, onOpenStats }
 
           <h1
             id="fakenewstest-results-title"
-            className="text-2xl font-extrabold text-foreground"
+            tabIndex={-1}
+            className="text-2xl font-extrabold text-foreground focus:outline-none"
           >
             {summary.rank.title}
           </h1>

@@ -291,7 +291,11 @@ export default function RevealPanel({
         </div>
 
         <div className="flex items-center justify-between">
-          <h1 id="fakenewstest-reveal-title" className="text-sm font-bold text-muted-foreground">
+          <h1
+            id="fakenewstest-reveal-title"
+            tabIndex={-1}
+            className="text-sm font-bold text-muted-foreground focus:outline-none"
+          >
             هل تميّزها؟
           </h1>
           <span className="text-xs font-semibold tabular-nums text-muted-foreground">
@@ -336,8 +340,6 @@ export default function RevealPanel({
             )}
           >
             <CardHeader
-              role="status"
-              aria-live="polite"
               className={cn(
                 'flex-row items-center justify-between space-y-0 px-5 py-3.5',
                 isCorrect

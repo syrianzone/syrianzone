@@ -803,6 +803,7 @@ export default function SyidClient() {
                                 <button
                                     key={theme.id}
                                     type="button"
+                                    aria-pressed={isActive}
                                     onClick={() => setActivePosterTheme(theme.id)}
                                     className={`inline-flex items-center gap-2 text-xs px-3.5 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
                                         isActive
@@ -811,6 +812,7 @@ export default function SyidClient() {
                                     }`}
                                 >
                                     <span
+                                        aria-hidden="true"
                                         className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
                                         style={{ backgroundColor: theme.primary }}
                                     />

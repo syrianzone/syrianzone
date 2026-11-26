@@ -745,3 +745,21 @@ html[data-font="ibm-plex"] body {
         scroll-behavior: auto !important;
     }
 }
+
+/* Print stylesheet: hide navigation chrome, consent/toast/player overlays, and
+   non-print action controls so printable timetables (e.g. Ramadan imsakiya)
+   render cleanly on paper or PDF. */
+@media print {
+    header,
+    nav.print\:hidden,
+    footer,
+    [data-sonner-toaster],
+    .print\:hidden {
+        display: none !important;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+}

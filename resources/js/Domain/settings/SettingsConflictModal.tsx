@@ -4,6 +4,8 @@ import { Button } from '@/Components/ui/button';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import type { ConflictChoices, ConflictKey, SettingConflict } from './settingsSync';
 
 interface Props {
@@ -30,6 +32,9 @@ export default function SettingsConflictModal({ conflicts, onApply, onSnooze }: 
     setBusy(true);
     try {
       await onApply(choices);
+    } catch (err) {
+      // The dialog stays open with the choices kept, so the user can retry.
+      notify.error(apiErrorMessage(err, 'تعذّر حفظ الإعدادات — حاول مجدداً'));
     } finally {
       setBusy(false);
     }

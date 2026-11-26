@@ -1182,9 +1182,9 @@ function TransitStudioPageContent() {
                       </div>
 
                       <p className="text-[11px] text-muted-foreground leading-snug">
-                        • **التعديل**: اسحب أي نقطة حمراء على الخريطة مباشرة (تتحرك المحطات تلقائياً متبعةً الخط).<br />
-                        • **إنهاء التعديل**: انقر مرتين أو اضغط مرتين (Double Tap) لإنهاء التعديل.<br />
-                        • **الحذف**: انقر يميناً على أي نقطة للحذف.
+                        • <strong>التعديل</strong>: اسحب أي نقطة حمراء على الخريطة مباشرة (تتحرك المحطات تلقائياً متبعةً الخط).<br />
+                        • <strong>إنهاء التعديل</strong>: انقر مرتين أو اضغط مرتين (Double Tap) لإنهاء التعديل.<br />
+                        • <strong>الحذف</strong>: انقر يميناً على أي نقطة للحذف.
                       </p>
 
                       <Button type="button" variant="ghost" size="sm" onClick={handleRedraw} className="w-full h-7 text-xs text-muted-foreground hover:text-destructive">

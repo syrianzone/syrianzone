@@ -610,7 +610,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                             <Input id="c-handle" value={cHandle} onChange={e => setCHandle(e.target.value)} placeholder="@username" dir="ltr" className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-start gap-4">
-                            <Label className="text-right pt-2">Image</Label>
+                            <Label htmlFor="c-image" className="text-right pt-2">Image</Label>
                             <div className="col-span-3 space-y-2">
                                 {/* A label for the file input: click, Enter and Space all open
                                     the picker natively, and the input stays focusable. */}

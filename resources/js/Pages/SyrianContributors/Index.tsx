@@ -248,7 +248,10 @@ export default function SyrianContributorsPage({ contributors: initial = [] }: {
 
     if (initial.length === 0) fetchContributors()
 
-    const interval = setInterval(fetchContributors, 60 * 60 * 1000)
+    // A background tab skips the hourly refresh; the next visible tick catches up.
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchContributors()
+    }, 60 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 

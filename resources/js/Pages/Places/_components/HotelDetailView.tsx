@@ -34,7 +34,8 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
         <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="رجوع">
           <ArrowRight className="h-4 w-4" />
         </Button>
-        <p className="truncate font-medium text-foreground">{hotel?.name_ar ?? hotel?.name ?? 'تفاصيل الفندق'}</p>
+        {/* PlacesPanel moves focus here when the detail replaces the list */}
+        <p data-panel-title tabIndex={-1} className="truncate font-medium text-foreground focus:outline-none">{hotel?.name_ar ?? hotel?.name ?? 'تفاصيل الفندق'}</p>
       </div>
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
         {error && (

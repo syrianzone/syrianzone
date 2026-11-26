@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Loader2, Pencil, Plus, X } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Badge } from '@/Components/ui/badge';
@@ -229,18 +229,40 @@ export function PlacesPanel(props: {
   // controlled so picking a guide drops the user on the filtered places list
   const [tab, setTab] = useState('places');
   const { user } = useAuth();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastSelectionRef = useRef<{ id: number; type: 'place' | 'hotel' | null } | null>(null);
+
+  // Swapping list <-> detail unmounts the focused control, dropping focus to
+  // <body>. Move it to the detail title on open and back to the originating
+  // card on close, but only when focus was lost (a map or search pick keeps it).
+  useEffect(() => {
+    const root = containerRef.current;
+    const prev = lastSelectionRef.current;
+    lastSelectionRef.current = selectedId !== null ? { id: selectedId, type: selectedType } : null;
+    if (!root || root.getClientRects().length === 0) return; // a hidden copy of the panel
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    if (selectedId !== null) {
+      root.querySelector<HTMLElement>('[data-panel-title]')?.focus({ preventScroll: true });
+    } else if (prev) {
+      const attr = prev.type === 'hotel' ? 'data-hotel-id' : 'data-place-id';
+      const card = root.querySelector<HTMLElement>(`[${attr}="${prev.id}"]`)
+        ?? root.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
+      card?.focus({ preventScroll: true });
+    }
+  }, [selectedId, selectedType]);
 
   // when a detail view is open, show it based on type
   if (selectedId !== null) {
     if (selectedType === 'hotel') {
       return (
-        <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
+        <div ref={containerRef} dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
           <HotelDetailView hotelId={selectedId} onClose={onClose} />
         </div>
       );
     }
     return (
-      <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
+      <div ref={containerRef} dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
         <PlaceDetailView placeId={selectedId} onClose={onClose} />
       </div>
     );
@@ -257,7 +279,7 @@ export function PlacesPanel(props: {
   );
 
   return (
-    <div dir="rtl" className={cn('flex flex-col min-h-0 flex-1 overflow-hidden bg-background', className)}>
+    <div ref={containerRef} dir="rtl" className={cn('flex flex-col min-h-0 flex-1 overflow-hidden bg-background', className)}>
       <div className="px-3 pt-3 shrink-0">
         <Button
           type="button"

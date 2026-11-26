@@ -9,6 +9,7 @@ export function HotelCard(props: { hotel: HotelListItem; onClick: (id: number, l
   return (
     <button
       type="button"
+      data-hotel-id={hotel.id}
       onClick={() => onClick(hotel.id, hotel.lat, hotel.lng)}
       className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-right transition-colors hover:bg-accent/50"
     >

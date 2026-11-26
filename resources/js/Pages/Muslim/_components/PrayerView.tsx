@@ -165,7 +165,8 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn, initialCity = 
                     <div className="flex shrink-0 items-center gap-2">
                       <span dir="ltr" className="font-mono text-sm font-bold tabular-nums">{timings[key]?.slice(0, 5)}</span>
                       {trackable && (
-                        <Button aria-label={checked ? `تمت صلاة ${PRAYER_LABELS[key]} — اضغط للتراجع` : `علّم صلاة ${PRAYER_LABELS[key]} كمنجزة`}
+                        <Button aria-label={`أدّيت صلاة ${PRAYER_LABELS[key]}`}
+                          aria-pressed={checked}
                           variant="ghost" size="icon"
                           title={checked ? `تمت صلاة ${PRAYER_LABELS[key]} — اضغط للتراجع` : `علّم صلاة ${PRAYER_LABELS[key]} كمنجزة`}
                           onClick={() => togglePrayer(key)}

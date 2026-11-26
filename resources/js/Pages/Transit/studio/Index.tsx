@@ -37,6 +37,7 @@ import type { StudioDraftPayload } from '../_types/admin'
 import { transitApi } from '../_lib/api'
 import { ROUTE_PALETTE, TRANSIT_MAP_COLORS, getRouteColor, buildColorMatch } from '../_lib/mapColors'
 import { BottomSheet } from '@/Components/BottomSheet'
+import { useIsMobile } from '@/Lib/useIsMobile'
 import {
   Accordion,
   AccordionItem,
@@ -246,6 +247,13 @@ function TransitStudioPageContent() {
   const [submitting,         setSubmitting]         = useState(false)
   const [accordionValue,     setAccordionValue]     = useState<string>('line')
   const [lastSubmittedIsAnon, setLastSubmittedIsAnon] = useState(false)
+  // One copy of the controls: two copies duplicated every id (stop-input-N,
+  // label targets) and a lookup could land on the hidden one. The server
+  // renders the side panel; the sheet replaces it below md after mount.
+  const isMobile = useIsMobile('md')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const showSheet = mounted && isMobile
 
   const { data: refData } = useMapData(cityId || undefined)
   const activeCities = cities.filter(c => c.status === 'active')
@@ -1503,20 +1511,22 @@ function TransitStudioPageContent() {
       <h1 className="sr-only">استوديو ترانزيت</h1>
 
       <div className="studio-body relative flex h-full overflow-hidden">
-        <aside className="hidden md:flex studio-sidebar w-80 md:w-96 border-e border-border bg-card shrink-0 flex-col z-20">
-          {sidebarControlsContent}
-        </aside>
-
-        <div className="block md:hidden">
-          <BottomSheet
-            storageKey="transit:studio:sheet-height"
-            initialHeight={340}
-            hideBreakpoint="md"
-            className="border-t border-border shadow-2xl z-30"
-          >
+        {showSheet ? (
+          <div className="block md:hidden">
+            <BottomSheet
+              storageKey="transit:studio:sheet-height"
+              initialHeight={340}
+              hideBreakpoint="md"
+              className="border-t border-border shadow-2xl z-30"
+            >
+              {sidebarControlsContent}
+            </BottomSheet>
+          </div>
+        ) : (
+          <aside className="hidden md:flex studio-sidebar w-80 md:w-96 border-e border-border bg-card shrink-0 flex-col z-20">
             {sidebarControlsContent}
-          </BottomSheet>
-        </div>
+          </aside>
+        )}
 
         <div className="studio-map-wrapper flex-1 relative h-full">
           {!mapReady && (

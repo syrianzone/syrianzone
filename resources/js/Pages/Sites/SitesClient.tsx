@@ -159,7 +159,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                     <div className="w-14 h-14 mb-3.5 bg-white dark:bg-slate-100 rounded-xl p-2.5 flex items-center justify-center relative overflow-hidden shadow-xs ring-1 ring-border/80 group-hover:scale-105 transition-transform shrink-0">
                                                         <img
                                                             src={getFaviconUrl(site.url)}
-                                                            alt={site.name}
+                                                            alt=""
                                                             width={36}
                                                             height={36}
                                                             loading="lazy"
@@ -171,7 +171,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                                 e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                                             }}
                                                         />
-                                                        <Globe className="w-8 h-8 text-zinc-700 hidden" />
+                                                        <Globe className="w-8 h-8 text-zinc-700 hidden" aria-hidden="true" />
                                                     </div>
 
                                                     <h2 className="font-bold text-sm text-foreground mb-1.5 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
@@ -227,7 +227,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                                                 }}
                                                             />
-                                                            <Globe className="w-4 h-4 text-zinc-700 hidden" />
+                                                            <Globe className="w-4 h-4 text-zinc-700 hidden" aria-hidden="true" />
                                                         </div>
                                                         <span className="text-foreground font-semibold">{site.name}</span>
                                                     </div>

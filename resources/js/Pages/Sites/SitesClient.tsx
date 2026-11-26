@@ -160,6 +160,11 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                         <img
                                                             src={getFaviconUrl(site.url)}
                                                             alt={site.name}
+                                                            width={36}
+                                                            height={36}
+                                                            loading="lazy"
+                                                            decoding="async"
+                                                            referrerPolicy="no-referrer"
                                                             className="w-9 h-9 object-contain"
                                                             onError={(e) => {
                                                                 e.currentTarget.style.display = 'none';
@@ -211,6 +216,11 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                             <img
                                                                 src={getFaviconUrl(site.url)}
                                                                 alt=""
+                                                                width={20}
+                                                                height={20}
+                                                                loading="lazy"
+                                                                decoding="async"
+                                                                referrerPolicy="no-referrer"
                                                                 className="w-5 h-5 object-contain"
                                                                 onError={(e) => {
                                                                     e.currentTarget.style.display = 'none';

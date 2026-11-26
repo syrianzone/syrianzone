@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DEFAULT_POLL_TIMEZONE, isCorePollSlug } from '@/Domain/polls/core';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { apiErrorMessage } from '@/Lib/api';
 import { accountApi } from './_lib/api';
 import {
@@ -232,10 +232,14 @@ export default function Dashboard({
   // Declared above the tab state because the default tab is chosen with the
   // same gates the sidebar renders with, so the landing tab is always one whose
   // button is actually on screen.
+  // The page URL from Inertia is the same on the server and the client, so the
+  // landing tab can be derived from it without a hydration mismatch.
+  const { url: pageUrl } = usePage();
   const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(() => {
     // ?tab=profile deep link from the navbar dropdown; profile is the only tab
     // every account has, so it is always a safe landing place.
-    if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
+    const query = pageUrl.includes('?') ? pageUrl.slice(pageUrl.indexOf('?')) : '';
+    if (new URLSearchParams(query).get('tab') === 'profile') return 'profile';
 
     // Check canManagePolls first so a poll manager who may also submit routes
     // lands on the Polls tab rather than on their (possibly empty) route

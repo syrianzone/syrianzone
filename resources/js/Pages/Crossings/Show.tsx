@@ -37,6 +37,10 @@ import {
 
 interface CrossingShowProps {
     slug: string;
+    governorate?: {
+        id: string;
+        nameAr: string;
+    } | null;
 }
 
 function buildCrossingFaqs(crossing: Crossing): Array<{ q: string; a: string }> {
@@ -77,7 +81,7 @@ function buildCrossingFaqs(crossing: Crossing): Array<{ q: string; a: string }> 
     return faqs;
 }
 
-export default function CrossingShow({ slug }: CrossingShowProps) {
+export default function CrossingShow({ slug, governorate = null }: CrossingShowProps) {
     const crossing = useMemo(
         () => crossings.find((c) => c.slug === slug) ?? crossings[0],
         [slug],
@@ -322,6 +326,16 @@ export default function CrossingShow({ slug }: CrossingShowProps) {
                                             <div className="flex items-center justify-between gap-2 border-b border-border/50 py-1.5">
                                                 <dt className="text-muted-foreground">الدولة المقابلة</dt>
                                                 <dd className="font-semibold text-foreground">{crossing.country}</dd>
+                                            </div>
+                                        )}
+                                        {governorate && (
+                                            <div className="flex items-center justify-between gap-2 border-b border-border/50 py-1.5">
+                                                <dt className="text-muted-foreground">المحافظة</dt>
+                                                <dd className="font-semibold text-foreground">
+                                                    <Link href={`/governorates/${governorate.id}`} className="text-primary underline decoration-dotted hover:underline">
+                                                        عن محافظة {governorate.nameAr}
+                                                    </Link>
+                                                </dd>
                                             </div>
                                         )}
                                         <div className="flex items-center justify-between gap-2 border-b border-border/50 py-1.5">

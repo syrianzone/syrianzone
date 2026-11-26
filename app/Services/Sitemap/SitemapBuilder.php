@@ -40,6 +40,7 @@ class SitemapBuilder
             $this->govtCvUrls(),
             $this->govAppUrls(),
             $this->crossingUrls(),
+            $this->governorateUrls(),
             $this->prayerCityUrls(),
             $this->ramadanCityUrls(),
             $this->transitCityUrls(),
@@ -162,6 +163,25 @@ class SitemapBuilder
                 continue;
             }
             $urls[] = new SitemapUrl('/crossings/'.$slug, 0.7, 'weekly', $asOf);
+        }
+
+        return $urls;
+    }
+
+    /**
+     * One landing page per Syrian governorate.
+     *
+     * @return SitemapUrl[]
+     */
+    private function governorateUrls(): array
+    {
+        $urls = [];
+        foreach (Facts::governorates() as $gov) {
+            $id = trim((string) ($gov['id'] ?? ''));
+            if ($id === '') {
+                continue;
+            }
+            $urls[] = new SitemapUrl('/governorates/'.$id, 0.8, 'weekly', null);
         }
 
         return $urls;

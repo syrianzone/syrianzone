@@ -21,7 +21,7 @@ class LlmsTxt
     private const SECTIONS = [
         'بيانات وأدلة' => [
             '/promises', '/govtcvs', '/syofficial', '/phonebook', '/govapps', '/sites',
-            '/house', '/justice', '/crossings', '/atlas',
+            '/house', '/justice', '/crossings', '/atlas', '/governorates',
         ],
         'خدمات يومية' => ['/transit', '/mishwar', '/currency', '/roznama', '/muslim/prayer', '/muslim/ramadan'],
         'رأي ومشاركة' => [
@@ -59,6 +59,7 @@ class LlmsTxt
                 .'ولكل تطبيق حكومي دليل رسمي على '.$base.'/govapps/{id}، '
                 .'ولكل منفذ حدودي صفحة على '.$base.'/crossings/{slug}، '
                 .'ولكل عضو في مجلس الشعب صفحة على '.$base.'/house/members/{member_number}، '
+                .'ولكل محافظة سورية صفحة شاملة على '.$base.'/governorates/{id}، '
                 .'ولمواقيت الصلاة لكل محافظة على '.$base.'/muslim/prayer/{city}، '
                 .'ولإمساكية رمضان لكل محافظة على '.$base.'/muslim/ramadan/{city}، '
                 .'ولكل مدينة في ترانزيت صفحة على '.$base.'/transit/city/{id}. '

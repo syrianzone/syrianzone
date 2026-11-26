@@ -10,6 +10,7 @@ import { useMapStore } from '../_store/useMapStore'
 import { getRouteColor } from '../_lib/mapColors'
 import type { RouteProperties } from '../_types'
 import type { TransitCity } from '@/Domain/transit/types'
+import { governorateByAnyName } from '@/Domain/geography/governorates'
 
 interface SidebarRoutesProps {
   city: TransitCity | undefined
@@ -39,6 +40,8 @@ export function SidebarRoutes({ city, cities, routes, lastUpdated = null, return
   }, [])
 
   if (!city) return null
+
+  const governorate = governorateByAnyName(city.id) ?? governorateByAnyName(city.nameAr)
 
   const handleRouteClick = (routeId: string) => {
     setSelectedRouteId(routeId)
@@ -128,6 +131,14 @@ export function SidebarRoutes({ city, cities, routes, lastUpdated = null, return
               {routes.length} خط سيرفيس
               {lastUpdated ? ` · آخر تحديث: ${formatGregorianSyrianShort(lastUpdated)}` : ''}
             </p>
+            {governorate && (
+              <Link
+                href={`/governorates/${governorate.id}`}
+                className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              >
+                <span>عن محافظة {governorate.nameAr}</span>
+              </Link>
+            )}
           </div>
         </div>
 

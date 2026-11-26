@@ -428,6 +428,15 @@
             "card": "currency",
             "priority": 0.9,
             "changefreq": "monthly"
+        },
+        {
+            "path": "/governorates",
+            "title": "محافظات سوريا الـ14 — الخريطة والسكان والمراكز والخدمات",
+            "description": "دليل محافظات سوريا الأربع عشرة: خريطة تفاعلية، تعداد السكان، المراكز الإدارية، المحافظون، مواقيت الصلاة، المواصلات، المعابر وأرقام الطوارئ.",
+            "card": "governorates",
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "weekly"
         }
     ]
 }

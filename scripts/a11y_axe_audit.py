@@ -35,7 +35,7 @@ PUBLIC_ROUTES = [
     "/", "/about", "/privacy", "/terms", "/stats",
     "/syofficial", "/phonebook", "/govapps", "/party", "/house",
     "/justice", "/sites", "/syrian-contributors", "/syid", "/atlas",
-    "/crossings", "/shawarma", "/roznama", "/priorities", "/alignment",
+    "/crossings", "/governorates", "/shawarma", "/roznama", "/priorities", "/alignment",
     "/compass", "/compass/stats", "/tierlist", "/tierlist/leaderboard",
     "/polls", "/guesswho", "/muslim",
     "/muslim/prayer", "/muslim/ramadan", "/muslim/quran", "/muslim/radio",

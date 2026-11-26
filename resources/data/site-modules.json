@@ -632,6 +632,21 @@
    "description": "حاسبة تحويل الليرة السورية الجديدة والقديمة بنسبة ١٠٠ إلى ١ وتفصيل الأوراق النقدية ومواعيد الاستبدال",
    "group": "utility",
    "groupOrder": 9
+  },
+  {
+   "id": "governorates",
+   "title": "محافظات سوريا",
+   "subtitle": "الخريطة والسكان والمحافظون والمواصلات والخدمات للمحافظات الـ14",
+   "href": "/governorates",
+   "type": "web",
+   "target": "/governorates",
+   "iconKey": "governorates",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "دليل محافظات سوريا الأربع عشرة: السكان، المحافظون، مواقيت الصلاة، المواصلات، المعابر، الأماكن وأرقام الطوارئ",
+   "group": "maps",
+   "groupOrder": 4
   }
  ],
  "adminSections": [

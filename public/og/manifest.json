@@ -1,5 +1,5 @@
 {
-  "recipe": "ee9ab7e5721c4e96",
+  "recipe": "04873cf44141d2f7",
   "cards": {
     "home": "a1a1048328",
     "tierlist": "03ef938c8c",
@@ -24,7 +24,7 @@
     "govapps": "a9da70997a",
     "sites": "6e9dc16c11",
     "party": "d7ce23daae",
-    "house": "2c216bc864",
+    "house": "f4e4ab8da5",
     "justice": "67b62d661e",
     "syid": "25da6f63de",
     "muslim": "208db9638e",
@@ -49,6 +49,7 @@
     "about": "f904e73ea0",
     "privacy": "8ded54161b",
     "terms": "7873a1c0be",
-    "currency": "cbe871abd7"
+    "currency": "cbe871abd7",
+    "governorates": "d1dfebd283"
   }
 }

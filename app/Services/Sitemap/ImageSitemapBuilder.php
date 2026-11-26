@@ -6,6 +6,7 @@ use App\Models\GovApp;
 use App\Models\GovtOfficial;
 use App\Models\OfficialEntity;
 use App\Models\Promise;
+use App\Services\Governorates\GovernorateDataService;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Support\Facts;
 use Illuminate\Database\Eloquent\Collection;
@@ -59,6 +60,7 @@ class ImageSitemapBuilder
             $this->syOfficialImages(),
             $this->ramadanImages(),
             $this->currencyImages(),
+            $this->governorateIconImages(),
         ];
     }
 
@@ -114,6 +116,32 @@ class ImageSitemapBuilder
         }
 
         return $images === [] ? [] : [new ImageSitemapUrl('/currency', array_values(array_unique($images)))];
+    }
+
+    /**
+     * Governorate landmark icons rendered on `/governorates` and `/governorates/{id}`.
+     *
+     * @return list<ImageSitemapUrl>
+     */
+    private function governorateIconImages(): array
+    {
+        $entries = [];
+        $all = [];
+
+        foreach (GovernorateDataService::allIconPaths() as $id => $rawPath) {
+            $file = $this->normalizeImage($rawPath, false);
+            if ($file === null) {
+                continue;
+            }
+            $entries[] = new ImageSitemapUrl('/governorates/'.$id, [$file]);
+            $all[] = $file;
+        }
+
+        if ($all !== []) {
+            $entries[] = new ImageSitemapUrl('/governorates', array_values(array_unique($all)));
+        }
+
+        return $entries;
     }
 
     /**

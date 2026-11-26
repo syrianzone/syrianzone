@@ -524,7 +524,7 @@ export default function TierBoard({
                                     <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); downloadSingleCandidateImage(c); }}
-                                        className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                        className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity hover:bg-black/70"
                                         title="تحميل الصورة الأصلية"
                                         aria-label={`تحميل صورة ${c.name}`}
                                     >
@@ -709,7 +709,7 @@ export default function TierBoard({
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); downloadSingleCandidateImage(c); }}
-                                                className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                                className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100 transition-opacity hover:bg-black/70"
                                                 title="تحميل الصورة الأصلية"
                                         aria-label={`تحميل صورة ${c.name}`}
                                             >

@@ -277,16 +277,18 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                         </div>
 
                                         <div className="space-y-2">
-                                            <button aria-label="انقر لنسخ الرقم"
+                                            <button
+                                                type="button"
                                                 onClick={() => handleCopy(item.number, item.id)}
                                                 className="w-full text-center py-2 bg-muted/50 hover:bg-muted/80 rounded-xl border border-border/60 font-mono text-base font-extrabold text-foreground tracking-wide transition-colors cursor-pointer group flex items-center justify-center gap-2"
                                                 title="انقر لنسخ الرقم"
                                             >
                                                 <bdi dir="ltr">{item.number}</bdi>
+                                                <span className="sr-only">— نسخ رقم {item.name_ar}</span>
                                                 {copiedId === item.id ? (
-                                                    <Check className="h-4 w-4 text-emerald-500 animate-in zoom-in-50" />
+                                                    <Check className="h-4 w-4 text-emerald-500 animate-in zoom-in-50" aria-hidden="true" />
                                                 ) : (
-                                                    <Copy className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                                    <Copy className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" aria-hidden="true" />
                                                 )}
                                             </button>
 
@@ -396,7 +398,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                             <TableCell>
                                                 <div className="flex items-center gap-1.5">
                                                     
-                                                    <Button aria-label="نسخ الرقم"
+                                                    <Button aria-label={`نسخ رقم ${item.name_ar} ${item.number}`}
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => handleCopy(item.number, item.id)}
@@ -404,9 +406,9 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         title="نسخ الرقم"
                                                     >
                                                         {copiedId === item.id ? (
-                                                            <Check className="h-4 w-4 text-emerald-500" />
+                                                            <Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />
                                                         ) : (
-                                                            <Copy className="h-4 w-4" />
+                                                            <Copy className="h-4 w-4" aria-hidden="true" />
                                                         )}
                                                     </Button>
 

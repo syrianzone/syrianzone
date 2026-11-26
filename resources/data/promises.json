@@ -173,5 +173,12 @@
       "key": "research",
       "label": "بحث أولي"
     }
-  ]
+  ],
+  "search_overrides": {
+    "_comment": "Search title and description for promises whose official wording differs from what people search. Keyed by promise number; the page H1 keeps the official title.",
+    "40": {
+      "title": "الهوية السورية الجديدة — موعد بدء التسجيل على البطاقة الشخصية الجديدة | عداد الوعود",
+      "description": "متى تصدر الهوية السورية الجديدة؟ وفق وزير الداخلية أنس خطاب (29 أيلول 2026) يبدأ التسجيل على البطاقات الشخصية الجديدة بعد الربع الأول من 2027. البطاقة لم تصدر بعد؛ تابع حالة الوعد والعدّاد."
+    }
+  }
 }

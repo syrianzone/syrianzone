@@ -288,6 +288,21 @@ final class Facts
     }
 
     /**
+     * Search title and description for a promise whose official wording is
+     * not what people search for (resources/data/promises.json
+     * `search_overrides`, keyed by promise number). The page keeps the
+     * official title as its H1.
+     *
+     * @return array{title?: string, description?: string}|null
+     */
+    public static function promiseSearchOverride(int $number): ?array
+    {
+        $override = self::json('promises')['search_overrides'][(string) $number] ?? null;
+
+        return is_array($override) ? $override : null;
+    }
+
+    /**
      * @return array{core_slug: string, default_timezone: string, min_selections: int}
      */
     public static function polls(): array

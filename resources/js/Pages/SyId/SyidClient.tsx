@@ -336,6 +336,18 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <ArrowLeft className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" aria-hidden="true" />
                         </Link>
                     </div>
+
+                    {/* Many visitors searching «هوية سورية» want the personal ID card,
+                        not the visual identity: point them to the promise that tracks it. */}
+                    <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+                        تبحث عن البطاقة الشخصية (الهوية) الجديدة؟ هذه الصفحة عن الهوية البصرية للدولة.{' '}
+                        <Link
+                            href="/promises/40"
+                            className="font-medium text-primary underline underline-offset-4 hover:no-underline"
+                        >
+                            موعد بدء التسجيل على البطاقة الشخصية الجديدة
+                        </Link>
+                    </p>
                 </section>
 
                 <section>

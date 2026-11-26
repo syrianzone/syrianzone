@@ -52,11 +52,12 @@ final class PromisePreview implements CardSource, PreviewResolver
         }
 
         $speaker = $promise->speaker?->name;
+        $override = Facts::promiseSearchOverride((int) $promise->number);
 
         return new Preview(
-            title: $promise->title.' — الوعد رقم '.$promise->number.' | عداد الوعود',
+            title: $override['title'] ?? $promise->title.' — الوعد رقم '.$promise->number.' | عداد الوعود',
             shareTitle: $promise->title,
-            description: Arabic::excerpt(($speaker ? $speaker.': ' : '').($promise->summary ?: $promise->quote)),
+            description: $override['description'] ?? Arabic::excerpt(($speaker ? $speaker.': ' : '').($promise->summary ?: $promise->quote)),
             canonicalPath: '/promises/'.$promise->number,
             image: $this->describe($promise)->url(),
             type: 'article',

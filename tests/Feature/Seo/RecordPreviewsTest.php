@@ -3,6 +3,7 @@
 use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\PromiseSpeaker;
+use App\Support\Facts;
 use App\Support\Seo\Og\StaticCards;
 use App\Support\Seo\Preview\Arabic;
 use App\Support\Seo\Preview\Preview;
@@ -51,6 +52,23 @@ test('a published promise previews as itself with a card of its own', function (
     $graph = collect(json_decode($meta['json_ld'], true)['@graph']);
     expect($graph->pluck('@type'))->toContain('Article')
         ->and($graph->firstWhere('@type', 'BreadcrumbList')['itemListElement'][1]['item'])->toBe('https://syrian.zone/promises');
+});
+
+test('a promise with a search override keeps its official name on the page and in shares', function () {
+    $promise = Promise::factory()->published()->create([
+        'number' => 40,
+        'title' => 'الجاهزية لبدء التسجيل على البطاقات الشخصية الجديدة بعد الربع الأول من 2027',
+    ]);
+    $override = Facts::promiseSearchOverride(40);
+
+    $meta = seoMetaFor('/promises/40');
+
+    expect($override)->not->toBeNull()
+        ->and($meta['title'])->toBe($override['title'])
+        ->and($meta['title'])->toContain('الهوية السورية الجديدة')
+        ->and($meta['description'])->toBe($override['description'])
+        ->and($meta['og_title'])->toBe($promise->title)
+        ->and($meta['canonical'])->toBe('https://syrian.zone/promises/40');
 });
 
 test('a promise is described as a dated article under its own name', function () {

@@ -178,40 +178,32 @@ export default function CompassClient() {
     }, [drawCompass]);
 
 
-    const getCanvasCoords = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+    const getCanvasCoords = (e: React.PointerEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
         if (!canvas) return { x: 0, y: 0 };
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
 
-        let clientX, clientY;
-        if ('touches' in e && e.touches.length > 0) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else if ('changedTouches' in e && (e as React.TouchEvent).changedTouches.length > 0) {
-            clientX = (e as React.TouchEvent).changedTouches[0].clientX;
-            clientY = (e as React.TouchEvent).changedTouches[0].clientY;
-        } else {
-            clientX = (e as React.MouseEvent).clientX;
-            clientY = (e as React.MouseEvent).clientY;
-        }
-
         return {
-            x: (clientX - rect.left) * scaleX,
-            y: (clientY - rect.top) * scaleY
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
         };
     };
 
-    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+        // Primary button only, so a right-click or middle-click does not add a point.
+        if (e.button !== 0) return;
         const { x, y } = getCanvasCoords(e);
 
-        const clickedDot = dots.slice().reverse().find(dot => {
+        const clickedDot = dots.findLast(dot => {
             const dist = Math.sqrt((dot.x - x) ** 2 + (dot.y - y) ** 2);
             return dist <= 15;
         });
 
         if (clickedDot) {
+            // Capture keeps the drag alive when the pointer leaves the canvas.
+            e.currentTarget.setPointerCapture(e.pointerId);
             setSelectedDotId(clickedDot.id);
             setIsDragging(true);
             setDragOffset({ x: x - clickedDot.x, y: y - clickedDot.y });
@@ -245,7 +237,7 @@ export default function CompassClient() {
         setDots(prev => prev.map(d => d.id === id ? { ...d, [axis]: clamped } : d));
     };
 
-    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
         if (!isDragging || selectedDotId === null) return;
 
         const { x, y } = getCanvasCoords(e);
@@ -257,7 +249,7 @@ export default function CompassClient() {
         }));
     };
 
-    const handleMouseUp = () => {
+    const endDrag = () => {
         setIsDragging(false);
     };
 
@@ -492,13 +484,11 @@ export default function CompassClient() {
                                 ref={canvasRef}
                                 role="img"
                                 aria-label={`بوصلة سياسية: المحور الأفقي من ${axes.left} إلى ${axes.right}، والعمودي من ${axes.top} إلى ${axes.bottom}، وعليها ${dots.length} ${dots.length === 1 ? 'نقطة' : 'نقاط'}. أدر النقاط من قائمة النقاط.`}
-                                onMouseDown={handleMouseDown}
-                                onMouseMove={handleMouseMove}
-                                onMouseUp={handleMouseUp}
-                                onMouseLeave={handleMouseUp}
-                                onTouchStart={handleMouseDown}
-                                onTouchMove={handleMouseMove}
-                                onTouchEnd={handleMouseUp}
+                                onPointerDown={handlePointerDown}
+                                onPointerMove={handlePointerMove}
+                                onPointerUp={endDrag}
+                                onPointerCancel={endDrag}
+                                onLostPointerCapture={endDrag}
                                 className="max-w-full touch-none cursor-crosshair border-4 border-border rounded-sm shadow-sm"
                                 style={{ touchAction: 'none' }}
                             />

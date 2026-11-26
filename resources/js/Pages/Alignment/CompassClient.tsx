@@ -37,6 +37,8 @@ const DEFAULT_AXES: Axes = {
     bottom: 'تقدمي'
 };
 
+const DOT_COLORS = ['#f44336', '#4caf50', '#2196f3', '#ffeb3b', '#e91e63', '#00bcd4', '#ff9800', '#9c27b0'];
+
 const DEFAULT_COLORS: Colors = {
     topLeft: '#4CAF50',
     topRight: '#2196F3',
@@ -214,17 +216,33 @@ export default function CompassClient() {
             setIsDragging(true);
             setDragOffset({ x: x - clickedDot.x, y: y - clickedDot.y });
         } else {
-            const colors = ['#f44336', '#4caf50', '#2196f3', '#ffeb3b', '#e91e63', '#00bcd4', '#ff9800', '#9c27b0'];
-            const newDot: Dot = {
-                id: Date.now(),
-                x,
-                y,
-                color: colors[dots.length % colors.length],
-                name: `نقطة ${dots.length + 1}`
-            };
-            setDots([...dots, newDot]);
-            setSelectedDotId(newDot.id);
+            addDot(x, y);
         }
+    };
+
+    const addDot = (x: number, y: number) => {
+        const newDot: Dot = {
+            id: Date.now(),
+            x,
+            y,
+            color: DOT_COLORS[dots.length % DOT_COLORS.length],
+            name: `نقطة ${dots.length + 1}`
+        };
+        setDots([...dots, newDot]);
+        setSelectedDotId(newDot.id);
+    };
+
+    const addDotAtCenter = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        addDot(canvas.width / 2, canvas.height / 2);
+    };
+
+    const handleUpdateDotPosition = (id: number, axis: 'x' | 'y', value: number) => {
+        if (!Number.isFinite(value)) return;
+        const limit = (axis === 'x' ? canvasRef.current?.width : canvasRef.current?.height) ?? 600;
+        const clamped = Math.min(Math.max(value, 0), limit);
+        setDots(prev => prev.map(d => d.id === id ? { ...d, [axis]: clamped } : d));
     };
 
     const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
@@ -391,21 +409,53 @@ export default function CompassClient() {
                                     ) : (
                                         <div className="space-y-3">
                                             {dots.map((dot, index) => (
-                                                <div key={dot.id} className="flex items-center gap-2 p-2 bg-muted rounded border border-border">
-                                                    <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: dot.color }} />
-                                                    <Input
-                                                        value={dot.name}
-                                                        onChange={(e) => handleUpdateDotName(dot.id, e.target.value)}
-                                                        className="h-8 text-sm text-foreground bg-card"
-                                                    />
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteDot(dot.id)}>
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
+                                                <div key={dot.id} className="p-2 bg-muted rounded border border-border space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div aria-hidden="true" className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: dot.color }} />
+                                                        <Input
+                                                            aria-label={`اسم النقطة ${index + 1}`}
+                                                            value={dot.name}
+                                                            onChange={(e) => handleUpdateDotName(dot.id, e.target.value)}
+                                                            className="h-8 text-sm text-foreground bg-card"
+                                                        />
+                                                        <Button variant="ghost" size="icon" aria-label={`حذف ${dot.name || `النقطة ${index + 1}`}`} className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteDot(dot.id)}>
+                                                            <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                                        </Button>
+                                                    </div>
+                                                    {/* The canvas is pointer-only; these place the point from the keyboard. */}
+                                                    <div className="grid grid-cols-2 gap-2 ps-6">
+                                                        <Input
+                                                            type="number"
+                                                            inputMode="numeric"
+                                                            aria-label={`الموضع الأفقي لـ ${dot.name || `النقطة ${index + 1}`}`}
+                                                            title="الموضع الأفقي (بكسل)"
+                                                            min={0}
+                                                            step={5}
+                                                            value={Math.round(dot.x)}
+                                                            onChange={(e) => handleUpdateDotPosition(dot.id, 'x', e.target.valueAsNumber)}
+                                                            className="h-7 text-xs text-foreground bg-card"
+                                                        />
+                                                        <Input
+                                                            type="number"
+                                                            inputMode="numeric"
+                                                            aria-label={`الموضع العمودي لـ ${dot.name || `النقطة ${index + 1}`}`}
+                                                            title="الموضع العمودي (بكسل)"
+                                                            min={0}
+                                                            step={5}
+                                                            value={Math.round(dot.y)}
+                                                            onChange={(e) => handleUpdateDotPosition(dot.id, 'y', e.target.valueAsNumber)}
+                                                            className="h-7 text-xs text-foreground bg-card"
+                                                        />
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
                                     )}
                                 </ScrollArea>
+                                <Button type="button" variant="outline" size="sm" className="w-full mt-3" onClick={addDotAtCenter}>
+                                    <Plus className="me-2 w-4 h-4" aria-hidden="true" />
+                                    إضافة نقطة في المنتصف
+                                </Button>
                             </CardContent>
                         </Card>
 
@@ -440,6 +490,8 @@ export default function CompassClient() {
                         <div ref={containerRef} className="bg-card rounded-xl shadow border border-border p-4 flex flex-col items-center justify-center min-h-[400px]">
                             <canvas
                                 ref={canvasRef}
+                                role="img"
+                                aria-label={`بوصلة سياسية: المحور الأفقي من ${axes.left} إلى ${axes.right}، والعمودي من ${axes.top} إلى ${axes.bottom}، وعليها ${dots.length} ${dots.length === 1 ? 'نقطة' : 'نقاط'}. أدر النقاط من قائمة النقاط.`}
                                 onMouseDown={handleMouseDown}
                                 onMouseMove={handleMouseMove}
                                 onMouseUp={handleMouseUp}

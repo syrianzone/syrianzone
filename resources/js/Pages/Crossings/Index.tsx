@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Search, Signpost } from 'lucide-react';
 import { Input } from '@/Components/ui/input';
@@ -102,9 +102,20 @@ export default function CrossingsPage() {
     const shownId = hoveredId ?? selectedId;
     const shown = shownId === null ? null : (crossings.find((c) => c.n === shownId) ?? null);
 
+    // The card renders after the list in the DOM: once a crossing is picked
+    // (not a hover preview), move focus to it so its details and actions follow.
+    const detailHeadingRef = useRef<HTMLHeadingElement>(null);
+    const focusDetailRef = useRef(false);
+    useEffect(() => {
+        if (selectedId === null || !focusDetailRef.current) return;
+        focusDetailRef.current = false;
+        detailHeadingRef.current?.focus({ preventScroll: true });
+    }, [selectedId]);
+
     const select = (n: number) => {
         const target = crossings.find((c) => c.n === n);
         if (!target) return;
+        focusDetailRef.current = true;
         setSelectedId(n);
         setHoveredId(null);
         setFocus({ lng: target.lon, lat: target.lat, zoom: CROSSING_ZOOM, key: Date.now() });
@@ -227,6 +238,7 @@ export default function CrossingsPage() {
                                 nowMin={nowMin}
                                 interactive={hoveredId === null}
                                 onClose={closeDetail}
+                                headingRef={detailHeadingRef}
                             />
                         </div>
                     )}

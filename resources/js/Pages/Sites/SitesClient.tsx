@@ -244,8 +244,8 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                     {href ? (
                                                     <Button variant="link" asChild className="h-auto p-0 text-primary font-semibold">
                                                         <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
-                                                            <span className="text-xs">زيارة</span>
-                                                            <ExternalLink size={12} />
+                                                            <span className="text-xs">زيارة<span className="sr-only"> {site.name} (يفتح في نافذة جديدة)</span></span>
+                                                            <ExternalLink size={12} aria-hidden="true" />
                                                         </a>
                                                     </Button>
                                                     ) : (

@@ -137,13 +137,14 @@ function LeaderboardTable({
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
+                            <caption className="sr-only">{title}</caption>
                             <thead>
                                 <tr className="border-b">
-                                    <th className="p-3 text-right w-12">#</th>
-                                    <th className="p-3 text-right">المسؤول</th>
-                                    <th className="p-3 text-right w-20">النقاط</th>
-                                    <th className="p-3 text-right w-16">الأصوات</th>
-                                    <th className="p-3 text-right w-20">المعدّل</th>
+                                    <th scope="col" className="p-3 text-right w-12">#</th>
+                                    <th scope="col" className="p-3 text-right">المسؤول</th>
+                                    <th scope="col" className="p-3 text-right w-20">النقاط</th>
+                                    <th scope="col" className="p-3 text-right w-16">الأصوات</th>
+                                    <th scope="col" className="p-3 text-right w-20">المعدّل</th>
                                 </tr>
                             </thead>
                             <tbody>

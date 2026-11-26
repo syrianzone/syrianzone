@@ -625,19 +625,19 @@ export default function TierBoard({
                     <span>ممتاز</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
-                    <span className="px-2 py-0.5 rounded-md text-white bg-amber-600 font-semibold">
+                    <span className="px-2 py-0.5 rounded-md text-white bg-amber-700 font-semibold">
                         A
                     </span>
                     <span>جيد جدًا</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
-                    <span className="px-2 py-0.5 rounded-md text-white bg-emerald-600 font-semibold">
+                    <span className="px-2 py-0.5 rounded-md text-white bg-emerald-700 font-semibold">
                         B
                     </span>
                     <span>جيد</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
-                    <span className="px-2 py-0.5 rounded-md text-white bg-sky-600 font-semibold">
+                    <span className="px-2 py-0.5 rounded-md text-white bg-sky-700 font-semibold">
                         C
                     </span>
                     <span>مقبول</span>

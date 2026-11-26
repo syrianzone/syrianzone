@@ -1,11 +1,11 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { createElement, Suspense } from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { createInertiaApp } from '@inertiajs/react';
 import { DirectionProvider } from '@radix-ui/react-direction';
 import { describe, expect, it } from 'vitest';
 import { QueryProvider } from '@/Providers/QueryProvider';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { CURRENCY_FACTS } from '@/Domain/currency/facts';
 
 /**
@@ -241,101 +241,6 @@ describe('pages render their content on the server', () => {
                 },
             },
             '/roznama',
-    it('renders the ministries hub with the current cabinet and four-era timeline in SSR markup', async () => {
-        const raw = JSON.parse(
-            readFileSync(resolve(process.cwd(), 'resources/data/government/ministries.json'), 'utf8'),
-        );
-        const bySlug = Object.fromEntries(raw.ministries.map((m: { slug: string }) => [m.slug, m]));
-        const toSummary = (m: Record<string, unknown>) => ({
-            ...m,
-            entity_image: null,
-            entity_description_ar: null,
-            predecessors: ((m.predecessors as string[]) ?? []).map((s) => ({
-                slug: s,
-                name_ar: bySlug[s]?.name_ar ?? s,
-                status: bySlug[s]?.status ?? 'current',
-                kind: bySlug[s]?.kind ?? 'ministry',
-            })),
-            successors: ((m.successors as string[]) ?? []).map((s) => ({
-                slug: s,
-                name_ar: bySlug[s]?.name_ar ?? s,
-                status: bySlug[s]?.status ?? 'current',
-                kind: bySlug[s]?.kind ?? 'ministry',
-            })),
-            holders: (m.holders as Array<Record<string, unknown>>).map((h) => ({
-                ...h,
-                govtcvs_url: h.govtcvs_slug ? `/govtcvs/${h.govtcvs_slug}` : null,
-                portrait_url: null,
-                bio_summary_ar: null,
-                office_status: null,
-                cv_completeness: null,
-            })),
-            deputies: [],
-            current_holder:
-                (m.holders as Array<Record<string, unknown>>).find((h) => h.is_current)
-                    ? {
-                          ...(m.holders as Array<Record<string, unknown>>).find((h) => h.is_current),
-                          govtcvs_url: (m.holders as Array<Record<string, unknown>>).find((h) => h.is_current)
-                              ?.govtcvs_slug
-                              ? `/govtcvs/${
-                                    (m.holders as Array<Record<string, unknown>>).find((h) => h.is_current)
-                                        ?.govtcvs_slug
-                                }`
-                              : null,
-                          portrait_url: null,
-                          bio_summary_ar: null,
-                          office_status: null,
-                          cv_completeness: null,
-                      }
-                    : null,
-        });
-
-        const all = raw.ministries.map(toSummary);
-        const currentCabinet = all.filter(
-            (m: { kind: string; status: string }) => m.kind === 'ministry' && m.status === 'current',
-        );
-        const historical = all.filter(
-            (m: { kind: string; status: string }) => m.kind === 'ministry' && m.status !== 'current',
-        );
-        const sovereign = all.filter((m: { kind: string }) => m.kind === 'sovereign');
-
-        const html = await renderOnServer(
-            'Ministries/Index',
-            {
-                meta: raw.meta,
-                eras: raw.eras,
-                restructurings: raw.restructurings.map((r: Record<string, unknown>) => ({
-                    ...r,
-                    from_ministries: ((r.from_slugs as string[]) ?? []).map((s) => ({
-                        slug: s,
-                        name_ar: bySlug[s]?.name_ar ?? s,
-                        status: bySlug[s]?.status ?? 'merged',
-                        kind: bySlug[s]?.kind ?? 'ministry',
-                    })),
-                    to_ministries: ((r.to_slugs as string[]) ?? []).map((s) => ({
-                        slug: s,
-                        name_ar: bySlug[s]?.name_ar ?? s,
-                        status: bySlug[s]?.status ?? 'current',
-                        kind: bySlug[s]?.kind ?? 'ministry',
-                    })),
-                })),
-                current_cabinet: currentCabinet,
-                historical_ministries: historical,
-                sovereign_bodies: sovereign,
-                all_ministries: all,
-                stats: {
-                    current_ministries: currentCabinet.length,
-                    historical_ministries: historical.length,
-                    sovereign_bodies: sovereign.length,
-                    eras_count: raw.eras.length,
-                },
-            },
-            '/ministries',
-    it('renders /currency with Western digits only and updated former-regime wording', async () => {
-        const html = await renderOnServer(
-            'Currency/Index',
-            { currency: CURRENCY_FACTS },
-            '/currency',
         );
 
         const cleanHtml = html.replace(/<!-- -->/g, '');
@@ -443,6 +348,8 @@ describe('pages render their content on the server', () => {
         expect(cleanMember).toContain('href="/house"');
         expect(cleanMember).toContain('href="/house/members/73"');
         expect(cleanMember).toContain('https://omrandirasat.org/test');
+    });
+
     it('renders the governorates hub with its SSR SVG map and all 14 governorate links', async () => {
         const html = await renderOnServer(
             'Governorates/Index',
@@ -614,6 +521,8 @@ describe('pages render their content on the server', () => {
         expect(cleanSparse).not.toContain('id="crossings"');
         expect(cleanSparse).not.toContain('id="places"');
         expect(cleanSparse).not.toContain('id="phonebook"');
+    });
+
     it('renders /syid/logo with H1, emblem image, 4K/SVG/PDF downloads, variants, symbolism and usage rules', async () => {
         const html = await renderOnServer('SyId/Logo', {}, '/syid/logo');
 
@@ -682,6 +591,103 @@ describe('pages render their content on the server', () => {
         ]) {
             expect(html).toContain(section);
         }
+    });
+
+    it('renders the ministries hub with the current cabinet and four-era timeline in SSR markup', async () => {
+        const raw = JSON.parse(
+            readFileSync(resolve(process.cwd(), 'resources/data/government/ministries.json'), 'utf8'),
+        );
+        const bySlug = Object.fromEntries(raw.ministries.map((m: { slug: string }) => [m.slug, m]));
+        const toSummary = (m: Record<string, unknown>) => ({
+            ...m,
+            entity_image: null,
+            entity_description_ar: null,
+            predecessors: ((m.predecessors as string[]) ?? []).map((s) => ({
+                slug: s,
+                name_ar: bySlug[s]?.name_ar ?? s,
+                status: bySlug[s]?.status ?? 'current',
+                kind: bySlug[s]?.kind ?? 'ministry',
+            })),
+            successors: ((m.successors as string[]) ?? []).map((s) => ({
+                slug: s,
+                name_ar: bySlug[s]?.name_ar ?? s,
+                status: bySlug[s]?.status ?? 'current',
+                kind: bySlug[s]?.kind ?? 'ministry',
+            })),
+            holders: (m.holders as Array<Record<string, unknown>>).map((h) => ({
+                ...h,
+                govtcvs_url: h.govtcvs_slug ? `/govtcvs/${h.govtcvs_slug}` : null,
+                portrait_url: null,
+                bio_summary_ar: null,
+                office_status: null,
+                cv_completeness: null,
+            })),
+            deputies: [],
+            current_holder:
+                (m.holders as Array<Record<string, unknown>>).find((h) => h.is_current)
+                    ? {
+                          ...(m.holders as Array<Record<string, unknown>>).find((h) => h.is_current),
+                          govtcvs_url: (m.holders as Array<Record<string, unknown>>).find((h) => h.is_current)
+                              ?.govtcvs_slug
+                              ? `/govtcvs/${
+                                    (m.holders as Array<Record<string, unknown>>).find((h) => h.is_current)
+                                        ?.govtcvs_slug
+                                }`
+                              : null,
+                          portrait_url: null,
+                          bio_summary_ar: null,
+                          office_status: null,
+                          cv_completeness: null,
+                      }
+                    : null,
+        });
+
+        const all = raw.ministries.map(toSummary);
+        const currentCabinet = all.filter(
+            (m: { kind: string; status: string }) => m.kind === 'ministry' && m.status === 'current',
+        );
+        const historical = all.filter(
+            (m: { kind: string; status: string }) => m.kind === 'ministry' && m.status !== 'current',
+        );
+        const sovereign = all.filter((m: { kind: string }) => m.kind === 'sovereign');
+
+        const html = await renderOnServer(
+            'Ministries/Index',
+            {
+                meta: raw.meta,
+                eras: raw.eras,
+                restructurings: raw.restructurings.map((r: Record<string, unknown>) => ({
+                    ...r,
+                    from_ministries: ((r.from_slugs as string[]) ?? []).map((s) => ({
+                        slug: s,
+                        name_ar: bySlug[s]?.name_ar ?? s,
+                        status: bySlug[s]?.status ?? 'merged',
+                        kind: bySlug[s]?.kind ?? 'ministry',
+                    })),
+                    to_ministries: ((r.to_slugs as string[]) ?? []).map((s) => ({
+                        slug: s,
+                        name_ar: bySlug[s]?.name_ar ?? s,
+                        status: bySlug[s]?.status ?? 'current',
+                        kind: bySlug[s]?.kind ?? 'ministry',
+                    })),
+                })),
+                current_cabinet: currentCabinet,
+                historical_ministries: historical,
+                sovereign_bodies: sovereign,
+                all_ministries: all,
+                stats: {
+                    current_ministries: currentCabinet.length,
+                    historical_ministries: historical.length,
+                    sovereign_bodies: sovereign.length,
+                    eras_count: raw.eras.length,
+                },
+            },
+            '/ministries',
+        );
+
+        const cleanHtml = html.replace(/<!-- -->/g, '');
+        expect(cleanHtml.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml.match(/<main[\s>]/g)).toHaveLength(1);
         expect(cleanHtml).toContain('وزارات سوريا والحكومة السورية');
         expect(cleanHtml).toContain('التشكيل الوزاري الحالي');
         expect(cleanHtml).toContain('الخط الزمني للحكومة السورية عبر المراحل الأربع');
@@ -854,6 +860,18 @@ describe('pages render their content on the server', () => {
         expect(cleanHtml).toContain('href="/govapps/seg"');
         expect(cleanHtml).toContain('href="/promises/12"');
         expect(cleanHtml).toContain('<time dateTime="2025-03-29"');
+    });
+
+    it('renders /currency with Western digits only and updated former-regime wording', async () => {
+        const html = await renderOnServer(
+            'Currency/Index',
+            { currency: CURRENCY_FACTS },
+            '/currency',
+        );
+
+        const cleanHtml = html.replace(/<!-- -->/g, '');
+        expect(cleanHtml.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml.match(/<main[\s>]/g)).toHaveLength(1);
         expect(cleanHtml).not.toMatch(/[\u0660-\u0669\u06F0-\u06F9]/);
         expect(cleanHtml).toContain('10,000');
         expect(cleanHtml).toContain('يظهر عليها الهارب المخلوع بشار الأسد');

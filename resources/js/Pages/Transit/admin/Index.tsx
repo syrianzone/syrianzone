@@ -595,6 +595,7 @@ function TransitAdminPageContent() {
           <Button
             type="button"
             variant={mobileView === 'list' ? 'default' : 'outline'}
+            aria-pressed={mobileView === 'list'}
             size="sm"
             className="flex-1 h-8 text-xs gap-1.5"
             onClick={() => setMobileView('list')}
@@ -604,6 +605,7 @@ function TransitAdminPageContent() {
           <Button
             type="button"
             variant={mobileView === 'map' ? 'default' : 'outline'}
+            aria-pressed={mobileView === 'map'}
             size="sm"
             className="flex-1 h-8 text-xs gap-1.5"
             onClick={() => setMobileView('map')}

@@ -514,8 +514,8 @@ export default function GameRoom({ game }: GameProps) {
 
           <div className="flex flex-col md:flex-row justify-between items-center bg-card border border-border p-4 rounded-xl mb-6 gap-4">
             <div className="flex items-center gap-3">
-              <Link href="/guesswho" className="p-2 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition">
-                <ArrowRight className="h-5 w-5" />
+              <Link href="/guesswho" aria-label="العودة إلى لعبة من هو" className="p-2 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition">
+                <ArrowRight className="h-5 w-5" aria-hidden="true" />
               </Link>
               <div>
                 <span className="text-muted-foreground text-xs block">الفئة المحددة</span>

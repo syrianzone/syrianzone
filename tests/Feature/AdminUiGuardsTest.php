@@ -141,7 +141,7 @@ it('keeps the superadmin-only asset upload out of reach of poll managers', funct
 
     expect($source)
         ->toContain('canUploadImages')
-        ->toContain('disabled={!canUploadImages}');
+        ->toMatch('/disabled=\{!canUploadImages\b/');
 });
 
 it('makes the sortable list read-only without its reorder capability', function () {

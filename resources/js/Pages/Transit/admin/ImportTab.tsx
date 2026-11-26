@@ -214,13 +214,14 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
           className="h-9 text-xs text-left"
         />
         <div className="flex items-center gap-2">
-          <label className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground cursor-pointer transition-colors">
+          {/* the input stays in the tab order (sr-only, not display:none); the label shows its focus */}
+          <label className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring">
             <FileUp className="h-3.5 w-3.5" />
             {file ? file.name : 'أو ارفع KML / KMZ / GeoJSON (للخرائط الخاصة)'}
             <input
               type="file"
               accept=".kml,.kmz,.geojson,.json,.xml"
-              className="hidden"
+              className="sr-only"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
           </label>

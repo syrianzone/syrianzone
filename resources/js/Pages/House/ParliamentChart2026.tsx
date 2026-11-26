@@ -133,7 +133,7 @@ function hemicycleWedges(active: Member2026[], groupOrder: string[], dim: Dim): 
 
         // Lay the row left→right, first group takes the rightmost slots
         let slot = 0;
-        [...groupOrder].reverse().forEach((g) => {
+        groupOrder.toReversed().forEach((g) => {
             const cnt = order.get(g) || 0;
             for (let s = 0; s < cnt; s++, slot++) {
                 const frac = (slot + 0.5) / cap;

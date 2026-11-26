@@ -136,7 +136,10 @@ function safeExternalUrl(url: string | null | undefined): string | null {
 function formatTimestamp(iso: string | null): string {
     if (!iso) return '';
     try {
+        // A fixed zone keeps the server render and the browser's hydration
+        // identical, and shows moderators Syrian local time.
         return new Date(iso).toLocaleString('ar-SY', {
+            timeZone: 'Asia/Damascus',
             year: 'numeric',
             month: 'short',
             day: 'numeric',

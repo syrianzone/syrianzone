@@ -417,8 +417,8 @@ export default function PhonebookAdminIndex({
                             </DialogHeader>
                             <form onSubmit={handleSaveEntry} className="space-y-4 py-2">
                                 <div className="space-y-1">
-                                    <Label>اسم الجهة / الهيئة (بالعربية)</Label>
-                                    <Input aria-label="الاسم بالعربية"
+                                    <Label htmlFor="entry-name-ar">اسم الجهة / الهيئة (بالعربية)</Label>
+                                    <Input id="entry-name-ar"
                                         required
                                         value={entryForm.name_ar}
                                         onChange={(e) => setEntryForm({ ...entryForm, name_ar: e.target.value })}
@@ -427,8 +427,8 @@ export default function PhonebookAdminIndex({
                                 </div>
 
                                 <div className="space-y-1">
-                                    <Label>الاسم (بالإنكليزية - اختياري)</Label>
-                                    <Input aria-label="الاسم بالإنجليزية"
+                                    <Label htmlFor="entry-name-en">الاسم (بالإنكليزية - اختياري)</Label>
+                                    <Input id="entry-name-en"
                                         value={entryForm.name_en}
                                         onChange={(e) => setEntryForm({ ...entryForm, name_en: e.target.value })}
                                         placeholder="Example: Syrian Arab Red Crescent"
@@ -437,8 +437,11 @@ export default function PhonebookAdminIndex({
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <Label>رقم الهاتف</Label>
-                                        <Input aria-label="رقم الهاتف"
+                                        <Label htmlFor="entry-number">رقم الهاتف</Label>
+                                        <Input id="entry-number"
+                                            type="tel"
+                                            dir="ltr"
+                                            autoComplete="off"
                                             required
                                             value={entryForm.number}
                                             onChange={(e) => setEntryForm({ ...entryForm, number: e.target.value })}
@@ -448,9 +451,9 @@ export default function PhonebookAdminIndex({
                                     </div>
 
                                     <div className="space-y-1">
-                                        <Label>الفئة</Label>
+                                        <Label htmlFor="entry-category">الفئة</Label>
                                         <select
-                                            aria-label="الفئة"
+                                            id="entry-category"
                                             value={entryForm.category_id}
                                             onChange={(e) => setEntryForm({ ...entryForm, category_id: e.target.value })}
                                             className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
@@ -463,8 +466,8 @@ export default function PhonebookAdminIndex({
                                 </div>
 
                                 <div className="space-y-1">
-                                    <Label>رابط المصدر الرسمي (اختياري)</Label>
-                                    <Input aria-label="الموقع الإلكتروني"
+                                    <Label htmlFor="entry-source-url">رابط المصدر الرسمي (اختياري)</Label>
+                                    <Input id="entry-source-url"
                                         type="url"
                                         value={entryForm.source_url}
                                         onChange={(e) => setEntryForm({ ...entryForm, source_url: e.target.value })}
@@ -475,18 +478,20 @@ export default function PhonebookAdminIndex({
                                 <div className="flex justify-between items-center pt-2 border-t border-border">
                                     <div className="flex items-center gap-2">
                                         <Switch
+                                            id="entry-is-whatsapp"
                                             checked={entryForm.is_whatsapp}
                                             onCheckedChange={(val) => setEntryForm({ ...entryForm, is_whatsapp: val })}
                                         />
-                                        <Label className="cursor-pointer text-sm">يتوفر خط واتساب</Label>
+                                        <Label htmlFor="entry-is-whatsapp" className="cursor-pointer text-sm">يتوفر خط واتساب</Label>
                                     </div>
 
                                     <div className="flex items-center gap-2">
                                         <Switch
+                                            id="entry-is-active"
                                             checked={entryForm.is_active}
                                             onCheckedChange={(val) => setEntryForm({ ...entryForm, is_active: val })}
                                         />
-                                        <Label className="cursor-pointer text-sm">ظاهر في الواجهة</Label>
+                                        <Label htmlFor="entry-is-active" className="cursor-pointer text-sm">ظاهر في الواجهة</Label>
                                     </div>
                                 </div>
 

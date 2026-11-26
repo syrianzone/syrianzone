@@ -80,12 +80,22 @@ export default function PopulationClient() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/assets/population/syr_admin1_opt.geojson')
-            .then(res => res.json())
+        const controller = new AbortController();
+        fetch('/assets/population/syr_admin1_opt.geojson', {
+            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
+        })
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
             .then(data => setGeoJsonData(data))
             // The governorate polygons are the atlas's map: without them the page
             // renders its panels over an empty canvas, so say so instead of logging.
-            .catch(err => notify.error(apiErrorMessage(err, 'تعذّر تحميل خريطة المحافظات')));
+            .catch(err => {
+                if (controller.signal.aborted) return;
+                notify.error(apiErrorMessage(err, 'تعذّر تحميل خريطة المحافظات'));
+            });
+        return () => controller.abort();
     }, []);
 
     useEffect(() => {

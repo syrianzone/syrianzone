@@ -70,6 +70,7 @@ export function SidebarRoutes({ city, cities, routes, returnFocusRouteId = null 
       key={route.id}
       type="button"
       data-route-id={route.id}
+      aria-pressed={selectedRouteId === route.id}
       onClick={() => handleRouteClick(route.id)}
       className={`group flex items-stretch rounded-xl border transition-all duration-200 hover:shadow-sm overflow-hidden w-full text-start ${
         selectedRouteId === route.id

@@ -162,6 +162,11 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
     }, [filteredData, currentCategory, categoryList]);
 
     const t = TRANSLATIONS[language];
+    // Icon-only links: name the platform and the entity, in the page's language.
+    const socialLinkLabel = (plat: string, item: OfficialEntity) =>
+        language === 'ar'
+            ? `${socialPlatformLabel(plat, 'ar')} — ${item.name_ar || item.name}`
+            : `${socialPlatformLabel(plat, 'en')} — ${item.name}`;
 
     const getCategoryLabel = (key: string) => {
         const cat = categoryList.find(c => c.key === key);
@@ -386,8 +391,9 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                             rel="noopener noreferrer"
                                                                             className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${visual.hoverClass}`}
                                                                             title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                                            aria-label={socialLinkLabel(plat, item)}
                                                                         >
-                                                                            <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} />
+                                                                            <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} aria-hidden="true" />
                                                                         </a>
                                                                     );
                                                                 })}
@@ -452,8 +458,9 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                     rel="noopener noreferrer"
                                                                     className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${visual.hoverClass}`}
                                                                     title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                                            aria-label={socialLinkLabel(plat, item)}
                                                                 >
-                                                                    <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} />
+                                                                    <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} aria-hidden="true" />
                                                                 </a>
                                                             );
                                                         })}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import { Popover, PopoverAnchor, PopoverContent } from '@/Components/ui/popover';
 import RecitationPicker from '@/Domain/quran/RecitationPicker';
 import { type Ayah } from '../../../Domain/quran/quran';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
@@ -34,7 +35,7 @@ export default function AudioPlayer({ ayahs, reciterCode, setReciterCode, onPlay
 
   const readerActive = source === 'reader';
   const [volumeOpen, setVolumeOpen] = useState(false);
-  const volumeWrapRef = useRef<HTMLDivElement | null>(null);
+  const volumeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const effectiveVolume = muted ? 0 : volume;
   const VolumeIcon = effectiveVolume === 0 ? VolumeX : effectiveVolume < 0.5 ? Volume1 : Volume2;
@@ -49,15 +50,6 @@ export default function AudioPlayer({ ayahs, reciterCode, setReciterCode, onPlay
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  useEffect(() => {
-    if (!volumeOpen) return;
-    const onDown = (e: MouseEvent) => {
-      if (!volumeWrapRef.current?.contains(e.target as Node)) setVolumeOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [volumeOpen]);
-
   if (ayahs.length === 0) return null;
 
   const playButton = () => {
@@ -68,8 +60,12 @@ export default function AudioPlayer({ ayahs, reciterCode, setReciterCode, onPlay
   return (
     <div className="sticky bottom-0 z-40 ms-[calc(50%-50vw)] me-[calc(50%-50vw)] border-t border-border bg-card/95 px-4 py-2 backdrop-blur">
       <div className="mx-auto flex max-w-3xl items-center gap-2">
-        <div ref={volumeWrapRef} className="relative flex flex-1 items-center justify-start gap-1">
-          <Button aria-label={isNarrow ? 'مستوى الصوت' : muted ? 'إلغاء الكتم' : 'كتم الصوت'}
+        <div className="relative flex flex-1 items-center justify-start gap-1">
+          {/* Narrow screens: the button opens the slider in a Popover (outside
+              taps, Escape and focus return handled there). */}
+          <Popover open={isNarrow && volumeOpen} onOpenChange={setVolumeOpen}>
+          <PopoverAnchor asChild>
+          <Button ref={volumeButtonRef} aria-label={isNarrow ? 'مستوى الصوت' : muted ? 'إلغاء الكتم' : 'كتم الصوت'}
             variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-full"
             title={isNarrow ? 'مستوى الصوت' : muted ? 'إلغاء الكتم' : 'كتم الصوت'}
             aria-expanded={isNarrow ? volumeOpen : undefined}
@@ -80,6 +76,7 @@ export default function AudioPlayer({ ayahs, reciterCode, setReciterCode, onPlay
           >
             <VolumeIcon className="h-4 w-4" />
           </Button>
+          </PopoverAnchor>
           <input
             type="range"
             min={0}
@@ -93,8 +90,18 @@ export default function AudioPlayer({ ayahs, reciterCode, setReciterCode, onPlay
               background: `linear-gradient(to left, hsl(var(--primary)) ${effectiveVolume * 100}%, hsl(var(--primary) / 0.2) ${effectiveVolume * 100}%)`,
             }}
           />
-          {isNarrow && volumeOpen && (
-            <div className="absolute bottom-full start-0 z-50 mb-1.5 rounded-md border border-border bg-popover p-2.5 shadow-md">
+            <PopoverContent
+              side="top"
+              align="start"
+              className="w-auto p-2.5"
+              onInteractOutside={(e) => {
+                if (volumeButtonRef.current?.contains(e.target as Node)) e.preventDefault();
+              }}
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+                volumeButtonRef.current?.focus();
+              }}
+            >
               <input
                 type="range"
                 min={0}
@@ -108,8 +115,8 @@ export default function AudioPlayer({ ayahs, reciterCode, setReciterCode, onPlay
                   background: `linear-gradient(to left, hsl(var(--primary)) ${effectiveVolume * 100}%, hsl(var(--primary) / 0.2) ${effectiveVolume * 100}%)`,
                 }}
               />
-            </div>
-          )}
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="flex items-center gap-1">
@@ -140,7 +147,7 @@ export default function AudioPlayer({ ayahs, reciterCode, setReciterCode, onPlay
         </div>
       </div>
       {readerActive && error && (
-        <div className="mx-auto mt-0.5 max-w-3xl truncate text-center text-[11px] text-muted-foreground">
+        <div role="status" className="mx-auto mt-0.5 max-w-3xl truncate text-center text-[11px] text-muted-foreground">
           <span className="text-destructive">{error}</span>
         </div>
       )}

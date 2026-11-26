@@ -346,7 +346,13 @@ export default function Index() {
             <div className="flex justify-center">
               <span className="pointer-events-auto flex items-center gap-2 rounded-full border border-primary/40 bg-card/95 px-3 py-1 text-xs text-foreground shadow-sm">
                 مساهمات {guide.name}
-                <button type="button" aria-label="إلغاء التصفية" onClick={() => selectGuide(null)}>
+                <button
+                  type="button"
+                  aria-label="إلغاء التصفية"
+                  onClick={() => selectGuide(null)}
+                  // 24px hit area; the negative margins keep the pill its original size
+                  className="-my-1 -me-1.5 inline-flex size-6 items-center justify-center rounded-full hover:bg-accent"
+                >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </span>

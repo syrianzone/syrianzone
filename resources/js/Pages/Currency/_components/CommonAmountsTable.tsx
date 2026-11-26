@@ -65,28 +65,41 @@ export function CommonAmountsTable({
                     <Table regionLabel="تفاصيل جدول التحويل السريع للمبالغ الشائعة">
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="px-2.5 sm:px-4">بالليرة القديمة</TableHead>
-                                <TableHead className="px-2.5 sm:px-4">بالليرة الجديدة</TableHead>
-                                <TableHead className="px-2.5 sm:px-4">أقل تقسيم بالأوراق الجديدة</TableHead>
-                                <TableHead className="px-2.5 text-end sm:px-4">إجراء</TableHead>
+                                <TableHead className="px-2 sm:px-4">
+                                    <span className="sm:hidden">المبلغ</span>
+                                    <span className="hidden sm:inline">بالليرة القديمة</span>
+                                </TableHead>
+                                <TableHead className="hidden px-4 sm:table-cell">بالليرة الجديدة</TableHead>
+                                <TableHead className="px-2 sm:px-4">
+                                    <span className="sm:hidden">أقل تقسيم</span>
+                                    <span className="hidden sm:inline">أقل تقسيم بالأوراق الجديدة</span>
+                                </TableHead>
+                                <TableHead className="px-2 text-end sm:px-4">
+                                    <span className="sr-only sm:not-sr-only">إجراء</span>
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {rows.map((row) => (
                                 <TableRow key={row.oldAmount}>
-                                    <TableCell className="whitespace-nowrap px-2.5 py-2.5 font-medium tabular-nums sm:px-4 sm:py-3">
-                                        {formatCurrencyNumber(row.oldAmount, 0)} ل.س قديمة
+                                    <TableCell className="whitespace-nowrap px-2 py-2.5 tabular-nums sm:px-4 sm:py-3">
+                                        <span className="block text-xs text-muted-foreground sm:text-sm sm:font-medium sm:text-foreground">
+                                            {formatCurrencyNumber(row.oldAmount, 0)} ل.س قديمة
+                                        </span>
+                                        <span className="mt-0.5 block font-bold text-primary sm:hidden">
+                                            {formatCurrencyNumber(row.newAmount)} ل.س جديدة
+                                        </span>
                                     </TableCell>
-                                    <TableCell className="whitespace-nowrap px-2.5 py-2.5 font-bold text-primary tabular-nums sm:px-4 sm:py-3">
+                                    <TableCell className="hidden whitespace-nowrap px-4 py-3 font-bold text-primary tabular-nums sm:table-cell">
                                         {formatCurrencyNumber(row.newAmount)} ل.س جديدة
                                     </TableCell>
-                                    <TableCell className="min-w-[160px] px-2.5 py-2.5 text-muted-foreground tabular-nums sm:px-4 sm:py-3">
-                                        {row.notesSummary}{' '}
+                                    <TableCell className="px-2 py-2.5 text-xs text-muted-foreground tabular-nums sm:min-w-[160px] sm:px-4 sm:py-3 sm:text-sm">
+                                        <bdi dir="ltr">{row.notesSummary}</bdi>{' '}
                                         <span className="text-xs">
                                             ({formatCurrencyNumber(row.totalNotes, 0)} ورقة)
                                         </span>
                                     </TableCell>
-                                    <TableCell className="px-2.5 py-2.5 text-end sm:px-4 sm:py-3">
+                                    <TableCell className="px-2 py-2.5 text-end sm:px-4 sm:py-3">
                                         <Button
                                             type="button"
                                             variant="outline"

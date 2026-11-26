@@ -75,6 +75,8 @@ export default function GlobalCommandPalette() {
                             ref={inputRef}
                             value={query}
                             onValueChange={setQuery}
+                            inputMode="search"
+                            enterKeyHint="search"
                             onKeyDown={(e) => {
                                 // An IME's Enter confirms the composed word; it is not a selection.
                                 if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;

@@ -1034,6 +1034,8 @@ export function MobileMenuSearchSection({
                             id="sz-mobile-menu-search"
                             ref={inputRef}
                             type="text"
+                            inputMode="search"
+                            enterKeyHint="search"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="اكتب للبحث الفوري في المنصة..."
@@ -1153,6 +1155,8 @@ export function HomeInlineSearchSection({
                         id="sz-home-inline-search"
                         ref={inputRef}
                         type="text"
+                        inputMode="search"
+                        enterKeyHint="search"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={(e) => {

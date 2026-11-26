@@ -53,6 +53,7 @@
     { "slug": "stats", "title": "إحصائيات المنصة", "subtitle": "أرقام الزيارات والنشاط العام في المساحة السورية", "icon": "stats" },
     { "slug": "about", "title": "عن المنصة", "subtitle": "مشروع غير تجاري ومفتوح المصدر للشأن السوري", "emblem": true },
     { "slug": "privacy", "title": "سياسة الخصوصية", "subtitle": "كيف نحمي بياناتك وما التقنيات التي نستخدمها", "emblem": true },
-    { "slug": "terms", "title": "الشروط والأحكام", "subtitle": "شروط الاستخدام والسلوك المقبول", "emblem": true }
+    { "slug": "terms", "title": "الشروط والأحكام", "subtitle": "شروط الاستخدام والسلوك المقبول", "emblem": true },
+    { "slug": "currency", "title": "تحويل الليرة السورية", "subtitle": "حاسبة الليرة الجديدة والقديمة وتقسيم الفئات النقدية", "icon": "currency" }
   ]
 }

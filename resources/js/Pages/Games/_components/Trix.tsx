@@ -226,13 +226,13 @@ export default function Trix() {
         options={
           <div className="space-y-3">
             <div className="flex items-stretch gap-2">
-              <Button aria-label="تبديل بين يهودية وفريقين"
+              <Button
                 variant="outline"
                 onClick={() => setMode(!game.options.teams)}
                 className="flex h-auto flex-col gap-1 rounded-xl px-3 py-2"
                 title="تبديل بين يهودية وفريقين"
               >
-                <span className="text-[13px]">⇄</span>
+                <span className="text-[13px]" aria-hidden="true">⇄</span>
                 <span className="text-[11px] font-bold">{game.options.teams ? 'فريقين' : 'يهودية'}</span>
               </Button>
               <CardStyleToggle large={large} onToggle={toggleLarge} />

@@ -1,0 +1,1997 @@
+{
+  "meta": {
+    "updated_at": "2026-11-24T17:47:38+00:00",
+    "source_name_ar": "جَرد — هيكلية الحكومة السورية والخط الزمني للمناصب",
+    "source_url": "https://jard.chat/government",
+    "source_json_url": "https://jard.chat/government.json"
+  },
+  "eras": [
+    {
+      "id": "al_jalali",
+      "label_ar": "حكومة محمد غازي الجلالي",
+      "short_label_ar": "حكومة الجلالي",
+      "period_ar": "أيلول – كانون الأول 2024",
+      "start_date": "2024-09-23",
+      "end_date": "2024-12-10",
+      "summary_ar": "آخر حكومات النظام السابق قبل سقوطه وتسليم السلطة في 10 كانون الأول 2024.",
+      "source_url": "https://jard.chat/government"
+    },
+    {
+      "id": "al_bashir",
+      "label_ar": "حكومة تسيير الأعمال (محمد البشير)",
+      "short_label_ar": "تسيير الأعمال (البشير)",
+      "period_ar": "كانون الأول 2024 – آذار 2025",
+      "start_date": "2024-12-10",
+      "end_date": "2025-03-29",
+      "summary_ar": "حكومة تصريف الأعمال المؤقتة برئاسة محمد البشير عقب 8 كانون الأول 2024 وحتى إعلان الحكومة الانتقالية.",
+      "source_url": "https://jard.chat/government"
+    },
+    {
+      "id": "transitional_2025",
+      "label_ar": "الحكومة الانتقالية المباشرة",
+      "short_label_ar": "الحكومة الانتقالية",
+      "period_ar": "آذار 2025 – أيار 2026",
+      "start_date": "2025-03-29",
+      "end_date": "2026-05-09",
+      "summary_ar": "أول تشكيل في ظل النظام الرئاسي المباشر بعد إلغاء منصب رئيس مجلس الوزراء، وتضمّن دمج وزارات الطاقة والاقتصاد واستحداث وزارة الطوارئ وإدارة الكوارث.",
+      "source_url": "https://jard.chat/government"
+    },
+    {
+      "id": "current_2026",
+      "label_ar": "التشكيل الحالي وتعديلات 2026",
+      "short_label_ar": "التشكيل الحالي 2026",
+      "period_ar": "أيار 2026 – الآن",
+      "start_date": "2026-05-09",
+      "end_date": null,
+      "summary_ar": "التشكيل القائم بعد تعديل أيار 2026 (المرسومان 98 و99) وإعادة فصل وزارتي الصناعة والتجارة الداخلية والاقتصاد والتجارة الخارجية في تشرين الأول وتشرين الثاني 2026 (المرسومان 189 و203).",
+      "source_url": "https://jard.chat/government"
+    }
+  ],
+  "restructurings": [
+    {
+      "id": "presidential-transition",
+      "date": "2025-03-13",
+      "kind": "abolished",
+      "title_ar": "التحوّل إلى النظام الرئاسي المباشر",
+      "summary_ar": "أُلغي منصب رئيس مجلس الوزراء في 13 آذار 2025 وانتقلت القيادة التنفيذية المباشرة إلى رئاسة الجمهورية العربية السورية.",
+      "from_slugs": [
+        "prime-minister"
+      ],
+      "to_slugs": [
+        "presidency"
+      ],
+      "source_url": "https://jard.chat/government"
+    },
+    {
+      "id": "energy-merger",
+      "date": "2025-03-29",
+      "kind": "merge",
+      "title_ar": "دمج ثلاث وزارات في وزارة الطاقة",
+      "summary_ar": "دُمجت وزارات الكهرباء والنفط والثروة المعدنية والموارد المائية بتاريخ 29 آذار 2025 في وزارة واحدة هي وزارة الطاقة برئاسة محمد البشير.",
+      "from_slugs": [
+        "electricity",
+        "oil-and-mineral-resources",
+        "water-resources"
+      ],
+      "to_slugs": [
+        "energy"
+      ],
+      "source_url": "https://jard.chat/government/ministry-of-energy"
+    },
+    {
+      "id": "emergency-creation",
+      "date": "2025-03-29",
+      "kind": "established",
+      "title_ar": "استحداث وزارة الطوارئ وإدارة الكوارث",
+      "summary_ar": "استُحدثت وزارة الطوارئ وإدارة الكوارث بتاريخ 29 آذار 2025 لإدارة الدفاع المدني والاستجابة السريعة وإعادة الإعمار برئاسة رائد الصالح.",
+      "from_slugs": [],
+      "to_slugs": [
+        "emergency-and-disaster-management"
+      ],
+      "source_url": "https://jard.chat/government/ministry-of-emergency-and-disaster-management"
+    },
+    {
+      "id": "economy-merge-split",
+      "date": "2026-10-19",
+      "kind": "split",
+      "title_ar": "دمج ثم إعادة فصل وزارات الاقتصاد والصناعة والتجارة",
+      "summary_ar": "دُمجت الاقتصاد والتجارة الخارجية والصناعة والتجارة الداخلية في 29 آذار 2025 ضمن وزارة الاقتصاد والصناعة (نضال الشعار)، ثم أُعيد فصلها في تشرين الأول وتشرين الثاني 2026 بموجب المرسومين 189 و203 إلى وزارة الصناعة والتجارة الداخلية وحماية المستهلك (باسل عبد العزيز عبد الحنان) ووزارة الاقتصاد والتجارة الخارجية (أحمد رواد محمد بشار رمضان).",
+      "from_slugs": [
+        "economy-and-industry",
+        "internal-trade"
+      ],
+      "to_slugs": [
+        "industry-and-internal-trade",
+        "economy"
+      ],
+      "decree": "المرسومان 189 و203 لعام 2026",
+      "source_url": "https://t.me/sana_gov/188348"
+    },
+    {
+      "id": "may-2026-reshuffle",
+      "date": "2026-05-09",
+      "kind": "reshuffle",
+      "title_ar": "التعديل الحكومي والهيئات السيادية في أيار 2026",
+      "summary_ar": "تعيين باسل حافظ السويدان وزيراً للزراعة وخالد فواز زعرور وزيراً للإعلام وعبد الرحمن الأعمى أميناً عاماً لرئاسة الجمهورية (المرسوم 98)، وتعيين محمد صفوت عبد الحميد رسلان حاكماً لمصرف سورية المركزي (المرسوم 99).",
+      "from_slugs": [],
+      "to_slugs": [
+        "agriculture",
+        "information",
+        "general-secretariat-of-the-presidency",
+        "central-bank"
+      ],
+      "decree": "المرسومان 98 و99 لعام 2026",
+      "source_url": "https://jard.chat/government"
+    }
+  ],
+  "ministries": [
+    {
+      "slug": "foreign-affairs",
+      "kind": "ministry",
+      "name_ar": "وزارة الخارجية والمغتربين",
+      "name_en": "Ministry of Foreign Affairs and Expatriates",
+      "status": "current",
+      "sort_order": 1,
+      "official_entity_id": "min-foreign",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-foreign-affairs",
+      "holders": [
+        {
+          "name": "أسعد حسن الشيباني",
+          "title": "وزير الخارجية والمغتربين",
+          "era": "transitional_2025",
+          "start_date": "2024-12-21",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "مستمر من التشكيل السابق",
+          "source_url": "https://jard.chat/government/ministry-of-foreign-affairs",
+          "source_label": "جَرد — وزارة الخارجية والمغتربين",
+          "govtcvs_slug": "asaad-al-shaibani"
+        },
+        {
+          "name": "بسام الصباغ",
+          "title": "وزير الخارجية والمغتربين",
+          "era": "al_jalali",
+          "start_date": "2024-09-23",
+          "end_date": "2024-12-10",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-foreign-affairs",
+          "source_label": "جَرد — وزارة الخارجية والمغتربين",
+          "govtcvs_slug": null
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "defense",
+      "kind": "ministry",
+      "name_ar": "وزارة الدفاع",
+      "name_en": "Ministry of Defense",
+      "status": "current",
+      "sort_order": 2,
+      "official_entity_id": "min-defense",
+      "related_entity_ids": [
+        "auth-recruitment"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-defense",
+      "holders": [
+        {
+          "name": "مرهف أحمد أبو قصرة",
+          "title": "وزير الدفاع",
+          "era": "transitional_2025",
+          "start_date": "2024-12-21",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "مستمر من التشكيل السابق",
+          "source_url": "https://jard.chat/government/ministry-of-defense",
+          "source_label": "جَرد — وزارة الدفاع",
+          "govtcvs_slug": "murhaf-abu-qasra"
+        },
+        {
+          "name": "علي محمود عباس",
+          "title": "وزير الدفاع",
+          "era": "al_jalali",
+          "start_date": "2024-09-23",
+          "end_date": "2024-12-10",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-defense",
+          "source_label": "جَرد — وزارة الدفاع",
+          "govtcvs_slug": null
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "interior",
+      "kind": "ministry",
+      "name_ar": "وزارة الداخلية",
+      "name_en": "Ministry of Interior",
+      "status": "current",
+      "sort_order": 3,
+      "official_entity_id": "min-interior",
+      "related_entity_ids": [
+        "auth-drug-enforcement",
+        "auth-rehab-training-moi"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-interior",
+      "holders": [
+        {
+          "name": "أنس خطاب",
+          "title": "وزير الداخلية",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-interior",
+          "source_label": "جَرد — وزارة الداخلية",
+          "govtcvs_slug": "anas-khattab"
+        },
+        {
+          "name": "علي عبد الرحمن كده",
+          "title": "وزير الداخلية (الفترة الثانية)",
+          "era": "al_bashir",
+          "start_date": "2025-01-19",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-interior",
+          "source_label": "جَرد — وزارة الداخلية",
+          "govtcvs_slug": "ali-keda"
+        },
+        {
+          "name": "محمد عبد الرحمن السيد",
+          "title": "وزير الداخلية (الفترة الأولى)",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-01-19",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-interior",
+          "source_label": "جَرد — وزارة الداخلية",
+          "govtcvs_slug": "mohammad-abdul-rahman"
+        },
+        {
+          "name": "محمد خالد الرحمون",
+          "title": "وزير الداخلية",
+          "era": "al_jalali",
+          "start_date": "2024-09-23",
+          "end_date": "2024-12-10",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-interior",
+          "source_label": "جَرد — وزارة الداخلية",
+          "govtcvs_slug": null
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "energy",
+      "kind": "ministry",
+      "name_ar": "وزارة الطاقة",
+      "name_en": "Ministry of Energy",
+      "status": "current",
+      "sort_order": 4,
+      "official_entity_id": "min-energy",
+      "related_entity_ids": [
+        "auth-electricity-tde",
+        "auth-mahruqat",
+        "auth-geology-mining",
+        "auth-water-resources"
+      ],
+      "predecessors": [
+        "electricity",
+        "oil-and-mineral-resources",
+        "water-resources"
+      ],
+      "successors": [],
+      "lineage_summary_ar": "استُحدثت بتاريخ 29 آذار 2025 عبر دمج ثلاث وزارات سابقة: الكهرباء، والنفط والثروة المعدنية، والموارد المائية في وزارة واحدة.",
+      "lineage_events": [
+        {
+          "date": "2025-03-29",
+          "kind": "merge",
+          "label_ar": "دمج وزارات الكهرباء والنفط والثروة المعدنية والموارد المائية في وزارة الطاقة",
+          "related_slugs": [
+            "electricity",
+            "oil-and-mineral-resources",
+            "water-resources"
+          ],
+          "source_url": "https://jard.chat/government/ministry-of-energy"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/ministry-of-energy",
+      "holders": [
+        {
+          "name": "محمد البشير",
+          "title": "وزير الطاقة",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "وزارة مُستحدثة (دمج النفط والكهرباء والموارد المائية)",
+          "source_url": "https://jard.chat/government/ministry-of-energy",
+          "source_label": "جَرد — وزارة الطاقة",
+          "govtcvs_slug": "mohammed-al-bashir"
+        },
+        {
+          "name": "غياث دياب",
+          "title": "وزير النفط والثروة المعدنية",
+          "era": "al_bashir",
+          "start_date": "2024-12-30",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": "دمجت لاحقاً في وزارة الطاقة",
+          "source_url": "https://jard.chat/government/ministry-of-energy",
+          "source_label": "جَرد — وزارة الطاقة",
+          "govtcvs_slug": "ghiyath-diab"
+        },
+        {
+          "name": "أسامة أبو زيد",
+          "title": "وزير الموارد المائية",
+          "era": "al_bashir",
+          "start_date": "2024-12-19",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": "دمجت لاحقاً في وزارة الطاقة",
+          "source_url": "https://jard.chat/government/ministry-of-energy",
+          "source_label": "جَرد — وزارة الطاقة",
+          "govtcvs_slug": "osama-abu-zaid"
+        },
+        {
+          "name": "عمر شقروق",
+          "title": "وزير الكهرباء",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": "دمجت لاحقاً في وزارة الطاقة",
+          "source_url": "https://jard.chat/government/ministry-of-energy",
+          "source_label": "جَرد — وزارة الطاقة",
+          "govtcvs_slug": "omar-shaqrouq"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "finance",
+      "kind": "ministry",
+      "name_ar": "وزارة المالية",
+      "name_en": "Ministry of Finance",
+      "status": "current",
+      "sort_order": 5,
+      "official_entity_id": "min-finance",
+      "related_entity_ids": [
+        "auth-taxes-fees"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-finance",
+      "holders": [
+        {
+          "name": "محمد يسر برنية",
+          "title": "وزير المالية",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-finance",
+          "source_label": "جَرد — وزارة المالية",
+          "govtcvs_slug": "mohammad-yosr-barnieh"
+        },
+        {
+          "name": "محمد عبد الحليم أبازيد",
+          "title": "وزير المالية",
+          "era": "al_bashir",
+          "start_date": "2024-12-31",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-finance",
+          "source_label": "جَرد — وزارة المالية",
+          "govtcvs_slug": "mohammad-abazeid"
+        },
+        {
+          "name": "رياض عبد الرؤوف",
+          "title": "وزير المالية",
+          "era": "al_jalali",
+          "start_date": "2024-09-23",
+          "end_date": "2024-12-10",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-finance",
+          "source_label": "جَرد — وزارة المالية",
+          "govtcvs_slug": null
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "economy",
+      "kind": "ministry",
+      "name_ar": "وزارة الاقتصاد والتجارة الخارجية",
+      "name_en": "Ministry of Economy and Foreign Trade",
+      "status": "current",
+      "sort_order": 6,
+      "official_entity_id": "min-economy",
+      "related_entity_ids": [
+        "auth-investment",
+        "auth-smeda"
+      ],
+      "predecessors": [
+        "economy-and-industry"
+      ],
+      "successors": [],
+      "lineage_summary_ar": "دُمجت في 29 آذار 2025 مع الصناعة والتجارة الداخلية ضمن وزارة الاقتصاد والصناعة، ثم أُعيد فصلها لتعود وزارة الاقتصاد والتجارة الخارجية بموجب المرسوم رقم 203 لعام 2026.",
+      "lineage_events": [
+        {
+          "date": "2025-03-29",
+          "kind": "merge",
+          "label_ar": "دمج الاقتصاد والتجارة الخارجية ضمن وزارة الاقتصاد والصناعة",
+          "related_slugs": [
+            "economy-and-industry",
+            "internal-trade"
+          ],
+          "source_url": "https://jard.chat/government"
+        },
+        {
+          "date": "2026-11-18",
+          "kind": "split",
+          "label_ar": "إعادة فصل وزارة الاقتصاد والتجارة الخارجية وتعيين وزيرها بموجب المرسوم 203 لعام 2026",
+          "decree": "المرسوم 203 لعام 2026",
+          "related_slugs": [
+            "economy-and-industry",
+            "industry-and-internal-trade"
+          ],
+          "source_url": "https://t.me/SyrianlAgov/6848"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/ministry-of-economy",
+      "holders": [
+        {
+          "name": "أحمد رواد محمد بشار رمضان",
+          "title": "وزير الاقتصاد والتجارة الخارجية",
+          "era": "current_2026",
+          "start_date": "2026-11-18",
+          "end_date": null,
+          "is_current": true,
+          "decree": "المرسوم 203 لعام 2026",
+          "notes": "المرسوم 203 لعام 2026 — إضافة لعمله رئيساً لهيئة الاستثمار السورية",
+          "source_url": "https://t.me/SyrianlAgov/6848",
+          "source_label": "مصدر رسمي موثّق عبر جَرد",
+          "govtcvs_slug": "rawwad-ramadan"
+        },
+        {
+          "name": "نضال الشعار",
+          "title": "وزير الاقتصاد والصناعة",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": "2026-10-19",
+          "is_current": false,
+          "decree": "المرسوم 203",
+          "notes": "فُصلت الوزارة إلى الاقتصاد والتجارة الخارجية (المرسوم 203) والصناعة والتجارة الداخلية وحماية المستهلك (المرسوم 189)",
+          "source_url": "https://jard.chat/government/ministry-of-economy",
+          "source_label": "جَرد — وزارة الاقتصاد والتجارة الخارجية",
+          "govtcvs_slug": "mohammad-nidal-al-shaar"
+        },
+        {
+          "name": "باسل عبد العزيز",
+          "title": "وزير الاقتصاد والتجارة الخارجية",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": "أدار حقيبة الصناعة أيضاً",
+          "source_url": "https://jard.chat/government/ministry-of-economy",
+          "source_label": "جَرد — وزارة الاقتصاد والتجارة الخارجية",
+          "govtcvs_slug": "bassel-abdul-aziz-abdul-hannan"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "industry-and-internal-trade",
+      "kind": "ministry",
+      "name_ar": "وزارة الصناعة والتجارة الداخلية وحماية المستهلك",
+      "name_en": "Ministry of Industry and Internal Trade",
+      "status": "current",
+      "sort_order": 7,
+      "official_entity_id": "auth-internal-trade",
+      "related_entity_ids": [
+        "auth-industry-admin",
+        "auth-sasmo"
+      ],
+      "predecessors": [
+        "economy-and-industry",
+        "internal-trade"
+      ],
+      "successors": [],
+      "lineage_summary_ar": "استُحدثت بإعادة فصل وزارة الاقتصاد والصناعة بموجب المرسوم رقم 189 لعام 2026 بتاريخ 19 تشرين الأول 2026، لتتولى قطاعي الصناعة والتجارة الداخلية وحماية المستهلك.",
+      "lineage_events": [
+        {
+          "date": "2025-03-29",
+          "kind": "merge",
+          "label_ar": "دمج التجارة الداخلية والاقتصاد والصناعة في وزارة الاقتصاد والصناعة",
+          "related_slugs": [
+            "internal-trade",
+            "economy-and-industry"
+          ],
+          "source_url": "https://jard.chat/government"
+        },
+        {
+          "date": "2026-10-19",
+          "kind": "split",
+          "label_ar": "إعادة فصل وزارة الصناعة والتجارة الداخلية وحماية المستهلك بموجب المرسوم 189 لعام 2026",
+          "decree": "المرسوم 189 لعام 2026",
+          "related_slugs": [
+            "economy-and-industry",
+            "economy"
+          ],
+          "source_url": "https://t.me/sana_gov/188348"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/ministry-of-industry-and-internal-trade",
+      "holders": [
+        {
+          "name": "باسل عبد العزيز عبد الحنان",
+          "title": "وزير الصناعة والتجارة الداخلية وحماية المستهلك",
+          "era": "current_2026",
+          "start_date": "2026-10-19",
+          "end_date": null,
+          "is_current": true,
+          "decree": "المرسوم 189 لعام 2026",
+          "notes": "المرسوم 189 لعام 2026",
+          "source_url": "https://t.me/sana_gov/188348",
+          "source_label": "مصدر رسمي موثّق عبر جَرد",
+          "govtcvs_slug": "bassel-abdul-aziz-abdul-hannan"
+        },
+        {
+          "name": "ماهر خليل الحسن",
+          "title": "وزير التجارة الداخلية وحماية المستهلك",
+          "era": "al_bashir",
+          "start_date": "2024-12-19",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-industry-and-internal-trade",
+          "source_label": "جَرد — وزارة الصناعة والتجارة الداخلية",
+          "govtcvs_slug": "maher-khalil-al-hasan"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "emergency-and-disaster-management",
+      "kind": "ministry",
+      "name_ar": "وزارة الطوارئ وإدارة الكوارث",
+      "name_en": "Ministry of Emergency and Disaster Management",
+      "status": "current",
+      "sort_order": 8,
+      "official_entity_id": "min-emergency",
+      "related_entity_ids": [
+        "other-syrian-civil-defense"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": "استُحدثت بتاريخ 29 آذار 2025 لإدارة الدفاع المدني والاستجابة السريعة وإعادة الإعمار.",
+      "lineage_events": [
+        {
+          "date": "2025-03-29",
+          "kind": "established",
+          "label_ar": "استحداث وزارة الطوارئ وإدارة الكوارث ضمن تشكيل الحكومة الانتقالية",
+          "related_slugs": [],
+          "source_url": "https://jard.chat/government/ministry-of-emergency-and-disaster-management"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/ministry-of-emergency-and-disaster-management",
+      "holders": [
+        {
+          "name": "رائد الصالح",
+          "title": "وزير الطوارئ وإدارة الكوارث",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "وزارة مُستحدثة",
+          "source_url": "https://jard.chat/government/ministry-of-emergency-and-disaster-management",
+          "source_label": "جَرد — وزارة الطوارئ وإدارة الكوارث",
+          "govtcvs_slug": "raed-al-saleh"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "justice",
+      "kind": "ministry",
+      "name_ar": "وزارة العدل",
+      "name_en": "Ministry of Justice",
+      "status": "current",
+      "sort_order": 9,
+      "official_entity_id": "min-justice",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-justice",
+      "holders": [
+        {
+          "name": "مظهر الويس",
+          "title": "وزير العدل",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-justice",
+          "source_label": "جَرد — وزارة العدل",
+          "govtcvs_slug": "mazhar-al-wais"
+        },
+        {
+          "name": "شادي محمد الويسي",
+          "title": "وزير العدل",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-justice",
+          "source_label": "جَرد — وزارة العدل",
+          "govtcvs_slug": "shadi-al-waisi"
+        },
+        {
+          "name": "أحمد السيد",
+          "title": "وزير العدل",
+          "era": "al_jalali",
+          "start_date": "2024-09-23",
+          "end_date": "2024-12-10",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-justice",
+          "source_label": "جَرد — وزارة العدل",
+          "govtcvs_slug": null
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "awqaf",
+      "kind": "ministry",
+      "name_ar": "وزارة الأوقاف",
+      "name_en": "Ministry of Awqaf (Religious Endowments)",
+      "status": "current",
+      "sort_order": 10,
+      "official_entity_id": "min-ministry-of-endowments",
+      "related_entity_ids": [
+        "other-syrian-hajj"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-awqaf",
+      "holders": [
+        {
+          "name": "محمد أبو الخير شكري",
+          "title": "وزير الأوقاف",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-awqaf",
+          "source_label": "جَرد — وزارة الأوقاف",
+          "govtcvs_slug": "mohammad-abu-al-khair-shukri"
+        },
+        {
+          "name": "حسام حاج حسين",
+          "title": "وزير الأوقاف",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-awqaf",
+          "source_label": "جَرد — وزارة الأوقاف",
+          "govtcvs_slug": "hussam-haj-hussein"
+        },
+        {
+          "name": "محمد عبد الستار السيد",
+          "title": "وزير الأوقاف",
+          "era": "al_jalali",
+          "start_date": "2024-09-23",
+          "end_date": "2024-12-10",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-awqaf",
+          "source_label": "جَرد — وزارة الأوقاف",
+          "govtcvs_slug": null
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "health",
+      "kind": "ministry",
+      "name_ar": "وزارة الصحة",
+      "name_en": "Ministry of Health",
+      "status": "current",
+      "sort_order": 11,
+      "official_entity_id": "min-health",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-health",
+      "holders": [
+        {
+          "name": "مصعب نزال العلي",
+          "title": "وزير الصحة",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-health",
+          "source_label": "جَرد — وزارة الصحة",
+          "govtcvs_slug": "musab-al-ali"
+        },
+        {
+          "name": "ماهر الشرع",
+          "title": "وزير الصحة (الفترة الثانية)",
+          "era": "al_bashir",
+          "start_date": "2024-12-16",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-health",
+          "source_label": "جَرد — وزارة الصحة",
+          "govtcvs_slug": "maher-al-sharaa"
+        },
+        {
+          "name": "مازن دخان",
+          "title": "وزير الصحة (الفترة الأولى)",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2024-12-16",
+          "is_current": false,
+          "decree": null,
+          "notes": "استبدل بعد أسبوع",
+          "source_url": "https://jard.chat/government/ministry-of-health",
+          "source_label": "جَرد — وزارة الصحة",
+          "govtcvs_slug": null
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "higher-education",
+      "kind": "ministry",
+      "name_ar": "وزارة التعليم العالي والبحث العلمي",
+      "name_en": "Ministry of Higher Education and Scientific Research",
+      "status": "current",
+      "sort_order": 12,
+      "official_entity_id": "min-higher-education",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-higher-education",
+      "holders": [
+        {
+          "name": "مروان الحلبي",
+          "title": "وزير التعليم العالي والبحث العلمي",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-higher-education",
+          "source_label": "جَرد — وزارة التعليم العالي والبحث العلمي",
+          "govtcvs_slug": "marwan-al-halabi"
+        },
+        {
+          "name": "عبد المنعم عبد الحافظ",
+          "title": "وزير التعليم العالي والبحث العلمي",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-higher-education",
+          "source_label": "جَرد — وزارة التعليم العالي والبحث العلمي",
+          "govtcvs_slug": "abdul-moneim-abdul-hafez"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "education",
+      "kind": "ministry",
+      "name_ar": "وزارة التربية والتعليم",
+      "name_en": "Ministry of Education",
+      "status": "current",
+      "sort_order": 13,
+      "official_entity_id": "min-education",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-education",
+      "holders": [
+        {
+          "name": "محمد عبد الرحمن تركو",
+          "title": "وزير التربية والتعليم",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-education",
+          "source_label": "جَرد — وزارة التربية والتعليم",
+          "govtcvs_slug": "mohammad-abdul-rahman-turko"
+        },
+        {
+          "name": "نذير القادري",
+          "title": "وزير التربية والتعليم",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-education",
+          "source_label": "جَرد — وزارة التربية والتعليم",
+          "govtcvs_slug": "nazir-al-qadiri"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "local-administration",
+      "kind": "ministry",
+      "name_ar": "وزارة الإدارة المحلية والبيئة",
+      "name_en": "Ministry of Local Administration and Environment",
+      "status": "current",
+      "sort_order": 14,
+      "official_entity_id": "min-local-administration",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-local-administration",
+      "holders": [
+        {
+          "name": "محمد عنجراني",
+          "title": "وزير الإدارة المحلية والبيئة",
+          "era": "transitional_2025",
+          "start_date": "2024-12-10",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "مستمر من الفترة الانتقالية الأولى",
+          "source_url": "https://jard.chat/government/ministry-of-local-administration",
+          "source_label": "جَرد — وزارة الإدارة المحلية والبيئة",
+          "govtcvs_slug": "mohammad-anjrani"
+        },
+        {
+          "name": "محمد عبد الرحمن مسلم",
+          "title": "وزير الإدارة المحلية والخدمات",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-local-administration",
+          "source_label": "جَرد — وزارة الإدارة المحلية والبيئة",
+          "govtcvs_slug": "mohammad-muslim"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "communications",
+      "kind": "ministry",
+      "name_ar": "وزارة الاتصالات وتقانة المعلومات",
+      "name_en": "Ministry of Communications and Information Technology",
+      "status": "current",
+      "sort_order": 15,
+      "official_entity_id": "min-communications",
+      "related_entity_ids": [
+        "auth-sytpra",
+        "auth-syrian-post",
+        "other-syrian-telecom",
+        "other-national-it-services"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-communications",
+      "holders": [
+        {
+          "name": "عبد السلام هيكل",
+          "title": "وزير الاتصالات وتقانة المعلومات",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-communications",
+          "source_label": "جَرد — وزارة الاتصالات وتقانة المعلومات",
+          "govtcvs_slug": "abdul-salam-haykal"
+        },
+        {
+          "name": "حسين المصري",
+          "title": "وزير الاتصالات وتقانة المعلومات",
+          "era": "al_bashir",
+          "start_date": "2024-12-12",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-communications",
+          "source_label": "جَرد — وزارة الاتصالات وتقانة المعلومات",
+          "govtcvs_slug": "hussein-al-masri"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "agriculture",
+      "kind": "ministry",
+      "name_ar": "وزارة الزراعة",
+      "name_en": "Ministry of Agriculture",
+      "status": "current",
+      "sort_order": 16,
+      "official_entity_id": "min-agriculture",
+      "related_entity_ids": [
+        "auth-seed-multiplication"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-agriculture",
+      "holders": [
+        {
+          "name": "باسل حافظ السويدان",
+          "title": "وزير الزراعة",
+          "era": "current_2026",
+          "start_date": "2026-05-09",
+          "end_date": null,
+          "is_current": true,
+          "decree": "المرسوم 98",
+          "notes": "خلفاً لأمجد بدر (المرسوم 98)",
+          "source_url": "https://jard.chat/government/ministry-of-agriculture",
+          "source_label": "جَرد — وزارة الزراعة",
+          "govtcvs_slug": "bassel-al-suwaidan"
+        },
+        {
+          "name": "أمجد بدر",
+          "title": "وزير الزراعة",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": "2026-05-09",
+          "is_current": false,
+          "decree": null,
+          "notes": "استمر حتى تعديل أيار 2026",
+          "source_url": "https://jard.chat/government/ministry-of-agriculture",
+          "source_label": "جَرد — وزارة الزراعة",
+          "govtcvs_slug": "amjad-badr"
+        },
+        {
+          "name": "محمد طه الأحمد",
+          "title": "وزير الزراعة والإصلاح الزراعي",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-agriculture",
+          "source_label": "جَرد — وزارة الزراعة",
+          "govtcvs_slug": "mohammad-taha-al-ahmad"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "information",
+      "kind": "ministry",
+      "name_ar": "وزارة الإعلام",
+      "name_en": "Ministry of Information",
+      "status": "current",
+      "sort_order": 17,
+      "official_entity_id": "min-information",
+      "related_entity_ids": [
+        "other-sana",
+        "other-alekhbariah",
+        "media-alsouriya-tv",
+        "media-alwehda-press"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-information",
+      "holders": [
+        {
+          "name": "خالد فواز زعرور",
+          "title": "وزير الإعلام",
+          "era": "current_2026",
+          "start_date": "2026-05-09",
+          "end_date": null,
+          "is_current": true,
+          "decree": "المرسوم 98",
+          "notes": "خلفاً لحمزة المصطفى (المرسوم 98)",
+          "source_url": "https://jard.chat/government/ministry-of-information",
+          "source_label": "جَرد — وزارة الإعلام",
+          "govtcvs_slug": "khaled-fawaz-zarour"
+        },
+        {
+          "name": "حمزة المصطفى",
+          "title": "وزير الإعلام",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": "2026-05-09",
+          "is_current": false,
+          "decree": null,
+          "notes": "استمر حتى تعديل أيار 2026",
+          "source_url": "https://jard.chat/government/ministry-of-information",
+          "source_label": "جَرد — وزارة الإعلام",
+          "govtcvs_slug": "hamza-al-mustafa"
+        },
+        {
+          "name": "محمد يعقوب العمر",
+          "title": "وزير الإعلام",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-information",
+          "source_label": "جَرد — وزارة الإعلام",
+          "govtcvs_slug": "mohammad-yaqoub-al-omar"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "social-affairs",
+      "kind": "ministry",
+      "name_ar": "وزارة الشؤون الاجتماعية والعمل",
+      "name_en": "Ministry of Social Affairs and Labor",
+      "status": "current",
+      "sort_order": 18,
+      "official_entity_id": "min-social-affairs",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-social-affairs",
+      "holders": [
+        {
+          "name": "هند قبوات",
+          "title": "وزيرة الشؤون الاجتماعية والعمل",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-social-affairs",
+          "source_label": "جَرد — وزارة الشؤون الاجتماعية والعمل",
+          "govtcvs_slug": "hind-kabawat"
+        },
+        {
+          "name": "فادي القاسم",
+          "title": "وزير الشؤون الاجتماعية والعمل",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-social-affairs",
+          "source_label": "جَرد — وزارة الشؤون الاجتماعية والعمل",
+          "govtcvs_slug": "fadi-al-qasem"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "public-works-and-housing",
+      "kind": "ministry",
+      "name_ar": "وزارة الأشغال العامة والإسكان",
+      "name_en": "Ministry of Public Works and Housing",
+      "status": "current",
+      "sort_order": 19,
+      "official_entity_id": "min-public-works",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-public-works-and-housing",
+      "holders": [
+        {
+          "name": "مصطفى عبد الرزاق",
+          "title": "وزير الأشغال العامة والإسكان",
+          "era": "transitional_2025",
+          "start_date": "2025-01-12",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "مستمر من التشكيل السابق",
+          "source_url": "https://jard.chat/government/ministry-of-public-works-and-housing",
+          "source_label": "جَرد — وزارة الأشغال العامة والإسكان",
+          "govtcvs_slug": "mustafa-abdul-razzaq"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "transport",
+      "kind": "ministry",
+      "name_ar": "وزارة النقل",
+      "name_en": "Ministry of Transport",
+      "status": "current",
+      "sort_order": 20,
+      "official_entity_id": "min-transport",
+      "related_entity_ids": [
+        "other-syrian-railways",
+        "other-general-ports"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-transport",
+      "holders": [
+        {
+          "name": "يعرب سليمان بدر",
+          "title": "وزير النقل",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-transport",
+          "source_label": "جَرد — وزارة النقل",
+          "govtcvs_slug": "yarob-badr"
+        },
+        {
+          "name": "بهاء الدين شرم",
+          "title": "وزير النقل",
+          "era": "al_bashir",
+          "start_date": "2024-12-12",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-transport",
+          "source_label": "جَرد — وزارة النقل",
+          "govtcvs_slug": "bahaa-al-din-sharm"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "administrative-development",
+      "kind": "ministry",
+      "name_ar": "وزارة التنمية الإدارية",
+      "name_en": "Ministry of Administrative Development",
+      "status": "current",
+      "sort_order": 21,
+      "official_entity_id": "min-administrative-development",
+      "related_entity_ids": [
+        "auth-bunat"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-administrative-development",
+      "holders": [
+        {
+          "name": "محمد حسان سكاف",
+          "title": "وزير التنمية الإدارية",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-administrative-development",
+          "source_label": "جَرد — وزارة التنمية الإدارية",
+          "govtcvs_slug": "mohammad-hassan-skaf"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "culture",
+      "kind": "ministry",
+      "name_ar": "وزارة الثقافة",
+      "name_en": "Ministry of Culture",
+      "status": "current",
+      "sort_order": 22,
+      "official_entity_id": "min-culture",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-culture",
+      "holders": [
+        {
+          "name": "محمد ياسين الصالح",
+          "title": "وزير الثقافة",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-culture",
+          "source_label": "جَرد — وزارة الثقافة",
+          "govtcvs_slug": "mohammad-yassin-al-saleh"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "tourism",
+      "kind": "ministry",
+      "name_ar": "وزارة السياحة",
+      "name_en": "Ministry of Tourism",
+      "status": "current",
+      "sort_order": 23,
+      "official_entity_id": "min-tourism",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-tourism",
+      "holders": [
+        {
+          "name": "مازن الصالحاني",
+          "title": "وزير السياحة",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-tourism",
+          "source_label": "جَرد — وزارة السياحة",
+          "govtcvs_slug": "mazen-al-salhani"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "sports-and-youth",
+      "kind": "ministry",
+      "name_ar": "وزارة الرياضة والشباب",
+      "name_en": "Ministry of Sports and Youth",
+      "status": "current",
+      "sort_order": 24,
+      "official_entity_id": "min-youth-sports",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/ministry-of-sports-and-youth",
+      "holders": [
+        {
+          "name": "محمد سامح أحمد حامض",
+          "title": "وزير الرياضة والشباب",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-sports-and-youth",
+          "source_label": "جَرد — وزارة الرياضة والشباب",
+          "govtcvs_slug": "mohammad-sameh-hamed"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "economy-and-industry",
+      "kind": "ministry",
+      "name_ar": "وزارة الاقتصاد والصناعة",
+      "name_en": "Ministry of Economy and Industry",
+      "status": "split",
+      "sort_order": 101,
+      "official_entity_id": "min-economy",
+      "related_entity_ids": [
+        "auth-internal-trade",
+        "auth-industry-admin"
+      ],
+      "predecessors": [
+        "economy",
+        "internal-trade"
+      ],
+      "successors": [
+        "economy",
+        "industry-and-internal-trade"
+      ],
+      "lineage_summary_ar": "تشكّلت في 29 آذار 2025 بدمج الاقتصاد والتجارة الخارجية والصناعة والتجارة الداخلية، ثم أُعيد فصلها في تشرين الأول وتشرين الثاني 2026 بموجب المرسومين 189 و203 إلى وزارتي الصناعة والتجارة الداخلية والاقتصاد والتجارة الخارجية.",
+      "lineage_events": [
+        {
+          "date": "2025-03-29",
+          "kind": "merge",
+          "label_ar": "تشكيل وزارة الاقتصاد والصناعة بدمج الاقتصاد والتجارة الخارجية والتجارة الداخلية والصناعة",
+          "related_slugs": [
+            "economy",
+            "internal-trade"
+          ],
+          "source_url": "https://jard.chat/government/ministry-of-economy"
+        },
+        {
+          "date": "2026-10-19",
+          "kind": "split",
+          "label_ar": "فصل قطاع الصناعة والتجارة الداخلية وحماية المستهلك (المرسوم 189 لعام 2026)",
+          "decree": "المرسوم 189 لعام 2026",
+          "related_slugs": [
+            "industry-and-internal-trade"
+          ],
+          "source_url": "https://t.me/sana_gov/188348"
+        },
+        {
+          "date": "2026-11-18",
+          "kind": "split",
+          "label_ar": "استكمال الفصل بتسمية وزير الاقتصاد والتجارة الخارجية (المرسوم 203 لعام 2026)",
+          "decree": "المرسوم 203 لعام 2026",
+          "related_slugs": [
+            "economy"
+          ],
+          "source_url": "https://t.me/SyrianlAgov/6848"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/ministry-of-economy",
+      "holders": [
+        {
+          "name": "نضال الشعار",
+          "title": "وزير الاقتصاد والصناعة",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": "2026-10-19",
+          "is_current": false,
+          "decree": "المرسوم 203",
+          "notes": "فُصلت الوزارة إلى الاقتصاد والتجارة الخارجية (المرسوم 203) والصناعة والتجارة الداخلية وحماية المستهلك (المرسوم 189)",
+          "source_url": "https://jard.chat/government/ministry-of-economy",
+          "source_label": "جَرد — وزارة الاقتصاد والتجارة الخارجية",
+          "govtcvs_slug": "mohammad-nidal-al-shaar"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "internal-trade",
+      "kind": "ministry",
+      "name_ar": "وزارة التجارة الداخلية وحماية المستهلك",
+      "name_en": "Ministry of Internal Trade and Consumer Protection",
+      "status": "merged",
+      "sort_order": 102,
+      "official_entity_id": "auth-internal-trade",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [
+        "economy-and-industry",
+        "industry-and-internal-trade"
+      ],
+      "lineage_summary_ar": "دُمجت في 29 آذار 2025 ضمن وزارة الاقتصاد والصناعة، ثم عاد اختصاصها لاحقاً ضمن وزارة الصناعة والتجارة الداخلية وحماية المستهلك بموجب المرسوم رقم 189 لعام 2026.",
+      "lineage_events": [
+        {
+          "date": "2025-03-29",
+          "kind": "merge",
+          "label_ar": "دمج الوزارة ضمن وزارة الاقتصاد والصناعة",
+          "related_slugs": [
+            "economy-and-industry"
+          ],
+          "source_url": "https://jard.chat/government/ministry-of-industry-and-internal-trade"
+        },
+        {
+          "date": "2026-10-19",
+          "kind": "split",
+          "label_ar": "إعادة تأسيس القطاع ضمن وزارة الصناعة والتجارة الداخلية وحماية المستهلك (المرسوم 189)",
+          "decree": "المرسوم 189 لعام 2026",
+          "related_slugs": [
+            "industry-and-internal-trade"
+          ],
+          "source_url": "https://t.me/sana_gov/188348"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/ministry-of-industry-and-internal-trade",
+      "holders": [
+        {
+          "name": "ماهر خليل الحسن",
+          "title": "وزير التجارة الداخلية وحماية المستهلك",
+          "era": "al_bashir",
+          "start_date": "2024-12-19",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/ministry-of-industry-and-internal-trade",
+          "source_label": "جَرد — وزارة الصناعة والتجارة الداخلية",
+          "govtcvs_slug": "maher-khalil-al-hasan"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "electricity",
+      "kind": "ministry",
+      "name_ar": "وزارة الكهرباء",
+      "name_en": "Ministry of Electricity",
+      "status": "merged",
+      "sort_order": 103,
+      "official_entity_id": "auth-electricity-tde",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [
+        "energy"
+      ],
+      "lineage_summary_ar": "دُمجت بتاريخ 29 آذار 2025 مع وزارتي النفط والثروة المعدنية والموارد المائية لتشكيل وزارة الطاقة.",
+      "lineage_events": [
+        {
+          "date": "2025-03-29",
+          "kind": "merge",
+          "label_ar": "دمج وزارة الكهرباء في وزارة الطاقة",
+          "related_slugs": [
+            "energy",
+            "oil-and-mineral-resources",
+            "water-resources"
+          ],
+          "source_url": "https://jard.chat/government/ministry-of-energy"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/ministry-of-energy",
+      "holders": [
+        {
+          "name": "عمر شقروق",
+          "title": "وزير الكهرباء",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": "دمجت لاحقاً في وزارة الطاقة",
+          "source_url": "https://jard.chat/government/ministry-of-energy",
+          "source_label": "جَرد — وزارة الطاقة",
+          "govtcvs_slug": "omar-shaqrouq"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "oil-and-mineral-resources",
+      "kind": "ministry",
+      "name_ar": "وزارة النفط والثروة المعدنية",
+      "name_en": "Ministry of Petroleum and Mineral Resources",
+      "status": "merged",
+      "sort_order": 104,
+      "official_entity_id": "auth-geology-mining",
+      "related_entity_ids": [
+        "auth-mahruqat"
+      ],
+      "predecessors": [],
+      "successors": [
+        "energy"
+      ],
+      "lineage_summary_ar": "دُمجت بتاريخ 29 آذار 2025 مع وزارتي الكهرباء والموارد المائية لتشكيل وزارة الطاقة.",
+      "lineage_events": [
+        {
+          "date": "2025-03-29",
+          "kind": "merge",
+          "label_ar": "دمج وزارة النفط والثروة المعدنية في وزارة الطاقة",
+          "related_slugs": [
+            "energy",
+            "electricity",
+            "water-resources"
+          ],
+          "source_url": "https://jard.chat/government/ministry-of-energy"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/ministry-of-energy",
+      "holders": [
+        {
+          "name": "غياث دياب",
+          "title": "وزير النفط والثروة المعدنية",
+          "era": "al_bashir",
+          "start_date": "2024-12-30",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": "دمجت لاحقاً في وزارة الطاقة",
+          "source_url": "https://jard.chat/government/ministry-of-energy",
+          "source_label": "جَرد — وزارة الطاقة",
+          "govtcvs_slug": "ghiyath-diab"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "water-resources",
+      "kind": "ministry",
+      "name_ar": "وزارة الموارد المائية",
+      "name_en": "Ministry of Water Resources",
+      "status": "merged",
+      "sort_order": 105,
+      "official_entity_id": "auth-water-resources",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [
+        "energy"
+      ],
+      "lineage_summary_ar": "دُمجت بتاريخ 29 آذار 2025 مع وزارتي الكهرباء والنفط والثروة المعدنية لتشكيل وزارة الطاقة.",
+      "lineage_events": [
+        {
+          "date": "2025-03-29",
+          "kind": "merge",
+          "label_ar": "دمج وزارة الموارد المائية في وزارة الطاقة",
+          "related_slugs": [
+            "energy",
+            "electricity",
+            "oil-and-mineral-resources"
+          ],
+          "source_url": "https://jard.chat/government/ministry-of-energy"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/ministry-of-energy",
+      "holders": [
+        {
+          "name": "أسامة أبو زيد",
+          "title": "وزير الموارد المائية",
+          "era": "al_bashir",
+          "start_date": "2024-12-19",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": "دمجت لاحقاً في وزارة الطاقة",
+          "source_url": "https://jard.chat/government/ministry-of-energy",
+          "source_label": "جَرد — وزارة الطاقة",
+          "govtcvs_slug": "osama-abu-zaid"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "prime-minister",
+      "kind": "ministry",
+      "name_ar": "رئاسة مجلس الوزراء",
+      "name_en": "Office of the Prime Minister",
+      "status": "abolished",
+      "sort_order": 106,
+      "official_entity_id": null,
+      "related_entity_ids": [
+        "pres-cabinet-secretariat"
+      ],
+      "predecessors": [],
+      "successors": [
+        "presidency"
+      ],
+      "lineage_summary_ar": "أُلغي منصب رئيس مجلس الوزراء في 13 آذار 2025 مع التحول إلى النظام الرئاسي المباشر، وانتقلت القيادة التنفيذية المباشرة إلى رئاسة الجمهورية.",
+      "lineage_events": [
+        {
+          "date": "2025-03-13",
+          "kind": "abolished",
+          "label_ar": "إلغاء منصب رئيس مجلس الوزراء والتحول إلى النظام الرئاسي المباشر",
+          "related_slugs": [
+            "presidency"
+          ],
+          "source_url": "https://jard.chat/government"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/presidency-of-syria",
+      "holders": [
+        {
+          "name": "محمد البشير",
+          "title": "رئيس مجلس الوزراء",
+          "era": "al_bashir",
+          "start_date": "2024-12-10",
+          "end_date": "2025-03-29",
+          "is_current": false,
+          "decree": null,
+          "notes": "حكومة تسيير الأعمال",
+          "source_url": "https://jard.chat/government/presidency-of-syria",
+          "source_label": "جَرد — القيادة التنفيذية",
+          "govtcvs_slug": "mohammed-al-bashir"
+        },
+        {
+          "name": "محمد غازي الجلالي",
+          "title": "رئيس مجلس الوزراء",
+          "era": "al_jalali",
+          "start_date": "2024-09-23",
+          "end_date": "2024-12-10",
+          "is_current": false,
+          "decree": null,
+          "notes": "آخر حكومات النظام السابق",
+          "source_url": "https://jard.chat/government/presidency-of-syria",
+          "source_label": "جَرد — القيادة التنفيذية",
+          "govtcvs_slug": null
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "presidency",
+      "kind": "sovereign",
+      "name_ar": "رئاسة الجمهورية العربية السورية",
+      "name_en": "Presidency of the Syrian Arab Republic",
+      "status": "current",
+      "sort_order": 201,
+      "official_entity_id": "other-presidency",
+      "related_entity_ids": [
+        "pres-cabinet-secretariat"
+      ],
+      "predecessors": [
+        "prime-minister"
+      ],
+      "successors": [],
+      "lineage_summary_ar": "انتقلت إليها القيادة التنفيذية المباشرة بعد إلغاء منصب رئيس مجلس الوزراء في 13 آذار 2025، ويشغل أحمد الشرع منصب رئيس الجمهورية منذ 29 كانون الثاني 2025.",
+      "lineage_events": [
+        {
+          "date": "2025-01-29",
+          "kind": "established",
+          "label_ar": "تولي أحمد الشرع رئاسة الجمهورية العربية السورية",
+          "related_slugs": [],
+          "source_url": "https://jard.chat/government/presidency-of-syria"
+        },
+        {
+          "date": "2025-03-13",
+          "kind": "transition",
+          "label_ar": "التحول إلى النظام الرئاسي المباشر وإلغاء منصب رئيس مجلس الوزراء",
+          "related_slugs": [
+            "prime-minister"
+          ],
+          "source_url": "https://jard.chat/government"
+        }
+      ],
+      "jard_url": "https://jard.chat/government/presidency-of-syria",
+      "holders": [
+        {
+          "name": "أحمد الشرع",
+          "title": "رئيس الجمهورية العربية السورية",
+          "era": "transitional_2025",
+          "start_date": "2025-01-29",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "النظام الرئاسي المباشر",
+          "source_url": "https://jard.chat/government/presidency-of-syria",
+          "source_label": "جَرد — رئاسة الجمهورية",
+          "govtcvs_slug": "ahmad-al-sharaa"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "general-secretariat-of-the-presidency",
+      "kind": "sovereign",
+      "name_ar": "الأمانة العامة لرئاسة الجمهورية",
+      "name_en": "General Secretariat of the Presidency",
+      "status": "current",
+      "sort_order": 202,
+      "official_entity_id": "pres-cabinet-secretariat",
+      "related_entity_ids": [
+        "other-presidency"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/general-secretariat-of-the-presidency",
+      "holders": [
+        {
+          "name": "عبد الرحمن الأعمى",
+          "title": "الأمين العام لرئاسة الجمهورية",
+          "era": "current_2026",
+          "start_date": "2026-05-09",
+          "end_date": null,
+          "is_current": true,
+          "decree": "المرسوم 98",
+          "notes": "خلفاً لماهر الشرع (المرسوم 98)",
+          "source_url": "https://jard.chat/government/general-secretariat-of-the-presidency",
+          "source_label": "جَرد — الأمانة العامة لرئاسة الجمهورية",
+          "govtcvs_slug": "abdul-rahman-al-aama"
+        },
+        {
+          "name": "ماهر الشرع",
+          "title": "الأمين العام لرئاسة الجمهورية",
+          "era": "transitional_2025",
+          "start_date": "2025-03-29",
+          "end_date": "2026-05-09",
+          "is_current": false,
+          "decree": null,
+          "notes": "استمر حتى 9 أيار 2026",
+          "source_url": "https://jard.chat/government/general-secretariat-of-the-presidency",
+          "source_label": "جَرد — الأمانة العامة لرئاسة الجمهورية",
+          "govtcvs_slug": "maher-al-sharaa"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "central-bank",
+      "kind": "sovereign",
+      "name_ar": "مصرف سورية المركزي",
+      "name_en": "Central Bank of Syria",
+      "status": "current",
+      "sort_order": 203,
+      "official_entity_id": "other-central-bank",
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/central-bank-of-syria",
+      "holders": [
+        {
+          "name": "محمد صفوت عبد الحميد رسلان",
+          "title": "حاكم مصرف سورية المركزي",
+          "era": "current_2026",
+          "start_date": "2026-05-16",
+          "end_date": null,
+          "is_current": true,
+          "decree": "المرسوم 99 لعام 2026",
+          "notes": "المرسوم 99 لعام 2026 — خلفاً لعبد القادر الحصرية",
+          "source_url": "https://t.me/SyCBOS/5239",
+          "source_label": "مصدر رسمي موثّق عبر جَرد",
+          "govtcvs_slug": "mohammad-safwat-raslan"
+        },
+        {
+          "name": "عبد القادر الحصرية",
+          "title": "حاكم مصرف سورية المركزي",
+          "era": "transitional_2025",
+          "start_date": "2025-04-01",
+          "end_date": "2026-05-15",
+          "is_current": false,
+          "decree": null,
+          "notes": "شغل المنصب حتى منتصف أيار 2026 ثم عُيّن سفيراً لسوريا لدى كندا",
+          "source_url": "https://jard.chat/government/central-bank-of-syria",
+          "source_label": "جَرد — مصرف سورية المركزي",
+          "govtcvs_slug": "abdul-qader-al-husrieh"
+        }
+      ],
+      "deputies": [
+        {
+          "name": "نبراس محمد وحيد خياطة",
+          "title": "النائب الأول لحاكم مصرف سورية المركزي",
+          "era": "current_2026",
+          "start_date": "2026-09-27",
+          "end_date": null,
+          "is_current": true,
+          "decree": "المرسوم 176 لعام 2026",
+          "notes": "المرسوم 176 لعام 2026",
+          "source_url": "https://jard.chat/government/central-bank-of-syria",
+          "source_label": "جَرد — مصرف سورية المركزي",
+          "govtcvs_slug": "nebras-khiata"
+        }
+      ]
+    },
+    {
+      "slug": "central-inspection-and-control",
+      "kind": "sovereign",
+      "name_ar": "الهيئة المركزية للرقابة والتفتيش",
+      "name_en": "Central Inspection and Control Authority",
+      "status": "current",
+      "sort_order": 204,
+      "official_entity_id": "other-general-control",
+      "related_entity_ids": [
+        "auth-syhioc"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/central-inspection-and-control-authority",
+      "holders": [
+        {
+          "name": "عامر العلي",
+          "title": "رئيس الهيئة المركزية للرقابة والتفتيش",
+          "era": "transitional_2025",
+          "start_date": "2025-05-04",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "مكافحة الفساد والرقابة المالية والإدارية",
+          "source_url": "https://jard.chat/government",
+          "source_label": "مصدر رسمي موثّق عبر جَرد",
+          "govtcvs_slug": "amer-al-ali"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "land-and-sea-ports",
+      "kind": "sovereign",
+      "name_ar": "الهيئة العامة للمنافذ والجمارك",
+      "name_en": "General Authority for Land and Sea Ports and Customs",
+      "status": "current",
+      "sort_order": 205,
+      "official_entity_id": "other-syrian-borders",
+      "related_entity_ids": [
+        "other-general-ports"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/general-authority-for-land-and-sea-ports",
+      "holders": [
+        {
+          "name": "قتيبة أحمد بدوي",
+          "title": "رئيس الهيئة العامة للمنافذ والجمارك",
+          "era": "transitional_2025",
+          "start_date": "2025-11-23",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "إدارة المعابر البرية والبحرية والجوية",
+          "source_url": "https://jard.chat/government/general-authority-for-land-and-sea-ports",
+          "source_label": "جَرد — الهيئة العامة للمنافذ والجمارك",
+          "govtcvs_slug": "qutaiba-badawi"
+        }
+      ],
+      "deputies": [
+        {
+          "name": "خالد محمد البراد",
+          "title": "معاون رئيس الهيئة العامة للمنافذ (الجمارك)",
+          "era": "transitional_2025",
+          "start_date": "2025-11-23",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/general-authority-for-land-and-sea-ports",
+          "source_label": "جَرد — الهيئة العامة للمنافذ والجمارك",
+          "govtcvs_slug": null
+        }
+      ]
+    },
+    {
+      "slug": "civil-aviation",
+      "kind": "sovereign",
+      "name_ar": "الهيئة العامة للطيران المدني",
+      "name_en": "Syrian Civil Aviation Authority",
+      "status": "current",
+      "sort_order": 206,
+      "official_entity_id": "other-civil-aviation",
+      "related_entity_ids": [
+        "other-syrian-airlines",
+        "other-damascus-airport",
+        "other-aleppo-airport"
+      ],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/civil-aviation-authority",
+      "holders": [
+        {
+          "name": "عمر هشام الحصري",
+          "title": "رئيس الهيئة العامة للطيران المدني",
+          "era": "al_bashir",
+          "start_date": "2025-01-01",
+          "end_date": null,
+          "is_current": true,
+          "decree": "المرسوم رقم 297 لعام 2025",
+          "notes": "المرسوم رقم 297 لعام 2025 بتعيين عمر هشام الحصري رئيساً للهيئة العامة للطيران المدني والنقل الجوي بمرتبة وزير",
+          "source_url": "https://jard.chat/government",
+          "source_label": "مصدر رسمي موثّق عبر جَرد",
+          "govtcvs_slug": "umar-al-husari"
+        }
+      ],
+      "deputies": []
+    },
+    {
+      "slug": "general-intelligence",
+      "kind": "sovereign",
+      "name_ar": "جهاز الاستخبارات العامة",
+      "name_en": "General Intelligence Service",
+      "status": "current",
+      "sort_order": 207,
+      "official_entity_id": null,
+      "related_entity_ids": [],
+      "predecessors": [],
+      "successors": [],
+      "lineage_summary_ar": null,
+      "lineage_events": [],
+      "jard_url": "https://jard.chat/government/general-intelligence-service",
+      "holders": [
+        {
+          "name": "عبد القادر الطحان",
+          "title": "رئيس جهاز الاستخبارات العامة",
+          "era": "current_2026",
+          "start_date": "2026-07-19",
+          "end_date": null,
+          "is_current": true,
+          "decree": null,
+          "notes": "قرار رئاسي بتعيين اللواء عبد القادر الطحان رئيساً لجهاز الاستخبارات العامة خلفاً لحسين السلامة",
+          "source_url": "https://t.me/sana_gov/177351",
+          "source_label": "مصدر رسمي موثّق عبر جَرد",
+          "govtcvs_slug": "abdul-qader-tahan"
+        },
+        {
+          "name": "حسين السلامة",
+          "title": "رئيس جهاز الاستخبارات العامة",
+          "era": "transitional_2025",
+          "start_date": "2025-05-01",
+          "end_date": "2026-07-19",
+          "is_current": false,
+          "decree": null,
+          "notes": null,
+          "source_url": "https://jard.chat/government/general-intelligence-service",
+          "source_label": "جَرد — جهاز الاستخبارات العامة",
+          "govtcvs_slug": "hussein-al-salama"
+        }
+      ],
+      "deputies": []
+    }
+  ]
+}

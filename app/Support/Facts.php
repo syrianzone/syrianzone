@@ -122,11 +122,11 @@ final class Facts
     }
 
     /**
-     * @return array{categories: array<int, array{key: string, label: string, glyph: string}>, statuses: array<int, string>, nearby: array{radius_km_default: float, radius_km_min: float, radius_km_max: float}}
+     * @return array{categories: array<int, array{key: string, label: string, glyph: string, hub_title?: string}>, statuses: array<int, string>, nearby: array{radius_km_default: float, radius_km_min: float, radius_km_max: float}}
      */
     public static function places(): array
     {
-        /** @var array{categories: array<int, array{key: string, label: string, glyph: string}>, statuses: array<int, string>, nearby: array{radius_km_default: float, radius_km_min: float, radius_km_max: float}} $places */
+        /** @var array{categories: array<int, array{key: string, label: string, glyph: string, hub_title?: string}>, statuses: array<int, string>, nearby: array{radius_km_default: float, radius_km_min: float, radius_km_max: float}} $places */
         $places = self::json('places');
 
         return $places;
@@ -150,6 +150,24 @@ final class Facts
         $out = [];
         foreach (self::places()['categories'] as $category) {
             $out[$category['key']] = [$category['label'], $category['glyph']];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Category key => plural Arabic heading for Mishwar category hubs
+     * (omits `other`, which never gets a hub).
+     *
+     * @return array<string, string>
+     */
+    public static function placeCategoryHubTitles(): array
+    {
+        $out = [];
+        foreach (self::places()['categories'] as $category) {
+            if (! empty($category['hub_title'])) {
+                $out[$category['key']] = (string) $category['hub_title'];
+            }
         }
 
         return $out;

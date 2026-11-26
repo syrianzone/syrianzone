@@ -187,7 +187,6 @@ path.leaflet-interactive {
     transform-origin: center;
     outline: none;
     cursor: pointer;
-    will-change: filter, transform;
 }
 
 path.leaflet-interactive:hover {

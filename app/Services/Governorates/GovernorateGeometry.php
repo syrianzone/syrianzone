@@ -151,7 +151,29 @@ final class GovernorateGeometry
             return null;
         }
 
-        $viewBox = $this->zoomedViewBox($governorateId, $pin) ?? $svgMap['viewBox'];
+        $zoom = $this->zoomedBounds($governorateId, $pin);
+        $viewBox = $zoom['viewBox'] ?? $svgMap['viewBox'];
+        $proj = $this->projection();
+
+        $shapes = $svgMap['shapes'];
+        if ($zoom !== null && $proj !== null && $zoom['w'] < 160.0) {
+            $minDist = max(0.2, min(1.1, $zoom['w'] / 150.0));
+            $shapes = $this->buildShapes($proj, $minDist);
+        }
+
+        if ($zoom !== null && $proj !== null && $governorateId === 'damascus') {
+            $ruralAnchor = $this->placeRuralDamascusLabel($zoom, $pin, $proj);
+            if ($ruralAnchor !== null) {
+                $shapes = array_map(static function (array $s) use ($ruralAnchor): array {
+                    if ($s['id'] === 'rural-damascus') {
+                        $s['label_x'] = $ruralAnchor['x'];
+                        $s['label_y'] = $ruralAnchor['y'];
+                    }
+
+                    return $s;
+                }, $shapes);
+            }
+        }
 
         return [
             'viewBox' => $viewBox,
@@ -164,19 +186,20 @@ final class GovernorateGeometry
                 'path' => $s['path'],
                 'label_x' => $s['label_x'],
                 'label_y' => $s['label_y'],
-            ], $svgMap['shapes']),
+            ], $shapes),
             'pin' => $pin,
         ];
     }
 
     /**
      * Compute a zoomed 4:3 SVG viewBox centered on the governorate (plus the pin)
-     * in `svgMap()` coordinates, enforcing a minimum span so tiny governorates
-     * keep neighbouring context.
+     * in `svgMap()` coordinates, using an adaptive minimum span so tiny governorates
+     * like Damascus zoom in while keeping neighbouring context.
      *
      * @param  array{x: float, y: float}  $pin
+     * @return array{viewBox: string, x0: float, y0: float, w: float, h: float, rawMinX: float, rawMaxX: float, rawMinY: float, rawMaxY: float}|null
      */
-    private function zoomedViewBox(?string $governorateId, array $pin): ?string
+    private function zoomedBounds(?string $governorateId, array $pin): ?array
     {
         if ($governorateId === null) {
             return null;
@@ -226,12 +249,16 @@ final class GovernorateGeometry
 
         $rawW = $maxX - $minX;
         $rawH = $maxY - $minY;
-        $padX = max(14.0, $rawW * 0.22);
-        $padY = max(12.0, $rawH * 0.22);
+        $maxDim = max($rawW, $rawH);
+
+        $padX = max(min(14.0, $maxDim * 0.45), $rawW * 0.22);
+        $padY = max(min(12.0, $maxDim * 0.40), $rawH * 0.22);
 
         $aspect = 4.0 / 3.0;
-        $w = max($rawW + 2 * $padX, 96.0);
-        $h = max($rawH + 2 * $padY, 72.0);
+        $minW = max(28.0, min(96.0, $maxDim * 2.5));
+        $minH = $minW / $aspect;
+        $w = max($rawW + 2 * $padX, $minW);
+        $h = max($rawH + 2 * $padY, $minH);
 
         if (($w / $h) < $aspect) {
             $w = $h * $aspect;
@@ -243,8 +270,110 @@ final class GovernorateGeometry
         $cy = ($minY + $maxY) / 2.0;
         $x0 = round($cx - $w / 2.0, 1);
         $y0 = round($cy - $h / 2.0, 1);
+        $wRounded = round($w, 1);
+        $hRounded = round($h, 1);
 
-        return sprintf('%.1f %.1f %.1f %.1f', $x0, $y0, round($w, 1), round($h, 1));
+        return [
+            'viewBox' => sprintf('%.1f %.1f %.1f %.1f', $x0, $y0, $wRounded, $hRounded),
+            'x0' => $x0,
+            'y0' => $y0,
+            'w' => $wRounded,
+            'h' => $hRounded,
+            'rawMinX' => $minX,
+            'rawMaxX' => $maxX,
+            'rawMinY' => $minY,
+            'rawMaxY' => $maxY,
+        ];
+    }
+
+    /**
+     * Find an in-view label anchor for Rural Damascus when zoomed on Damascus city,
+     * staying inside Rural Damascus, outside Damascus, away from the pin, and clear
+     * of the top-end inset and viewBox edges.
+     *
+     * @param  array{viewBox: string, x0: float, y0: float, w: float, h: float, rawMinX: float, rawMaxX: float, rawMinY: float, rawMaxY: float}  $zoom
+     * @param  array{x: float, y: float}  $pin
+     * @param  array{minLon: float, maxLon: float, minLat: float, maxLat: float, cosLat: float, pad: float, width: int, height: int, scale: float}  $proj
+     * @return array{x: float, y: float}|null
+     */
+    private function placeRuralDamascusLabel(array $zoom, array $pin, array $proj): ?array
+    {
+        $rural = null;
+        $damascus = null;
+        foreach ($this->features() as $feature) {
+            if ($feature['id'] === 'rural-damascus') {
+                $rural = $feature;
+            } elseif ($feature['id'] === 'damascus') {
+                $damascus = $feature;
+            }
+        }
+        if ($rural === null) {
+            return null;
+        }
+
+        $vx = $zoom['x0'];
+        $vy = $zoom['y0'];
+        $vw = $zoom['w'];
+        $vh = $zoom['h'];
+        $unitScale = $vw / 300.0;
+        // "ريف دمشق" is 8 chars; match Show.tsx labelHalfSize() clearance.
+        $hw = 23.0 * $unitScale;
+        $hh = 7.6 * $unitScale;
+        $pinClear = 14.0 * $unitScale;
+        $insetMaxX = $vx + $vw * 0.28;
+        $insetMaxY = $vy + $vh * 0.34;
+
+        $best = null;
+        $bestScore = -INF;
+
+        for ($gx = 1; $gx <= 9; $gx++) {
+            $cx = $vx + ($vw * $gx) / 10.0;
+            if ($cx - $hw < $vx + $vw * 0.04 || $cx + $hw > $vx + $vw * 0.96) {
+                continue;
+            }
+            for ($gy = 1; $gy <= 9; $gy++) {
+                $cy = $vy + ($vh * $gy) / 10.0;
+                if ($cy - $hh < $vy + $vh * 0.06 || $cy + $hh > $vy + $vh * 0.94) {
+                    continue;
+                }
+                if ($cx - $hw < $insetMaxX && $cy - $hh < $insetMaxY) {
+                    continue;
+                }
+                $nearX = max($cx - $hw, min($pin['x'], $cx + $hw));
+                $nearY = max($cy - $hh, min($pin['y'], $cy + $hh));
+                $pinDist = hypot($pin['x'] - $nearX, $pin['y'] - $nearY);
+                if ($pinDist < $pinClear) {
+                    continue;
+                }
+
+                $lon = $proj['minLon'] + ($cx - $proj['pad']) / ($proj['cosLat'] * $proj['scale']);
+                $lat = $proj['maxLat'] - ($cy - $proj['pad']) / $proj['scale'];
+
+                if (! $this->pointInMultiPolygon($lon, $lat, $rural['polygons'])) {
+                    continue;
+                }
+                if ($damascus !== null && $this->pointInMultiPolygon($lon, $lat, $damascus['polygons'])) {
+                    continue;
+                }
+
+                // Distance outside Damascus's bounding box so the label sits clearly in Rural Damascus.
+                $dxDam = max($zoom['rawMinX'] - $cx, 0.0, $cx - $zoom['rawMaxX']);
+                $dyDam = max($zoom['rawMinY'] - $cy, 0.0, $cy - $zoom['rawMaxY']);
+                $damDist = hypot($dxDam, $dyDam);
+                if ($damDist < 1.2 * $unitScale * 10.0) {
+                    continue;
+                }
+
+                // Prefer east/south/north clear area away from the pin.
+                $score = $pinDist + $damDist * 0.5;
+                if ($score > $bestScore) {
+                    $bestScore = $score;
+                    $best = ['x' => round($cx, 1), 'y' => round($cy, 1)];
+                }
+            }
+        }
+
+        return $best;
     }
 
     /**
@@ -299,11 +428,33 @@ final class GovernorateGeometry
         $width = $proj['width'];
         $height = $proj['height'];
 
-        $project = static function (float $lon, float $lat) use ($proj): array {
+        return self::$svgMap = [
+            'viewBox' => "0 0 {$width} {$height}",
+            'width' => $width,
+            'height' => $height,
+            'shapes' => $this->buildShapes($proj, 1.1),
+        ];
+    }
+
+    /**
+     * Project and simplify all governorate polygons into SVG shape descriptors.
+     *
+     * @param  array{minLon: float, maxLon: float, minLat: float, maxLat: float, cosLat: float, pad: float, width: int, height: int, scale: float}  $proj
+     * @return list<array{id: string, name_ar: string, path: string, label_x: float, label_y: float}>
+     */
+    private function buildShapes(array $proj, float $minDist): array
+    {
+        $features = $this->features();
+        if ($features === []) {
+            return [];
+        }
+
+        $precision = $minDist < 0.5 ? 2 : 1;
+        $project = static function (float $lon, float $lat) use ($proj, $precision): array {
             $x = $proj['pad'] + ($lon - $proj['minLon']) * $proj['cosLat'] * $proj['scale'];
             $y = $proj['pad'] + ($proj['maxLat'] - $lat) * $proj['scale'];
 
-            return [round($x, 1), round($y, 1)];
+            return [round($x, $precision), round($y, $precision)];
         };
 
         // Keep Damascus on top of Rif Dimashq so its smaller polygon stays clickable.
@@ -332,7 +483,7 @@ final class GovernorateGeometry
                     foreach ($ring as $pt) {
                         $projected[] = $project($pt[0], $pt[1]);
                     }
-                    $simplified = $this->simplifyPoints($projected, 1.1);
+                    $simplified = $this->simplifyPoints($projected, $minDist);
                     if (count($simplified) < 3) {
                         continue;
                     }
@@ -366,12 +517,7 @@ final class GovernorateGeometry
             ];
         }
 
-        return self::$svgMap = [
-            'viewBox' => "0 0 {$width} {$height}",
-            'width' => $width,
-            'height' => $height,
-            'shapes' => $shapes,
-        ];
+        return $shapes;
     }
 
     /**

@@ -67,6 +67,41 @@ function parseViewBox(viewBox: string): { x: number; y: number; width: number; h
   return { x: 0, y: 0, width: 600, height: 544 };
 }
 
+function labelHalfSize(nameAr: string, unitScale: number): { hw: number; hh: number } {
+  // Calibrated against rendered Arabic SVG text at fontSize = 10 * unitScale (~300px SVG width).
+  return {
+    hw: Math.max(12, nameAr.length * 2.4 + 3) * unitScale,
+    hh: 7.6 * unitScale,
+  };
+}
+
+function boxesOverlap(
+  ax: number,
+  ay: number,
+  ahw: number,
+  ahh: number,
+  bx: number,
+  by: number,
+  bhw: number,
+  bhh: number,
+): boolean {
+  return Math.abs(ax - bx) < ahw + bhw && Math.abs(ay - by) < ahh + bhh;
+}
+
+function boxOverlapsCircle(
+  cx: number,
+  cy: number,
+  hw: number,
+  hh: number,
+  px: number,
+  py: number,
+  radius: number,
+): boolean {
+  const nearestX = Math.max(cx - hw, Math.min(px, cx + hw));
+  const nearestY = Math.max(cy - hh, Math.min(py, cy + hh));
+  return Math.hypot(px - nearestX, py - nearestY) < radius;
+}
+
 function pickVisibleNeighbourLabels(
   shapes: PlaceLocatorShape[],
   highlightedId: string | null,
@@ -75,15 +110,18 @@ function pickVisibleNeighbourLabels(
   unitScale: number,
   hasInset: boolean,
 ): PlaceLocatorShape[] {
-  const minX = vb.x + vb.width * 0.1;
-  const maxX = vb.x + vb.width * 0.9;
-  const minY = vb.y + vb.height * 0.12;
-  const maxY = vb.y + vb.height * 0.88;
+  const minX = vb.x + vb.width * 0.02;
+  const maxX = vb.x + vb.width * 0.98;
+  const minY = vb.y + vb.height * 0.04;
+  const maxY = vb.y + vb.height * 0.96;
   // In RTL `top-2 end-2` sits in the top-left of the SVG box.
-  const insetMaxX = vb.x + vb.width * 0.28;
-  const insetMaxY = vb.y + vb.height * 0.34;
+  const insetMaxX = vb.x + vb.width * 0.27;
+  const insetMaxY = vb.y + vb.height * 0.33;
+  const pinClearRadius = 12 * unitScale;
+  const labelPadX = 2 * unitScale;
+  const labelPadY = 1 * unitScale;
 
-  const placed: Array<{ x: number; y: number }> = [];
+  const placed: Array<{ x: number; y: number; hw: number; hh: number }> = [];
   const chosen: PlaceLocatorShape[] = [];
 
   for (const shape of shapes) {
@@ -92,23 +130,23 @@ function pickVisibleNeighbourLabels(
     }
     const lx = shape.label_x;
     const ly = shape.label_y;
-    if (lx < minX || lx > maxX || ly < minY || ly > maxY) {
+    const { hw, hh } = labelHalfSize(shape.name_ar, unitScale);
+    if (lx - hw < minX || lx + hw > maxX || ly - hh < minY || ly + hh > maxY) {
       continue;
     }
-    if (hasInset && lx < insetMaxX && ly < insetMaxY) {
+    if (hasInset && lx - hw < insetMaxX && ly - hh < insetMaxY) {
       continue;
     }
-    const pinDistPx = Math.hypot((lx - pin.x) / unitScale, (ly - pin.y) / unitScale);
-    if (pinDistPx < 24) {
+    if (boxOverlapsCircle(lx, ly, hw, hh, pin.x, pin.y, pinClearRadius)) {
       continue;
     }
-    const collides = placed.some(
-      (p) => Math.abs(lx - p.x) / unitScale < 42 && Math.abs(ly - p.y) / unitScale < 16,
+    const collides = placed.some((p) =>
+      boxesOverlap(lx, ly, hw + labelPadX, hh + labelPadY, p.x, p.y, p.hw, p.hh),
     );
     if (collides) {
       continue;
     }
-    placed.push({ x: lx, y: ly });
+    placed.push({ x: lx, y: ly, hw, hh });
     chosen.push(shape);
   }
 

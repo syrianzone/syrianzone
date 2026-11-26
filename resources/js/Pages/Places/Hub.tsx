@@ -52,15 +52,15 @@ function PlaceHubCard({ place, index }: { place: PlaceHubItem; index: number }) 
       href={place.url}
       className="group flex h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <Card className="flex w-full flex-col overflow-hidden border-border bg-card/70 transition-all group-hover:border-primary/50 group-hover:shadow-sm">
-        <div className="relative aspect-[3/2] w-full overflow-hidden bg-muted">
+      <Card className="flex w-full flex-row items-stretch gap-3 overflow-hidden border-border bg-card/70 p-2.5 transition-all group-hover:border-primary/50 group-hover:shadow-sm sm:flex-col sm:gap-0 sm:p-0">
+        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted sm:aspect-[3/2] sm:h-auto sm:max-h-48 sm:w-full sm:rounded-none">
           {place.thumb_url && !broken ? (
             <img
               src={place.thumb_url}
               alt={place.name}
-              width={480}
-              height={320}
-              loading={index < 3 ? 'eager' : 'lazy'}
+              width={96}
+              height={96}
+              loading={index < 2 ? 'eager' : 'lazy'}
               decoding="async"
               onError={() => setBroken(true)}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
@@ -72,10 +72,10 @@ function PlaceHubCard({ place, index }: { place: PlaceHubItem; index: number }) 
           )}
         </div>
 
-        <CardContent className="flex flex-1 flex-col justify-between gap-3 p-4">
-          <div className="space-y-2">
+        <CardContent className="flex min-w-0 flex-1 flex-col justify-between gap-1.5 p-0 sm:gap-3 sm:p-4">
+          <div className="space-y-1 sm:space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="line-clamp-1 text-base font-bold text-foreground transition-colors group-hover:text-primary">
+              <h3 className="line-clamp-1 text-sm font-bold text-foreground transition-colors group-hover:text-primary sm:text-base">
                 {place.name}
               </h3>
               <Badge variant="secondary" className="shrink-0 gap-1 text-[11px]">
@@ -85,13 +85,13 @@ function PlaceHubCard({ place, index }: { place: PlaceHubItem; index: number }) 
             </div>
 
             {place.description && (
-              <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+              <p className="line-clamp-2 text-xs leading-snug text-muted-foreground sm:leading-relaxed">
                 {place.description}
               </p>
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-2.5 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between gap-3 pt-1 text-xs text-muted-foreground sm:border-t sm:border-border/60 sm:pt-2.5">
             <span className="inline-flex items-center gap-1.5">
               <Camera className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
               <span>{formatPhotosCount(place.photos_count)}</span>
@@ -248,7 +248,7 @@ export default function PlaceHub({
             </Badge>
           </div>
 
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {places.map((place, index) => (
               <li key={place.id} className="flex">
                 <PlaceHubCard place={place} index={index} />

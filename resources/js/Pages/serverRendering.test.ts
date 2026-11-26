@@ -928,6 +928,7 @@ describe('pages render their content on the server', () => {
                     shapes: [
                         { id: 'damascus', name_ar: 'دمشق', path: 'M65 399L78 399L78 410Z', label_x: 71.3, label_y: 404.6 },
                         { id: 'quneitra', name_ar: 'القنيطرة', path: 'M20 420L48 420L48 450Z', label_x: 36, label_y: 418 },
+                        { id: 'rural-damascus', name_ar: 'ريف دمشق', path: 'M0 350L200 350L200 450Z', label_x: 72, label_y: 405 },
                     ],
                     pin: { x: 71.5, y: 404.5 },
                 },
@@ -972,6 +973,8 @@ describe('pages render their content on the server', () => {
         expect(cleanHtml).toContain('loading="lazy"');
         expect(cleanHtml).toContain('vector-effect="non-scaling-stroke"');
         expect(cleanHtml).toContain('القنيطرة');
+        // Rural Damascus label placed right on top of the pin is dropped to avoid overlap
+        expect(cleanHtml).not.toContain('ريف دمشق');
         expect(cleanHtml).toContain('33.51190, 36.30650');
         expect(cleanHtml).toContain('href="/mishwar?guide=7"');
         expect(cleanHtml).toContain('أماكن قريبة');
@@ -1101,8 +1104,11 @@ describe('pages render their content on the server', () => {
         expect(cleanGov).toContain('طبيعي');
         expect(cleanGov).toContain('href="/mishwar/1-place"');
         expect(cleanGov).toContain('href="/mishwar/4-place"');
-        expect(cleanGov).toContain('loading="eager"');
-        expect(cleanGov).toContain('loading="lazy"');
+        const gridHtml = (cleanGov.split('id="places-grid-heading"')[1] ?? '').split('crosslinks-heading')[0] ?? '';
+        expect(gridHtml.match(/loading="eager"/g)).toHaveLength(2);
+        expect(gridHtml.match(/loading="lazy"/g)).toHaveLength(2);
+        expect(gridHtml).toContain('width="96"');
+        expect(gridHtml).toContain('height="96"');
         expect(cleanGov).toContain('href="/governorates/hama"');
         expect(cleanGov).toContain('href="/mishwar/aleppo"');
 

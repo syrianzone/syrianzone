@@ -7,6 +7,15 @@
 @source "../js";
 @source "../views";
 
+/* A swipe-to-scroll row (filter pills) that should not draw a scrollbar. The
+   class was used without ever being defined, so those rows showed one. */
+@utility no-scrollbar {
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
 /* IBM Plex Sans Arabic — the UI webfont, served from this origin instead of
    fonts.googleapis.com (which cost two extra preconnects plus a render-blocking
    stylesheet). Files come from the @ibm/plex-sans-arabic npm package, OFL-1.1

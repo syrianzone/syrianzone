@@ -425,13 +425,13 @@ test('merged source 301s from slug page, bare id, and ?place= share, follows cha
     // 301s for B -> C (slug page, bare id, ?place=)
     $this->get($pathB)->assertStatus(301)->assertRedirect($pathC);
     $this->get('/mishwar/'.$placeB->id)->assertStatus(301)->assertRedirect($pathC);
-    $this->get('/mishwar?place='.$placeB->id)->assertStatus(301)->assertRedirect($pathC);
-    $this->get('/mishwar?place='.$placeB->id.'&utm_source=wa')->assertStatus(301)->assertRedirect($pathC.'?utm_source=wa');
+    $this->get('/mishwar?place='.$placeB->id)->assertStatus(301)->assertRedirect('/mishwar?place='.$placeC->id);
+    $this->get('/mishwar?place='.$placeB->id.'&utm_source=wa')->assertStatus(301)->assertRedirect('/mishwar?place='.$placeC->id.'&utm_source=wa');
 
     // Chain A -> B -> C resolves in one 301 straight to C
     $this->get($pathA)->assertStatus(301)->assertRedirect($pathC);
     $this->get('/mishwar/'.$placeA->id)->assertStatus(301)->assertRedirect($pathC);
-    $this->get('/mishwar?place='.$placeA->id)->assertStatus(301)->assertRedirect($pathC);
+    $this->get('/mishwar?place='.$placeA->id)->assertStatus(301)->assertRedirect('/mishwar?place='.$placeC->id);
 
     // Canonical target C still renders 200
     $this->get($pathC)->assertOk();

@@ -44,13 +44,10 @@ class PlaceController extends Controller
       if ($shared !== null && $shared->merged_into_id !== null) {
         $target = $shared->resolveCanonicalTarget();
         if ($target !== null) {
-          $url = $target->publicPath();
-          $otherQuery = $request->except('place');
-          if ($otherQuery !== []) {
-            $url .= '?'.http_build_query($otherQuery);
-          }
+          // A map deep link stays a map deep link: open the surviving place.
+          $query = ['place' => $target->id] + $request->except('place');
 
-          return redirect($url, 301);
+          return redirect('/mishwar?'.http_build_query($query), 301);
         }
       }
     }

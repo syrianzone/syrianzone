@@ -176,7 +176,7 @@ export default function CrossingsPage() {
                         </div>
 
                         <div className="relative">
-                            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Search aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 type="text"
                                 value={query}
@@ -186,6 +186,9 @@ export default function CrossingsPage() {
                                 aria-label="ابحث باسم المنفذ أو الدولة"
                             />
                         </div>
+                        <p role="status" className="sr-only">
+                            {query.trim() ? `${filtered.length} منفذ مطابق` : ''}
+                        </p>
 
                         {counts && (
                             <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] font-semibold">

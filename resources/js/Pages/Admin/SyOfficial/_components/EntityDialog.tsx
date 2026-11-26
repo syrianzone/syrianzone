@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from '@inertiajs/react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/Components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/Components/ui/dialog';
 import { Input } from '@/Components/ui/input';
 import { Textarea } from '@/Components/ui/textarea';
 import { Label } from '@/Components/ui/label';
@@ -103,6 +103,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'تعديل بيانات الجهة الرسمية' : 'إضافة جهة رسمية جديدة'}</DialogTitle>
+                    <DialogDescription>بيانات الجهة وشعارها وحساباتها الرسمية كما تظهر في دليل الحسابات الرسمية.</DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-2">
@@ -246,6 +247,9 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                         onChange={(e) => handleSocialChange(platform.key, e.target.value)}
                                         placeholder={platform.placeholder}
                                         dir="ltr"
+                                        spellCheck={false}
+                                        autoCapitalize="none"
+                                        autoComplete="off"
                                         className="text-left h-9"
                                     />
                                 </div>

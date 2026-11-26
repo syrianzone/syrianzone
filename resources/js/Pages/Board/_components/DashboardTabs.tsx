@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, Pencil, Plus, X } from 'lucide-react';
 import { cn } from '@/Lib/utils';
 import { Input } from '@/Components/ui/input';
+import { confirmDialog } from '@/Lib/confirm';
 import { MAX_DASHBOARDS } from '../_lib/layout';
 import type { BoardDoc } from '../_lib/types';
 
@@ -16,6 +17,16 @@ export function DashboardTabs(props: {
 }) {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+
+  async function remove(id: string, name: string) {
+    const ok = await confirmDialog({
+      title: `حذف اللوحة «${name}»؟`,
+      description: 'ستُحذف كل الويدجت فيها',
+      confirmText: 'حذف',
+      destructive: true,
+    });
+    if (ok) props.onRemove(id);
+  }
 
   function commit() {
     const name = draft.trim();
@@ -81,7 +92,7 @@ export function DashboardTabs(props: {
                   <button
                     type="button"
                     aria-label="حذف اللوحة"
-                    onClick={() => props.onRemove(d.id)}
+                    onClick={() => void remove(d.id, d.name)}
                     className="opacity-70 hover:opacity-100"
                   >
                     <X className="h-3 w-3" />

@@ -2,6 +2,7 @@
 
 use App\Models\Place;
 use App\Models\PlacePhoto;
+use App\Services\Governorates\GovernorateGeometry;
 use App\Services\IndexNow\IndexNow;
 use App\Services\Places\PlaceGovernorates;
 use App\Services\Places\PlaceIndexability;
@@ -435,4 +436,39 @@ test('forgetting map cache also forgets PlaceGovernorates cache', function () {
     PlaceModerationService::forgetMapCache();
 
     expect(Cache::has(PlaceGovernorates::CACHE_KEY))->toBeFalse();
+});
+
+test('locatorForPlace zooms tightly for Damascus while keeping Rural Damascus label in view and large governorates broad', function () {
+    $geom = app(GovernorateGeometry::class);
+
+    $damascus = $geom->locatorForPlace(DAMASCUS_LAT, DAMASCUS_LNG, 'damascus');
+    $homs = $geom->locatorForPlace(34.7397, 36.6751, 'homs');
+    $quneitra = $geom->locatorForPlace(33.1287, 35.8598, 'quneitra');
+
+    expect($damascus)->not->toBeNull()
+        ->and($homs)->not->toBeNull()
+        ->and($quneitra)->not->toBeNull();
+
+    [$dx, $dy, $dw, $dh] = array_map('floatval', explode(' ', $damascus['viewBox']));
+    [, , $hw] = array_map('floatval', explode(' ', $homs['viewBox']));
+    [, , $qw] = array_map('floatval', explode(' ', $quneitra['viewBox']));
+
+    // Damascus viewBox span is much smaller than Homs's and Quneitra's
+    expect($dw)->toBeLessThan(45.0)
+        ->and($dw)->toBeGreaterThan(22.0)
+        ->and($dw)->toBeLessThan($qw)
+        ->and($dw)->toBeLessThan($hw)
+        ->and($hw)->toBeGreaterThan(400.0);
+
+    // Rural Damascus label is placed inside the Damascus zoomed viewBox and clear of the pin
+    $rural = collect($damascus['shapes'])->firstWhere('id', 'rural-damascus');
+    expect($rural)->not->toBeNull()
+        ->and($rural['label_x'])->toBeGreaterThan($dx)
+        ->and($rural['label_x'])->toBeLessThan($dx + $dw)
+        ->and($rural['label_y'])->toBeGreaterThan($dy)
+        ->and($rural['label_y'])->toBeLessThan($dy + $dh);
+
+    $unitScale = $dw / 300.0;
+    $pinDist = hypot($rural['label_x'] - $damascus['pin']['x'], $rural['label_y'] - $damascus['pin']['y']);
+    expect($pinDist)->toBeGreaterThan(15.0 * $unitScale);
 });

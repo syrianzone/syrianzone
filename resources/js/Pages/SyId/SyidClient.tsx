@@ -842,7 +842,7 @@ export default function SyidClient() {
                                     onClick={handleDownload}
                                     title={`انقر لتنزيل أيقونة ${icon.name} (${icon.landmark}) - ${currentTheme.name} Theme`}
                                     style={{ backgroundColor: currentTheme.bg }}
-                                    className="w-full aspect-[312/436] flex items-center justify-center transition-transform hover:scale-[1.06] focus:outline-none cursor-pointer group p-1.5 rounded-xl border border-border/40 overflow-hidden shadow-2xs"
+                                    className="w-full aspect-[312/436] flex items-center justify-center transition-transform hover:scale-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer group p-1.5 rounded-xl border border-border/40 overflow-hidden shadow-2xs"
                                 >
                                     {recoloredSvg ? (
                                         <div

@@ -343,8 +343,8 @@ function NavTopLink({
     <>
       {image && imageDark ? (
         <>
-          <img src={image} alt="" className="h-4 w-4 me-2 object-contain dark:hidden" />
-          <img src={imageDark} alt="" className="hidden h-4 w-4 me-2 object-contain dark:block" />
+          <img src={image} alt="" loading="lazy" decoding="async" className="h-4 w-4 me-2 object-contain dark:hidden" />
+          <img src={imageDark} alt="" loading="lazy" decoding="async" className="hidden h-4 w-4 me-2 object-contain dark:block" />
         </>
       ) : image ? (
         <img src={image} alt="" className="h-4 w-4 me-2 object-contain" />

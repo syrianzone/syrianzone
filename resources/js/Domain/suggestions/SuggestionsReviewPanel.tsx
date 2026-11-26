@@ -352,6 +352,7 @@ export default function SuggestionsReviewPanel({
                                                     }))
                                                 }
                                                 placeholder="ملاحظة تحريرية داخلية (اختياري)..."
+                                                aria-label={`ملاحظة تحريرية داخلية على «${item.title}» (اختياري)`}
                                                 className="h-9 flex-1 text-xs"
                                                 maxLength={1000}
                                             />

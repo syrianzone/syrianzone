@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useId } from 'react';
+import { useState, useEffect, useMemo, useId, useCallback } from 'react';
 import { useTabList } from '@/Lib/useTabList';
 import { HouseRow, PROVINCES, Mode } from './types';
 import { fetchHouseData } from './data';
 import { RotateCcw, ChartBar, Users, Sparkles } from 'lucide-react';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import DirectoryLoadMore from '@/Components/directory/DirectoryLoadMore';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -42,6 +43,12 @@ const MODE_LABELS: Record<Mode, string> = {
     winners: 'الفائزون',
     presidential: 'الثلث الرئاسي',
 };
+
+/** Same ordering as `localeCompare(…, 'ar')`, without building a collator per comparison. */
+const AR_COLLATOR = new Intl.Collator('ar');
+
+/** A province's voter list runs to thousands of rows; render them a page at a time. */
+const PAGE_SIZE = 200;
 
 /** Module-level so the hook's memo sees one stable function. */
 const houseSearchText = (row: HouseRow) => `${row.__nameNorm} ${row.__placeNorm}`;
@@ -99,10 +106,34 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         { key: 'district', label: 'الدائرة الانتخابية', options: [], valueOf: (row) => mode === 'winners' ? (row['Electoral District (الدائرة الانتخابية)'] || '').trim() : undefined },
     ], [mode]);
 
+    const [sortColumn, setSortColumn] = useState('Name'); // or 'الاسم'
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+    const compareRows = useCallback((a: HouseRow, b: HouseRow) => {
+        const aVal = a[sortColumn];
+        const bVal = b[sortColumn];
+
+        if (!aVal && !bVal) return 0;
+        if (!aVal) return 1;
+        if (!bVal) return -1;
+
+        let res = 0;
+        if (sortColumn.includes('Year') || sortColumn.includes('Age') || sortColumn === 'سنة الميلاد') {
+            const aNum = Number(aVal.replace(/\D/g, '')) || 0;
+            const bNum = Number(bVal.replace(/\D/g, '')) || 0;
+            res = aNum - bNum;
+        } else {
+            res = AR_COLLATOR.compare(String(aVal), String(bVal));
+        }
+        return sortDirection === 'asc' ? res : -res;
+    }, [sortColumn, sortDirection]);
+
     const directory = useDirectory<HouseRow>({
         items: data,
         searchText: houseSearchText,
         facets,
+        sort: sortColumn ? compareRows : undefined,
+        pageSize: PAGE_SIZE,
     });
     const sexFilter = directory.filters.sex?.[0] ?? '';
     const ageFilter = directory.filters.age?.[0] ?? '';
@@ -116,9 +147,6 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         else delete next[key];
         directory.setFilters(next);
     };
-
-    const [sortColumn, setSortColumn] = useState('Name'); // or 'الاسم'
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
     useEffect(() => {
 
@@ -160,27 +188,8 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
     const filteredData = directory.results;
 
-    const sortedData = useMemo(() => {
-        if (!sortColumn) return filteredData;
-        return [...filteredData].sort((a, b) => {
-            const aVal = a[sortColumn];
-            const bVal = b[sortColumn];
-
-            if (!aVal && !bVal) return 0;
-            if (!aVal) return 1;
-            if (!bVal) return -1;
-
-            let res = 0;
-            if (sortColumn.includes('Year') || sortColumn.includes('Age') || sortColumn === 'سنة الميلاد') {
-                const aNum = Number(aVal.replace(/\D/g, '')) || 0;
-                const bNum = Number(bVal.replace(/\D/g, '')) || 0;
-                res = aNum - bNum;
-            } else {
-                res = String(aVal).localeCompare(String(bVal), 'ar');
-            }
-            return sortDirection === 'asc' ? res : -res;
-        });
-    }, [filteredData, sortColumn, sortDirection]);
+    // The directory filters and sorts; `visible` is the rendered page of it.
+    const sortedData = directory.results;
 
     const stats = useMemo(() => {
         const total = filteredData.length;
@@ -544,7 +553,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         </thead>
                         <tbody className="bg-card divide-y divide-border">
                             {sortedData.length > 0 ? (
-                                sortedData.map((row, idx) => {
+                                directory.visible.map((row, idx) => {
                                     const isAppealed = row.__appealStatus === 'مطعون';
                                     const isWinner = isWinnerRow(row);
 
@@ -575,6 +584,13 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         </tbody>
                     </table>
                 </div>
+                {directory.hasMore && (
+                    <DirectoryLoadMore
+                        onClick={directory.loadMore}
+                        label={`عرض المزيد (${directory.shown} من ${directory.total})`}
+                        className="mt-6 pb-6"
+                    />
+                )}
             </div>
             </div>
         </div>

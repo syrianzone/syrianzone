@@ -185,6 +185,9 @@ function Donut({ counts, size, thickness, label, children }: {
  */
 function TrendChart({ points }: { points: TrendPoint[] }) {
     const [picked, setPicked] = useState<number | null>(null);
+    // Spoken only for keyboard steps: a live legend rewritten on every pointer
+    // move would flood screen readers while the mouse crosses the chart.
+    const [announcement, setAnnouncement] = useState('');
     const last = points.length - 1;
     if (last < 0) return null;
 
@@ -213,7 +216,10 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
         const move = { ArrowLeft: 1, ArrowRight: -1, Home: -last, End: last }[event.key];
         if (move === undefined) return;
         event.preventDefault();
-        setPicked(Math.max(0, Math.min(last, active + move)));
+        const next = Math.max(0, Math.min(last, active + move));
+        const p = points[next];
+        setPicked(next);
+        setAnnouncement(`حتى نهاية ${monthLabel(p)}: أُطلقت ${p.made}، حُسمت ${p.settled}، بانتظار الحسم ${p.made - p.settled}`);
     }
 
     const series = [
@@ -224,7 +230,8 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
 
     return (
         <div>
-            <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" aria-live="polite">
+            <p className="sr-only" role="status">{announcement}</p>
+            <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                 <span className="font-medium text-foreground">{picked === null ? 'حتى اليوم' : `حتى نهاية ${monthLabel(point)}`}</span>
                 {series.map((item) => (
                     <span key={item.label} className="flex items-center gap-1.5 text-muted-foreground">

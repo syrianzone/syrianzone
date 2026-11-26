@@ -672,11 +672,14 @@ export default function PrioritiesApp() {
                       <div>
                         <h4 className="font-bold text-sm text-foreground">{topic.name}</h4>
                         <button
+                          type="button"
                           onClick={() => toggleTopicDetails(topic.id)}
+                          aria-expanded={isExpanded}
+                          aria-controls={`priorities-topic-${topic.id}-details`}
                           className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 mt-0.5"
                         >
                           <span>تخصيص الملفات الفرعية والترابط</span>
-                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" /> : <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />}
                         </button>
                       </div>
                     </div>
@@ -721,7 +724,7 @@ export default function PrioritiesApp() {
                   </div>
 
                   {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-border/60 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div id={`priorities-topic-${topic.id}-details`} className="mt-4 pt-4 border-t border-border/60 animate-in fade-in slide-in-from-top-1 duration-200">
                       <p className="text-xs text-muted-foreground mb-3 leading-relaxed bg-card p-3 rounded-xl border border-border shadow-sm">
                         <span className="font-bold text-foreground block mb-1">وصف الملف الوطني:</span>
                         {topic.desc}

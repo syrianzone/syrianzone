@@ -53,7 +53,7 @@ function MemberCard({ member, root = false }: { member: Member; root?: boolean }
             {member.photo ? (
                 <img
                     src={member.photo}
-                    alt={member.name}
+                    alt=""
                     loading="lazy"
                     className={cn('shrink-0 rounded-xl object-cover border border-border bg-muted', root ? 'h-16 w-16' : 'h-12 w-12')}
                 />
@@ -64,7 +64,7 @@ function MemberCard({ member, root = false }: { member: Member; root?: boolean }
                         root ? 'h-16 w-16' : 'h-12 w-12'
                     )}
                 >
-                    <User className={root ? 'h-7 w-7' : 'h-6 w-6'} />
+                    <User className={root ? 'h-7 w-7' : 'h-6 w-6'} aria-hidden="true" />
                 </div>
             )}
             <div className="min-w-0">
@@ -158,13 +158,13 @@ export default function JusticePage() {
                                     {person.photo ? (
                                         <img
                                             src={person.photo}
-                                            alt={person.name}
+                                            alt=""
                                             loading="lazy"
                                             className="h-20 w-20 shrink-0 rounded-xl object-cover border border-border bg-muted"
                                         />
                                     ) : (
                                         <div className="h-20 w-20 shrink-0 rounded-xl border border-border bg-muted flex items-center justify-center text-muted-foreground">
-                                            <User className="h-8 w-8" />
+                                            <User className="h-8 w-8" aria-hidden="true" />
                                         </div>
                                     )}
                                     <div className="min-w-0">

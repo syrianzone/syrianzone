@@ -226,11 +226,12 @@ function StatusToggle({ value, onChange }: { value: StatusFilter; onChange: (v: 
         { value: "all", label: "الكل" },
     ];
     return (
-        <div className="inline-flex rounded-md border bg-background p-0.5 text-sm">
+        <div role="group" aria-label="المسؤولون المعروضون" className="inline-flex rounded-md border bg-background p-0.5 text-sm">
             {options.map((o) => (
                 <button
                     key={o.value}
                     type="button"
+                    aria-pressed={value === o.value}
                     onClick={() => onChange(o.value)}
                     className={`px-3 py-1 rounded-sm transition-colors ${
                         value === o.value ? "bg-primary text-primary-foreground" : "text-gray-600 hover:bg-muted"

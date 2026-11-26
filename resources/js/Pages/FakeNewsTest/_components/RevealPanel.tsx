@@ -31,7 +31,16 @@ const DISMISS_VELOCITY_PX_MS = 0.42;
 const DISMISS_MIN_FLICK_PX = 34;
 const TAP_MAX_DISTANCE_PX = 10;
 const FLY_OUT_MS = 200;
-const AUTO_DISMISS_MS = 3000;
+// Long enough to read the claim and its explanation: a base plus a per-character
+// allowance, capped so a forgotten tab still moves on.
+const AUTO_DISMISS_BASE_MS = 4000;
+const AUTO_DISMISS_PER_CHAR_MS = 45;
+const AUTO_DISMISS_MAX_MS = 20000;
+
+function autoDismissMs(claim: FakeNewsClaim): number {
+  const chars = claim.text.length + claim.explain.length;
+  return Math.min(AUTO_DISMISS_MAX_MS, AUTO_DISMISS_BASE_MS + chars * AUTO_DISMISS_PER_CHAR_MS);
+}
 
 export default function RevealPanel({
   claim,
@@ -44,11 +53,12 @@ export default function RevealPanel({
 }: RevealPanelProps) {
   const isCorrect = userAnswer === claim.answer;
   const isLast = index + 1 >= total;
+  const dismissAfterMs = autoDismissMs(claim);
 
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [flyVector, setFlyVector] = useState<{ x: number; y: number } | null>(null);
-  const [remainingMs, setRemainingMs] = useState(AUTO_DISMISS_MS);
+  const [remainingMs, setRemainingMs] = useState(dismissAfterMs);
   const [timerStopped, setTimerStopped] = useState(false);
 
   const dragStartRef = useRef<{ x: number; y: number; time: number; pointerId: number } | null>(null);
@@ -68,7 +78,7 @@ export default function RevealPanel({
     setDragging(false);
     setFlyVector(null);
     setOffset({ x: 0, y: 0 });
-    setRemainingMs(AUTO_DISMISS_MS);
+    setRemainingMs(dismissAfterMs);
     setTimerStopped(false);
     return () => {
       if (timerRef.current !== null) {
@@ -76,7 +86,7 @@ export default function RevealPanel({
         timerRef.current = null;
       }
     };
-  }, [claim.id]);
+  }, [claim.id, dismissAfterMs]);
 
   const dismissCard = useCallback(
     (vx = -1, vy = 0) => {
@@ -84,9 +94,10 @@ export default function RevealPanel({
       committedRef.current = true;
       setDragging(false);
       const len = Math.hypot(vx, vy) || 1;
+      // Unit vector scaled in the viewport's own units, so the card leaves the screen.
       setFlyVector({
-        x: (vx / len) * 440,
-        y: (vy / len) * 440,
+        x: (vx / len) * 100,
+        y: (vy / len) * 100,
       });
       timerRef.current = window.setTimeout(() => {
         onNext();
@@ -95,7 +106,7 @@ export default function RevealPanel({
     [onNext],
   );
 
-  // Auto-dismiss after 3 seconds (pauses while dragging, stops when tapped/clicked)
+  // Auto-dismiss after a reading-length delay (pauses while dragging, stops when tapped, clicked or scrolled)
   useEffect(() => {
     if (dragging || timerStopped || flyVector !== null || committedRef.current) return;
     lastTickRef.current = performance.now();
@@ -116,10 +127,21 @@ export default function RevealPanel({
     return () => window.clearInterval(intervalId);
   }, [dragging, timerStopped, flyVector, dismissCard, claim.id]);
 
+  // Scrolling with a wheel or trackpad means the reader is reading: stop the
+  // countdown. (Touch scrolling cancels the pointer drag and is handled there.)
+  useEffect(() => {
+    if (timerStopped) return;
+    const handleWheel = () => {
+      if (!committedRef.current) setTimerStopped(true);
+    };
+    window.addEventListener('wheel', handleWheel, { passive: true });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [timerStopped, claim.id]);
+
   // Keyboard shortcuts: Enter / Space / Arrow keys dismiss to next card
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (committedRef.current) return;
+      if (committedRef.current || e.repeat) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (
@@ -157,7 +179,15 @@ export default function RevealPanel({
     const target = e.target as HTMLElement | null;
     if (target?.closest('a, button')) return;
 
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Without capture a release off the card never reaches us and the card
+      // would stay displaced with the countdown paused, so don't start a drag.
+      // The reader touched the card, so treat it as a tap: stop the countdown.
+      setTimerStopped(true);
+      return;
+    }
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
@@ -190,6 +220,9 @@ export default function RevealPanel({
     }
 
     if (cancelled || committedRef.current) {
+      // A cancel is usually the browser taking over to scroll: the reader is
+      // reading, so stop the countdown rather than restart it.
+      if (cancelled && !committedRef.current) setTimerStopped(true);
       setDragging(false);
       setOffset({ x: 0, y: 0 });
       return;
@@ -215,10 +248,10 @@ export default function RevealPanel({
   const dragDistance = Math.hypot(offset.x, offset.y);
   const dragOpacity = flyVector ? 0 : Math.max(0.45, 1 - dragDistance / 360);
   const cardTransform = flyVector
-    ? `translate3d(${flyVector.x}px, ${flyVector.y}px, 0) rotate(${flyVector.x * 0.04}deg)`
+    ? `translate3d(${flyVector.x}vw, ${flyVector.y}vh, 0) rotate(${flyVector.x * 0.18}deg)`
     : `translate3d(${offset.x}px, ${offset.y}px, 0) rotate(${offset.x * 0.04}deg)`;
 
-  const remainingPct = Math.max(0, Math.min(100, (remainingMs / AUTO_DISMISS_MS) * 100));
+  const remainingPct = Math.max(0, Math.min(100, (remainingMs / dismissAfterMs) * 100));
   const sources = [claim.source, ...(claim.source2 ? [claim.source2] : [])];
 
   return (
@@ -267,8 +300,8 @@ export default function RevealPanel({
         </div>
       </div>
 
-      {/* Swipeable Reveal Card (auto-dismisses after 3s or swipe in any direction) */}
-      <div className="relative my-4 flex flex-1 items-center justify-center overflow-x-clip py-2">
+      {/* Swipeable Reveal Card (auto-dismisses after a reading-length delay, or swipe in any direction) */}
+      <div className="relative my-4 flex flex-1 items-center justify-center py-2">
         <div className="relative w-full">
           {!isLast && (
             <Card
@@ -287,12 +320,13 @@ export default function RevealPanel({
             onPointerMove={handlePointerMove}
             onPointerUp={(e) => finishPointer(e, false)}
             onPointerCancel={(e) => finishPointer(e, true)}
+            onLostPointerCapture={(e) => finishPointer(e, true)}
             style={{
               transform: cardTransform,
               opacity: dragOpacity,
             }}
             className={cn(
-              'relative z-10 overflow-hidden rounded-2xl shadow-md touch-none select-none cursor-grab active:cursor-grabbing',
+              'relative z-10 overflow-hidden rounded-2xl shadow-md touch-pan-y select-none cursor-grab active:cursor-grabbing',
               isCorrect ? 'border-emerald-500/40' : 'border-destructive/40',
               dragging
                 ? 'transition-none'

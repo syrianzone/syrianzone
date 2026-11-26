@@ -74,7 +74,7 @@ export default function SwipeCardDeck({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (committedRef.current) return;
+      if (committedRef.current || e.repeat) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (
@@ -103,7 +103,13 @@ export default function SwipeCardDeck({
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (committedRef.current) return;
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Without capture a release off the card never reaches us and the card
+      // would stay displaced, so don't start a drag; the buttons and keys still work.
+      return;
+    }
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
@@ -161,9 +167,9 @@ export default function SwipeCardDeck({
 
   const activeTransform =
     flyOut === 'right'
-      ? 'translate3d(440px, -24px, 0) rotate(18deg)'
+      ? 'translate3d(100vw, -24px, 0) rotate(18deg)'
       : flyOut === 'left'
-        ? 'translate3d(-440px, -24px, 0) rotate(-18deg)'
+        ? 'translate3d(-100vw, -24px, 0) rotate(-18deg)'
         : `translate3d(${offset.x}px, ${offset.y * 0.14}px, 0) rotate(${offset.x * 0.045}deg)`;
 
   const dragBorderClass =
@@ -220,11 +226,11 @@ export default function SwipeCardDeck({
       </div>
 
       {/* Stacked shadcn Card Deck */}
-      <div className="relative my-4 flex flex-1 items-center justify-center overflow-x-clip py-3">
+      <div className="relative my-2 flex flex-1 items-center justify-center py-2 sm:my-4 sm:py-3">
         <div
           className={cn(
-            'relative w-full',
-            claim.image ? 'h-[420px] sm:h-[460px]' : 'h-[360px] sm:h-[400px]',
+            'relative grid w-full',
+            claim.image ? 'min-h-[min(22rem,56svh)] sm:min-h-[28rem]' : 'min-h-[min(18rem,48svh)] sm:min-h-[24rem]',
           )}
         >
           {upcomingClaims.length >= 2 && (
@@ -251,12 +257,13 @@ export default function SwipeCardDeck({
             onPointerMove={handlePointerMove}
             onPointerUp={(e) => finishPointer(e, false)}
             onPointerCancel={(e) => finishPointer(e, true)}
+            onLostPointerCapture={(e) => finishPointer(e, true)}
             style={{
               transform: activeTransform,
               opacity: flyOut ? 0 : 1,
             }}
             className={cn(
-              'relative z-10 flex h-full w-full flex-col rounded-2xl border bg-card shadow-md touch-none select-none cursor-grab active:cursor-grabbing',
+              'relative z-10 flex w-full flex-col rounded-2xl border bg-card shadow-md touch-pan-y select-none cursor-grab active:cursor-grabbing',
               dragBorderClass,
               dragging
                 ? 'transition-none'
@@ -265,6 +272,8 @@ export default function SwipeCardDeck({
                   : 'transition-transform duration-300 ease-out',
             )}
           >
+            {/* Stamps sit on the trailing edge (صحيح on the left as the card leaves right,
+                غير صحيح on the right as it leaves left), so they stay on screen. */}
             {/* Dynamic Tinder stamp: صحيح */}
             <div
               aria-hidden="true"
@@ -272,7 +281,7 @@ export default function SwipeCardDeck({
                 opacity: rightRatio,
                 transform: `scale(${0.85 + rightRatio * 0.2}) rotate(-10deg)`,
               }}
-              className="pointer-events-none absolute top-5 start-5 z-20 inline-flex items-center gap-1.5 rounded-lg border-2 border-emerald-500 bg-background px-3 py-1 text-base font-extrabold text-emerald-700 dark:text-emerald-300"
+              className="pointer-events-none absolute top-5 end-5 z-20 inline-flex items-center gap-1.5 rounded-lg border-2 border-emerald-500 bg-background px-3 py-1 text-base font-extrabold text-emerald-700 dark:text-emerald-300"
             >
               <Check className="h-4 w-4 stroke-[2.5]" />
               <span>صحيح</span>
@@ -285,7 +294,7 @@ export default function SwipeCardDeck({
                 opacity: leftRatio,
                 transform: `scale(${0.85 + leftRatio * 0.2}) rotate(10deg)`,
               }}
-              className="pointer-events-none absolute top-5 end-5 z-20 inline-flex items-center gap-1.5 rounded-lg border-2 border-destructive bg-background px-3 py-1 text-base font-extrabold text-destructive"
+              className="pointer-events-none absolute top-5 start-5 z-20 inline-flex items-center gap-1.5 rounded-lg border-2 border-destructive bg-background px-3 py-1 text-base font-extrabold text-destructive"
             >
               <X className="h-4 w-4 stroke-[2.5]" />
               <span>غير صحيح</span>
@@ -314,7 +323,7 @@ export default function SwipeCardDeck({
                       draggable={false}
                       loading="eager"
                       decoding="async"
-                      className="pointer-events-none max-h-44 sm:max-h-52 w-full object-contain"
+                      className="pointer-events-none max-h-[min(11rem,24svh)] sm:max-h-52 w-full object-contain"
                     />
                   </div>
                   <p className="text-base sm:text-lg font-bold leading-relaxed text-foreground">

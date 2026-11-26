@@ -11,6 +11,7 @@ use App\Models\Place;
 use App\Models\Population\PopulationDemographic;
 use App\Services\Places\PlaceGovernorates;
 use App\Services\Places\PlaceUrls;
+use App\Services\Wildlife\WildlifeData;
 use App\Support\ArabicSearch;
 use App\Support\Facts;
 use Illuminate\Support\Facades\Cache;
@@ -83,6 +84,7 @@ final class GovernorateDataService
     public function __construct(
         private readonly GovernorateGeometry $geometry,
         private readonly PlaceGovernorates $placeGovernorates,
+        private readonly WildlifeData $wildlife,
     ) {}
 
     /**
@@ -237,6 +239,7 @@ final class GovernorateDataService
             'transit' => $this->transitFor($canonicalId),
             'crossings' => $this->crossingsFor($canonicalId),
             'places' => $this->placesFor($canonicalId),
+            'wildlife' => $this->wildlife->forGovernorate($canonicalId),
             'phonebook' => $this->phonebookFor($canonicalId, (string) $gov['name_ar']),
             'otherGovernorates' => $otherGovernorates,
             'iconCredit' => self::ICON_CREDIT,

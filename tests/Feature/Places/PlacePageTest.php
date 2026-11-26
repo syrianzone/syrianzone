@@ -341,6 +341,9 @@ test('sitemap and image sitemap include indexable places with latest lastmod and
         ->and($imageEntries->has($rejected->publicPath()))->toBeFalse();
 });
 
+const OFFSHORE_LAT = 34.5;
+const OFFSHORE_LNG = 33.0;
+
 test('place and photo observers queue canonical paths, old slug on rename, and skip non-approved places', function () {
     $indexNow = enableIndexNowForPlacesTest();
     $base = 'https://syrian.zone';
@@ -350,6 +353,10 @@ test('place and photo observers queue canonical paths, old slug on rename, and s
         'name' => 'قصر العظم',
         'description' => RICH_DESCRIPTION,
         'status' => 'pending',
+        // Off the coast, outside every governorate: hub paths are covered in
+        // IndexNowTest; this test pins the place-page paths only.
+        'lat' => OFFSHORE_LAT,
+        'lng' => OFFSHORE_LNG,
     ]);
     $photo1 = PlacePhoto::factory()->create(['place_id' => $place->id]);
     expect($indexNow->pending())->toBe([]);
@@ -396,6 +403,8 @@ test('place and photo observers queue canonical paths, old slug on rename, and s
     $thin = Place::factory()->approved()->create([
         'name' => 'حمام نور الدين',
         'description' => SHORT_DESCRIPTION,
+        'lat' => OFFSHORE_LAT,
+        'lng' => OFFSHORE_LNG,
     ]);
     expect($indexNow->pending())->toBe([$base.'/mishwar']);
 

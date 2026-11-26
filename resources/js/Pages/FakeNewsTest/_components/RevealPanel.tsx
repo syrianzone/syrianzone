@@ -138,7 +138,8 @@ export default function RevealPanel({
     return () => window.removeEventListener('wheel', handleWheel);
   }, [timerStopped, claim.id]);
 
-  // Keyboard shortcuts: Enter / Space / Arrow keys dismiss to next card
+  // Keyboard shortcuts: Enter and the horizontal arrows dismiss to the next card.
+  // Space and the vertical arrows are left alone so the page still scrolls.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (committedRef.current || e.repeat) return;
@@ -155,18 +156,12 @@ export default function RevealPanel({
         return;
       }
 
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowLeft') {
+      if (e.key === 'Enter' || e.key === 'ArrowLeft') {
         e.preventDefault();
         dismissCard(-1, 0);
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         dismissCard(1, 0);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        dismissCard(0, -1);
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        dismissCard(0, 1);
       }
     };
     window.addEventListener('keydown', handleKeyDown);

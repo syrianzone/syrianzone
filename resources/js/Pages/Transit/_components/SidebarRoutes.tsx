@@ -9,6 +9,7 @@ import { useMapStore } from '../_store/useMapStore'
 import { getRouteColor } from '../_lib/mapColors'
 import type { RouteProperties } from '../_types'
 import type { TransitCity } from '@/Domain/transit/types'
+import { governorateByAnyName } from '@/Domain/geography/governorates'
 
 interface SidebarRoutesProps {
   city: TransitCity | undefined
@@ -37,6 +38,8 @@ export function SidebarRoutes({ city, cities, routes, returnFocusRouteId = null 
   }, [])
 
   if (!city) return null
+
+  const governorate = governorateByAnyName(city.id) ?? governorateByAnyName(city.nameAr)
 
   const handleRouteClick = (routeId: string) => {
     setSelectedRouteId(routeId)
@@ -119,6 +122,14 @@ export function SidebarRoutes({ city, cities, routes, returnFocusRouteId = null 
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-foreground">{city.nameAr}</h2>
             <p className="text-xs text-muted-foreground">{routes.length} خط سيرفيس</p>
+            {governorate && (
+              <Link
+                href={`/governorates/${governorate.id}`}
+                className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              >
+                <span>عن محافظة {governorate.nameAr}</span>
+              </Link>
+            )}
           </div>
         </div>
 

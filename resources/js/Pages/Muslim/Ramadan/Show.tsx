@@ -60,6 +60,13 @@ export default function Show({ city, meta, rows, image, todayInfo }: RamadanCity
                 <span>مواقيت الصلاة في {city.nameAr}</span>
                 <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
+              <Link
+                href={`/governorates/${city.id}`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground no-underline transition-colors hover:border-primary/40 hover:text-primary"
+              >
+                <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                <span>عن محافظة {city.nameAr}</span>
+              </Link>
             </div>
 
             <Button

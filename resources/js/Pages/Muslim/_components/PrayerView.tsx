@@ -120,6 +120,15 @@ export default function PrayerView({
                   {apiHijri ? <span>{apiHijri} هـ</span> : null}
                 </p>
               )}
+              {initialCity && initialCityName && (
+                <Link
+                  href={`/governorates/${initialCity}`}
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  <span>عن محافظة {initialCityName}</span>
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                </Link>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               {apiHijri && <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">{apiHijri} هـ</Badge>}

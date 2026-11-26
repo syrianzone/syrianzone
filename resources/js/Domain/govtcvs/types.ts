@@ -264,6 +264,16 @@ export interface GovtHouseLink {
     label: string;
 }
 
+export interface GovtMinistryLink {
+    slug: string;
+    href: string;
+    name_ar: string;
+    kind: string;
+    status: string;
+    is_current: boolean;
+    role_title: string;
+}
+
 export interface GovtOfficialDetail extends GovtOfficialAdminSummary {
     bio_summary_ar: string | null;
     birth_year: number | null;
@@ -287,6 +297,7 @@ export interface GovtOfficialDetail extends GovtOfficialAdminSummary {
     };
     official_entity_link?: GovtOfficialEntityLink | null;
     house_link?: GovtHouseLink | null;
+    ministry_links?: GovtMinistryLink[];
     aliases: GovtAliasItem[];
     tenures: GovtTenureItem[];
     cv_entries: GovtCvEntryItem[];

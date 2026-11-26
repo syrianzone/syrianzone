@@ -38,6 +38,7 @@ class SitemapBuilder
             $this->pollUrls(),
             $this->promiseUrls(),
             $this->govtCvUrls(),
+            $this->ministryUrls(),
             $this->govAppUrls(),
             $this->crossingUrls(),
             $this->governorateUrls(),
@@ -127,6 +128,10 @@ class SitemapBuilder
             '/promises' => $this->latestOf([Promise::published()->max('updated_at')]),
             '/govtcvs' => $govtCvsLastmod,
             '/govtcvs/movements' => $govtCvsLastmod,
+            '/ministries' => $this->latestOf([
+                Facts::ministries()['meta']['updated_at'] ?? null,
+                $govtCvsLastmod,
+            ]),
             '/tierlist' => $tierListPoll ? $this->pollLastmod($tierListPoll) : null,
             '/tierlist/leaderboard' => $tierListPoll ? $this->leaderboardLastmod($tierListPoll->id) : null,
             // Sheet-backed pages: last successful fetch time, not a deploy stamp.
@@ -305,6 +310,29 @@ class SitemapBuilder
             ->get(['slug', 'updated_at'])
             ->map(fn (GovtOfficial $o) => new SitemapUrl('/govtcvs/'.$o->slug, 0.7, 'weekly', $o->updated_at))
             ->all();
+    }
+
+    /**
+     * One entry per Syrian ministry (current or historical) and sovereign body.
+     *
+     * @return SitemapUrl[]
+     */
+    private function ministryUrls(): array
+    {
+        $data = Facts::ministries();
+        $updatedAt = $this->latestOf([$data['meta']['updated_at'] ?? null]);
+        $urls = [];
+
+        foreach ($data['ministries'] ?? [] as $ministry) {
+            $slug = trim((string) ($ministry['slug'] ?? ''));
+            if ($slug === '') {
+                continue;
+            }
+            $priority = ($ministry['status'] ?? 'current') === 'current' ? 0.8 : 0.6;
+            $urls[] = new SitemapUrl('/ministries/'.$slug, $priority, 'weekly', $updatedAt);
+        }
+
+        return $urls;
     }
 
     /**

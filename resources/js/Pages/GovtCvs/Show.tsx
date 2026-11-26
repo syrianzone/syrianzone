@@ -13,6 +13,7 @@ import {
     FileText,
     Globe,
     History,
+    Landmark,
     MapPin,
     MessageSquarePlus,
     Pencil,
@@ -34,6 +35,7 @@ import {
 import {
     GOVT_CV_SECTION_KEYS,
     type GovtHouseLink,
+    type GovtMinistryLink,
     type GovtOfficialDetail,
     type GovtOfficialEntityLink,
 } from '@/Domain/govtcvs/types';
@@ -54,6 +56,7 @@ interface Props {
     } | null;
     official_entity_link?: GovtOfficialEntityLink | null;
     house_link?: GovtHouseLink | null;
+    ministry_links?: GovtMinistryLink[];
 }
 
 const PROMISE_STATE_AR: Record<string, string> = {
@@ -73,6 +76,7 @@ export default function GovtCvsShow({
     tierlist_link = null,
     official_entity_link = null,
     house_link = null,
+    ministry_links = [],
 }: Props) {
     const can = useCan();
     const canEdit = (can as (c: string) => boolean)('govtcvs.edit');
@@ -137,10 +141,13 @@ export default function GovtCvsShow({
               }
             : null);
 
+    const resolvedMinistryLinks = ministry_links.length > 0 ? ministry_links : (official.ministry_links ?? []);
+
     const hasCrossLinks =
         related_promises.length > 0 ||
         Boolean(resolvedOfficialEntityLink) ||
-        Boolean(resolvedHouseLink);
+        Boolean(resolvedHouseLink) ||
+        resolvedMinistryLinks.length > 0;
 
     return (
         <MainLayout>
@@ -493,6 +500,33 @@ export default function GovtCvsShow({
                                     </h2>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
+                                    {resolvedMinistryLinks.length > 0 && (
+                                        <div className="space-y-2 rounded-xl border border-primary/25 bg-primary/5 p-3.5">
+                                            <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                                                <Landmark className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                                                <span>وزارات سوريا والهيئات السيادية</span>
+                                            </p>
+                                            <ul className="space-y-2" role="list">
+                                                {resolvedMinistryLinks.map((link) => (
+                                                    <li key={link.slug}>
+                                                        <Link
+                                                            href={link.href}
+                                                            className="inline-flex items-center gap-1.5 text-sm font-bold text-foreground hover:text-primary hover:underline"
+                                                        >
+                                                            <span>{link.name_ar}</span>
+                                                            <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                                                        </Link>
+                                                        {link.role_title && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {link.role_title}
+                                                            </p>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
                                     {resolvedOfficialEntityLink && (
                                         <div className="rounded-xl border border-border bg-muted/30 p-3.5">
                                             <p className="text-xs text-muted-foreground">

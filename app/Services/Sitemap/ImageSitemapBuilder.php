@@ -7,6 +7,7 @@ use App\Models\GovtOfficial;
 use App\Models\OfficialEntity;
 use App\Models\Promise;
 use App\Services\Governorates\GovernorateDataService;
+use App\Services\Ministries\MinistryDirectoryService;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Support\Facts;
 use Illuminate\Database\Eloquent\Collection;
@@ -53,6 +54,7 @@ class ImageSitemapBuilder
     {
         return [
             $this->officialImages(),
+            $this->ministryImages(),
             $this->govAppDetailImages(),
             $this->govAppIndexImages(),
             $this->promiseDetailImages(),
@@ -260,6 +262,25 @@ class ImageSitemapBuilder
             }
 
             $entries[] = new ImageSitemapUrl('/govtcvs/'.$official->slug, [$portrait]);
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Minister and sovereign-body leader portraits rendered on `/ministries` and `/ministries/{slug}`.
+     *
+     * @return list<ImageSitemapUrl>
+     */
+    private function ministryImages(): array
+    {
+        $entries = [];
+
+        foreach (app(MinistryDirectoryService::class)->portraitsByPath() as $path => $rawPortraits) {
+            $images = $this->normalizeList($rawPortraits, allowBareEntityFilename: true);
+            if ($images !== []) {
+                $entries[] = new ImageSitemapUrl($path, $images);
+            }
         }
 
         return $entries;

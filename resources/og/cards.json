@@ -59,6 +59,7 @@
     { "slug": "privacy", "title": "سياسة الخصوصية", "subtitle": "كيف نحمي بياناتك وما التقنيات التي نستخدمها", "emblem": true },
     { "slug": "terms", "title": "الشروط والأحكام", "subtitle": "شروط الاستخدام والسلوك المقبول", "emblem": true },
     { "slug": "currency", "title": "تحويل الليرة السورية", "subtitle": "حاسبة الليرة الجديدة والقديمة وتقسيم الفئات النقدية", "icon": "currency" },
-    { "slug": "governorates", "title": "محافظات سوريا الـ14", "subtitle": "الخريطة والسكان والمحافظون ومواقيت الصلاة والخدمات", "icon": "governorates" }
+    { "slug": "governorates", "title": "محافظات سوريا الـ14", "subtitle": "الخريطة والسكان والمحافظون ومواقيت الصلاة والخدمات", "icon": "governorates" },
+    { "slug": "ministries", "title": "وزارات سوريا", "subtitle": "الحكومة الحالية والخط الزمني للوزراء والدمج والفصل (2024–2026)", "icon": "ministries" }
   ]
 }

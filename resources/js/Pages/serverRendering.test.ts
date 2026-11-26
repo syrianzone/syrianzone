@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { createElement, Suspense } from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { createInertiaApp } from '@inertiajs/react';
@@ -238,6 +240,96 @@ describe('pages render their content on the server', () => {
                 },
             },
             '/roznama',
+    it('renders the ministries hub with the current cabinet and four-era timeline in SSR markup', async () => {
+        const raw = JSON.parse(
+            readFileSync(resolve(process.cwd(), 'resources/data/government/ministries.json'), 'utf8'),
+        );
+        const bySlug = Object.fromEntries(raw.ministries.map((m: { slug: string }) => [m.slug, m]));
+        const toSummary = (m: Record<string, unknown>) => ({
+            ...m,
+            entity_image: null,
+            entity_description_ar: null,
+            predecessors: ((m.predecessors as string[]) ?? []).map((s) => ({
+                slug: s,
+                name_ar: bySlug[s]?.name_ar ?? s,
+                status: bySlug[s]?.status ?? 'current',
+                kind: bySlug[s]?.kind ?? 'ministry',
+            })),
+            successors: ((m.successors as string[]) ?? []).map((s) => ({
+                slug: s,
+                name_ar: bySlug[s]?.name_ar ?? s,
+                status: bySlug[s]?.status ?? 'current',
+                kind: bySlug[s]?.kind ?? 'ministry',
+            })),
+            holders: (m.holders as Array<Record<string, unknown>>).map((h) => ({
+                ...h,
+                govtcvs_url: h.govtcvs_slug ? `/govtcvs/${h.govtcvs_slug}` : null,
+                portrait_url: null,
+                bio_summary_ar: null,
+                office_status: null,
+                cv_completeness: null,
+            })),
+            deputies: [],
+            current_holder:
+                (m.holders as Array<Record<string, unknown>>).find((h) => h.is_current)
+                    ? {
+                          ...(m.holders as Array<Record<string, unknown>>).find((h) => h.is_current),
+                          govtcvs_url: (m.holders as Array<Record<string, unknown>>).find((h) => h.is_current)
+                              ?.govtcvs_slug
+                              ? `/govtcvs/${
+                                    (m.holders as Array<Record<string, unknown>>).find((h) => h.is_current)
+                                        ?.govtcvs_slug
+                                }`
+                              : null,
+                          portrait_url: null,
+                          bio_summary_ar: null,
+                          office_status: null,
+                          cv_completeness: null,
+                      }
+                    : null,
+        });
+
+        const all = raw.ministries.map(toSummary);
+        const currentCabinet = all.filter(
+            (m: { kind: string; status: string }) => m.kind === 'ministry' && m.status === 'current',
+        );
+        const historical = all.filter(
+            (m: { kind: string; status: string }) => m.kind === 'ministry' && m.status !== 'current',
+        );
+        const sovereign = all.filter((m: { kind: string }) => m.kind === 'sovereign');
+
+        const html = await renderOnServer(
+            'Ministries/Index',
+            {
+                meta: raw.meta,
+                eras: raw.eras,
+                restructurings: raw.restructurings.map((r: Record<string, unknown>) => ({
+                    ...r,
+                    from_ministries: ((r.from_slugs as string[]) ?? []).map((s) => ({
+                        slug: s,
+                        name_ar: bySlug[s]?.name_ar ?? s,
+                        status: bySlug[s]?.status ?? 'merged',
+                        kind: bySlug[s]?.kind ?? 'ministry',
+                    })),
+                    to_ministries: ((r.to_slugs as string[]) ?? []).map((s) => ({
+                        slug: s,
+                        name_ar: bySlug[s]?.name_ar ?? s,
+                        status: bySlug[s]?.status ?? 'current',
+                        kind: bySlug[s]?.kind ?? 'ministry',
+                    })),
+                })),
+                current_cabinet: currentCabinet,
+                historical_ministries: historical,
+                sovereign_bodies: sovereign,
+                all_ministries: all,
+                stats: {
+                    current_ministries: currentCabinet.length,
+                    historical_ministries: historical.length,
+                    sovereign_bodies: sovereign.length,
+                    eras_count: raw.eras.length,
+                },
+            },
+            '/ministries',
         );
 
         const cleanHtml = html.replace(/<!-- -->/g, '');
@@ -584,5 +676,177 @@ describe('pages render their content on the server', () => {
         ]) {
             expect(html).toContain(section);
         }
+        expect(cleanHtml).toContain('وزارات سوريا والحكومة السورية');
+        expect(cleanHtml).toContain('التشكيل الوزاري الحالي');
+        expect(cleanHtml).toContain('الخط الزمني للحكومة السورية عبر المراحل الأربع');
+        expect(cleanHtml).toContain('<ol');
+        expect(cleanHtml).toContain('<time dateTime="2025-03-29"');
+        for (const era of raw.eras) {
+            expect(cleanHtml).toContain(era.label_ar);
+        }
+        expect(cleanHtml).toContain('href="/ministries/energy"');
+        expect(cleanHtml).toContain('href="/ministries/foreign-affairs"');
+        expect(cleanHtml).toContain('href="/ministries/economy"');
+        expect(cleanHtml).toContain('href="/ministries/industry-and-internal-trade"');
+        expect(cleanHtml).toContain('محمد البشير');
+        expect(cleanHtml).toContain('أسعد حسن الشيباني');
+    });
+
+    it('renders a ministry detail page with holder timeline, merger history, accounts, apps, and promises in SSR markup', async () => {
+        const html = await renderOnServer(
+            'Ministries/Show',
+            {
+                meta: {
+                    updated_at: '2026-11-24T17:47:38+00:00',
+                    source_name_ar: 'جَرد — هيكلية الحكومة السورية',
+                    source_url: 'https://jard.chat/government',
+                    source_json_url: 'https://jard.chat/government.json',
+                },
+                eras: [
+                    {
+                        id: 'al_bashir',
+                        label_ar: 'حكومة تسيير الأعمال (محمد البشير)',
+                        short_label_ar: 'تسيير الأعمال (البشير)',
+                        period_ar: 'كانون الأول 2024 – آذار 2025',
+                        start_date: '2024-12-10',
+                        end_date: '2025-03-29',
+                        summary_ar: '',
+                        source_url: 'https://jard.chat/government',
+                    },
+                    {
+                        id: 'transitional_2025',
+                        label_ar: 'الحكومة الانتقالية المباشرة',
+                        short_label_ar: 'الحكومة الانتقالية',
+                        period_ar: 'آذار 2025 – أيار 2026',
+                        start_date: '2025-03-29',
+                        end_date: '2026-05-09',
+                        summary_ar: '',
+                        source_url: 'https://jard.chat/government',
+                    },
+                ],
+                ministry: {
+                    slug: 'energy',
+                    kind: 'ministry',
+                    name_ar: 'وزارة الطاقة',
+                    name_en: 'Ministry of Energy',
+                    status: 'current',
+                    sort_order: 4,
+                    official_entity_id: 'min-energy',
+                    entity_image: null,
+                    entity_description_ar: null,
+                    predecessors: [
+                        { slug: 'electricity', name_ar: 'وزارة الكهرباء', status: 'merged', kind: 'ministry' },
+                    ],
+                    successors: [],
+                    lineage_summary_ar: 'استُحدثت بدمج ثلاث وزارات بتاريخ 29 آذار 2025.',
+                    lineage_events: [
+                        {
+                            date: '2025-03-29',
+                            kind: 'merge',
+                            label_ar: 'دمج وزارات الكهرباء والنفط والموارد المائية في وزارة الطاقة',
+                            related_ministries: [
+                                { slug: 'electricity', name_ar: 'وزارة الكهرباء', status: 'merged', kind: 'ministry' },
+                            ],
+                            source_url: 'https://jard.chat/government/ministry-of-energy',
+                        },
+                    ],
+                    jard_url: 'https://jard.chat/government/ministry-of-energy',
+                    current_holder: {
+                        name: 'محمد البشير',
+                        title: 'وزير الطاقة',
+                        era: 'transitional_2025',
+                        start_date: '2025-03-29',
+                        end_date: null,
+                        is_current: true,
+                        decree: null,
+                        notes: 'وزارة مُستحدثة',
+                        source_url: 'https://jard.chat/government/ministry-of-energy',
+                        source_label: 'جَرد — وزارة الطاقة',
+                        govtcvs_slug: 'mohammed-al-bashir',
+                        govtcvs_url: '/govtcvs/mohammed-al-bashir',
+                        portrait_url: null,
+                        bio_summary_ar: null,
+                        office_status: 'in_office',
+                        cv_completeness: 'full_cv',
+                    },
+                    holders: [
+                        {
+                            name: 'محمد البشير',
+                            title: 'وزير الطاقة',
+                            era: 'transitional_2025',
+                            start_date: '2025-03-29',
+                            end_date: null,
+                            is_current: true,
+                            decree: null,
+                            notes: 'وزارة مُستحدثة',
+                            source_url: 'https://jard.chat/government/ministry-of-energy',
+                            source_label: 'جَرد — وزارة الطاقة',
+                            govtcvs_slug: 'mohammed-al-bashir',
+                            govtcvs_url: '/govtcvs/mohammed-al-bashir',
+                            portrait_url: null,
+                            bio_summary_ar: null,
+                            office_status: 'in_office',
+                            cv_completeness: 'full_cv',
+                        },
+                    ],
+                    deputies: [],
+                },
+                official_accounts: {
+                    primary: {
+                        id: 'min-energy',
+                        name_ar: 'وزارة الطاقة السورية',
+                        name_en: 'Ministry of Energy',
+                        description_ar: null,
+                        image: null,
+                        socials: { website: 'https://moe.gov.sy' },
+                        syofficial_url: '/syofficial',
+                    },
+                    affiliated: [],
+                },
+                gov_apps: [
+                    {
+                        id: 'seg',
+                        name_ar: 'بوابة الطاقة السورية',
+                        description_ar: 'خدمات الطاقة',
+                        icon: null,
+                        has_guide: true,
+                        url: '/govapps/seg',
+                        website: null,
+                    },
+                ],
+                promises: [
+                    {
+                        id: 'p1',
+                        number: 12,
+                        title: 'تحسين التغذية الكهربائية',
+                        status: 'in_progress',
+                        display_state: 'in_progress',
+                        statement_date: '2025-06-01',
+                        deadline_date: null,
+                        speaker_name: 'محمد البشير',
+                        speaker_slug: 'mohammed-al-bashir',
+                        is_current_minister: true,
+                        url: '/promises/12',
+                    },
+                ],
+                sources: [
+                    { label_ar: 'جَرد — وزارة الطاقة', url: 'https://jard.chat/government/ministry-of-energy' },
+                ],
+                siblings: [{ slug: 'finance', name_ar: 'وزارة المالية', status: 'current', kind: 'ministry' }],
+            },
+            '/ministries/energy',
+        );
+
+        const cleanHtml = html.replace(/<!-- -->/g, '');
+        expect(cleanHtml.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml).toContain('وزارة الطاقة');
+        expect(cleanHtml).toContain('محمد البشير');
+        expect(cleanHtml).toContain('href="/govtcvs/mohammed-al-bashir"');
+        expect(cleanHtml).toContain('href="/ministries/electricity"');
+        expect(cleanHtml).toContain('https://moe.gov.sy');
+        expect(cleanHtml).toContain('href="/govapps/seg"');
+        expect(cleanHtml).toContain('href="/promises/12"');
+        expect(cleanHtml).toContain('<time dateTime="2025-03-29"');
     });
 });

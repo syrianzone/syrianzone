@@ -98,10 +98,15 @@ test('sitemap contains no duplicate urls', function () {
 
 test('sitemap omits gated, ephemeral and redirect urls', function () {
     $body = $this->get('/sitemap.xml')->getContent();
+    $paths = array_map(fn (string $loc) => (string) parse_url($loc, PHP_URL_PATH), sitemapLocs($body));
 
     // /places and /transit/city/{id}/map are 301 shims; the rest are gated or ephemeral.
-    foreach (['/admin', '/dashboard', '/auth/', '/guesswho/room', '/healthcheck', '/dev/', '/compass/s/'] as $path) {
-        expect($body)->not->toContain($path);
+    foreach (['/admin', '/transit/admin', '/dashboard', '/auth/', '/guesswho/room', '/healthcheck', '/dev/', '/compass/s/'] as $prefix) {
+        foreach ($paths as $path) {
+            expect($path === rtrim($prefix, '/') || str_starts_with($path, rtrim($prefix, '/').'/'))->toBeFalse(
+                "Sitemap leaked gated/ephemeral path {$path} (matched {$prefix}).",
+            );
+        }
     }
 
     expect(sitemapLocs($body))->not->toContain('https://syrian.zone/places');

@@ -647,6 +647,21 @@
    "description": "دليل محافظات سوريا الأربع عشرة: السكان، المحافظون، مواقيت الصلاة، المواصلات، المعابر، الأماكن وأرقام الطوارئ",
    "group": "maps",
    "groupOrder": 4
+  },
+  {
+   "id": "ministries",
+   "title": "وزارات سوريا",
+   "subtitle": "الحكومة السورية الحالية والخط الزمني للوزراء ومسارات الدمج والفصل",
+   "href": "/ministries",
+   "type": "web",
+   "target": "/ministries",
+   "iconKey": "ministries",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "دليل وزارات سوريا والهيئات السيادية والخط الزمني لتعاقب الوزراء والمراسيم والحسابات الرسمية (2024–2026)",
+   "group": "politics",
+   "groupOrder": 6
   }
  ],
  "adminSections": [

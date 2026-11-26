@@ -25,6 +25,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IncomingSuggestionsAdminController;
 use App\Http\Controllers\IndexNowController;
 use App\Http\Controllers\LegacyRedirectController;
+use App\Http\Controllers\MinistryController;
 use App\Http\Controllers\PhonebookAdminController;
 use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\OgCardController;
@@ -109,6 +110,9 @@ Route::get('/promises/{number}', [PromiseController::class, 'show'])->where('num
 Route::get('/govtcvs', [GovtCvController::class, 'index']);
 Route::get('/govtcvs/movements', [GovtCvController::class, 'movements']);
 Route::get('/govtcvs/{slug}', [GovtCvController::class, 'show'])->where('slug', '[a-z0-9-]+');
+// Syrian ministries, historical portfolios & sovereign bodies (وزارات سوريا).
+Route::get('/ministries', [MinistryController::class, 'index']);
+Route::get('/ministries/{slug}', [MinistryController::class, 'show'])->where('slug', '[a-z0-9-]+');
 Route::get('/priorities', function () {
     return Inertia::render('Priorities/Index');
 });

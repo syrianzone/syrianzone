@@ -9,6 +9,7 @@ use App\Models\GovtOfficial;
 use App\Models\GovtOfficialAlias;
 use App\Models\GovtTenure;
 use App\Models\Promise;
+use App\Services\Ministries\MinistryDirectoryService;
 use Illuminate\Support\Collection;
 
 /**
@@ -291,6 +292,7 @@ final class GovtCvPresenter
                 'member_name' => $houseMemberName,
                 'house_member_id' => (int) $official->house_member_id,
             ] : null,
+            'ministry_links' => app(MinistryDirectoryService::class)->ministryLinksForOfficial($official),
             'published_at' => $official->published_at?->toIso8601String(),
         ];
     }

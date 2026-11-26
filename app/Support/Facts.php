@@ -578,6 +578,26 @@ final class Facts
     }
 
     /**
+     * Syrian ministries, historical merged/split portfolios, sovereign bodies,
+     * government eras and restructuring history (sourced from jard.chat and
+     * official decrees).
+     *
+     * @return array{
+     *     meta: array{updated_at: string, source_name_ar: string, source_url: string, source_json_url: string},
+     *     eras: list<array<string, mixed>>,
+     *     restructurings: list<array<string, mixed>>,
+     *     ministries: list<array<string, mixed>>
+     * }
+     */
+    public static function ministries(): array
+    {
+        /** @var array{meta: array{updated_at: string, source_name_ar: string, source_url: string, source_json_url: string}, eras: list<array<string, mixed>>, restructurings: list<array<string, mixed>>, ministries: list<array<string, mixed>>} $data */
+        $data = self::json('government/ministries');
+
+        return $data;
+    }
+
+    /**
      * Syrian visual identity facts: official colour palettes, eagle emblem
      * downloads/symbolism/usage rules, flag downloads/specs/wallpapers/FAQ,
      * and verified source URLs.

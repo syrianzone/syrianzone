@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Globe, MessageSquarePlus, Pencil, PencilLine, Send, Settings } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { ChevronLeft, Globe, Landmark, MessageSquarePlus, Pencil, PencilLine, Send, Settings } from 'lucide-react';
 import { Twitter } from '@/Components/ui/icons';
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
@@ -316,6 +317,34 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
             </section>
 
             <div className="container mx-auto px-4 py-8">
+                {/* Prominent link to the dedicated Syrian Ministries & Government Timeline hub */}
+                <div className="mb-8 rounded-2xl border border-primary/25 bg-primary/5 p-5 sm:p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-start gap-3">
+                            <span
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                                aria-hidden="true"
+                            >
+                                <Landmark className="h-5 w-5" />
+                            </span>
+                            <div className="space-y-1">
+                                <h2 className="text-base font-bold text-foreground sm:text-lg">
+                                    وزارات سوريا والخط الزمني للحكومة
+                                </h2>
+                                <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                                    تصفّح التشكيل الوزاري الحالي، تسلسل الوزراء عبر أربع مراحل حكومية (2024–2026)، مسارات الدمج والفصل، وملف كل وزارة وحساباتها الرسمية.
+                                </p>
+                            </div>
+                        </div>
+                        <Button asChild size="sm" className="min-h-10 shrink-0 gap-1.5 self-start sm:self-center">
+                            <Link href="/ministries">
+                                <span>استعراض وزارات سوريا</span>
+                                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <DirectoryResultCount>
                         {filteredData.length > 0 ? (
@@ -342,9 +371,20 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                             <div className="space-y-12">
                                 {Object.entries(groupedData).map(([catKey, items]) => (
                                     <div key={catKey}>
-                                        <h2 className="text-2xl font-bold text-foreground mb-6 border-b pb-2 border-border">
-                                            {getCategoryLabel(catKey)}
-                                        </h2>
+                                        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2">
+                                            <h2 className="text-2xl font-bold text-foreground">
+                                                {getCategoryLabel(catKey)}
+                                            </h2>
+                                            {catKey === 'ministries' && (
+                                                <Link
+                                                    href="/ministries"
+                                                    className="inline-flex min-h-9 items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                                                >
+                                                    <span>دليل وزارات سوريا والخط الزمني للوزراء</span>
+                                                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                                                </Link>
+                                            )}
+                                        </div>
                                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
                                             {items.map(item => (
                                                 <Card

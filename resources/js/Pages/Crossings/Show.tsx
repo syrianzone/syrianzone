@@ -91,9 +91,17 @@ export default function CrossingShow({ slug }: CrossingShowProps) {
             setNowMin(syriaMinutes());
             setTzOffset(syriaOffsetLabel());
         };
+        // A hidden tab skips the refresh and catches up the moment it is shown.
+        const updateIfVisible = () => {
+            if (!document.hidden) update();
+        };
         update();
-        const id = window.setInterval(update, 30_000);
-        return () => window.clearInterval(id);
+        const id = window.setInterval(updateIfVisible, 30_000);
+        document.addEventListener('visibilitychange', updateIfVisible);
+        return () => {
+            window.clearInterval(id);
+            document.removeEventListener('visibilitychange', updateIfVisible);
+        };
     }, []);
 
     const status = statusOf(crossing, nowMin);

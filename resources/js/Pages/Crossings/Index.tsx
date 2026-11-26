@@ -37,9 +37,17 @@ const SyriaClock = React.memo(function SyriaClock() {
             setTime(`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`);
         };
 
+        // A hidden tab skips the ticks and catches up the moment it is shown.
+        const tickIfVisible = () => {
+            if (!document.hidden) tick();
+        };
         tick();
-        const timer = setInterval(tick, 1000);
-        return () => clearInterval(timer);
+        const timer = setInterval(tickIfVisible, 1000);
+        document.addEventListener('visibilitychange', tickIfVisible);
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', tickIfVisible);
+        };
     }, []);
 
     return (
@@ -63,9 +71,16 @@ export default function CrossingsPage() {
     // (keeps SSR and the first client render identical) and refreshed every 30s.
     useEffect(() => {
         const sync = () => setNowMin(syriaMinutes());
+        const syncIfVisible = () => {
+            if (!document.hidden) sync();
+        };
         sync();
-        const timer = setInterval(sync, 30000);
-        return () => clearInterval(timer);
+        const timer = setInterval(syncIfVisible, 30000);
+        document.addEventListener('visibilitychange', syncIfVisible);
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', syncIfVisible);
+        };
     }, []);
 
     // ?c=17 deep links open one crossing, the way a shared card does.

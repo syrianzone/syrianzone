@@ -93,7 +93,27 @@ export default function Countdown({ state, counter, deadlineDate, statementDate,
     );
 }
 
-const DAMASCUS_OFFSET_MINUTES = 3 * 60; // Syria has been on UTC+3 year-round since 2022.
+/** Syria has been on UTC+3 year-round since 2022; used only if Intl can't say. */
+const FALLBACK_DAMASCUS_OFFSET_MINUTES = 3 * 60;
+
+/**
+ * Damascus's UTC offset at a given instant, from the browser's time-zone data,
+ * so a future rule change is picked up without a code change. Client-only.
+ */
+function damascusOffsetMinutes(at: number): number {
+    try {
+        const zone = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Damascus', timeZoneName: 'longOffset' })
+            .formatToParts(at)
+            .find((part) => part.type === 'timeZoneName')?.value;
+        const match = /^GMT([+-])(\d{1,2})(?::(\d{2}))?$/.exec(zone ?? '');
+        if (match) {
+            return (match[1] === '-' ? -1 : 1) * (Number(match[2]) * 60 + Number(match[3] ?? 0));
+        }
+    } catch {
+        // Older engines without longOffset fall through to the fixed offset.
+    }
+    return FALLBACK_DAMASCUS_OFFSET_MINUTES;
+}
 
 /** Time left until the end of the deadline day in Syria, as days/hours/minutes. */
 function LiveClock({ deadlineDate }: { deadlineDate: string }) {
@@ -109,7 +129,8 @@ function LiveClock({ deadlineDate }: { deadlineDate: string }) {
 
     const [y, m, d] = deadlineDate.split('-').map(Number);
     // End of the deadline day (23:59:59) in Syrian time, as a UTC instant.
-    const end = Date.UTC(y, m - 1, d, 23, 59, 59) - DAMASCUS_OFFSET_MINUTES * 60_000;
+    const endWallClock = Date.UTC(y, m - 1, d, 23, 59, 59);
+    const end = endWallClock - damascusOffsetMinutes(endWallClock) * 60_000;
     const diff = Math.max(0, end - now);
     const days = Math.floor(diff / 86_400_000);
     const hours = Math.floor((diff % 86_400_000) / 3_600_000);

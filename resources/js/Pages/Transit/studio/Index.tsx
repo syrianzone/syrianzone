@@ -1314,6 +1314,7 @@ function TransitStudioPageContent() {
                           key={idx}
                           type="button"
                           onClick={() => setColorIndex(idx)}
+                          aria-pressed={isSelected}
                           className={`relative flex h-8 w-full items-center justify-center rounded-lg border-2 transition-all ${
                             isSelected
                               ? 'scale-105 border-primary ring-2 ring-primary/30 shadow-md'

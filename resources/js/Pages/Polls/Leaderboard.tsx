@@ -287,16 +287,6 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
         };
     }, [status]);
 
-    if (loading && !data) {
-        return (
-            <MainLayout>
-                <div className="container mx-auto px-4 pt-10 pb-8">
-                    <div className="text-center text-gray-600 dark:text-gray-400">جاري التحميل...</div>
-                </div>
-            </MainLayout>
-        );
-    }
-
     const groups = publishedGroups(data);
     const successorIndex = buildSuccessorIndex(groups, data);
     const defaultGroup = groups.find((g) => g.isDefault) ?? groups[0];
@@ -345,7 +335,7 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
                 )}
 
                 {groups.length > 0 && data.history && (
-                    <Tabs defaultValue={defaultKey} dir="rtl" className="w-full">
+                    <Tabs defaultValue={defaultKey} dir="rtl" className="w-full" aria-busy={loading}>
                         <div className="flex flex-col items-center gap-3 mb-6">
                             <TabsList className="flex h-auto w-full max-w-2xl flex-wrap justify-center gap-1">
                                 {groups.map((group) => (

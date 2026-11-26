@@ -379,8 +379,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
       )}
 
       {loading ? (
-        <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
+        <div role="status" className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
           <p className="text-xs">جاري تحميل الصفحة…</p>
         </div>
       ) : error ? (

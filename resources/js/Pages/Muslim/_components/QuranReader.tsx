@@ -328,8 +328,10 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
           <div className="flex min-w-0 items-center gap-1">
             <Popover open={surahSelectOpen} onOpenChange={setSurahSelectOpen}>
               <PopoverTrigger asChild>
-                <button 
-                  className="flex items-center gap-1 truncate text-sm font-bold text-primary bg-transparent outline-none cursor-pointer appearance-none px-1.5 py-0.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                <button
+                  type="button"
+                  aria-label={`اختر السورة — الحالية: ${currentAyah ? SURAH_NAMES_AR[currentAyah.surah] : surahs}`}
+                  className="flex items-center gap-1 truncate text-sm font-bold text-primary bg-transparent cursor-pointer appearance-none px-1.5 py-0.5 rounded hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                 >
                   <span className="truncate">{currentAyah ? SURAH_NAMES_AR[currentAyah.surah] : surahs}</span>
                   <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />

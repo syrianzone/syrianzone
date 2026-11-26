@@ -228,10 +228,15 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   // Keyboard: h/l page (RTL), [ ] Juz jump (~20 pages).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      // A focused ayah moves between ayahs itself; at the page edge it leaves
+      // the arrow unhandled so the page turns here.
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return;
+      // Single-key shortcuts stay out of open dialogs, menus and pickers.
+      if (el?.closest?.('[role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"], [cmdk-root], [data-radix-popper-content-wrapper]')) return;
+      if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return;
       if (e.key === 'ArrowLeft') {
         go(page + step);
         return;

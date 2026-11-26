@@ -1,15 +1,16 @@
 /**
- * The eagerly loaded half of the global search: the search engine
- * (`useGlobalSearchData`), the shared results renderer, and the three places
- * the search UI is mounted outside the Ctrl+K modal — the navbar's desktop
- * trigger, the mobile menu panel, and the homepage inline search.
+ * The shared half of the global search: the search engine
+ * (`useGlobalSearchData`), the shared results renderer, and the two places the
+ * search UI is mounted outside the Ctrl+K modal — the mobile menu panel and the
+ * homepage inline search.
  *
- * These are imported statically by Navbar.tsx and Pages/Home.tsx, so they must
- * not live next to the lazily loaded `GlobalCommandPalette`: that file is
- * dynamically imported by MainLayout, and a single static import of it from the
- * eager graph puts the whole module back in the entry chunk (Rollup then drops
- * the code-split entirely). The modal itself imports the shared pieces from
- * here.
+ * Pages/Home.tsx imports this statically (the inline search is page content).
+ * The navbar does not: it lazy-loads `MobileMenuSearchSection` when the mobile
+ * menu opens and takes its desktop button from `./DesktopSearchTrigger`, so
+ * the layout every page renders stays free of the search engine. This must not
+ * live next to the lazily loaded `GlobalCommandPalette` either: a static import
+ * of that file from the eager graph would undo its code-split. The modal itself
+ * imports the shared pieces from here.
  */
 import { api, API_V1 } from '@/Lib/api';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -35,7 +36,6 @@ import {
     CommandGroup,
     CommandItem,
 } from '@/Components/ui/command';
-import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
 import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
@@ -334,31 +334,6 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
         totalVisibleResults,
         cityNames,
     };
-}
-
-export function DesktopSearchTrigger({ className = '' }: { className?: string }) {
-    const setSearchOpen = useAppShell((s) => s.setSearchOpen);
-    const shortcutLabel = useIsMac() ? '⌘ K' : 'Ctrl K';
-    return (
-        <Button
-            type="button"
-            variant="outline"
-            onClick={() => setSearchOpen(true)}
-            aria-label={`بحث سريع في المنصة (${shortcutLabel})`}
-            className={`hidden lg:inline-flex h-9 items-center justify-between gap-3 rounded-xl border-border/80 bg-muted/40 px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ${className}`}
-        >
-            <span className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span>بحث سريع...</span>
-            </span>
-            <kbd
-                dir="ltr"
-                className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded-md border border-border bg-background px-1.5 font-mono text-[10px] font-semibold text-muted-foreground shadow-2xs"
-            >
-                {shortcutLabel}
-            </kbd>
-        </Button>
-    );
 }
 
 /** Whether SearchResultsContent renders cmdk items (the palette) or plain rows. */

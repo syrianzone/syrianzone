@@ -30,10 +30,21 @@ import { Separator } from '@/Components/ui/separator';
 
 import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
-import { DesktopSearchTrigger, MobileMenuSearchSection } from './GlobalSearch';
+import { DesktopSearchTrigger } from './DesktopSearchTrigger';
 import { groupSiteLinks, useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { isActive, pathnameOf, routeFamily, routeSegment } from '@/Lib/routes';
 import { siteModule, type SiteModuleGroup } from '@/Lib/siteModules';
+
+/**
+ * The mobile menu's search panel carries the whole search engine (results
+ * renderer, Quran/crossings/games catalogues, cmdk). The sheet only mounts it
+ * once opened, so it loads on demand instead of with the layout every page
+ * renders. Opening the menu starts the download; the idle-mounted command
+ * palette usually has it cached already.
+ */
+const loadMobileMenuSearch = () =>
+  import('./GlobalSearch').then((m) => ({ default: m.MobileMenuSearchSection }));
+const MobileMenuSearchSection = React.lazy(loadMobileMenuSearch);
 
 /** Columns for the desktop mega menu, matching the homepage's tile grid. */
 const MEGA_GRID = 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-10';
@@ -418,6 +429,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const menuBtnRef = React.useRef<HTMLButtonElement>(null);
   const [menuOrigin, setMenuOrigin] = React.useState({ x: 0, y: 0 });
   const openMenu = () => {
+    void loadMobileMenuSearch();
     const r = menuBtnRef.current?.getBoundingClientRect();
     if (r) setMenuOrigin({ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) });
   };
@@ -583,10 +595,12 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                   )}
 
                   {/* Always-on Mobile Search Bar + Searchable Panel */}
-                  <MobileMenuSearchSection
-                    pathname={pathname}
-                    onNavigate={() => setIsOpen(false)}
-                  />
+                  <React.Suspense fallback={null}>
+                    <MobileMenuSearchSection
+                      pathname={pathname}
+                      onNavigate={() => setIsOpen(false)}
+                    />
+                  </React.Suspense>
                 </div>
 
                 {/* Always-visible Footer Links (About / Stats / Privacy / Terms) */}

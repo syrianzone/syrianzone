@@ -459,10 +459,12 @@ export default function CompassClient() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex p-1 bg-muted rounded-lg">
+                                <div role="group" aria-label="صيغة التصدير" className="flex p-1 bg-muted rounded-lg">
                                     {(['png', 'jpg', 'svg'] as const).map(fmt => (
                                         <button
                                             key={fmt}
+                                            type="button"
+                                            aria-pressed={exportFormat === fmt}
                                             onClick={() => setExportFormat(fmt)}
                                             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${exportFormat === fmt ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                                         >

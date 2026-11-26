@@ -838,19 +838,21 @@ export default function PopulationClient() {
 
                             return (
                                 <div key={source.source_id} className={`rounded-lg border transition-all duration-200 ${isExpanded ? 'border-primary bg-card shadow-md' : 'border-border bg-card/50 hover:bg-muted/50'}`}>
-                                    <div
-                                        className="p-3 flex flex-col gap-3 cursor-pointer select-none"
+                                    <button
+                                        type="button"
+                                        aria-expanded={isExpanded}
+                                        className="w-full text-start p-3 flex flex-col gap-3 cursor-pointer select-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         onClick={() => setCurrentSourceId(source.source_id)}
                                     >
-                                        <div className="flex flex-col gap-0.5">
+                                        <span className="flex flex-col gap-0.5">
                                             <span className="font-bold text-sm">
                                                 {source.note || DATA_TYPE_CONFIG[currentDataType as keyof typeof DATA_TYPE_CONFIG].labelAr}
                                             </span>
                                             {source.date && (
                                                 <span className="text-xs text-muted-foreground">{source.date}</span>
                                             )}
-                                        </div>
-                                    </div>
+                                        </span>
+                                    </button>
                                     {isExpanded && (
                                         <div className="px-3 pb-3 pt-0 animate-in slide-in-from-top-2 duration-200">
                                             <div className="mb-2 flex justify-between items-center px-1">

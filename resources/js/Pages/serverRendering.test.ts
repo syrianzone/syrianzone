@@ -877,4 +877,80 @@ describe('pages render their content on the server', () => {
         expect(cleanHtml).not.toContain('دار الأسد للثقافة والفنون');
         expect(cleanHtml).not.toContain('العلم السوري السابق');
     });
+
+    it('renders Mishwar governorate and category hubs with H1, chips, place links, lazy thumbs and CTA in SSR markup', async () => {
+        const places = Array.from({ length: 4 }, (_, idx) => ({
+            id: idx + 1,
+            name: `معلم حماة ${idx + 1}`,
+            category: 'historical',
+            category_label: 'تاريخي',
+            description: `وصف مختصر للمعلم رقم ${idx + 1}`,
+            thumb_url: `/storage/places/${idx + 1}/cover_thumb.webp?v=1`,
+            photos_count: idx + 1,
+            saves_count: 10 - idx,
+            url: `/mishwar/${idx + 1}-place`,
+        }));
+
+        const govHtml = await renderOnServer(
+            'Places/Hub',
+            {
+                governorate: { id: 'hama', name_ar: 'حماة' },
+                category: null,
+                h1: 'أماكن سياحية في حماة',
+                intro: '4 أماكن في حماة أضافها زوار مشوار، مع الصور والموقع.',
+                total: 4,
+                mapUrl: '/mishwar',
+                governorateUrl: '/governorates/hama',
+                hubUrl: '/mishwar/hama',
+                categories: [
+                    { key: 'historical', label: 'تاريخي', count: 5, url: '/mishwar/hama/historical' },
+                    { key: 'natural', label: 'طبيعي', count: 2, url: null },
+                ],
+                places,
+                otherHubs: [{ id: 'aleppo', name_ar: 'حلب', count: 6, url: '/mishwar/aleppo' }],
+            },
+            '/mishwar/hama',
+        );
+
+        const cleanGov = govHtml.replace(/<!-- -->/g, '');
+        expect(cleanGov.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanGov.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanGov).toContain('أماكن سياحية في حماة');
+        expect(cleanGov).toContain('4 أماكن في حماة أضافها زوار مشوار، مع الصور والموقع.');
+        expect(cleanGov).toContain('افتح حماة على خريطة مشوار');
+        expect(cleanGov).toContain('href="/mishwar/hama/historical"');
+        expect(cleanGov).not.toContain('href="/mishwar/hama/natural"');
+        expect(cleanGov).toContain('طبيعي');
+        expect(cleanGov).toContain('href="/mishwar/1-place"');
+        expect(cleanGov).toContain('href="/mishwar/4-place"');
+        expect(cleanGov).toContain('loading="eager"');
+        expect(cleanGov).toContain('loading="lazy"');
+        expect(cleanGov).toContain('href="/governorates/hama"');
+        expect(cleanGov).toContain('href="/mishwar/aleppo"');
+
+        const catHtml = await renderOnServer(
+            'Places/Hub',
+            {
+                governorate: { id: 'hama', name_ar: 'حماة' },
+                category: { key: 'historical', label: 'تاريخي', hub_title: 'أماكن أثرية وتاريخية' },
+                h1: 'أماكن أثرية وتاريخية في حماة',
+                intro: '4 أماكن من فئة تاريخي في حماة أضافها زوار مشوار، مع الصور والموقع.',
+                total: 4,
+                mapUrl: '/mishwar',
+                governorateUrl: '/governorates/hama',
+                hubUrl: '/mishwar/hama',
+                categories: [],
+                places,
+                otherHubs: [],
+            },
+            '/mishwar/hama/historical',
+        );
+
+        const cleanCat = catHtml.replace(/<!-- -->/g, '');
+        expect(cleanCat.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanCat.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanCat).toContain('أماكن أثرية وتاريخية في حماة');
+        expect(cleanCat).toContain('href="/mishwar/hama"');
+        expect(cleanCat).toContain('href="/mishwar/1-place"');
+    });
 });

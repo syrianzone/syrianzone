@@ -293,7 +293,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                             </button>
 
                                             <div className="flex items-center gap-2 pt-1">
-                                                <Button aria-label="اتصال هاتفي"
+                                                <Button aria-label={`اتصال هاتفي بـ ${item.name_ar}`}
                                                     variant="outline"
                                                     size="sm"
                                                     asChild
@@ -301,13 +301,13 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                     title="اتصال هاتفي"
                                                 >
                                                     <a href={getTelUrl(item.number)}>
-                                                        <Phone className="h-3.5 w-3.5 text-primary" />
+                                                        <Phone className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                                                         <span>اتصال</span>
                                                     </a>
                                                 </Button>
 
                                                 {item.is_whatsapp && (
-                                                    <Button aria-label="مراسلة عبر واتساب"
+                                                    <Button aria-label={`مراسلة ${item.name_ar} عبر واتساب (تفتح في نافذة جديدة)`}
                                                         variant="outline"
                                                         size="sm"
                                                         asChild
@@ -315,7 +315,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         title="مراسلة عبر واتساب"
                                                     >
                                                         <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
-                                                            <MessageSquare className="h-3.5 w-3.5 text-emerald-500" />
+                                                            <MessageSquare className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
                                                             <span>واتساب</span>
                                                         </a>
                                                     </Button>
@@ -334,8 +334,8 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         rel="noopener noreferrer"
                                                         className="text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1 font-normal"
                                                     >
-                                                        <span>المصدر</span>
-                                                        <ExternalLink className="h-3 w-3" />
+                                                        <span>المصدر<span className="sr-only">: {item.name_ar} (يفتح في نافذة جديدة)</span></span>
+                                                        <ExternalLink className="h-3 w-3" aria-hidden="true" />
                                                     </a>
                                                 ) : (
                                                     <span className="text-muted-foreground/40 text-[10px]">بدون مصدر</span>
@@ -388,8 +388,8 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         rel="noopener noreferrer" 
                                                         className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold"
                                                     >
-                                                        <span>عرض المصدر</span>
-                                                        <ExternalLink className="h-3 w-3" />
+                                                        <span>عرض المصدر<span className="sr-only">: {item.name_ar} (يفتح في نافذة جديدة)</span></span>
+                                                        <ExternalLink className="h-3 w-3" aria-hidden="true" />
                                                     </a>
                                                 ) : (
                                                     <span className="text-xs text-muted-foreground font-normal">-</span>
@@ -412,7 +412,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         )}
                                                     </Button>
 
-                                                    <Button aria-label="اتصال هاتفي"
+                                                    <Button aria-label={`اتصال هاتفي بـ ${item.name_ar}`}
                                                         variant="ghost"
                                                         size="icon"
                                                         asChild
@@ -420,12 +420,12 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         title="اتصال هاتفي"
                                                     >
                                                         <a href={getTelUrl(item.number)}>
-                                                            <Phone className="h-4 w-4" />
+                                                            <Phone className="h-4 w-4" aria-hidden="true" />
                                                         </a>
                                                     </Button>
 
                                                     {item.is_whatsapp && (
-                                                        <Button aria-label="مراسلة عبر واتساب"
+                                                        <Button aria-label={`مراسلة ${item.name_ar} عبر واتساب (تفتح في نافذة جديدة)`}
                                                             variant="ghost"
                                                             size="icon"
                                                             asChild
@@ -433,7 +433,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                             title="مراسلة عبر واتساب"
                                                         >
                                                             <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
-                                                                <MessageSquare className="h-4 w-4" />
+                                                                <MessageSquare className="h-4 w-4" aria-hidden="true" />
                                                             </a>
                                                         </Button>
                                                     )}

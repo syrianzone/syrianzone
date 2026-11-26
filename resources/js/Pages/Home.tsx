@@ -460,8 +460,9 @@ export default function Home() {
                                                             <>
                                                                 <img
                                                                     src={faviconUrl}
-                                                                    alt={link.name}
+                                                                    alt=""
                                                                     loading="lazy"
+                                                                    referrerPolicy="no-referrer"
                                                                     className="w-12 h-12 shrink-0 object-contain"
                                                                     onError={(e) => {
                                                                         e.currentTarget.style.display = 'none';
@@ -490,8 +491,9 @@ export default function Home() {
                                                             <>
                                                                 <img
                                                                     src={faviconUrl}
-                                                                    alt={link.name}
+                                                                    alt=""
                                                                     loading="lazy"
+                                                                    referrerPolicy="no-referrer"
                                                                     className="w-12 h-12 shrink-0 object-contain transition-transform group-hover:scale-110"
                                                                     onError={(e) => {
                                                                         e.currentTarget.style.display = 'none';

@@ -329,7 +329,7 @@ export function groupSiteLinks(
     }
 
     const sortWithin = (items: SiteLink[]) =>
-        [...items].sort((a, b) => {
+        items.toSorted((a, b) => {
             const ao = typeof a.groupOrder === 'number' ? a.groupOrder : Number.MAX_SAFE_INTEGER;
             const bo = typeof b.groupOrder === 'number' ? b.groupOrder : Number.MAX_SAFE_INTEGER;
             return ao - bo;

@@ -30,6 +30,8 @@
     { "slug": "house", "title": "المجلس التشريعي", "subtitle": "تشكيلة مجلس الشعب 2026: المقاعد والأعضاء", "icon": "house" },
     { "slug": "justice", "title": "العدالة الانتقالية", "subtitle": "قوائم وإحصاءات للتوثيق والمحاسبة", "icon": "justice" },
     { "slug": "syid", "title": "الهوية البصرية", "subtitle": "ألوان وخطوط وشعارات الهوية البصرية السورية", "icon": "syid" },
+    { "slug": "syid-logo", "title": "شعار سوريا الجديد", "subtitle": "العقاب الذهبي للجمهورية العربية السورية بصيغ SVG وPNG 4K وPDF", "icon": "syid" },
+    { "slug": "syid-flag", "title": "علم سوريا الجديد", "subtitle": "الصور عالية الدقة، النسب الهندسية، الألوان، والنسخ المباشر", "icon": "syid" },
 
     { "slug": "muslim", "title": "الركن الإسلامي", "subtitle": "مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن", "icon": "muslim" },
     { "slug": "muslim-prayer", "title": "مواقيت الصلاة", "subtitle": "بحسب مدينتك، مع عدّاد للصلاة القادمة", "icon": "muslim" },

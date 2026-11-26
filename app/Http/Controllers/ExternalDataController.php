@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HouseMember2026;
 use App\Services\ExternalData\ExternalSheetCache;
+use App\Support\Facts;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -11,7 +14,23 @@ class ExternalDataController extends Controller
 {
     public function syid()
     {
-        return Inertia::render('SyId/Index');
+        return Inertia::render('SyId/Index', [
+            'syid' => Facts::syid(),
+        ]);
+    }
+
+    public function syidLogo()
+    {
+        return Inertia::render('SyId/Logo', [
+            'syid' => Facts::syid(),
+        ]);
+    }
+
+    public function syidFlag()
+    {
+        return Inertia::render('SyId/Flag', [
+            'syid' => Facts::syid(),
+        ]);
     }
 
     public function alignment()
@@ -49,18 +68,18 @@ class ExternalDataController extends Controller
         // The roster only changes with a deploy (seeder or migration), so it is
         // cached. A failed or empty read is not cached, so a table that appears
         // later (a deploy mid-flight) shows up on the next request.
-        $members = Cache::get(\App\Models\HouseMember2026::CACHE_KEY);
+        $members = Cache::get(HouseMember2026::CACHE_KEY);
         if (! is_array($members)) {
             $members = [];
             try {
-                $members = \App\Models\HouseMember2026::query()
+                $members = HouseMember2026::query()
                     ->orderBy('governorate_ar')->orderBy('name_ar')
                     ->get()->toArray();
                 if ($members !== []) {
-                    Cache::put(\App\Models\HouseMember2026::CACHE_KEY, $members, 600);
+                    Cache::put(HouseMember2026::CACHE_KEY, $members, 600);
                 }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('house_members_2026 read failed', ['error' => $e->getMessage()]);
+                Log::warning('house_members_2026 read failed', ['error' => $e->getMessage()]);
             }
         }
 

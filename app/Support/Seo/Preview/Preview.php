@@ -40,5 +40,6 @@ final readonly class Preview
         public ?array $mainEntity = null,
         /** @var list<array<string, mixed>> */
         public array $extraGraph = [],
+        public ?string $breadcrumbLabel = null,
     ) {}
 }

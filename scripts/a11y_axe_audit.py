@@ -34,7 +34,7 @@ import sys
 PUBLIC_ROUTES = [
     "/", "/about", "/privacy", "/terms", "/stats",
     "/syofficial", "/phonebook", "/govapps", "/party", "/house",
-    "/justice", "/sites", "/syrian-contributors", "/syid", "/atlas",
+    "/justice", "/sites", "/syrian-contributors", "/syid", "/syid/logo", "/syid/flag", "/atlas",
     "/crossings", "/shawarma", "/roznama", "/priorities", "/alignment",
     "/compass", "/compass/stats", "/tierlist", "/tierlist/leaderboard",
     "/polls", "/guesswho", "/muslim",

@@ -249,6 +249,8 @@ Route::get('/currency', function () {
     ]);
 });
 Route::get('/syid', [ExternalDataController::class, 'syid']);
+Route::get('/syid/logo', [ExternalDataController::class, 'syidLogo']);
+Route::get('/syid/flag', [ExternalDataController::class, 'syidFlag']);
 Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors']);
 Route::get('/sites', [ExternalDataController::class, 'sites']);
 Route::get('/party', [ExternalDataController::class, 'party']);

@@ -127,6 +127,14 @@ final class Pages
         return $label === null ? null : [$parent, (string) $label];
     }
 
+    /** Optional short label for the current page's final breadcrumb item. */
+    public static function breadcrumbLabel(string $path): ?string
+    {
+        $label = self::get($path)['breadcrumbLabel'] ?? null;
+
+        return is_string($label) && $label !== '' ? $label : null;
+    }
+
     /**
      * The GET routes that answer without being a page (endpoints, shims,
      * infrastructure), as route URIs without the leading slash.

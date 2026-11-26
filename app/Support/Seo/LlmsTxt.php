@@ -30,7 +30,7 @@ class LlmsTxt
         ],
         'عن المنصة' => ['/about', '/privacy', '/terms'],
         'Optional' => [
-            '/syid', '/syrian-contributors', '/muslim/quran', '/muslim/radio',
+            '/syid', '/syid/logo', '/syid/flag', '/syrian-contributors', '/muslim/quran', '/muslim/radio',
             '/board', '/games',
         ],
     ];

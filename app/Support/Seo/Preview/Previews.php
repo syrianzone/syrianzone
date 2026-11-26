@@ -14,6 +14,7 @@ use App\Support\Seo\Preview\Resolvers\PrayerCityPreview;
 use App\Support\Seo\Preview\Resolvers\PrioritiesSharePreview;
 use App\Support\Seo\Preview\Resolvers\PromisePreview;
 use App\Support\Seo\Preview\Resolvers\RamadanCityPreview;
+use App\Support\Seo\Preview\Resolvers\SyIdPreview;
 use App\Support\Seo\Preview\Resolvers\TransitCityPreview;
 use App\Support\Seo\Preview\Resolvers\TransitRoutePreview;
 use Illuminate\Http\Request;
@@ -41,6 +42,7 @@ final class Previews
         GuessWhoRoomPreview::class,
         CompassSharePreview::class,
         PrioritiesSharePreview::class,
+        SyIdPreview::class,
     ];
 
     /**

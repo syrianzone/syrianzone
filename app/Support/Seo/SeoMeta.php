@@ -141,6 +141,7 @@ class SeoMeta
             type: Pages::type($path),
             schema: Pages::schema($path),
             parent: Pages::parent($path),
+            breadcrumbLabel: Pages::breadcrumbLabel($path),
         );
     }
 
@@ -299,7 +300,12 @@ class SeoMeta
                 $items[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $parentLabel, 'item' => $base.$parentPath];
             }
 
-            $items[] = ['@type' => 'ListItem', 'position' => count($items) + 1, 'name' => $name, 'item' => $canonical];
+            $items[] = [
+                '@type' => 'ListItem',
+                'position' => count($items) + 1,
+                'name' => $about->breadcrumbLabel ?? $name,
+                'item' => $canonical,
+            ];
 
             $graph[] = [
                 '@type' => 'BreadcrumbList',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\HouseMember2026;
 use App\Services\ExternalData\ExternalSheetCache;
 use App\Support\HouseMembers;
+use App\Support\Facts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -14,7 +15,23 @@ class ExternalDataController extends Controller
 {
     public function syid()
     {
-        return Inertia::render('SyId/Index');
+        return Inertia::render('SyId/Index', [
+            'syid' => Facts::syid(),
+        ]);
+    }
+
+    public function syidLogo()
+    {
+        return Inertia::render('SyId/Logo', [
+            'syid' => Facts::syid(),
+        ]);
+    }
+
+    public function syidFlag()
+    {
+        return Inertia::render('SyId/Flag', [
+            'syid' => Facts::syid(),
+        ]);
     }
 
     public function alignment()

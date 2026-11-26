@@ -285,3 +285,31 @@ test('image sitemap lists the Ramadan city photos and the banknote fronts', func
         expect($url)->not->toContain('-back.');
     }
 });
+
+test('image sitemap lists the Syrian visual identity logo, flag, and hub images and all files exist on disk', function () {
+    $map = parseImageSitemap($this->get('/sitemap-images.xml')->assertOk()->getContent());
+    $base = rtrim((string) config('seo.base_url'), '/');
+
+    expect($map["{$base}/syid/logo"] ?? [])
+        ->toContain("{$base}/syid-assets/downloads/syrian-arab-republic-eagle-emblem-4k.png")
+        ->toContain("{$base}/syid-assets/materials/logo.ai.svg")
+        ->toContain("{$base}/syid-assets/downloads/syrian-arab-republic-eagle-emblem-black-4k.png")
+        ->toContain("{$base}/syid-assets/downloads/syrian-arab-republic-eagle-emblem-white-4k.png");
+
+    expect($map["{$base}/syid/flag"] ?? [])
+        ->toContain("{$base}/syid-assets/downloads/syrian-flag-3840.png")
+        ->toContain("{$base}/syid-assets/downloads/syrian-flag.svg")
+        ->toContain("{$base}/syid-assets/materials/syrian-identity-wallpaper-desktop.png")
+        ->toContain("{$base}/syid-assets/materials/syrian-identity-wallpaper-mobile.png");
+
+    expect($map["{$base}/syid"] ?? [])
+        ->toContain("{$base}/syid-assets/materials/logo.ai.svg")
+        ->toContain("{$base}/syid-assets/downloads/syrian-flag-1280.png");
+
+    foreach (["{$base}/syid/logo", "{$base}/syid/flag", "{$base}/syid"] as $pageUrl) {
+        foreach ($map[$pageUrl] as $imageUrl) {
+            $rel = ltrim((string) parse_url($imageUrl, PHP_URL_PATH), '/');
+            expect(is_file(public_path($rel)), "Image sitemap references missing file: {$rel}")->toBeTrue();
+        }
+    }
+});

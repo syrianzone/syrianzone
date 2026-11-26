@@ -1,5 +1,5 @@
 {
-  "recipe": "04873cf44141d2f7",
+  "recipe": "6595af870837d1ed",
   "cards": {
     "home": "a1a1048328",
     "tierlist": "03ef938c8c",
@@ -27,6 +27,8 @@
     "house": "f4e4ab8da5",
     "justice": "67b62d661e",
     "syid": "25da6f63de",
+    "syid-logo": "59c5b77e26",
+    "syid-flag": "f9fab9a973",
     "muslim": "208db9638e",
     "muslim-prayer": "fdce7494c5",
     "ramadan": "0b97fbd930",
@@ -49,7 +51,6 @@
     "about": "f904e73ea0",
     "privacy": "8ded54161b",
     "terms": "7873a1c0be",
-    "currency": "cbe871abd7",
-    "governorates": "d1dfebd283"
+    "currency": "cbe871abd7"
   }
 }

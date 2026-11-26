@@ -1,11 +1,14 @@
 import React, { useState, useMemo, Suspense, useEffect } from 'react';
+import { Link } from '@inertiajs/react';
 import {
-    Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Tag, Eye, Palette
+    ArrowLeft, Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Tag, Eye
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { notify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
 import { MEDIA_BASE } from '@/Domain/govapps/media';
+import { SYID_FACTS, type SyidFacts } from '@/Domain/syid/facts';
+import { FlagProportionsDiagram } from './_components/FlagProportionsDiagram';
 import { Card, CardContent } from "@/Components/ui/card";
 import {
     Dialog,
@@ -32,41 +35,6 @@ import {
 } from "@/Components/ui/select";
 
 const SyriaMap = React.lazy(() => import('./SyriaMap'));
-
-const COLOR_PALETTES = [
-    {
-        name: 'Forest',
-        colors: [
-            { hex: '#428177', hsl: 'hsl(171 32% 38%)', cmyk: 'C76% M32% Y54% K10%', oklch: 'oklch(0.536 0.061 189.6)', textColor: 'white' },
-            { hex: '#054239', hsl: 'hsl(171 86% 14%)', cmyk: 'C89% M49% Y70% K50%', oklch: 'oklch(0.334 0.057 186.2)', textColor: 'white' },
-            { hex: '#002623', hsl: 'hsl(173 100% 7%)', cmyk: 'C87% M59% Y68% K71%', oklch: 'oklch(0.208 0.038 184.5)', textColor: 'white' },
-        ]
-    },
-    {
-        name: 'Golden Wheat',
-        colors: [
-            { hex: '#edebe0', hsl: 'hsl(49 26% 90%)', cmyk: 'C6% M9% Y19% K0%', oklch: 'oklch(0.938 0.010 95.8)', textColor: 'black' },
-            { hex: '#b9a779', hsl: 'hsl(43 32% 60%)', cmyk: 'C20% M29% Y52% K7%', oklch: 'oklch(0.722 0.063 88.5)', textColor: 'black' },
-            { hex: '#988561', hsl: 'hsl(40 22% 49%)', cmyk: 'C39% M46% Y67% K20%', oklch: 'oklch(0.598 0.058 87.2)', textColor: 'white' },
-        ]
-    },
-    {
-        name: 'Deep Umber',
-        colors: [
-            { hex: '#6b1f2a', hsl: 'hsl(351 55% 27%)', cmyk: 'C35% M92% Y72% K46%', oklch: 'oklch(0.354 0.108 20.7)', textColor: 'white' },
-            { hex: '#4a151e', hsl: 'hsl(350 56% 19%)', cmyk: 'C44% M86% Y68% K65%', oklch: 'oklch(0.279 0.083 19.5)', textColor: 'white' },
-            { hex: '#260f14', hsl: 'hsl(348 43% 10%)', cmyk: 'C60% M75% Y64% K79%', oklch: 'oklch(0.183 0.039 18.2)', textColor: 'white' },
-        ]
-    },
-    {
-        name: 'Charcoal',
-        colors: [
-            { hex: '#ffffff', hsl: 'hsl(0 0% 100%)', cmyk: 'C0% M0% Y0% K0%', oklch: 'oklch(1 0 0)', textColor: 'black' },
-            { hex: '#3d3a3b', hsl: 'hsl(340 3% 24%)', cmyk: 'C67% M53% Y60% K50%', oklch: 'oklch(0.344 0.005 348.0)', textColor: 'white' },
-            { hex: '#161616', hsl: 'hsl(0 0% 9%)', cmyk: 'C73% M67% Y65% K80%', oklch: 'oklch(0.185 0 0)', textColor: 'white' },
-        ]
-    },
-];
 
 const HAYYAKUM_WEIGHTS = [
     { nameAr: 'خفيف (Light)', file: 'HayyakumAllah-Light', weightLabel: '300' },
@@ -141,7 +109,12 @@ const recolorSvg = (content: string, primaryColor: string, bgColor: string): str
     return res;
 };
 
-export default function SyidClient() {
+interface SyidClientProps {
+    syid?: SyidFacts;
+}
+
+export default function SyidClient({ syid }: SyidClientProps) {
+    const facts = syid ?? SYID_FACTS;
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [geoJsonData, setGeoJsonData] = useState<any>(null);
     const [selectedGov, setSelectedGov] = useState<string>("full");
@@ -312,11 +285,64 @@ export default function SyidClient() {
 
             <div className="container mx-auto py-10 max-w-6xl px-4 space-y-14">
 
+                <section aria-labelledby="syid-hub-links-heading">
+                    <h2 id="syid-hub-links-heading" className="sr-only">صفحات الشعار والعلم المخصّصة</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Link
+                            href="/syid/logo"
+                            className="group flex items-center gap-4 rounded-xl border border-border bg-card p-5 hover:border-primary/50 transition-colors shadow-2xs"
+                        >
+                            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/30 p-2.5">
+                                <img
+                                    src={facts.logo.hero_image.path}
+                                    alt={facts.logo.hero_image.alt_ar}
+                                    width={80}
+                                    height={80}
+                                    className="h-full w-full object-contain"
+                                />
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1">
+                                <h3 className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                                    شعار الجمهورية العربية السورية (العقاب الذهبي)
+                                </h3>
+                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                    تحميل الشعار بصيغ SVG وPNG بدقة 4K وPDF بالنسخ الذهبية والأحادية مع دلالاته الرسمية.
+                                </p>
+                            </div>
+                            <ArrowLeft className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" aria-hidden="true" />
+                        </Link>
+
+                        <Link
+                            href="/syid/flag"
+                            className="group flex items-center gap-4 rounded-xl border border-border bg-card p-5 hover:border-primary/50 transition-colors shadow-2xs"
+                        >
+                            <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/30 p-2 overflow-hidden">
+                                <img
+                                    src={facts.flag.hero_image.path}
+                                    alt={facts.flag.hero_image.alt_ar}
+                                    width={96}
+                                    height={64}
+                                    className="h-full w-full object-contain rounded-sm"
+                                />
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1">
+                                <h3 className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                                    علم سوريا الجديد — النسخ والتحميل والنسب
+                                </h3>
+                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                    نسخ إيموجي العلم 🇸🇾، تحميل الصور بدقة 4K وSVG، النسب الهندسية 2:3، الألوان، والخلفيات.
+                                </p>
+                            </div>
+                            <ArrowLeft className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" aria-hidden="true" />
+                        </Link>
+                    </div>
+                </section>
+
                 <section>
                     <h2 className="text-2xl font-bold mb-6">لوحة الألوان</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {COLOR_PALETTES.map((palette) => (
+                        {facts.palettes.map((palette) => (
                             <Card key={palette.name} className="border border-border/80 rounded-xl overflow-hidden">
                                 <div className="p-4 bg-muted/30 border-b border-border/40 font-semibold text-sm">
                                     {palette.name}
@@ -578,80 +604,45 @@ export default function SyidClient() {
                 </section>
 
                 <section>
-                    <h2 className="text-2xl font-bold mb-6">العلم السوري ونسبه</h2>
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                        <h2 className="text-2xl font-bold">العلم السوري ونسبه</h2>
+                        <Link
+                            href="/syid/flag"
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline underline-offset-4"
+                        >
+                            <span>صفحة العلم الكاملة (نسخ 🇸🇾 والتحميل بدقة 4K)</span>
+                            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                        </Link>
+                    </div>
 
                     <Card className="border border-border/80 rounded-xl overflow-hidden">
                         <CardContent className="p-6 overflow-x-auto">
-                            <div className="flag-diagram-wrapper my-2">
-                                {/* One described image: the dimension labels alone are a list of
-                                    bare numbers to a screen reader. */}
-                                <div
-                                    className="flag-diagram-container"
-                                    role="img"
-                                    aria-label="مخطط نسب العلم السوري: العرض 36 وحدة والارتفاع 24 وحدة (نسبة 2:3)، ثلاثة أشرطة أفقية متساوية ارتفاع كل منها 8 وحدات، الأخضر في الأعلى ثم الأبيض ثم الأسود. في الشريط الأبيض ثلاث نجوم حمراء خماسية، عرض كل نجمة وارتفاعها 6 وحدات، بينها فراغان من 3 وحدات، وهامش 6 وحدات من كل طرف."
-                                >
-                                    <div className="flag-visual">
-                                        <div className="stripe green"></div>
-                                        <div className="stripe white">
-                                            <svg className="star" viewBox="0 0 100 95"><path d="M50,0 L61.2,36.2 L100,36.2 L69.1,58.8 L79.4,95 L50,72.5 L20.6,95 L30.9,58.8 L0,36.2 L38.8,36.2 Z" fill="#ce1126" /></svg>
-                                            <svg className="star" viewBox="0 0 100 95"><path d="M50,0 L61.2,36.2 L100,36.2 L69.1,58.8 L79.4,95 L50,72.5 L20.6,95 L30.9,58.8 L0,36.2 L38.8,36.2 Z" fill="#ce1126" /></svg>
-                                            <svg className="star" viewBox="0 0 100 95"><path d="M50,0 L61.2,36.2 L100,36.2 L69.1,58.8 L79.4,95 L50,72.5 L20.6,95 L30.9,58.8 L0,36.2 L38.8,36.2 Z" fill="#ce1126" /></svg>
-                                        </div>
-                                        <div className="stripe black"></div>
-                                    </div>
-
-                                    <div className="dim-line h-line top-line-h"></div>
-                                    <div className="measurement top-total-num">36</div>
-                                    <div className="dim-line v-line top-line-v-1"></div>
-                                    <div className="dim-line v-line top-line-v-2"></div>
-                                    <div className="dim-line v-line top-line-v-3"></div>
-                                    <div className="dim-line v-line top-line-v-4"></div>
-                                    <div className="dim-line v-line top-line-v-5"></div>
-                                    <div className="measurement top-num-1">9</div>
-                                    <div className="measurement top-num-2">9</div>
-                                    <div className="measurement top-num-3">9</div>
-                                    <div className="measurement top-num-4">9</div>
-
-                                    <div className="dim-line v-line right-line-v"></div>
-                                    <div className="measurement right-total-num">24</div>
-                                    <div className="dim-line h-line right-line-h-1"></div>
-                                    <div className="dim-line h-line right-line-h-2"></div>
-                                    <div className="dim-line h-line right-line-h-3"></div>
-                                    <div className="dim-line h-line right-line-h-4"></div>
-                                    <div className="measurement right-num-1">8</div>
-                                    <div className="measurement right-num-2">8</div>
-                                    <div className="measurement right-num-3">8</div>
-
-                                    <div className="dim-line h-line bottom-line-h"></div>
-                                    <div className="dim-line v-line bottom-line-v-1"></div>
-                                    <div className="dim-line v-line bottom-line-v-2"></div>
-                                    <div className="dim-line v-line bottom-line-v-3"></div>
-                                    <div className="dim-line v-line bottom-line-v-4"></div>
-                                    <div className="dim-line v-line bottom-line-v-5"></div>
-                                    <div className="dim-line v-line bottom-line-v-6"></div>
-                                    <div className="measurement bottom-num-1">6</div>
-                                    <div className="measurement bottom-num-2">6</div>
-                                    <div className="measurement bottom-num-3">3</div>
-                                    <div className="measurement bottom-num-4">6</div>
-                                    <div className="measurement bottom-num-5">3</div>
-                                    <div className="measurement bottom-num-6">6</div>
-                                    <div className="measurement bottom-num-7">6</div>
-
-                                    <div className="dim-line v-line left-line-v"></div>
-                                    <div className="measurement left-num-1">6</div>
-                                    <div className="dim-line h-line left-line-h-1"></div>
-                                    <div className="dim-line h-line left-line-h-2"></div>
-                                </div>
-                            </div>
+                            <FlagProportionsDiagram ariaLabel={facts.flag.specs.diagram_aria_label_ar} />
                         </CardContent>
 
                         <div className="p-4 bg-muted/20 border-t border-border/40 flex flex-wrap justify-center gap-3">
+                            <a
+                                href="/syid-assets/downloads/syrian-flag-3840.png"
+                                download="علم-سوريا-الجديد-4K-3840.png"
+                                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
+                            >
+                                <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span>PNG 4K</span>
+                            </a>
+                            <a
+                                href="/syid-assets/downloads/syrian-flag.svg"
+                                download="علم-سوريا-الجديد.svg"
+                                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
+                            >
+                                <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span>SVG نظيف</span>
+                            </a>
                             <a
                                 href="/syid-assets/materials/syrian-flag-proportions.png"
                                 download
                                 className="inline-flex items-center gap-2 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
-                                <Download className="h-3.5 w-3.5" />
+                                <Download className="h-3.5 w-3.5" aria-hidden="true" />
                                 <span>PNG</span>
                             </a>
                             <a
@@ -659,7 +650,7 @@ export default function SyidClient() {
                                 download
                                 className="inline-flex items-center gap-2 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
-                                <FileDown className="h-3.5 w-3.5" />
+                                <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
                                 <span>SVG</span>
                             </a>
                             <a
@@ -667,7 +658,7 @@ export default function SyidClient() {
                                 download
                                 className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
-                                <Download className="h-3.5 w-3.5" />
+                                <Download className="h-3.5 w-3.5" aria-hidden="true" />
                                 <span>DWG</span>
                             </a>
                         </div>
@@ -716,7 +707,16 @@ export default function SyidClient() {
 
                         <Card className="border border-border/80 rounded-xl p-6 flex flex-col justify-between space-y-4">
                             <div>
-                                <h3 className="font-bold text-lg mb-1">شعار الهوية والمواد الرسمية</h3>
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                                    <h3 className="font-bold text-lg">شعار الهوية والمواد الرسمية</h3>
+                                    <Link
+                                        href="/syid/logo"
+                                        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline underline-offset-4"
+                                    >
+                                        <span>صفحة الشعار الكاملة</span>
+                                        <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                                    </Link>
+                                </div>
                                 <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
                                     الموقع الرسمي متوقف عن العمل حالياً، وتم حفظ ورفع كافّة المواد هنا للتنزيل المباشر.
                                 </p>
@@ -731,22 +731,38 @@ export default function SyidClient() {
                                 />
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <a
                                     href="/syid-assets/materials/logo.ai.svg"
                                     download="شعار_الهوية_البصرية_السورية.svg"
-                                    className="inline-flex items-center justify-center gap-2 flex-1 bg-[#428177] hover:bg-[#054239] text-white font-medium text-xs h-10 px-3 rounded-lg transition-colors"
+                                    className="inline-flex items-center justify-center gap-2 bg-[#428177] hover:bg-[#054239] text-white font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
-                                    <FileDown className="h-4 w-4" />
+                                    <FileDown className="h-4 w-4" aria-hidden="true" />
                                     <span>تحميل الشعار (SVG)</span>
+                                </a>
+                                <a
+                                    href="/syid-assets/downloads/syrian-arab-republic-eagle-emblem-4k.png"
+                                    download="شعار-الجمهورية-العربية-السورية-4K.png"
+                                    className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs h-10 px-3 rounded-lg transition-colors"
+                                >
+                                    <Download className="h-4 w-4" aria-hidden="true" />
+                                    <span>تحميل PNG 4K</span>
+                                </a>
+                                <a
+                                    href="/syid-assets/downloads/syrian-arab-republic-eagle-emblem.pdf"
+                                    download="شعار-الجمهورية-العربية-السورية.pdf"
+                                    className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
+                                >
+                                    <FileDown className="h-4 w-4" aria-hidden="true" />
+                                    <span>تحميل PDF متّجه</span>
                                 </a>
                                 <a
                                     href={`${MEDIA_BASE}/downloads/191b8f0d278fc2ab095fb4f344e3e9b4-vGF1L1.zip`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="inline-flex items-center justify-center gap-2 flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
+                                    className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
-                                    <Download className="h-4 w-4" />
+                                    <Download className="h-4 w-4" aria-hidden="true" />
                                     <span>تحميل الحزمة (ZIP)</span>
                                 </a>
                             </div>

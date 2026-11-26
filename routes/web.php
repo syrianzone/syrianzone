@@ -271,6 +271,8 @@ Route::get('/syofficial/images/governorates/{file}.webp', [LegacyRedirectControl
     ->where('file', '[^/]+');
 Route::redirect('/leaderboard', '/tierlist/leaderboard', 301);
 Route::redirect('/bingo', '/games', 301);
+Route::get('/syid/logo', [ExternalDataController::class, 'syidLogo']);
+Route::get('/syid/flag', [ExternalDataController::class, 'syidFlag']);
 Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors']);
 Route::get('/sites', [ExternalDataController::class, 'sites']);
 Route::get('/party', [ExternalDataController::class, 'party']);

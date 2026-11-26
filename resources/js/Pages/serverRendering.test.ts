@@ -516,5 +516,73 @@ describe('pages render their content on the server', () => {
         expect(cleanSparse).not.toContain('id="crossings"');
         expect(cleanSparse).not.toContain('id="places"');
         expect(cleanSparse).not.toContain('id="phonebook"');
+    it('renders /syid/logo with H1, emblem image, 4K/SVG/PDF downloads, variants, symbolism and usage rules', async () => {
+        const html = await renderOnServer('SyId/Logo', {}, '/syid/logo');
+
+        expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(html.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(html).toContain('شعار الجمهورية العربية السورية الجديد');
+        expect(html).toContain('/syid-assets/downloads/syrian-arab-republic-eagle-emblem-4k.png');
+        expect(html).toContain('/syid-assets/downloads/syrian-arab-republic-eagle-emblem.pdf');
+        expect(html).toContain('/syid-assets/materials/logo.ai.svg');
+        expect(html).toContain('download="شعار-الجمهورية-العربية-السورية-4K.png"');
+        expect(html).toContain('النسخة السوداء الأحادية');
+        expect(html).toContain('النسخة البيضاء الأحادية');
+        expect(html).toContain('دلالات الشعار ورمزية العقاب الذهبي');
+        expect(html).toContain('ضوابط الاستخدام الرسمي للشعار');
+        expect(html).toContain('href="/syid"');
+        expect(html).toContain('href="/syid/flag"');
+    });
+
+    it('renders /syid/flag with H1, copy emoji button, all download sizes, proportions, wallpapers, guide and FAQ', async () => {
+        const html = await renderOnServer('SyId/Flag', {}, '/syid/flag');
+
+        expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(html.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(html).toContain('علم الجمهورية العربية السورية الجديد');
+        expect(html).toContain('نسخ 🇸🇾');
+        expect(html).toContain('aria-live="polite"');
+        expect(html).toContain('/syid-assets/downloads/syrian-flag.svg');
+        expect(html).toContain('/syid-assets/downloads/syrian-flag-640.png');
+        expect(html).toContain('/syid-assets/downloads/syrian-flag-1280.png');
+        expect(html).toContain('/syid-assets/downloads/syrian-flag-1920.png');
+        expect(html).toContain('/syid-assets/downloads/syrian-flag-3840.png');
+        expect(html).toContain('download="علم-سوريا-الجديد-4K-3840.png"');
+        expect(html).toContain('/syid-assets/materials/syrian-identity-wallpaper-desktop.png');
+        expect(html).toContain('/syid-assets/materials/syrian-identity-wallpaper-mobile.png');
+        expect(html).toContain('الدليل الإرشادي للعلم السوري');
+        expect(html).toContain('الأسئلة الشائعة');
+        expect(html).toContain('href="/syid/logo"');
+    });
+
+    it('keeps /syid as a complete hub with all existing sections plus links to /syid/logo and /syid/flag', async () => {
+        const html = await renderOnServer('SyId/Index', {}, '/syid');
+
+        expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(html.match(/<main[\s>]/g)).toHaveLength(1);
+        // New hub cards & deep links
+        expect(html).toContain('href="/syid/logo"');
+        expect(html).toContain('href="/syid/flag"');
+        expect(html).toContain('صفحة العلم الكاملة');
+        expect(html).toContain('صفحة الشعار الكاملة');
+        // Every existing hub section and asset remains intact
+        for (const section of [
+            'عناصر الهوية البصرية السورية',
+            'لوحة الألوان',
+            'الخطوط',
+            'خط قمرة',
+            'خط حيّاكم الله',
+            'العلم السوري ونسبه',
+            'المواد والدليل الإرشادي',
+            'الدليل الإرشادي للعلم السوري',
+            'شعار الهوية والمواد الرسمية',
+            'أيقونات المحافظات السورية',
+            'خريطة سوريا الرقمية',
+            'https://syrianidentity.sy',
+            '/syid-assets/materials/syrian-flag.dwg',
+            '/syid-assets/materials/logo.ai.svg',
+        ]) {
+            expect(html).toContain(section);
+        }
     });
 });

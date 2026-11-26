@@ -61,6 +61,7 @@ class ImageSitemapBuilder
             $this->ramadanImages(),
             $this->currencyImages(),
             $this->governorateIconImages(),
+            $this->syidImages(),
         ];
     }
 
@@ -139,6 +140,91 @@ class ImageSitemapBuilder
 
         if ($all !== []) {
             $entries[] = new ImageSitemapUrl('/governorates', array_values(array_unique($all)));
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Syrian visual identity emblem, flag, wallpaper and hub images rendered
+     * across `/syid`, `/syid/logo` and `/syid/flag`.
+     *
+     * @return list<ImageSitemapUrl>
+     */
+    private function syidImages(): array
+    {
+        $data = Facts::syid();
+        $entries = [];
+
+        $logoImages = [];
+        $logoHero = $data['logo']['hero_image'] ?? [];
+        foreach ([$logoHero['full_path'] ?? null, $logoHero['path'] ?? null] as $raw) {
+            $img = $this->normalizeImage(is_string($raw) ? $raw : null, false);
+            if ($img !== null) {
+                $logoImages[] = $img;
+            }
+        }
+        foreach ($data['logo']['variants'] ?? [] as $variant) {
+            $preview = $this->normalizeImage($variant['preview_path'] ?? null, false);
+            if ($preview !== null) {
+                $logoImages[] = $preview;
+            }
+            foreach ($variant['downloads'] ?? [] as $dl) {
+                $path = is_string($dl['path'] ?? null) ? $dl['path'] : '';
+                if (preg_match('/\.(png|webp|svg)$/i', $path) === 1) {
+                    $img = $this->normalizeImage($path, false);
+                    if ($img !== null) {
+                        $logoImages[] = $img;
+                    }
+                }
+            }
+        }
+        $logoImages = array_values(array_unique($logoImages));
+        if ($logoImages !== []) {
+            $entries[] = new ImageSitemapUrl('/syid/logo', $logoImages);
+        }
+
+        $flagImages = [];
+        $flagHero = $data['flag']['hero_image'] ?? [];
+        foreach ([$flagHero['full_path'] ?? null, $flagHero['path'] ?? null] as $raw) {
+            $img = $this->normalizeImage(is_string($raw) ? $raw : null, false);
+            if ($img !== null) {
+                $flagImages[] = $img;
+            }
+        }
+        foreach ($data['flag']['downloads'] ?? [] as $dl) {
+            $path = is_string($dl['path'] ?? null) ? $dl['path'] : '';
+            if (preg_match('/\.(png|webp|svg)$/i', $path) === 1) {
+                $img = $this->normalizeImage($path, false);
+                if ($img !== null) {
+                    $flagImages[] = $img;
+                }
+            }
+        }
+        foreach ($data['flag']['wallpapers'] ?? [] as $wp) {
+            $img = $this->normalizeImage($wp['preview_path'] ?? null, false);
+            if ($img !== null) {
+                $flagImages[] = $img;
+            }
+        }
+        $guideImg = $this->normalizeImage($data['flag']['guide']['preview_path'] ?? null, false);
+        if ($guideImg !== null) {
+            $flagImages[] = $guideImg;
+        }
+        $flagImages = array_values(array_unique($flagImages));
+        if ($flagImages !== []) {
+            $entries[] = new ImageSitemapUrl('/syid/flag', $flagImages);
+        }
+
+        $hubImages = $this->normalizeList([
+            $logoHero['path'] ?? null,
+            '/syid-assets/materials/logo.ai.svg',
+            $flagHero['path'] ?? null,
+            $data['flag']['guide']['preview_path'] ?? null,
+            '/syid-assets/materials/qomra2.webp',
+        ], allowBareEntityFilename: false);
+        if ($hubImages !== []) {
+            $entries[] = new ImageSitemapUrl('/syid', $hubImages);
         }
 
         return $entries;

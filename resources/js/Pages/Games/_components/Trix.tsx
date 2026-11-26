@@ -44,6 +44,65 @@ const seatNames = (teams: boolean) => (teams ? SEAT_NAMES : SOLO_SEAT_NAMES);
 const SUITS: Suit[] = ['S', 'H', 'D', 'C'];
 const AI_DELAY = 700;
 
+const turnOf = (deal: TrixDeal) => (deal.contract === 'trix' ? deal.turn : deal.round.turn);
+
+/**
+ * What changed at the table since the last state, as one sentence for the
+ * polite live region: the contract, the other seats' cards and passes, who took
+ * each trick, who went out, and the player's turn. The player's own moves are
+ * not repeated.
+ */
+function describeTrix(prev: TrixGame | null, next: TrixGame): string {
+  const names = seatNames(next.options.teams);
+  const parts: string[] = [];
+
+  if (next.complete) return prev?.complete ? '' : 'انتهت اللعبة';
+  if (next.hands && kingOf(next) === HUMAN && !(prev?.hands && kingOf(prev) === HUMAN)) {
+    return 'أنت الملك، اختر الطلب';
+  }
+
+  const deal = next.deal;
+  if (!deal) return '';
+  // The contracts of a kingdom are distinct, so kingdom + contract names a deal.
+  const same = prev?.deal && prev.kingdom === next.kingdom && prev.deal.contract === deal.contract ? prev.deal : null;
+  if (!same) parts.push(`الطلب ${CONTRACT_INFO[deal.contract].name}، الملك ${names[kingOf(next)]}`);
+
+  if (deal.contract === 'trix') {
+    const before = same?.contract === 'trix' ? same : null;
+    if (before) {
+      const mover = before.turn;
+      if (mover !== HUMAN) {
+        const laid = SUITS.flatMap((suit) =>
+          (deal.layout.laid[suit] ?? []).slice((before.layout.laid[suit] ?? []).length).map((power) => ({ suit, power })),
+        );
+        if (laid.length > 0) {
+          for (const { suit, power } of laid) {
+            parts.push(`${names[mover]}: ${cardName({ suit, rank: power === 14 ? 1 : power })}`);
+          }
+        } else if (deal.turn !== before.turn) {
+          parts.push(`${names[mover]} باس`);
+        }
+      }
+      for (const seat of deal.out.slice(before.out.length)) {
+        parts.push(seat === HUMAN ? 'أنهيتَ أوراقك' : `${names[seat]} أنهى أوراقه`);
+      }
+    }
+  } else {
+    const before = same && same.contract !== 'trix' ? same.round : null;
+    const plays = (round: typeof deal.round) => [...round.history.flatMap((t) => t.plays), ...round.trick];
+    for (const play of plays(deal.round).slice(before ? plays(before).length : 0)) {
+      if (play.seat !== HUMAN) parts.push(`${names[play.seat]}: ${cardName(play.card)}`);
+    }
+    for (const trick of deal.round.history.slice(before?.history.length ?? 0)) {
+      parts.push(trick.winner === HUMAN ? 'أخذتَ الأكلة' : `أخذ ${names[trick.winner]} الأكلة`);
+    }
+  }
+
+  if (deal.phase === 'complete' && same?.phase !== 'complete') parts.push('انتهى الطلب');
+  if (deal.phase === 'playing' && turnOf(deal) === HUMAN && (!same || turnOf(same) !== HUMAN)) parts.push('دورك');
+  return parts.join('، ');
+}
+
 export default function Trix() {
   const [game, setGame] = useState<TrixGame | null>(null);
   const [large, setLarge] = useState(false);
@@ -53,6 +112,9 @@ export default function Trix() {
   const [selected, setSelected] = useState<string | null>(null);
   const seen = useRef(0);
   const recorded = useRef(false);
+  /** The live region's text, and the game state it was worked out against. */
+  const [announcement, setAnnouncement] = useState('');
+  const announced = useRef<TrixGame | null>(null);
 
   const fresh = (opts: TrixOptions) => {
     seen.current = 0;
@@ -127,6 +189,13 @@ export default function Trix() {
   useEffect(() => {
     setSelected(null);
   }, [game?.deal]);
+
+  useEffect(() => {
+    if (!game) return;
+    const text = describeTrix(announced.current, game);
+    announced.current = game;
+    if (text) setAnnouncement(text);
+  }, [game]);
 
   // Hooks run before the loading return below; the drop handler reaches the
   // current render's `play` through a ref.
@@ -211,6 +280,8 @@ export default function Trix() {
 
   return (
     <div ref={tableRef} className="flex h-full select-none flex-col">
+      {/* One persistent polite region for everything the other seats do. */}
+      <div role="status" className="sr-only">{announcement}</div>
       {/* The two buttons portal into the shell header, beside القوانين. Only the
           running deal stays here. */}
       <GameMenu

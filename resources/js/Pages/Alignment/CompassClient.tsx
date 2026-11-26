@@ -46,6 +46,52 @@ const DEFAULT_COLORS: Colors = {
     bottomRight: '#9C27B0'
 };
 
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+function safeColor(value: unknown, fallback: string): string {
+    return typeof value === 'string' && HEX_COLOR.test(value) ? value : fallback;
+}
+
+/** Names and axis labels are free text; the SVG export is built as a string. */
+function escapeXml(value: string): string {
+    return value.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!);
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** Saved state is untrusted: keep only well-formed fields, defaulting the rest. */
+function parseSaved(raw: unknown): { axes: Axes; colors: Colors; dots: Dot[] } | null {
+    if (!isRecord(raw)) return null;
+    const a = isRecord(raw.axes) ? raw.axes : {};
+    const c = isRecord(raw.colors) ? raw.colors : {};
+    const text = (value: unknown, fallback: string) => typeof value === 'string' ? value : fallback;
+
+    const axes: Axes = {
+        left: text(a.left, DEFAULT_AXES.left),
+        right: text(a.right, DEFAULT_AXES.right),
+        top: text(a.top, DEFAULT_AXES.top),
+        bottom: text(a.bottom, DEFAULT_AXES.bottom),
+    };
+    const colors: Colors = {
+        topLeft: safeColor(c.topLeft, DEFAULT_COLORS.topLeft),
+        topRight: safeColor(c.topRight, DEFAULT_COLORS.topRight),
+        bottomLeft: safeColor(c.bottomLeft, DEFAULT_COLORS.bottomLeft),
+        bottomRight: safeColor(c.bottomRight, DEFAULT_COLORS.bottomRight),
+    };
+    const dots: Dot[] = (Array.isArray(raw.dots) ? raw.dots : [])
+        .filter(isRecord)
+        .filter((d) => Number.isFinite(d.id) && Number.isFinite(d.x) && Number.isFinite(d.y))
+        .map((d, i) => ({
+            id: d.id as number,
+            x: d.x as number,
+            y: d.y as number,
+            color: safeColor(d.color, DOT_COLORS[i % DOT_COLORS.length]),
+            name: text(d.name, ''),
+        }));
+    return { axes, colors, dots };
+}
+
 export default function CompassClient() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -62,11 +108,11 @@ export default function CompassClient() {
     useEffect(() => {
         try {
             const savedData = localStorage.getItem('politicalCompass');
-            if (savedData) {
-                const parsed = JSON.parse(savedData);
-                if (parsed.axes) setAxes(parsed.axes);
-                if (parsed.colors) setColors(parsed.colors);
-                if (parsed.dots) setDots(parsed.dots);
+            const parsed = savedData ? parseSaved(JSON.parse(savedData)) : null;
+            if (parsed) {
+                setAxes(parsed.axes);
+                setColors(parsed.colors);
+                setDots(parsed.dots);
             }
         } catch (e) {
             console.error('Failed to load from storage', e);
@@ -274,25 +320,25 @@ export default function CompassClient() {
             const centerY = height / 2;
             let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
 
-            svg += `<rect x="0" y="0" width="${centerX}" height="${centerY}" fill="${colors.topLeft}"/>`;
-            svg += `<rect x="${centerX}" y="0" width="${centerX}" height="${centerY}" fill="${colors.topRight}"/>`;
-            svg += `<rect x="0" y="${centerY}" width="${centerX}" height="${centerY}" fill="${colors.bottomLeft}"/>`;
-            svg += `<rect x="${centerX}" y="${centerY}" width="${centerX}" height="${centerY}" fill="${colors.bottomRight}"/>`;
+            svg += `<rect x="0" y="0" width="${centerX}" height="${centerY}" fill="${safeColor(colors.topLeft, DEFAULT_COLORS.topLeft)}"/>`;
+            svg += `<rect x="${centerX}" y="0" width="${centerX}" height="${centerY}" fill="${safeColor(colors.topRight, DEFAULT_COLORS.topRight)}"/>`;
+            svg += `<rect x="0" y="${centerY}" width="${centerX}" height="${centerY}" fill="${safeColor(colors.bottomLeft, DEFAULT_COLORS.bottomLeft)}"/>`;
+            svg += `<rect x="${centerX}" y="${centerY}" width="${centerX}" height="${centerY}" fill="${safeColor(colors.bottomRight, DEFAULT_COLORS.bottomRight)}"/>`;
 
             svg += `<line x1="${centerX}" y1="0" x2="${centerX}" y2="${height}" stroke="#fff" stroke-width="2"/>`;
             svg += `<line x1="0" y1="${centerY}" x2="${width}" y2="${centerY}" stroke="#fff" stroke-width="2"/>`;
 
             // Labels with Arabic font assumption
             const txtStyle = 'fill="#fff" font-family="IBM Plex Sans Arabic, sans-serif" font-weight="bold" font-size="16" text-anchor="middle"';
-            svg += `<text x="${centerX - 100}" y="${centerY - 10}" ${txtStyle}>${axes.left}</text>`;
-            svg += `<text x="${centerX + 100}" y="${centerY - 10}" ${txtStyle}>${axes.right}</text>`;
-            svg += `<text x="${centerX + 15}" y="${centerY - 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY - 100})">${axes.top}</text>`;
-            svg += `<text x="${centerX + 15}" y="${centerY + 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY + 100})">${axes.bottom}</text>`;
+            svg += `<text x="${centerX - 100}" y="${centerY - 10}" ${txtStyle}>${escapeXml(axes.left)}</text>`;
+            svg += `<text x="${centerX + 100}" y="${centerY - 10}" ${txtStyle}>${escapeXml(axes.right)}</text>`;
+            svg += `<text x="${centerX + 15}" y="${centerY - 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY - 100})">${escapeXml(axes.top)}</text>`;
+            svg += `<text x="${centerX + 15}" y="${centerY + 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY + 100})">${escapeXml(axes.bottom)}</text>`;
 
             dots.forEach(dot => {
-                svg += `<circle cx="${dot.x}" cy="${dot.y}" r="8" fill="${dot.color}" stroke="#fff" stroke-width="2"/>`;
+                svg += `<circle cx="${dot.x}" cy="${dot.y}" r="8" fill="${safeColor(dot.color, DOT_COLORS[0])}" stroke="#fff" stroke-width="2"/>`;
                 if (dot.name) {
-                    svg += `<text x="${dot.x}" y="${dot.y - 20}" fill="#fff" font-family="sans-serif" font-size="12" text-anchor="middle" style="text-shadow: 0px 1px 2px rgba(0,0,0,0.5);">${dot.name}</text>`;
+                    svg += `<text x="${dot.x}" y="${dot.y - 20}" fill="#fff" font-family="sans-serif" font-size="12" text-anchor="middle" style="text-shadow: 0px 1px 2px rgba(0,0,0,0.5);">${escapeXml(dot.name)}</text>`;
                 }
             });
             svg += '</svg>';
@@ -303,7 +349,8 @@ export default function CompassClient() {
             link.download = 'political-compass.svg';
             link.href = url;
             link.click();
-            URL.revokeObjectURL(url);
+            // Revoking synchronously can cancel the download in some browsers.
+            setTimeout(() => URL.revokeObjectURL(url), 0);
         } else {
             const link = document.createElement('a');
             link.download = `political-compass.${exportFormat}`;

@@ -671,9 +671,6 @@ describe('pages render their content on the server', () => {
                         kind: bySlug[s]?.kind ?? 'ministry',
                     })),
                 })),
-                current_cabinet: currentCabinet,
-                historical_ministries: historical,
-                sovereign_bodies: sovereign,
                 all_ministries: all,
                 stats: {
                     current_ministries: currentCabinet.length,

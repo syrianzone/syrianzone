@@ -92,9 +92,8 @@ class MinistryDirectoryService
                     'to_ministries' => $this->resolveSlugRefs($r['to_slugs'] ?? [], $bySlug),
                 ];
             }, $facts['restructurings']),
-            'current_cabinet' => $currentCabinet,
-            'historical_ministries' => $historicalMinistries,
-            'sovereign_bodies' => $sovereignBodies,
+            // One copy of every entry: the page splits it into the current
+            // cabinet, historical ministries and sovereign bodies itself.
             'all_ministries' => $enriched,
             'stats' => [
                 'current_ministries' => count($currentCabinet),

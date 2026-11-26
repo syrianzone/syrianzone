@@ -60,9 +60,11 @@ test('ministries hub and every ministry slug return 200 with a unique title and 
     $hubResponse->assertInertia(fn ($page) => $page
         ->component('Ministries/Index')
         ->has('eras', 4)
-        ->has('current_cabinet', 24)
-        ->has('sovereign_bodies', 7)
-        ->has('historical_ministries', 6)
+        ->has('all_ministries', 37)
+        ->where('stats.current_ministries', 24)
+        ->where('stats.sovereign_bodies', 7)
+        ->where('stats.historical_ministries', 6)
+        ->missing('current_cabinet')
     );
 
     $hubTitle = SeoMeta::resolve(Request::create('/ministries', 'GET'))['title'];

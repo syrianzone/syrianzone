@@ -41,12 +41,22 @@ export default function MinistriesIndex({
     meta,
     eras = [],
     restructurings = [],
-    current_cabinet = [],
-    historical_ministries = [],
-    sovereign_bodies = [],
     all_ministries = [],
     stats,
 }: MinistriesIndexProps) {
+    // The server sends each entry once; these mirror the service's filters.
+    const current_cabinet = useMemo(
+        () => all_ministries.filter((m) => m.kind === 'ministry' && m.status === 'current'),
+        [all_ministries],
+    );
+    const historical_ministries = useMemo(
+        () => all_ministries.filter((m) => m.kind === 'ministry' && m.status !== 'current'),
+        [all_ministries],
+    );
+    const sovereign_bodies = useMemo(
+        () => all_ministries.filter((m) => m.kind === 'sovereign'),
+        [all_ministries],
+    );
     const [searchQuery, setSearchQuery] = useState('');
 
     const normalizedQuery = useMemo(() => normalizeArabic(searchQuery), [searchQuery]);

@@ -133,9 +133,6 @@ export interface MinistriesIndexProps {
     meta: MinistryMeta;
     eras: GovernmentEra[];
     restructurings: MinistryRestructuring[];
-    current_cabinet: MinistrySummary[];
-    historical_ministries: MinistrySummary[];
-    sovereign_bodies: MinistrySummary[];
     all_ministries: MinistrySummary[];
     stats: {
         current_ministries: number;

@@ -228,7 +228,7 @@ function MorePanel({
       id="sz-more-panel"
       role="region"
       aria-label="المزيد من أقسام الموقع"
-      className="w-[min(1152px,92vw)] max-h-[calc(100vh-5.5rem)] overflow-y-auto rounded-xl border bg-popover text-popover-foreground shadow-lg"
+      className="w-[min(1152px,92vw)] max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-xl border bg-popover text-popover-foreground shadow-lg"
     >
       {header}
       <div className="p-4 space-y-4">

@@ -743,4 +743,12 @@ html[data-font="ibm-plex"] body {
         transition-duration: 0.001ms !important;
         scroll-behavior: auto !important;
     }
+
+    /* Except loading spinners: a frozen spinner reads as a hung page, and
+       their rotation is the only sign that work is in progress. They keep
+       turning, slower. */
+    .animate-spin {
+        animation-duration: 1.5s !important;
+        animation-iteration-count: infinite !important;
+    }
 }

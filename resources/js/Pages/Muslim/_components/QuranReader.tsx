@@ -383,8 +383,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
           <p className="text-xs">جاري تحميل الصفحة…</p>
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center gap-2 py-12 text-sm text-red-500">
-          <AlertCircle className="h-8 w-8" /><p>{error}</p>
+        <div className="flex flex-col items-center gap-2 py-12 text-sm text-destructive">
+          <AlertCircle className="h-8 w-8" /><p role="alert">{error}</p>
           <Button variant="outline" size="sm" onClick={() => go(page)}>إعادة المحاولة</Button>
         </div>
       ) : (

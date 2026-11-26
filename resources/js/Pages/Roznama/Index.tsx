@@ -529,9 +529,9 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                         {loading ? (
                                             <div className="min-h-[348px]" aria-hidden="true" />
                                         ) : error ? (
-                                            <div className="text-center py-8 text-sm text-red-500 flex flex-col items-center gap-2">
-                                                <AlertCircle className="h-8 w-8 text-red-500" />
-                                                <p>{error}</p>
+                                            <div className="text-center py-8 text-sm text-destructive flex flex-col items-center gap-2">
+                                                <AlertCircle className="h-8 w-8 text-destructive" />
+                                                <p role="alert">{error}</p>
                                             </div>
                                         ) : prayerTimes ? (
                                             <div className="space-y-2">
@@ -715,9 +715,9 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                     {loadingEvents ? (
                                         <div className="min-h-[340px]" aria-hidden="true" />
                                     ) : eventsError ? (
-                                        <div className="text-center py-8 text-sm text-red-500 flex flex-col items-center gap-2">
-                                            <AlertCircle className="h-8 w-8 text-red-500" />
-                                            <p>{eventsError}</p>
+                                        <div className="text-center py-8 text-sm text-destructive flex flex-col items-center gap-2">
+                                            <AlertCircle className="h-8 w-8 text-destructive" />
+                                            <p role="alert">{eventsError}</p>
                                         </div>
                                     ) : events.length === 0 ? (
                                         <div className="text-center py-12 text-sm text-muted-foreground">

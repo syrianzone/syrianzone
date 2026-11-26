@@ -137,8 +137,8 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn, initialCity = 
           {loading ? (
             <div className="min-h-[348px]" aria-hidden="true" />
           ) : error ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-sm text-red-500">
-              <AlertCircle className="h-8 w-8" /><p>{error}</p>
+            <div className="flex flex-col items-center gap-2 py-8 text-sm text-destructive">
+              <AlertCircle className="h-8 w-8" /><p role="alert">{error}</p>
               <Button variant="outline" size="sm" onClick={reload}>إعادة المحاولة</Button>
             </div>
           ) : timings ? (

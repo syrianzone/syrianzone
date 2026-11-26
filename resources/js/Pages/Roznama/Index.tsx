@@ -100,6 +100,12 @@ const VARIABLE_HOLIDAYS_MAP: Record<number, Record<string, { month: number; day:
     }
 };
 
+/** Upstream event links reach an href: only http(s) passes, else the platform. */
+const F3ALIA_HOME = 'https://app.f3alia.com';
+function safeEventUrl(raw: string | null | undefined): string {
+    return typeof raw === 'string' && /^https?:\/\//i.test(raw.trim()) ? raw.trim() : F3ALIA_HOME;
+}
+
 // The six rows the card lists, in clock-of-day order.
 const PRAYER_EVENTS = PRAYER_KEYS.map((key) => ({ key, label: PRAYER_LABELS[key] }));
 
@@ -219,7 +225,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                     description: e.description,
                     address: e.address,
                     isOnline: e.is_online,
-                    eventLink: e.url,
+                    eventLink: safeEventUrl(e.url),
                     province: e.province,
                     provinceName: e.provinceName,
                     isFree: e.is_free,

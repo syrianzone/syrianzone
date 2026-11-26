@@ -7,6 +7,12 @@ import { formatGregorianSyrianShort } from "@/Lib/syrian-date";
 import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
 import { getGovernorateNameAr, governorateNameForF3aliaProvince } from '@/Domain/geography/governorates';
 
+/** Upstream event links reach an href: only http(s) passes, else the platform. */
+const F3ALIA_HOME = 'https://app.f3alia.com';
+function safeEventUrl(raw: string | null | undefined): string {
+    return typeof raw === 'string' && /^https?:\/\//i.test(raw.trim()) ? raw.trim() : F3ALIA_HOME;
+}
+
 interface F3aliaEventsProps {
     governorate: string; // local governorate key, e.g., 'damascus'
 }
@@ -134,7 +140,7 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                                 )}
                                 <span aria-hidden="true">•</span>
                                 <a
-                                    href={event.url}
+                                    href={safeEventUrl(event.url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="font-bold text-primary hover:underline inline-flex items-center gap-1"

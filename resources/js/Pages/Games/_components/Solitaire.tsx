@@ -323,6 +323,15 @@ export default function Solitaire() {
         <Stat label="أفضل وقت" value={best ? clock(best) : '—'} tone="primary" />
       </div>
 
+      {/* Always mounted, so screen readers hear the game end the moment it does. */}
+      <div role="status" className="sr-only">
+        {won
+          ? `أكملت اللعبة في ${clock(elapsed)} بـ ${moves} حركة`
+          : stuck
+            ? 'لا توجد حركات ممكنة. ابدأ لعبة جديدة.'
+            : ''}
+      </div>
+
       {stuck && (
         <p className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-bold text-destructive">
           لا توجد حركات ممكنة. ابدأ لعبة جديدة.

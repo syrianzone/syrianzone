@@ -76,18 +76,24 @@ function DescriptionText({ description }: { description: string }) {
     const [expanded, setExpanded] = React.useState(false);
 
     return (
-        <p
+        <button
+            type="button"
+            aria-expanded={expanded}
             onClick={(e) => {
                 e.stopPropagation();
                 setExpanded((prev) => !prev);
             }}
-            className={`text-xs text-muted-foreground leading-relaxed mb-3 cursor-pointer select-none transition-all ${
-                expanded ? 'line-clamp-none font-medium text-foreground/90' : 'line-clamp-2 hover:text-foreground/80'
-            }`}
+            className="mb-3 block w-full rounded-sm text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title={expanded ? 'اضغط للتقليص' : 'اضغط لإظهار النص كاملاً'}
         >
-            {description}
-        </p>
+            <span
+                className={`text-xs text-muted-foreground leading-relaxed cursor-pointer select-none transition-all ${
+                    expanded ? 'line-clamp-none font-medium text-foreground/90' : 'line-clamp-2 hover:text-foreground/80'
+                }`}
+            >
+                {description}
+            </span>
+        </button>
     );
 }
 

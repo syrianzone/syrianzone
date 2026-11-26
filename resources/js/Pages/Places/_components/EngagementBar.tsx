@@ -12,12 +12,14 @@ import { ReportButton } from './ReportButton';
 export function EngagementBar(props: {
   placeId: number;
   placeName: string;
+  placeUrl?: string;
   lat: number;
   lng: number;
   initialSaved: boolean;
   initialSaves: number;
+  directionsLabel?: string;
 }) {
-  const { placeId, placeName, lat, lng } = props;
+  const { placeId, placeName, placeUrl, lat, lng, directionsLabel = 'افتح في خرائط جوجل' } = props;
   const { user } = useAuth();
   const [saved, setSaved] = useState(props.initialSaved);
   const [saves, setSaves] = useState(props.initialSaves);
@@ -58,8 +60,12 @@ export function EngagementBar(props: {
   };
 
   const share = async () => {
+    const targetPath = placeUrl || `/mishwar?place=${placeId}`;
+    const shareUrl = targetPath.startsWith('http://') || targetPath.startsWith('https://')
+      ? targetPath
+      : `${window.location.origin}${targetPath}`;
     const outcome = await shareOrCopy(
-      { title: placeName, url: `${window.location.origin}/mishwar?place=${placeId}` },
+      { title: placeName, url: shareUrl },
       { successMessage: 'تم نسخ الرابط', failureMessage: 'تعذر نسخ الرابط' },
     );
     if (outcome === 'copied') flashShareFeedback('copied');
@@ -98,8 +104,8 @@ export function EngagementBar(props: {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <ExternalLink className="h-4 w-4" />
-            افتح في خرائط جوجل
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            {directionsLabel}
           </a>
         </Button>
         <ReportButton placeId={placeId} />

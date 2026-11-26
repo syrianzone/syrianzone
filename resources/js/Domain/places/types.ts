@@ -19,7 +19,26 @@ export interface PlacePhoto { id: number; thumb_url: string; display_url: string
 export interface PlaceListItem {
   id: number; name: string; category: PlaceCategory; description: string;
   lat: number; lng: number; thumb_url: string | null;
-  saves_count: number;
+  saves_count: number; url: string;
+}
+
+export interface PlaceGovernorate {
+  id: string;
+  name_ar: string;
+}
+
+export interface PlaceLocatorShape {
+  id: string;
+  name_ar: string;
+  path: string;
+}
+
+export interface PlaceLocator {
+  viewBox: string;
+  width: number;
+  height: number;
+  shapes: PlaceLocatorShape[];
+  pin: { x: number; y: number };
 }
 
 export interface NearbyPlace extends PlaceListItem { distance_m: number; }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, Check, Copy } from 'lucide-react';
+import { ArrowRight, Check, Copy, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import { Badge } from '@/Components/ui/badge';
@@ -91,15 +91,24 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
               </Button>
             </div>
             {place.status === 'approved' ? (
-              <EngagementBar
-                key={place.id}
-                placeId={place.id}
-                placeName={place.name}
-                lat={place.lat}
-                lng={place.lng}
-                initialSaved={place.saved_by_me}
-                initialSaves={place.saves_count}
-              />
+              <div className="space-y-3">
+                <EngagementBar
+                  key={place.id}
+                  placeId={place.id}
+                  placeName={place.name}
+                  placeUrl={place.url}
+                  lat={place.lat}
+                  lng={place.lng}
+                  initialSaved={place.saved_by_me}
+                  initialSaves={place.saves_count}
+                />
+                <Button asChild variant="secondary" size="sm" className="w-full gap-1.5">
+                  <a href={place.url}>
+                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                    <span>صفحة المكان</span>
+                  </a>
+                </Button>
+              </div>
             ) : (
               // engagement endpoints 404 for non-approved places, show the status instead
               <Badge variant={place.status === 'pending' ? 'secondary' : 'destructive'}>

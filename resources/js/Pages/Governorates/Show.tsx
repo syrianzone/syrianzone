@@ -586,7 +586,7 @@ export default function GovernorateShow({
                                                     )}
                                                 </div>
                                                 <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-                                                    <span>عرض في مشوار</span>
+                                                    <span>صفحة المكان</span>
                                                     <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                                                 </span>
                                             </Link>

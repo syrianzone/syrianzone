@@ -197,7 +197,7 @@ export function PlaceReviewCard(props: {
             )}
           </div>
         )}
-        {photoError && <p className="text-sm text-destructive">{photoError}</p>}
+        {photoError && <p role="alert" className="text-sm text-destructive">{photoError}</p>}
 
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-base font-bold">{place.name}</h2>

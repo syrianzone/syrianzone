@@ -310,8 +310,11 @@ export default function SyrianContributorsPage({ contributors: initial = [] }: {
           <div className="text-center mb-12 relative" style={{ paddingTop: '24px' }}>
             <div className="mb-6 flex justify-center">
               <div className="relative">
-                <div
-                  className="inline-block rounded shadow-lg overflow-hidden cursor-pointer"
+                <button
+                  type="button"
+                  aria-pressed={isEagleLogo}
+                  aria-label="إظهار شعار النسر السوري"
+                  className="inline-block rounded shadow-lg overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   onClick={handleFlagClick}
                 >
                   {isEagleLogo ? (
@@ -331,7 +334,7 @@ export default function SyrianContributorsPage({ contributors: initial = [] }: {
                       style={{ display: "block" }}
                     />
                   )}
-                </div>
+                </button>
               </div>
             </div>
 

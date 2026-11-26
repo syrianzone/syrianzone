@@ -41,7 +41,7 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
     const [error, setError] = useState<string | null>(null);
     const [isShowingFallbackEvents, setIsShowingFallbackEvents] = useState(false);
 
-    const loadEventsData = async () => {
+    const loadEventsData = async (signal?: AbortSignal) => {
         setLoading(true);
         setError(null);
         try {
@@ -50,18 +50,24 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
             // fallback live in EventsController, never in the browser.
             const payload = await api.get<EventsPayload>(`${API_ROOT}/events/today`, {
                 params: { governorate, scope: 'upcoming' },
+                signal,
             });
+            if (signal?.aborted) return;
             setEvents(payload.events ?? []);
             setIsShowingFallbackEvents(Boolean(payload.is_fallback));
         } catch (err) {
+            // A superseded request (governorate changed) is not an error.
+            if (signal?.aborted) return;
             setError(apiErrorMessage(err, 'فشل تحميل الفعاليات حالياً'));
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadEventsData();
+        const ctrl = new AbortController();
+        void loadEventsData(ctrl.signal);
+        return () => ctrl.abort();
     }, [governorate]);
 
     // Only the very first next upcoming event is shown (homepage spotlight).
@@ -92,7 +98,7 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                     <CardContent className="flex flex-col items-center gap-3">
                         <AlertCircle className="h-10 w-10 text-destructive" />
                         <p className="text-sm font-medium">{error}</p>
-                        <Button variant="outline" size="sm" onClick={loadEventsData} className="mt-2">
+                        <Button variant="outline" size="sm" onClick={() => void loadEventsData()} className="mt-2">
                             <RefreshCw className="h-4 w-4 ms-2" />
                             إعادة المحاولة
                         </Button>

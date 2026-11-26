@@ -409,7 +409,13 @@ const MoreTrigger = React.forwardRef<
   );
 });
 
-export default function Navbar({ sticky = true }: { sticky?: boolean }) {
+/**
+ * Memoized: every page renders its own MainLayout, so any page state change
+ * (a keystroke in a filter, a toggle) re-renders the layout. The navbar's only
+ * prop is a boolean and everything else it reads comes from stores and
+ * contexts, so it can skip those renders and keep its large mega menu still.
+ */
+const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean }) {
   const { url } = usePage();
   const pathname = pathnameOf(url);
   const isTransitPage = routeFamily(pathname) === 'transit';
@@ -766,4 +772,6 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
       </div>
     </header>
   );
-}
+});
+
+export default Navbar;

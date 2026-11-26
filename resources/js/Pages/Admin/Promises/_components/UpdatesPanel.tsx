@@ -40,7 +40,7 @@ export default function UpdatesPanel({ promise, today, canEdit, canRule, onSaved
     const [saving, setSaving] = useState(false);
 
     const undoableStatusId = promise.publishedAt === null
-        ? [...promise.updates].reverse().find((u) => u.type === 'status_change')?.id ?? null
+        ? promise.updates.findLast((u) => u.type === 'status_change')?.id ?? null
         : null;
 
     const add = async () => {

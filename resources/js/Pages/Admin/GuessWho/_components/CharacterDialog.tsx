@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { router } from '@inertiajs/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
@@ -7,6 +7,7 @@ import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import { Switch } from '@/Components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import FieldError from '@/Components/ui/field-error';
 import { ImagePlus } from 'lucide-react';
 import type { GuessWhoCategoryData } from './CategoryDialog';
 
@@ -60,6 +61,9 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
+    const [imageError, setImageError] = useState<string | null>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const imageTriggerRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         if (character) {
@@ -78,12 +82,14 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
             setImagePreview(null);
         }
         setImageFile(null);
+        setImageError(null);
     }, [character, open]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             setImageFile(file);
+            setImageError(null);
             setImagePreview(URL.createObjectURL(file));
         }
     };
@@ -91,6 +97,13 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!categoryId) return;
+        // The picker input is hidden, so the browser cannot focus it to show
+        // its own "required" bubble; report a missing image beside the button.
+        if (!isEdit && !imageFile) {
+            setImageError('اختر صورة للشخصية');
+            imageTriggerRef.current?.focus();
+            return;
+        }
         setProcessing(true);
 
         const formData = new FormData();
@@ -155,7 +168,7 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="font-semibold text-xs">صورة الشخصية {isEdit ? '(اتركها فارغة للإبقاء على الحالية)' : ''}</Label>
+                        <Label id="gw-char-image-label" className="font-semibold text-xs">صورة الشخصية {isEdit ? '(اتركها فارغة للإبقاء على الحالية)' : ''}</Label>
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-full overflow-hidden bg-muted border flex items-center justify-center flex-shrink-0">
                                 {imagePreview ? (
@@ -165,11 +178,20 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
                                 )}
                             </div>
                             <div className="flex-1">
-                                <Label htmlFor="gw-char-image" className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-muted transition-colors">
-                                    <ImagePlus className="w-4 h-4" />
-                                    <span>اختر صورة</span>
-                                </Label>
-                                <Input id="gw-char-image" type="file" accept="image/*" className="hidden" onChange={handleImageChange} required={!isEdit} />
+                                <button
+                                    ref={imageTriggerRef}
+                                    type="button"
+                                    onClick={() => imageInputRef.current?.click()}
+                                    aria-labelledby="gw-char-image-label gw-char-image-action"
+                                    aria-invalid={imageError ? true : undefined}
+                                    aria-describedby={imageError ? 'gw-char-image-error' : undefined}
+                                    className="cursor-pointer inline-flex items-center gap-2 leading-none px-3 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                >
+                                    <ImagePlus className="w-4 h-4" aria-hidden="true" />
+                                    <span id="gw-char-image-action">اختر صورة</span>
+                                </button>
+                                <input ref={imageInputRef} type="file" accept="image/*" className="hidden" aria-hidden="true" tabIndex={-1} onChange={handleImageChange} />
+                                <FieldError id="gw-char-image-error" message={imageError ?? undefined} />
                             </div>
                         </div>
                     </div>

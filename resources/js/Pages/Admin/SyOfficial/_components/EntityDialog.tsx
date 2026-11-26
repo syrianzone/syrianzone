@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/Components/ui/dialog';
 import { Input } from '@/Components/ui/input';
@@ -29,6 +29,7 @@ function toSocials(socials?: SocialLinks | null): Record<string, string> {
 export default function EntityDialog({ open, onOpenChange, entity, categories }: EntityDialogProps) {
     const isEditing = !!entity;
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         id: entity?.id || '',
@@ -188,7 +189,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                     </div>
 
                     <div className="space-y-2">
-                        <Label>الشعار / الصورة (يتم تحويلها لـ WebP ورفعها لـ R2)</Label>
+                        <Label id="image_file-label">الشعار / الصورة (يتم تحويلها لـ WebP ورفعها لـ R2)</Label>
                         <div className="flex items-center gap-4 border border-dashed border-border rounded-xl p-4 bg-card">
                             <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 border">
                                 {imagePreview ? (
@@ -199,16 +200,25 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                             </div>
                             <div className="flex-1">
                                 <input
+                                    ref={imageInputRef}
                                     type="file"
-                                    id="image_file"
                                     accept="image/*"
                                     onChange={handleImageChange}
                                     className="hidden"
+                                    aria-hidden="true"
+                                    tabIndex={-1}
                                 />
-                                <Label htmlFor="image_file" className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-                                    <UploadCloud className="w-4 h-4" />
-                                    <span>اختر صورة جديدة</span>
-                                </Label>
+                                <button
+                                    type="button"
+                                    onClick={() => imageInputRef.current?.click()}
+                                    aria-labelledby="image_file-label image_file-action"
+                                    aria-invalid={errors.image_file ? true : undefined}
+                                    aria-describedby={errors.image_file ? 'entity-image-error' : undefined}
+                                    className="cursor-pointer inline-flex items-center gap-2 leading-none px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                >
+                                    <UploadCloud className="w-4 h-4" aria-hidden="true" />
+                                    <span id="image_file-action">اختر صورة جديدة</span>
+                                </button>
                                 <p className="text-xs text-muted-foreground mt-1">يدعم PNG, JPG, WEBP (حجم أقصى 5 ميغابايت)</p>
                             </div>
                         </div>

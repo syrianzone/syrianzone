@@ -4,7 +4,7 @@ import { MapCanvas as SharedMapCanvas } from '@/Components/map/MapCanvas'
 import { useMap } from '@/Components/map/MapContext'
 import type { Bounds } from '@/Components/map/geo'
 import { notify } from '@/Lib/notify'
-import { LOC_CHANGED_EVENT, getGeo, gpsAvailable, resolveGps, setGeo } from '@/Domain/location/location'
+import { GpsPermissionDeniedError, LOC_CHANGED_EVENT, getGeo, gpsAvailable, resolveGps, setGeo } from '@/Domain/location/location'
 
 export type LocationStatus = 'idle' | 'loading' | 'available' | 'denied'
 
@@ -82,7 +82,9 @@ function Geolocator({ children }: { children: React.ReactNode }) {
       setGeo(await resolveGps())
       startWatch()
     } catch (e) {
-      setLocationStatus('denied')
+      // only a refused permission is "denied"; a timeout or a missing fix
+      // stays retryable from the drawer's "show my location" button
+      setLocationStatus(e instanceof GpsPermissionDeniedError ? 'denied' : 'idle')
       notify.error(e instanceof Error ? e.message : 'تعذر تحديد موقعك، تحقق من إذن الموقع في المتصفح')
     }
   }, [startWatch])

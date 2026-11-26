@@ -22,7 +22,7 @@ Currently covers six modules:
 
 | Module | Read tools | Write tools | Scoped |
 |---|---:|---:|---|
-| Places (mishwar) | 2 | 6 | no |
+| Places (mishwar) | 4 | 7 | no |
 | SyOfficial directory | 2 | 10 | no |
 | Government apps | 1 | 6 | no |
 | Transit | 4 | 6 | **yes**, by governorate |
@@ -115,11 +115,12 @@ are no longer the only place a distinction is drawn. What remains stricter:
 
 | Tool | Required capability |
 |---|---|
-| `list-places`, `get-place` | `places.review` |
+| `list-places`, `get-place`, `list-place-reports`, `audit-places` | `places.review` |
 | `approve-place`, `reject-place` | `places.approve` |
 | `update-place` | `places.edit` |
 | `rotate-place-photo`, `delete-place-photo` | `places.moderate_photos` |
 | `delete-place` | `places.delete` |
+| `merge-places` | `places.edit` **and** `places.delete` |
 
 Three things the agent surface adds on top of the dashboard:
 
@@ -305,6 +306,39 @@ with `features: []` and a route with no stops exercise every code path except th
 
 `PlaceAdminController` is now a thin HTTP adapter over these. Its 24 existing
 tests pass unchanged.
+
+### Auditing and merging Mishwar places
+
+Two tools support cleaning up published Mishwar place data without duplicating
+`update-place`:
+
+- **`audit-places`** (`places.review`, read-only) scans approved places across
+  five kinds (`duplicate_names`, `nearby_similar`, `latin_only_names`, `thin`,
+  `no_governorate`), with optional `kinds` filter and per-kind `limit` (default
+  50). Same-name groups include Haversine distance to the first member and
+  governorate classification (`PlaceGovernorates`), tagging each member as
+  `duplicate` (≤ 1 km), `same_name_different_place` (≥ 25 km in different
+  governorates), or `check_coordinates` (everything else, including ≥ 25 km in
+  the same governorate).
+- **`merge-places`** (`places.edit` **and** `places.delete`, destructive,
+  `dry_run` defaults to `true`) delegates to `PlaceMergeService` to merge one
+  approved duplicate (`source_id`) into another approved place (`target_id`):
+  - appends source photos to the target in `sort` order up to
+    `PlaceModerationService::MAX_PHOTOS_PER_PLACE` (10), leaving any overflow on
+    the source and reporting their ids;
+  - moves `place_saves` without duplicating per-user rows and recomputes
+    `saves_count`;
+  - moves open `place_reports` to the target, resolving conflicting open reports
+    on the source when the same user already reported the target;
+  - optionally replaces the target description (`keep_description`: `target`,
+    `source`, or `longer`);
+  - marks the source `status = 'rejected'` with `merged_into_id = target_id` so
+    it leaves the map, lists, hubs, and sitemaps while 301-redirecting
+    `/mishwar/{sourceId}-*`, `/mishwar/{sourceId}`, and
+    `/mishwar?place={sourceId}` to the canonical target (following A → B → C
+    chains);
+  - busts `PlaceModerationService::forgetMapCache()` and queues IndexNow for the
+    source path, target path, `/mishwar`, and affected governorate/category hubs.
 
 ### Promises
 
@@ -504,6 +538,7 @@ serve a stale compile for up to three minutes. Restart it if in doubt.
 | `AgentAuthorizationTest.php` | The ceiling: clamping, wildcard refusal, live revocation, governorate scoping, fail-closed paths |
 | `AgentHttpTest.php` | The edge: feature flag, guest, session-cookie refusal, ban, expiry, revocation, real bearer round trip |
 | `PlacesToolsTest.php` | Tool behaviour, domain refusals, `shouldRegister` gating, audit outcomes, redaction |
+| `PlacesCleanupToolsTest.php` | `audit-places` (all 5 kinds + duplicate verdicts), `merge-places` (dry run, photo cap, save/report dedup, 301s + chains, map/sitemap/hub exclusion, IndexNow, rejections, permissions, JSON-RPC round trip) |
 | `ApiTokenIssuingTest.php` | Form → token: clamping, banned owners, unknown ids, TTL fallback |
 | `DirectoryToolsTest.php` | SyOfficial / Gov Apps: capability isolation, any-of read gates, soft vs hard delete, omitted-vs-null |
 | `TransitToolsTest.php` | Governorate scoping, including the two indirect routes (linked edit, move) and cross-module capability isolation |

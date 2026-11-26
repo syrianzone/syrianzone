@@ -142,7 +142,7 @@ abstract class AuditedTool extends Tool
             return true;
         }
 
-        return $context->canAny($this->permissions);
+        return $context->canAll($this->permissions);
     }
 
     protected function authorize(AgentContext $context, Request $request): void

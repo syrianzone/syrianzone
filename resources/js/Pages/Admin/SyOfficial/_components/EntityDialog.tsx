@@ -29,6 +29,11 @@ function toSocials(socials?: SocialLinks | null): Record<string, string> {
 export default function EntityDialog({ open, onOpenChange, entity, categories }: EntityDialogProps) {
     const isEditing = !!entity;
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    // Release the blob behind a local preview once it is replaced or the
+    // dialog unmounts; server URLs are left alone.
+    useEffect(() => () => {
+        if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+    }, [imagePreview]);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({

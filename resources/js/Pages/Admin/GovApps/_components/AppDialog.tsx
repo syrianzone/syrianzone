@@ -31,6 +31,11 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
 
     const [iconFile, setIconFile] = useState<File | null>(null);
     const [iconPreview, setIconPreview] = useState<string | null>(null);
+    // Release the blob behind a local preview once it is replaced or the
+    // dialog unmounts; server URLs are left alone.
+    useEffect(() => () => {
+        if (iconPreview?.startsWith('blob:')) URL.revokeObjectURL(iconPreview);
+    }, [iconPreview]);
     const iconInputRef = useRef<HTMLInputElement>(null);
 
     const [processing, setProcessing] = useState(false);

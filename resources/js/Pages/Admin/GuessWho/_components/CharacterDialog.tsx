@@ -61,6 +61,11 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
     const [isActive, setIsActive] = useState(true);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    // Release the blob behind a local preview once it is replaced or the
+    // dialog unmounts; server URLs are left alone.
+    useEffect(() => () => {
+        if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+    }, [imagePreview]);
     const [processing, setProcessing] = useState(false);
     const [imageError, setImageError] = useState<string | null>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);

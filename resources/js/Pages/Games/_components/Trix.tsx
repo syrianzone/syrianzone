@@ -31,6 +31,7 @@ import PlayingCard from '@/Domain/games/PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
 import GameMenu from './GameMenu';
 import { useCardDrag } from '../_lib/useCardDrag';
+import { useFocusRescue } from '../_lib/useFocusRescue';
 import './table.css';
 
 /** Seat 0 is the player; 1 left, 2 opposite, 3 right. */
@@ -135,6 +136,9 @@ export default function Trix() {
       if (element?.closest('.sz-tbl')) playRef.current(card);
     },
   });
+  // Every move unmounts the focused control (a played card, the bid buttons);
+  // this puts focus back on the table instead of <body>.
+  const tableRef = useFocusRescue<HTMLDivElement>(['.sz-tbl__actions', '.sz-tbl__hand']);
 
   if (!game) {
     return <div className="py-16 text-center text-sm text-muted-foreground">جاري التوزيع…</div>;
@@ -206,7 +210,7 @@ export default function Trix() {
   const isKing = game.hands !== null && kingOf(game) === HUMAN;
 
   return (
-    <div className="flex h-full select-none flex-col">
+    <div ref={tableRef} className="flex h-full select-none flex-col">
       {/* The two buttons portal into the shell header, beside القوانين. Only the
           running deal stays here. */}
       <GameMenu
@@ -275,7 +279,7 @@ export default function Trix() {
           </div>
         </div>
 
-        <div className="sz-tbl__hand">
+        <div className="sz-tbl__hand" data-focus-group="hand">
           {hand.map((card) => (
             <PlayingCard
               key={card.id}
@@ -310,7 +314,7 @@ export default function Trix() {
         </div>
       )}
 
-      <div className="sz-tbl__actions mt-2 shrink-0">
+      <div className="sz-tbl__actions mt-2 shrink-0" data-focus-group="actions">
         {game.complete ? (
           <GameOver game={game} onNew={() => fresh(game.options)} />
         ) : isKing ? (

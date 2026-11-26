@@ -29,6 +29,7 @@ import PlayingCard from '@/Domain/games/PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
 import GameMenu from './GameMenu';
 import { useCardDrag } from '../_lib/useCardDrag';
+import { useFocusRescue } from '../_lib/useFocusRescue';
 import './table.css';
 
 /** Seat 0 is the player; 1 on the left, 2 opposite (the partner), 3 on the right. */
@@ -121,6 +122,9 @@ export default function Tarneeb() {
       if (element?.closest('.sz-tbl')) playRef.current(card);
     },
   });
+  // Every move unmounts the focused control (a played card, the bid buttons);
+  // this puts focus back on the table instead of <body>.
+  const tableRef = useFocusRescue<HTMLDivElement>(['.sz-tbl__actions', '.sz-tbl__hand']);
 
   if (!match || !round) {
     return <div className="py-16 text-center text-sm text-muted-foreground">جاري التوزيع…</div>;
@@ -198,7 +202,7 @@ export default function Tarneeb() {
   };
 
   return (
-    <div className="flex h-full select-none flex-col">
+    <div ref={tableRef} className="flex h-full select-none flex-col">
       {/* The two buttons portal into the shell header, beside القوانين. Only the
           contract line stays here; its height is reserved so the table never
           moves as the contract appears. */}
@@ -263,7 +267,7 @@ export default function Tarneeb() {
           </div>
         </div>
 
-        <div className="sz-tbl__hand">
+        <div className="sz-tbl__hand" data-focus-group="hand">
           {hand.map((card) => (
             <PlayingCard
               key={card.id}
@@ -280,7 +284,7 @@ export default function Tarneeb() {
       </div>
 
       {/* A fixed-height action strip, so the board above it never shifts. */}
-      <div className="sz-tbl__actions mt-2 shrink-0">
+      <div className="sz-tbl__actions mt-2 shrink-0" data-focus-group="actions">
         {paused ? (
           <Button onClick={proceed}>كمّل</Button>
         ) : round.phase === 'bidding' ? (

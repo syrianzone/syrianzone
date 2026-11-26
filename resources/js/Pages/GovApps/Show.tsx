@@ -331,6 +331,7 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                                         src={src}
                                                         alt={`لقطة شاشة ${idx + 1} من ${app.name}`}
                                                         loading="lazy"
+                                                        decoding="async"
                                                         className="w-full h-auto object-cover"
                                                     />
                                                 </div>
@@ -386,6 +387,8 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                                 <img
                                                     src={formatEntityImage(app.publisher.image)}
                                                     alt=""
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>
@@ -490,6 +493,8 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                                     <img
                                                         src={rel.icon || DEFAULT_GOVAPP_ICON}
                                                         alt=""
+                                                        loading="lazy"
+                                                        decoding="async"
                                                         className="w-full h-full object-cover"
                                                         onError={(e) => {
                                                             (e.target as HTMLImageElement).src = DEFAULT_GOVAPP_ICON;

@@ -1,5 +1,6 @@
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
+import { confirmDialog } from '@/Lib/confirm';
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
@@ -42,7 +43,16 @@ export default function SavedResults({
 
   const spectrumName = (id: string | null) => SPECTRA.find((s) => s.id === id)?.name ?? '—';
 
+  const rowLabel = (r: Result) => `${spectrumName(r.spectrum)} · ${formatGregorianSyrianShort(r.createdAt)}`;
+
   const remove = async (row: Result & { source: 'account' | 'local' }) => {
+    const confirmed = await confirmDialog({
+      title: 'حذف هذه النتيجة؟',
+      description: `${rowLabel(row)} — لا يمكن التراجع عن الحذف.`,
+      confirmText: 'حذف',
+      destructive: true,
+    });
+    if (!confirmed) return;
     if (row.source === 'account' && row.id != null) {
       try {
         await deleteAccountResult(row.id);
@@ -95,9 +105,9 @@ export default function SavedResults({
                   size="icon"
                   className="text-destructive h-8 w-8"
                   onClick={() => remove(r)}
-                  aria-label="حذف النتيجة"
+                  aria-label={`حذف النتيجة: ${rowLabel(r)}`}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>

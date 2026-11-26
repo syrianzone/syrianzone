@@ -84,7 +84,7 @@ export default function Home() {
     const { showWeather, showPrayerTimes, showEvents } = displayPrefs;
 
     const { weather } = useWeather(location, { enabled: mounted && showWeather, sessionCache: true });
-    const { timings: prayerTimes } = usePrayerTimes(location, readStoredMethod(), {
+    const { timings: prayerTimes, timeZone: prayerTimeZone } = usePrayerTimes(location, readStoredMethod(), {
         enabled: mounted && showPrayerTimes,
         timeoutMs: null,
         sessionCache: true,
@@ -155,7 +155,7 @@ export default function Home() {
         saveCustomLinks(updated, Boolean(user));
     };
 
-    const prayerMini = showPrayerTimes ? nextPrayer(prayerTimes, new Date()) : null;
+    const prayerMini = showPrayerTimes ? nextPrayer(prayerTimes, new Date(), { timeZone: prayerTimeZone }) : null;
     const weatherMini = showWeather && weather ? weather : null;
 
     /** Mirror a location edit into the account settings (device storage is the module's). */

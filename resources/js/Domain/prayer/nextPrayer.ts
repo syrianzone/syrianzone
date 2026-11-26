@@ -1,4 +1,5 @@
 import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from './methods';
+import { wallDateIn, zonedInstant } from './zonedTime';
 
 /**
  * "Next prayer" / "active prayer" for one day of timings.
@@ -40,33 +41,44 @@ export interface PrayerScheduleOptions {
   includeSunrise?: boolean;
   /** Default true: after Isha the next prayer is tomorrow's Fajr. */
   rollover?: boolean;
+  /**
+   * The location's IANA zone: the timings are wall-clock times there. Omitted,
+   * they are read on this device's clock (the legacy behaviour).
+   */
+  timeZone?: string;
 }
 
 type Timings = Record<string, string> | null | undefined;
 
-function parseAt(time: string, now: Date): Date | null {
+function parseAt(time: string, now: Date, timeZone?: string): Date | null {
   const [hours, minutes] = time.slice(0, 5).split(':').map(Number);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (timeZone) return zonedInstant(wallDateIn(now, timeZone), hours, minutes, timeZone);
   const at = new Date(now);
   at.setHours(hours, minutes, 0, 0);
   return at;
 }
 
-function placeAtDay(at: Date, days: number): Date {
-  const placed = new Date(at);
+/** The same wall-clock time `days` calendar days away (in the zone when given). */
+function placeAtDay(moment: PrayerMoment, days: number, timeZone?: string): Date {
+  if (timeZone) {
+    const [hours, minutes] = moment.time.split(':').map(Number);
+    return zonedInstant(wallDateIn(moment.at, timeZone), hours, minutes, timeZone, days);
+  }
+  const placed = new Date(moment.at);
   placed.setDate(placed.getDate() + days);
   return placed;
 }
 
 /** Today's events in clock order, skipping the ones the timings do not carry. */
-function timeline(timings: Timings, now: Date, includeSunrise: boolean): PrayerMoment[] {
+function timeline(timings: Timings, now: Date, includeSunrise: boolean, timeZone?: string): PrayerMoment[] {
   if (!timings) return [];
   const moments: PrayerMoment[] = [];
   for (const key of PRAYER_KEYS) {
     if (!includeSunrise && key === 'Sunrise') continue;
     const raw = timings[key];
     if (!raw) continue;
-    const at = parseAt(raw, now);
+    const at = parseAt(raw, now, timeZone);
     if (!at) continue;
     moments.push({
       key,
@@ -88,8 +100,8 @@ export function prayerSchedule(
   now: Date,
   options: PrayerScheduleOptions = {},
 ): PrayerSchedule | null {
-  const { includeSunrise = true, rollover = true } = options;
-  const moments = timeline(timings, now, includeSunrise);
+  const { includeSunrise = true, rollover = true, timeZone } = options;
+  const moments = timeline(timings, now, includeSunrise, timeZone);
   if (moments.length === 0) return null;
 
   const last = moments[moments.length - 1];
@@ -97,7 +109,7 @@ export function prayerSchedule(
 
   if (nextIndex === -1) {
     if (!rollover) return { active: last, next: null, remainingMs: null };
-    const tomorrow = placeAtDay(moments[0].at, 1);
+    const tomorrow = placeAtDay(moments[0], 1, timeZone);
     return {
       active: last,
       next: {
@@ -113,7 +125,7 @@ export function prayerSchedule(
   const next = moments[nextIndex];
   const active =
     nextIndex === 0
-      ? { ...last, at: placeAtDay(last.at, -1) }
+      ? { ...last, at: placeAtDay(last, -1, timeZone) }
       : moments[nextIndex - 1];
   const remainingMs = Math.max(0, next.at.getTime() - now.getTime());
   return {

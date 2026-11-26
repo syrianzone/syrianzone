@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api as client, apiErrorMessage } from '@/Lib/api';
 import { resolvePrayerParams, resolveWeatherPoint, type LocationPreference } from '../location/preference';
+import { SYRIA_TIMEZONE } from '../geography/syria';
+import { isValidTimeZone } from './zonedTime';
 
 /**
  * `/api/prayer-times` — the server proxy's response and its one client.
@@ -27,9 +29,26 @@ export interface PrayerTimesResponse {
   timings: Record<string, string>;
   /** Null when the upstream omitted it: the surface drops the line. */
   hijri: PrayerHijri | null;
+  /** The location's IANA zone, when the server forwards the upstream's. */
+  timezone?: string | null;
 }
 
 export const PRAYER_TIMES_URL = '/api/prayer-times';
+
+/**
+ * The IANA zone the timings are wall-clock times in. The server's zone wins
+ * when it sends a valid one; a Syrian governorate is Asia/Damascus; a device
+ * point (GPS/IP) or manual coordinates without a server zone fall back to this
+ * device's own zone (`undefined`), which is right for a point near the visitor.
+ */
+export function prayerTimeZone(
+  location: LocationPreference,
+  serverZone?: string | null,
+): string | undefined {
+  if (isValidTimeZone(serverZone)) return serverZone;
+  if ('governorate' in resolvePrayerParams(location, 0)) return SYRIA_TIMEZONE;
+  return undefined;
+}
 
 /** The request parameters for a location preference and a calculation method. */
 export function prayerTimesParams(
@@ -86,6 +105,8 @@ export interface PrayerTimesState {
   hijri: PrayerHijri | null;
   loading: boolean;
   error: PrayerTimesError | null;
+  /** The zone the timings are read in (see `prayerTimeZone`). */
+  timeZone: string | undefined;
   /** Retry the same request (PrayerView's "إعادة المحاولة"). */
   reload: () => void;
 }
@@ -124,6 +145,7 @@ export function usePrayerTimes(
   const [hijri, setHijri] = useState<PrayerHijri | null>(() => initialData?.hijri ?? null);
   const [loading, setLoading] = useState(() => enabled && !initialData?.timings);
   const [error, setError] = useState<PrayerTimesError | null>(null);
+  const [serverZone, setServerZone] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
 
   const params = prayerTimesParams(location, method);
@@ -137,6 +159,9 @@ export function usePrayerTimes(
       setLoading(false);
       return;
     }
+
+    // A zone belongs to one request; the fallback covers the gap.
+    setServerZone(null);
 
     if (cacheKey !== null) {
       const cached = readSessionTimings(cacheKey);
@@ -165,6 +190,7 @@ export function usePrayerTimes(
         if (superseded) return;
         setTimings(result.timings);
         setHijri(result.hijri);
+        setServerZone(result.timezone ?? null);
         if (cacheKey !== null) writeSessionTimings(cacheKey, result.timings);
       })
       .catch((cause: unknown) => {
@@ -189,5 +215,7 @@ export function usePrayerTimes(
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
-  return { timings, hijri, loading, error, reload };
+  const timeZone = prayerTimeZone(location, serverZone);
+
+  return { timings, hijri, loading, error, timeZone, reload };
 }

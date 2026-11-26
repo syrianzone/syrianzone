@@ -158,6 +158,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
         hijri,
         loading,
         error: prayerError,
+        timeZone: prayerTimeZone,
     } = usePrayerTimes(location, method, { enabled: mounted });
     const error = prayerError
         ? prayerError.timedOut
@@ -260,8 +261,8 @@ export default function Index({ serverYear }: { serverYear?: number }) {
     // Active and next prayer, one implementation shared with /muslim, Home and
     // the board widget.
     const schedule = useMemo(
-        () => prayerSchedule(prayerTimes, currentTime),
-        [prayerTimes, currentTime],
+        () => prayerSchedule(prayerTimes, currentTime, { timeZone: prayerTimeZone }),
+        [prayerTimes, currentTime, prayerTimeZone],
     );
     const apiHijri = hijriDateLabel(hijri);
 

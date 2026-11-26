@@ -39,7 +39,7 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn, initialCity = 
       : storedLocation),
     [initialCity, storedLocation],
   );
-  const { timings, hijri, loading, error: prayerError, reload } = usePrayerTimes(location, prefs.method, {
+  const { timings, hijri, loading, error: prayerError, timeZone, reload } = usePrayerTimes(location, prefs.method, {
     timeoutMs: 12_000,
     initialData: initialPrayer && initialPrayer.method === prefs.method
       ? { timings: initialPrayer.timings, hijri: initialPrayer.hijri }
@@ -56,7 +56,7 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn, initialCity = 
     return () => window.clearInterval(t);
   }, []);
 
-  const schedule = useMemo(() => prayerSchedule(timings, now), [timings, now]);
+  const schedule = useMemo(() => prayerSchedule(timings, now, { timeZone }), [timings, now, timeZone]);
   const apiHijri = hijriDateLabel(hijri);
 
   // Today's completion log (Asia/Damascus day). Guests keep it in

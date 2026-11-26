@@ -47,7 +47,7 @@ export default function Index() {
 
   const [now, setNow] = useState(() => new Date());
   const [lastBookmark, setLastBookmark] = useState<LastBookmark | null>(null);
-  const { timings, hijri } = usePrayerTimes(location, prefs.method, { timeoutMs: null });
+  const { timings, hijri, timeZone } = usePrayerTimes(location, prefs.method, { timeoutMs: null });
   const apiHijri = hijriDateLabel(hijri);
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function Index() {
   }, [isLoggedIn]);
 
   // The hub lists the five prayers only, but it still rolls over after Isha.
-  const upcoming = useMemo(() => nextPrayer(timings, now, { includeSunrise: false }), [timings, now]);
+  const upcoming = useMemo(() => nextPrayer(timings, now, { includeSunrise: false, timeZone }), [timings, now, timeZone]);
 
   const quranWarmProps = {
     onPointerEnter: warmQuranData,

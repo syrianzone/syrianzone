@@ -226,6 +226,8 @@ class PrayerController extends Controller
       'method' => $method,
       'timings' => $normalized,
       'hijri' => $this->hijri($response->json('data.date.hijri')),
+      // the timings are wall-clock times in this zone; clients count down in it
+      'timezone' => self::locationZone($response->json('data.meta.timezone')),
     ];
 
     // expire with the day too, so a stale entry cannot outlive its key
@@ -240,6 +242,16 @@ class PrayerController extends Controller
   private function hijri(mixed $hijri): ?array
   {
     return self::parseHijri($hijri);
+  }
+
+  // Upstream data, so only a zone PHP knows is passed through.
+  private static function locationZone(mixed $zone): ?string
+  {
+    if (! is_string($zone) || $zone === '' || strlen($zone) > 64) {
+      return null;
+    }
+
+    return in_array($zone, \DateTimeZone::listIdentifiers(), true) ? $zone : null;
   }
 
   /**

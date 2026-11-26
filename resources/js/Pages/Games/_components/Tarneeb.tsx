@@ -306,7 +306,13 @@ export default function Tarneeb() {
               <>
                 <span className="text-sm font-bold">اختر الحكم:</span>
                 {SUITS.map((suit) => (
-                  <button key={suit} type="button" onClick={() => nameTrump(suit)} className="sz-tbl__suit">
+                  <button
+                    key={suit}
+                    type="button"
+                    aria-label={SUIT_NAME_AR[suit]}
+                    onClick={() => nameTrump(suit)}
+                    className="sz-tbl__suit"
+                  >
                     {SUIT_LABEL[suit]}
                   </button>
                 ))}

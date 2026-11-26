@@ -415,7 +415,7 @@ export default function PrioritiesApp() {
   const persona = useMemo(() => {
     if (totalAllocated < 100) return null;
 
-    const sorted = [...topics].sort((a, b) => b.points - a.points);
+    const sorted = topics.toSorted((a, b) => b.points - a.points);
     const highest = sorted[0];
 
     const details: Record<string, { emoji: string; tag: string; tagClass: string; title: string; desc: string }> = {
@@ -503,7 +503,7 @@ export default function PrioritiesApp() {
     textToCopy += `لقد قمت بموازنة الـ 100 نقطة اهتمام، وحصلت على بروفايل: *"${personaName}"*\n\n`;
     textToCopy += `💡 *ترتيب الأولويات الثلاث الكبرى لدي:* \n`;
 
-    const sortedTopics = [...topics].sort((a, b) => b.points - a.points);
+    const sortedTopics = topics.toSorted((a, b) => b.points - a.points);
     sortedTopics.slice(0, 3).forEach((t, i) => {
       textToCopy += `${i + 1}. ${t.emoji} ${t.name}: %${t.points} \n`;
     });
@@ -569,7 +569,7 @@ export default function PrioritiesApp() {
   };
 
   const sortedTopicsForCard = useMemo(() => {
-    return [...topics].sort((a, b) => b.points - a.points);
+    return topics.toSorted((a, b) => b.points - a.points);
   }, [topics]);
 
   const activeSubNames = useMemo(() => {

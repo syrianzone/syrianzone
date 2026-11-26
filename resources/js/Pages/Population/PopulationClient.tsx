@@ -451,7 +451,7 @@ export default function PopulationClient() {
                                         <button type="button" aria-label="إغلاق" onClick={() => setSelectedRainfallProvince(null)} className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground"><X size={18} aria-hidden="true" /></button>
                                     </div>
                                     <div className="grid grid-cols-1 gap-3">
-                                        {[...selectedRainfallProvince.data].sort((a, b) => b.year - a.year).map((item, idx) => (
+                                        {selectedRainfallProvince.data.toSorted((a, b) => b.year - a.year).map((item, idx) => (
                                             <div key={idx} className="bg-muted/40 p-3 rounded-lg border border-border/50 flex justify-between items-center group hover:bg-muted/60 transition-colors">
                                                 <div className="flex flex-col">
                                                     <span className="text-xs text-muted-foreground">السنة</span>

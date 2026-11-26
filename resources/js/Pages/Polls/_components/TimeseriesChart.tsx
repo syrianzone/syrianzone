@@ -357,7 +357,7 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                                         key={candidate.candidateId}
                                         aria-pressed={isSelected}
                                         onClick={() => toggleCandidate(candidate.candidateId)}
-                                        className={`cursor-pointer px-3 py-1 rounded-full text-xs border flex items-center gap-2 transition-colors ${isSelected ? "text-white" : "text-gray-500 opacity-60 grayscale"}`}
+                                        className={`cursor-pointer px-3 py-1 rounded-full text-xs border flex items-center gap-2 transition-colors ${isSelected ? "text-white" : "text-gray-400"}`}
                                         style={{ borderColor: isSelected ? color : '#374151', backgroundColor: isSelected ? '#1e293b' : 'transparent' }}
                                     >
                                         <span aria-hidden="true" className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></span>

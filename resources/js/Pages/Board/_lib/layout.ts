@@ -134,11 +134,20 @@ export function resizeWidget(doc: BoardDoc, instanceId: string, size: WidgetSize
   }));
 }
 
+// Instance ids are unique across dashboards, so a config change finds its
+// widget wherever it lives. A widget that flushes a pending edit while the
+// visitor switches dashboards is no longer on the active one by then.
 export function updateWidgetConfig(doc: BoardDoc, instanceId: string, patch: Record<string, unknown>): BoardDoc {
-  return mapActive(doc, (d) => ({
-    ...d,
-    widgets: d.widgets.map((w) => (w.i === instanceId ? { ...w, c: { ...w.c, ...patch } } : w)),
-  }));
+  if (!doc.dashboards.some((d) => d.widgets.some((w) => w.i === instanceId))) return doc;
+  return {
+    ...doc,
+    updatedAt: nowStamp(),
+    dashboards: doc.dashboards.map((d) => (
+      d.widgets.some((w) => w.i === instanceId)
+        ? { ...d, widgets: d.widgets.map((w) => (w.i === instanceId ? { ...w, c: { ...w.c, ...patch } } : w)) }
+        : d
+    )),
+  };
 }
 
 // Position is array index, so reordering is a splice. No x/y, no compaction.

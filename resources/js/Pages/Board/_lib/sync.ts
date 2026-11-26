@@ -40,6 +40,10 @@ export function useBoardSync(opts: {
 
   const docRef = useRef(opts.doc);
   docRef.current = opts.doc;
+  const enabledRef = useRef(opts.enabled);
+  enabledRef.current = opts.enabled;
+  // a debounced save is waiting; cleared when it fires or is flushed
+  const pending = useRef(false);
 
   const onAdoptRef = useRef(opts.onAdopt);
   onAdoptRef.current = opts.onAdopt;
@@ -126,8 +130,10 @@ export function useBoardSync(opts: {
     if (opts.doc === lastSynced.current) return;
 
     if (timer.current) window.clearTimeout(timer.current);
+    pending.current = true;
     timer.current = window.setTimeout(() => {
       timer.current = null;
+      pending.current = false;
       void save();
     }, SAVE_DEBOUNCE_MS);
 
@@ -145,12 +151,29 @@ export function useBoardSync(opts: {
       if (document.visibilityState !== 'hidden' || !timer.current) return;
       window.clearTimeout(timer.current);
       timer.current = null;
+      pending.current = false;
       void api.putBoard(docRef.current, { keepalive: true }).catch(() => undefined);
     }
 
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [opts.enabled]);
+
+  // Save a document now, outliving the page (keepalive). Used while the board
+  // unmounts, when a state update would never reach the save effect above.
+  const flushNow = useCallback((doc: BoardDoc) => {
+    if (!enabledRef.current || !hydrated.current) return;
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = null;
+    pending.current = false;
+    void api.putBoard(doc, { keepalive: true }).catch(() => undefined);
+  }, []);
+
+  // Leaving the board inside the debounce window (an Inertia visit) would
+  // otherwise drop the last change on the server.
+  useEffect(() => () => {
+    if (pending.current) flushNow(docRef.current);
+  }, [flushNow]);
 
   const restore = useCallback(() => {
     if (!superseded) return;
@@ -165,5 +188,5 @@ export function useBoardSync(opts: {
     clearPrev();
   }, []);
 
-  return { status, superseded, restore, dismiss, retry: save };
+  return { status, superseded, restore, dismiss, retry: save, flushNow };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
@@ -62,6 +62,28 @@ export default function Index() {
 
   const sync = useBoardSync({ enabled: !!user && loaded, hadLocal, doc, onAdopt: setDoc });
 
+  // Widgets debounce their edits and flush the last one when they unmount.
+  // When the whole page unmounts (an Inertia visit away), that flush arrives
+  // after this component's own cleanup: React runs a deleted tree's effect
+  // cleanups parent first. A state update then would never be persisted, so
+  // the change is applied to the latest document and saved directly.
+  const docRef = useRef(doc);
+  docRef.current = doc;
+  const leaving = useRef(false);
+  useEffect(() => () => { leaving.current = true; }, []);
+
+  function changeConfig(id: string, patch: Record<string, unknown>) {
+    if (!leaving.current) {
+      setDoc((d) => updateWidgetConfig(d, id, patch));
+      return;
+    }
+    const next = updateWidgetConfig(docRef.current, id, patch);
+    if (next === docRef.current) return;
+    docRef.current = next;
+    if (loaded) writeLocal(next);
+    sync.flushNow(next);
+  }
+
   // Effect rather than a write inside the state updater: updaters can run twice
   // under StrictMode, effects settle once per committed document.
   useEffect(() => {
@@ -115,7 +137,7 @@ export default function Index() {
             onRemove={(id) => setDoc((d) => removeWidget(d, id))}
             onResize={(id, size) => setDoc((d) => resizeWidget(d, id, size))}
             onConfigure={(id) => setConfiguring(id)}
-            onConfigChange={(id, patch) => setDoc((d) => updateWidgetConfig(d, id, patch))}
+            onConfigChange={changeConfig}
           />
         </GeoProvider>
 
@@ -132,7 +154,7 @@ export default function Index() {
         <WidgetConfigDialog
           def={configured ? findWidget(configured.d) ?? null : null}
           config={configured?.c ?? {}}
-          onChange={(patch) => configured && setDoc((d) => updateWidgetConfig(d, configured.i, patch))}
+          onChange={(patch) => configured && changeConfig(configured.i, patch)}
           onClose={() => setConfiguring(null)}
         />
       </div>

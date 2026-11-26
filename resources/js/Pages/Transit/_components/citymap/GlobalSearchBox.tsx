@@ -233,8 +233,8 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
             className="absolute right-0 top-full mt-1.5 z-20 max-h-80 w-full overflow-y-auto p-1.5 shadow-lg border-border bg-card/95 backdrop-blur-md rounded-xl"
           >
             {results.routes.length > 0 && (
-              <div className="mb-2">
-                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
+              <div className="mb-2" role="group" aria-labelledby="transit-search-group-routes">
+                <div id="transit-search-group-routes" className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
                   <Bus className="h-3 w-3" />
                   <span>الخطوط</span>
                 </div>
@@ -267,8 +267,8 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
             )}
 
             {results.stops.length > 0 && (
-              <div>
-                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
+              <div role="group" aria-labelledby="transit-search-group-stops">
+                <div id="transit-search-group-stops" className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
                   <span>المواقف</span>
                 </div>
@@ -301,8 +301,8 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
             )}
 
             {places.length > 0 && (
-              <div>
-                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
+              <div role="group" aria-labelledby="transit-search-group-places">
+                <div id="transit-search-group-places" className="px-2 py-1 text-xs font-semibold text-muted-foreground flex items-center gap-1">
                   <Landmark className="h-3 w-3" />
                   <span>أماكن</span>
                 </div>

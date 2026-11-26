@@ -210,8 +210,8 @@ export default function PopulationClient() {
                             <BarChart3 className="text-primary" size={20} />
                             مقارنة المحافظات
                         </h2>
-                        <button onClick={() => setSelectedProvinces([])} className="p-1 hover:bg-muted rounded-full transition-colors">
-                            <X size={20} />
+                        <button type="button" aria-label="إغلاق المقارنة" onClick={() => setSelectedProvinces([])} className="p-1 hover:bg-muted rounded-full transition-colors">
+                            <X size={20} aria-hidden="true" />
                         </button>
                     </div>
                     <div className="p-6">
@@ -399,7 +399,7 @@ export default function PopulationClient() {
                                             <h2 className="text-xl font-bold text-foreground">{selectedRainfallProvince.name}</h2>
                                             <p className="text-xs text-muted-foreground mt-1">تفاصيل الهطولات المطرية السنوية</p>
                                         </div>
-                                        <button onClick={() => setSelectedRainfallProvince(null)} className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground"><X size={18} /></button>
+                                        <button type="button" aria-label="إغلاق" onClick={() => setSelectedRainfallProvince(null)} className="p-1 hover:bg-muted rounded-md transition-colors text-muted-foreground"><X size={18} aria-hidden="true" /></button>
                                     </div>
                                     <div className="grid grid-cols-1 gap-3">
                                         {[...selectedRainfallProvince.data].sort((a, b) => b.year - a.year).map((item, idx) => (
@@ -454,6 +454,8 @@ export default function PopulationClient() {
                                                 )}
                                             </div>
                                             <button
+                                                type="button"
+                                                aria-label="إغلاق"
                                                 onClick={() => setSelectedEnvProvince(null)}
                                                 className="p-1.5 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground backdrop-blur-sm"
                                             >

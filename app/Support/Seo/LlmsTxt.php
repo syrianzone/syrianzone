@@ -58,6 +58,7 @@ class LlmsTxt
                 .'ولكل وعد في عداد الوعود صفحة على '.$base.'/promises/{number}، '
                 .'ولكل تطبيق حكومي دليل رسمي على '.$base.'/govapps/{id}، '
                 .'ولكل منفذ حدودي صفحة على '.$base.'/crossings/{slug}، '
+                .'ولكل عضو في مجلس الشعب صفحة على '.$base.'/house/members/{member_number}، '
                 .'ولمواقيت الصلاة لكل محافظة على '.$base.'/muslim/prayer/{city}، '
                 .'ولإمساكية رمضان لكل محافظة على '.$base.'/muslim/ramadan/{city}، '
                 .'ولكل مدينة في ترانزيت صفحة على '.$base.'/transit/city/{id}. '

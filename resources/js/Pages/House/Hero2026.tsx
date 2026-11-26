@@ -12,10 +12,10 @@ export default function Hero2026({ total, female, male, onOpenArchive }: { total
                     <Badge variant="outline">ذكور {male}</Badge>
                     <Badge variant="outline">إناث {female}</Badge>
                 </div>
-                <h1 className="text-3xl font-bold text-foreground">التشكيلة النهائية لمجلس الشعب 2026</h1>
+                <h1 className="text-3xl font-bold text-foreground">أعضاء مجلس الشعب السوري 2026 — الأسماء حسب المحافظة</h1>
                 <p className="text-muted-foreground leading-relaxed">
-                    عرض تفاعلي لتوزيع أعضاء المجلس داخل القاعة بحسب المحافظة والجنس وسنة الميلاد، مع إمكانية البحث والتصفية.
-                    البيانات الأساسية (الاسم، المحافظة، الجنس، سنة الميلاد) مأخوذة من المخطط التفاعلي لمركز عمران للدراسات الاستراتيجية.
+                    القائمة الكاملة لأسماء أعضاء مجلس الشعب السوري 2026 موزّعين حسب المحافظة، مع مخطط القاعة التفاعلي والإحصائيات وصفحة مستقلة لكل عضو.
+                    البيانات الأساسية مأخوذة من المخطط التفاعلي لمركز عمران للدراسات الاستراتيجية.
                 </p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                     المصدر: <a href={OMran_SOURCE_URL} target="_blank" rel="noreferrer" className="underline font-semibold text-primary">مركز عمران — المخطط التفاعلي لمجلس الشعب السوري 2026</a>.

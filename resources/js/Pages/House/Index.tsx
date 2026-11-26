@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import HouseClient from './HouseClient';
 import Hero2026 from './Hero2026';
 import ParliamentChart2026, { type Dim } from './ParliamentChart2026';
 import MemberTable2026 from './MemberTable2026';
 import { MEMBERS_2026, type Member2026 } from './members2026';
+import { governorateByAnyName } from '@/Domain/geography/governorates';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/Components/ui/accordion';
+import { Badge } from '@/Components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 
 interface Props {
     members2026?: Member2026[];
@@ -61,6 +65,27 @@ export default function HousePage({ members2026 }: Props) {
     };
     const selectedKey = dim === 'governorate' ? gov : dim === 'gender' ? gender : dim === 'selection' ? selection : dim === 'social' ? social : age;
 
+    const groupedByGovernorate = useMemo(() => {
+        const groups = new Map<string, { label: string; sortOrder: number; items: Member2026[] }>();
+        for (const m of members) {
+            const govInfo = governorateByAnyName(m.governorate_ar || '');
+            const label = govInfo?.nameAr ?? (m.governorate_ar || 'غير محدد');
+            const sortOrder = govInfo?.sortOrder ?? 999;
+            const existing = groups.get(label);
+            if (existing) {
+                existing.items.push(m);
+            } else {
+                groups.set(label, { label, sortOrder, items: [m] });
+            }
+        }
+        return Array.from(groups.values())
+            .map((group) => ({
+                ...group,
+                items: [...group.items].sort((a, b) => a.name_ar.localeCompare(b.name_ar, 'ar')),
+            }))
+            .sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, 'ar'));
+    }, [members]);
+
     return (
         <MainLayout>
             
@@ -78,6 +103,48 @@ export default function HousePage({ members2026 }: Props) {
                         members={members}
                         filters={{ gov, gender, selection, age, social, onGov: setGov, onGender: setGender, onSelection: setSelection, onAge: setAge, onSocial: setSocial }}
                     />
+
+                    <section aria-labelledby="house-by-governorate" className="space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h2 id="house-by-governorate" className="text-2xl font-bold text-foreground">
+                                أسماء أعضاء مجلس الشعب السوري حسب المحافظة
+                            </h2>
+                            <span className="text-sm text-muted-foreground">{groupedByGovernorate.length} محافظة</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {groupedByGovernorate.map((group) => (
+                                <Card key={group.label} className="border-border bg-card/70">
+                                    <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
+                                        <CardTitle className="text-base font-bold text-foreground">{group.label}</CardTitle>
+                                        <Badge variant="secondary" className="text-xs">{group.items.length} عضو</Badge>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <ul className="space-y-1.5 text-sm">
+                                            {group.items.map((m) => (
+                                                <li key={m.member_number || m.name_ar} className="flex items-baseline justify-between gap-2">
+                                                    {m.member_number ? (
+                                                        <Link
+                                                            href={`/house/members/${m.member_number}`}
+                                                            className="font-medium text-primary hover:underline"
+                                                        >
+                                                            {m.name_ar}
+                                                        </Link>
+                                                    ) : (
+                                                        <span className="font-medium text-foreground">{m.name_ar}</span>
+                                                    )}
+                                                    {(m.management_position || m.selection_method) && (
+                                                        <span className="text-xs text-muted-foreground shrink-0">
+                                                            {m.management_position || m.selection_method}
+                                                        </span>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </section>
 
                     <div id="historical-archive" className="scroll-mt-24">
                         <Accordion type="single" value={archiveOpen ? 'archive' : ''} onValueChange={(v) => setArchiveOpen(v === 'archive')}>

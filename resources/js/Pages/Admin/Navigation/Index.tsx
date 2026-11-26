@@ -828,6 +828,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                                 <Input
                                                     className="sm:col-span-3 h-8 text-xs"
                                                     placeholder="الاسم (مثال: مواقيت الصلاة)"
+                                                    aria-label={`اسم الفرع ${subIdx + 1}`}
                                                     value={sub.title}
                                                     onChange={(e) =>
                                                         updateSubCategory(subIdx, 'title', e.target.value)
@@ -836,6 +837,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                                 <Input
                                                     className="sm:col-span-3 h-8 text-xs"
                                                     placeholder="الوصف المختصر"
+                                                    aria-label={`وصف الفرع ${subIdx + 1}`}
                                                     value={sub.subtitle || ''}
                                                     onChange={(e) =>
                                                         updateSubCategory(subIdx, 'subtitle', e.target.value)
@@ -845,6 +847,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                                     dir="ltr"
                                                     className="sm:col-span-3 h-8 text-xs font-mono"
                                                     placeholder="/muslim/prayer"
+                                                    aria-label={`رابط الفرع ${subIdx + 1}`}
                                                     value={sub.href}
                                                     onChange={(e) =>
                                                         updateSubCategory(subIdx, 'href', e.target.value)
@@ -854,6 +857,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                                     dir="ltr"
                                                     className="sm:col-span-2 h-8 text-xs font-mono"
                                                     placeholder="target"
+                                                    aria-label={`هدف الفرع (target) ${subIdx + 1}`}
                                                     value={sub.target}
                                                     onChange={(e) =>
                                                         updateSubCategory(subIdx, 'target', e.target.value)
@@ -865,8 +869,9 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                                     size="icon"
                                                     onClick={() => removeSubCategory(subIdx)}
                                                     className="sm:col-span-1 h-8 w-8 text-destructive"
+                                                    aria-label={`حذف الفرع ${subIdx + 1}`}
                                                 >
-                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                                                 </Button>
                                             </div>
                                         ))}

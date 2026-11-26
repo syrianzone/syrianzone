@@ -278,13 +278,13 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
                 </div>
             </div>
 
-            <table className="sr-only">
+            <div className="sr-only"><table>
                 <caption>الوعود التي أُطلقت والتي حُسمت حتى نهاية كل شهر</caption>
                 <thead><tr><th scope="col">الشهر</th><th scope="col">أُطلقت</th><th scope="col">حُسمت</th></tr></thead>
                 <tbody>
                     {points.map((p) => <tr key={p.key}><th scope="row">{monthLabel(p)}</th><td>{p.made}</td><td>{p.settled}</td></tr>)}
                 </tbody>
-            </table>
+            </table></div>
         </div>
     );
 }

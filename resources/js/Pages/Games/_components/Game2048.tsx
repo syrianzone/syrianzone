@@ -256,7 +256,7 @@ export default function Game2048() {
 
         {/* The tiles are positioned in DOM order of creation, not of the
             grid, so screen readers get the board as a 4×4 table instead. */}
-        <table className="sr-only">
+        <div className="sr-only"><table>
           <caption>اللوحة، صفاً صفاً من الأعلى</caption>
           <tbody>
             {grid.map((row, r) => (
@@ -267,7 +267,7 @@ export default function Game2048() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
 
         {phase !== 'playing' && (
           <Overlay

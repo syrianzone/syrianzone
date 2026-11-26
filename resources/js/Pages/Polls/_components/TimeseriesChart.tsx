@@ -384,7 +384,7 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
 
                 {/* The chart is an SVG picture; this table is its text equivalent.
                     It sits outside chartRef, so the PNG export never includes it. */}
-                <table className="sr-only">
+                <div className="sr-only"><table>
                     <caption>{`${title}: ${METRICS.find((m) => m.value === metric)?.label ?? ""}، ${VIEW_MODES.find((v) => v.value === viewMode)?.label ?? ""}`}</caption>
                     <thead>
                         <tr>
@@ -404,7 +404,7 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                             </tr>
                         ))}
                     </tbody>
-                </table>
+                </table></div>
 
                 <div className="mt-4 flex justify-end">
                     <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">

@@ -64,7 +64,7 @@ const AGE_GROUPS = [
 /** The charts' numbers for screen readers; the SVG charts are hidden from them. */
 function ChartTable({ caption, rows }: { caption: string; rows: { name: string; value: number }[] }) {
     return (
-        <table className="sr-only">
+        <div className="sr-only"><table>
             <caption>{caption}</caption>
             <thead>
                 <tr>
@@ -80,7 +80,7 @@ function ChartTable({ caption, rows }: { caption: string; rows: { name: string; 
                     </tr>
                 ))}
             </tbody>
-        </table>
+        </table></div>
     );
 }
 

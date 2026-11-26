@@ -831,7 +831,7 @@ export default function PrioritiesApp() {
               </div>
             </div>
 
-            <table className="sr-only">
+            <div className="sr-only"><table>
               <caption>مقارنة نقاط موازنتك مع {COMPARISONS[activeComparisonKey]?.title}</caption>
               <thead>
                 <tr>
@@ -849,7 +849,7 @@ export default function PrioritiesApp() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
             <div aria-hidden="true" className="relative w-full h-[260px] flex items-center justify-center bg-muted/20 rounded-xl border border-border p-2 mb-4">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData} accessibilityLayer={false}>

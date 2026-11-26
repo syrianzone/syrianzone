@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -135,9 +135,35 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
         return { total, enabledCount, homeCount, navCount };
     }, [config.items]);
 
+    const [moveAnnouncement, setMoveAnnouncement] = useState('');
+    const itemListRef = useRef<HTMLDivElement>(null);
+    // The item whose arrow was just pressed. Moving a row can detach its
+    // button, and the arrow disables at either end of the list, so focus is
+    // put back on that row's still-enabled arrow after the re-render.
+    const pendingMoveFocus = useRef<{ key: string; direction: 'up' | 'down' } | null>(null);
+
+    useEffect(() => {
+        const pending = pendingMoveFocus.current;
+        if (!pending) return;
+        pendingMoveFocus.current = null;
+        const row = itemListRef.current?.querySelector<HTMLElement>(
+            `[data-move-key="${CSS.escape(pending.key)}"]`,
+        );
+        const same = row?.querySelector<HTMLButtonElement>(`[data-move="${pending.direction}"]`);
+        const other = row?.querySelector<HTMLButtonElement>(
+            `[data-move="${pending.direction === 'up' ? 'down' : 'up'}"]`,
+        );
+        (same && !same.disabled ? same : other)?.focus();
+    }, [config.items]);
+
     const moveItem = (index: number, direction: -1 | 1) => {
         const targetIndex = index + direction;
         if (targetIndex < 0 || targetIndex >= config.items.length) return;
+        const item = config.items[index];
+        pendingMoveFocus.current = { key: item.id || item.href, direction: direction === -1 ? 'up' : 'down' };
+        setMoveAnnouncement(
+            `نُقل «${item.title || item.text}» إلى الموضع ${targetIndex + 1} من ${config.items.length}`,
+        );
         setConfig((prev) => {
             const nextItems = [...prev.items];
             const [moved] = nextItems.splice(index, 1);
@@ -475,7 +501,8 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                             استخدم الأسهم لتغيير الترتيب، أو أزرار التبديل لإخفاء/إظهار أي أداة فوراً من الرئيسية أو الشريط العلوي أو تطبيق الجوال.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-2.5">
+                    <CardContent ref={itemListRef} className="space-y-2.5">
+                        <p role="status" className="sr-only">{moveAnnouncement}</p>
                         {config.items.map((item, idx) => {
                             const isEnabled = item.enabled !== false;
                             const isTopNavbar =
@@ -488,6 +515,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                             return (
                                 <div
                                     key={item.id || item.href}
+                                    data-move-key={item.id || item.href}
                                     className={`flex flex-col lg:flex-row lg:items-center justify-between gap-3 rounded-xl border p-3.5 transition-colors ${
                                         isEnabled
                                             ? 'bg-card border-border/80'
@@ -503,9 +531,10 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                                 className="h-6 w-6"
                                                 disabled={idx === 0}
                                                 onClick={() => moveItem(idx, -1)}
-                                                aria-label="تحريك لأعلى"
+                                                data-move="up"
+                                                aria-label={`تحريك «${item.title || item.text}» لأعلى`}
                                             >
-                                                <ArrowUp className="w-3.5 h-3.5" />
+                                                <ArrowUp className="w-3.5 h-3.5" aria-hidden="true" />
                                             </Button>
                                             <Button
                                                 type="button"
@@ -514,9 +543,10 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                                 className="h-6 w-6"
                                                 disabled={idx === config.items.length - 1}
                                                 onClick={() => moveItem(idx, 1)}
-                                                aria-label="تحريك لأسفل"
+                                                data-move="down"
+                                                aria-label={`تحريك «${item.title || item.text}» لأسفل`}
                                             >
-                                                <ArrowDown className="w-3.5 h-3.5" />
+                                                <ArrowDown className="w-3.5 h-3.5" aria-hidden="true" />
                                             </Button>
                                         </div>
 

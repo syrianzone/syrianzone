@@ -28,6 +28,12 @@ interface Props {
   setPage: (p: number) => void;
   isLoggedIn: boolean;
   reciterCode: string;
+  /**
+   * False until the saved preferences are read. The player persists every
+   * recitation it is given, so pushing the default before then would
+   * overwrite a guest's saved reciter.
+   */
+  recitationReady?: boolean;
   setReciterCode: (code: string) => void;
 }
 
@@ -47,7 +53,7 @@ function useIsDesktop(): boolean {
   return desktop;
 }
 
-export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, setReciterCode }: Props) {
+export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, recitationReady = true, setReciterCode }: Props) {
   const isDesktop = useIsDesktop();
   const step = isDesktop ? 2 : 1;
   // Desktop spread (RTL: right = page, left = page+1); mobile single page.
@@ -111,8 +117,9 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   }, [page, isDesktop, fontSize]);
 
   useEffect(() => {
+    if (!recitationReady) return;
     useQuranPlayer.getState().setRecitation(reciterCode);
-  }, [reciterCode]);
+  }, [reciterCode, recitationReady]);
 
   useEffect(() => {
     if (playerSource !== 'reader' || !playerCurrent) return;

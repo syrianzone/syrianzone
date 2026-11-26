@@ -174,8 +174,13 @@ export function useMuslimPrefs() {
   const [prefs, setPrefsState] = useState<MuslimPrefs>(() => withServerSettings(serverSafePrefs(), serverSettings));
   const serverSettingsRef = useRef(serverSettings);
   serverSettingsRef.current = serverSettings;
+  // Children mount (and run their effects) before this hook's effect does, so
+  // a surface that writes a preference back to the device on mount must wait
+  // for `deviceLoaded`, or it would store the default over the saved value.
+  const [deviceLoaded, setDeviceLoaded] = useState(false);
   useEffect(() => {
     setPrefsState(withServerSettings(defaultMuslimPrefs(), serverSettingsRef.current));
+    setDeviceLoaded(true);
   }, []);
 
   const setPrefs = useCallback(
@@ -252,5 +257,6 @@ export function useMuslimPrefs() {
     },
     setPrefs,
     isLoggedIn,
+    deviceLoaded,
   };
 }

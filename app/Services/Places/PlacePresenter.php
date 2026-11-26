@@ -73,6 +73,7 @@ class PlacePresenter
             'saved_by_me' => (bool) $p->saved_by_me,
             'created_at' => $p->created_at,
             'rejection_reason' => $p->rejection_reason,
+            'merged_into_id' => $p->merged_into_id,
         ];
     }
 

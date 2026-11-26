@@ -217,9 +217,10 @@ export default function PrioritiesApp() {
   const storyCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const bannerDismissed = localStorage.getItem('sz-priorities-banner-dismissed');
-    if (bannerDismissed === 'true') {
-      setShowBanner(false);
+    try {
+      if (localStorage.getItem('sz-priorities-banner-dismissed') === 'true') setShowBanner(false);
+    } catch {
+      // Storage can be blocked (private mode, disabled cookies); keep the banner.
     }
 
     const stateParam = new URLSearchParams(window.location.search).get('state');
@@ -310,7 +311,11 @@ export default function PrioritiesApp() {
 
   const dismissBanner = () => {
     setShowBanner(false);
-    localStorage.setItem('sz-priorities-banner-dismissed', 'true');
+    try {
+      localStorage.setItem('sz-priorities-banner-dismissed', 'true');
+    } catch {
+      // Storage unavailable: the banner just returns on the next visit.
+    }
   };
 
   const interdependencyInfo = useMemo(() => {

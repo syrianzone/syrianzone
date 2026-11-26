@@ -9,7 +9,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasTable('house_members_2026')) {
+        // An empty roster (a fresh install or the test database) gets this
+        // member from the seeder's CSV; only a seeded roster needs the insert.
+        if (! Schema::hasTable('house_members_2026') || DB::table('house_members_2026')->doesntExist()) {
             return;
         }
 

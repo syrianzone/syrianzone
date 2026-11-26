@@ -1258,6 +1258,7 @@ function TransitStudioPageContent() {
                             </span>
                             <Input
                               id={`stop-input-${stop.id}`}
+                              aria-label={`اسم المحطة ${i + 1}`}
                               type="text"
                               value={stop.nameAr}
                               onFocus={() => setActiveStopId(stop.id)}

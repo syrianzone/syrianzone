@@ -1498,11 +1498,11 @@ function TransitStudioPageContent() {
   )
 
   return (
-    <div dir="rtl" className="studio-root min-h-screen bg-background text-foreground font-sans">
+    <div dir="rtl" className="studio-root h-full bg-background text-foreground font-sans">
       
       <h1 className="sr-only">استوديو ترانزيت</h1>
 
-      <div className="studio-body relative flex h-screen overflow-hidden">
+      <div className="studio-body relative flex h-full overflow-hidden">
         <aside className="hidden md:flex studio-sidebar w-80 md:w-96 border-e border-border bg-card shrink-0 flex-col z-20">
           {sidebarControlsContent}
         </aside>

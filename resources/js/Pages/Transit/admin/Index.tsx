@@ -899,6 +899,7 @@ function TransitAdminPageContent() {
                             key={idx}
                             type="button"
                             onClick={() => setApproveColorIndex(idx)}
+                            aria-pressed={approveColorIndex === idx}
                             className={`w-6 h-6 rounded-full border-2 transition-all ${approveColorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
                             style={{ backgroundColor: colorHex }}
                             title={`لون ${idx + 1}`}
@@ -978,6 +979,7 @@ function TransitAdminPageContent() {
                         type="button"
                         disabled={actionLoading}
                         onClick={() => handleQuickUpdateColor(idx)}
+                        aria-pressed={selectedRoute.color_index === idx}
                         className={`w-6 h-6 rounded-full border-2 transition-all ${selectedRoute.color_index === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
                         style={{ backgroundColor: colorHex }}
                         title={`تغيير للون ${idx + 1}`}

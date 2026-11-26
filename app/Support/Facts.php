@@ -558,6 +558,26 @@ final class Facts
     }
 
     /**
+     * Sourced governor and deputy entries for the 14 Syrian governorates
+     * (supplementing `govt_officials` with the public timeline at jard.chat/government).
+     *
+     * @return array{
+     *     meta: array{source_name_ar: string, source_short_ar: string, source_url: string, as_of: string},
+     *     governorates: array<string, array{
+     *         governor: ?array{name_ar: string, title_ar: string, start_date: ?string, decree: ?string, notes_ar: ?string, source_url: string},
+     *         deputies: list<array{name_ar: string, title_ar: string, role_kind: string, source_url: string}>
+     *     }>
+     * }
+     */
+    public static function governors(): array
+    {
+        /** @var array{meta: array{source_name_ar: string, source_short_ar: string, source_url: string, as_of: string}, governorates: array<string, array{governor: ?array{name_ar: string, title_ar: string, start_date: ?string, decree: ?string, notes_ar: ?string, source_url: string}, deputies: list<array{name_ar: string, title_ar: string, role_kind: string, source_url: string}>}>} $data */
+        $data = self::json('governorates/governors');
+
+        return $data;
+    }
+
+    /**
      * One shared facts file, decoded and memoised for the request.
      *
      * Public because every reader of `resources/data` must share this one cache

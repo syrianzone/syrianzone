@@ -1,0 +1,244 @@
+{
+  "meta": {
+    "source_name_ar": "جَرد — هيكلية الحكومة السورية والخط الزمني للمناصب",
+    "source_short_ar": "جَرد",
+    "source_url": "https://jard.chat/government",
+    "as_of": "2026-11-24"
+  },
+  "governorates": {
+    "damascus": {
+      "governor": {
+        "name_ar": "ماهر محمد مروان إدلبي",
+        "title_ar": "محافظ دمشق",
+        "start_date": "2024-12-15",
+        "decree": null,
+        "notes_ar": null,
+        "source_url": "https://jard.chat/government/damascus-governorate"
+      },
+      "deputies": [
+        {
+          "name_ar": "مصعب بدوي",
+          "title_ar": "نائب محافظ دمشق",
+          "role_kind": "نائب",
+          "source_url": "https://jard.chat/government/damascus-governorate"
+        },
+        {
+          "name_ar": "وسام محمد",
+          "title_ar": "معاون محافظ دمشق لشؤون البيئة",
+          "role_kind": "معاون",
+          "source_url": "https://jard.chat/government/damascus-governorate"
+        }
+      ]
+    },
+    "rural-damascus": {
+      "governor": {
+        "name_ar": "عامر عبد الهادي الشيخ",
+        "title_ar": "محافظ ريف دمشق",
+        "start_date": "2024-12-21",
+        "decree": null,
+        "notes_ar": null,
+        "source_url": "https://jard.chat/government/rif-dimashq-governorate"
+      },
+      "deputies": [
+        {
+          "name_ar": "عبد الله الخطيب",
+          "title_ar": "معاون محافظ ريف دمشق للشؤون الفنية",
+          "role_kind": "معاون",
+          "source_url": "https://jard.chat/government/rif-dimashq-governorate"
+        }
+      ]
+    },
+    "aleppo": {
+      "governor": {
+        "name_ar": "عزام الغريب",
+        "title_ar": "محافظ حلب",
+        "start_date": "2024-12-21",
+        "decree": null,
+        "notes_ar": null,
+        "source_url": "https://jard.chat/government/aleppo-governorate"
+      },
+      "deputies": [
+        {
+          "name_ar": "فواز هلال",
+          "title_ar": "نائب محافظ حلب",
+          "role_kind": "نائب",
+          "source_url": "https://jard.chat/government/aleppo-governorate"
+        },
+        {
+          "name_ar": "علي حنورة",
+          "title_ar": "نائب محافظ حلب",
+          "role_kind": "نائب",
+          "source_url": "https://jard.chat/government/aleppo-governorate"
+        }
+      ]
+    },
+    "homs": {
+      "governor": {
+        "name_ar": "مرهف خالد النعسان",
+        "title_ar": "محافظ حمص",
+        "start_date": "2026-05-09",
+        "decree": "المرسوم 103 لعام 2026",
+        "notes_ar": "خلفاً لعبد الرحمن الأعمى",
+        "source_url": "https://jard.chat/government/homs-governorate"
+      },
+      "deputies": []
+    },
+    "hama": {
+      "governor": {
+        "name_ar": "عبد الرحمن السهيان",
+        "title_ar": "محافظ حماة",
+        "start_date": "2025-01-01",
+        "decree": null,
+        "notes_ar": null,
+        "source_url": "https://jard.chat/government/hama-governorate"
+      },
+      "deputies": [
+        {
+          "name_ar": "محمد جهاد طعمة",
+          "title_ar": "نائب محافظ حماة",
+          "role_kind": "نائب",
+          "source_url": "https://jard.chat/government/hama-governorate"
+        },
+        {
+          "name_ar": "حسن الحسن",
+          "title_ar": "معاون محافظ حماة لشؤون التربية والتعليم",
+          "role_kind": "معاون",
+          "source_url": "https://jard.chat/government/hama-governorate"
+        }
+      ]
+    },
+    "latakia": {
+      "governor": {
+        "name_ar": "أحمد علي مصطفى",
+        "title_ar": "محافظ اللاذقية",
+        "start_date": "2026-05-09",
+        "decree": "المرسوم رقم 104 لعام 2026",
+        "notes_ar": "خلفاً لمحمد عثمان",
+        "source_url": "https://jard.chat/government/latakia-governorate"
+      },
+      "deputies": []
+    },
+    "tartus": {
+      "governor": {
+        "name_ar": "أحمد الشامي",
+        "title_ar": "محافظ طرطوس",
+        "start_date": "2025-01-01",
+        "decree": null,
+        "notes_ar": null,
+        "source_url": "https://jard.chat/government/tartus-governorate"
+      },
+      "deputies": [
+        {
+          "name_ar": "سامي الزخ",
+          "title_ar": "نائب محافظ طرطوس",
+          "role_kind": "نائب",
+          "source_url": "https://jard.chat/government/tartus-governorate"
+        }
+      ]
+    },
+    "idlib": {
+      "governor": {
+        "name_ar": "محمد عبد الرحمن السيد",
+        "title_ar": "محافظ إدلب",
+        "start_date": "2025-01-19",
+        "decree": null,
+        "notes_ar": "وزير الداخلية الانتقالي السابق",
+        "source_url": "https://jard.chat/government/idlib-governorate"
+      },
+      "deputies": [
+        {
+          "name_ar": "حسن الفجر",
+          "title_ar": "نائب محافظ إدلب",
+          "role_kind": "نائب",
+          "source_url": "https://jard.chat/government/idlib-governorate"
+        },
+        {
+          "name_ar": "قتيبة الخلف",
+          "title_ar": "معاون محافظ إدلب",
+          "role_kind": "معاون",
+          "source_url": "https://jard.chat/government/idlib-governorate"
+        }
+      ]
+    },
+    "daraa": {
+      "governor": {
+        "name_ar": "أنور طه الزعبي",
+        "title_ar": "محافظ درعا",
+        "start_date": "2025-01-01",
+        "decree": null,
+        "notes_ar": null,
+        "source_url": "https://jard.chat/government/daraa-governorate"
+      },
+      "deputies": []
+    },
+    "sweida": {
+      "governor": {
+        "name_ar": "مصطفى البكور",
+        "title_ar": "محافظ السويداء",
+        "start_date": "2025-01-01",
+        "decree": null,
+        "notes_ar": null,
+        "source_url": "https://jard.chat/government/as-suwayda-governorate"
+      },
+      "deputies": []
+    },
+    "deir-ez-zor": {
+      "governor": {
+        "name_ar": "زياد فواز العايش",
+        "title_ar": "محافظ دير الزور",
+        "start_date": "2026-05-09",
+        "decree": null,
+        "notes_ar": "خلفاً لغسان السيد أحمد",
+        "source_url": "https://jard.chat/government/deir-ez-zor-governorate"
+      },
+      "deputies": [
+        {
+          "name_ar": "بدري المصلوخ",
+          "title_ar": "نائب محافظ دير الزور",
+          "role_kind": "نائب",
+          "source_url": "https://jard.chat/government/deir-ez-zor-governorate"
+        }
+      ]
+    },
+    "quneitra": {
+      "governor": {
+        "name_ar": "غسان إلياس السيد أحمد",
+        "title_ar": "محافظ القنيطرة",
+        "start_date": "2026-05-09",
+        "decree": "المرسوم 102 لعام 2026",
+        "notes_ar": "محافظ دير الزور السابق",
+        "source_url": "https://jard.chat/government/quneitra-governorate"
+      },
+      "deputies": []
+    },
+    "raqqa": {
+      "governor": {
+        "name_ar": "عبد الرحمن سلامة",
+        "title_ar": "محافظ الرقة",
+        "start_date": "2026-01-15",
+        "decree": null,
+        "notes_ar": "نائب محافظ حلب السابق",
+        "source_url": "https://jard.chat/government/raqqa-governorate"
+      },
+      "deputies": []
+    },
+    "hasakah": {
+      "governor": {
+        "name_ar": "نور الدين أحمد عيسى",
+        "title_ar": "محافظ الحسكة",
+        "start_date": "2026-02-15",
+        "decree": "المرسوم 30 لعام 2026",
+        "notes_ar": null,
+        "source_url": "https://jard.chat/government/al-hasakah-governorate"
+      },
+      "deputies": [
+        {
+          "name_ar": "أحمد الهلالي",
+          "title_ar": "نائب محافظ الحسكة",
+          "role_kind": "نائب",
+          "source_url": "https://jard.chat/government/al-hasakah-governorate"
+        }
+      ]
+    }
+  }
+}

@@ -229,10 +229,26 @@ Route::get('/crossings/{slug}', function (string $slug) {
     $found = collect($data['crossings'] ?? [])->firstWhere('slug', $slug);
     abort_if($found === null, 404);
 
+    $governorate = null;
+    if (isset($found['lat'], $found['lon'])) {
+        $govId = app(\App\Services\Governorates\GovernorateGeometry::class)
+            ->governorateIdForPoint((float) $found['lat'], (float) $found['lon']);
+        $gov = $govId !== null ? \App\Support\Facts::governorate($govId) : null;
+        if ($gov !== null) {
+            $governorate = [
+                'id' => (string) $gov['id'],
+                'nameAr' => (string) $gov['name_ar'],
+            ];
+        }
+    }
+
     return Inertia::render('Crossings/Show', [
         'slug' => $slug,
+        'governorate' => $governorate,
     ]);
 })->where('slug', '[a-z0-9-]+');
+Route::get('/governorates', [\App\Http\Controllers\GovernorateController::class, 'index']);
+Route::get('/governorates/{id}', [\App\Http\Controllers\GovernorateController::class, 'show'])->where('id', '[a-z0-9-]+');
 Route::get('/about', [AboutController::class, 'index']);
 Route::get('/stats', function () {
     return Inertia::render('Stats');

@@ -57,7 +57,7 @@ function NextPrayerLink({ timings, timeZone, hijriLabel }: {
   return (
     <Link
       href={toolHref('prayer')}
-      className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-right no-underline transition-colors hover:bg-primary/10"
+      className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-start no-underline transition-colors hover:bg-primary/10"
     >
       <span className="flex min-w-0 items-center gap-2.5">
         <MoonStar className="h-5 w-5 shrink-0 text-primary" />
@@ -128,7 +128,7 @@ export default function Index() {
               href={toolHref('quran')}
               onClick={() => setTargetAyah(`${lastBookmark.surah}:${lastBookmark.ayah}`)}
               {...quranWarmProps}
-              className="mb-4 flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-right no-underline transition-colors hover:border-primary/40"
+              className="mb-4 flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-start no-underline transition-colors hover:border-primary/40"
             >
               <span className="rounded-lg bg-primary/10 p-2 text-primary">
                 <Bookmark className="h-4 w-4" />

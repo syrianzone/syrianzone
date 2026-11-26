@@ -74,7 +74,7 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent dir="rtl" className="max-h-[80dvh] overflow-hidden sm:max-w-md">
-        <DialogHeader className="text-right sm:text-right">
+        <DialogHeader className="text-start sm:text-start">
           <DialogTitle className="flex items-center gap-2">
             <Bookmark className="h-4 w-4 text-primary" /> علامات الآيات
           </DialogTitle>
@@ -107,7 +107,7 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
                   className="flex items-center gap-2 rounded-lg border border-border/50 bg-card/40 p-2.5"
                 >
                   <button
-                    className="min-w-0 flex-1 text-right"
+                    className="min-w-0 flex-1 text-start"
                     onClick={() => {
                       setOpen(false);
                       onJump(b.page, key);

@@ -133,7 +133,7 @@ export default function RadioMiniPlayer() {
             </Button>
           </SheetTrigger>
           <SheetContent side="bottom" dir="rtl" className="rounded-t-3xl border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-            <SheetHeader className="text-right">
+            <SheetHeader className="text-start">
               <SheetTitle className="flex items-center gap-2">
                 <Radio className="h-5 w-5 text-primary" />
                 إذاعة القرآن

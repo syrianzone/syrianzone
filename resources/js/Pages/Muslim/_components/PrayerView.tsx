@@ -125,8 +125,8 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn, initialCity = 
                   {schedule?.next ? `صلاة ${schedule.next.label}` : 'الصلاة القادمة'}
                 </span>
               </div>
-              <div className="text-left font-mono">
-                <span className="block text-right text-xs font-medium text-foreground/70">المتبقي</span>
+              <div className="text-end font-mono">
+                <span className="block text-start text-xs font-medium text-foreground/70">المتبقي</span>
                 <span dir="ltr" className="text-xl font-bold tracking-wider text-primary">
                   {schedule?.next ? formatDuration(schedule.next.remainingMs) : '--:--:--'}
                 </span>

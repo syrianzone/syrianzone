@@ -94,7 +94,7 @@ export default function AudioPlayer({ ayahs, reciterCode, setReciterCode, onPlay
             }}
           />
           {isNarrow && volumeOpen && (
-            <div className="absolute bottom-full right-0 z-50 mb-1.5 rounded-md border border-border bg-popover p-2.5 shadow-md">
+            <div className="absolute bottom-full start-0 z-50 mb-1.5 rounded-md border border-border bg-popover p-2.5 shadow-md">
               <input
                 type="range"
                 min={0}

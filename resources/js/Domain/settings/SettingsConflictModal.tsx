@@ -38,7 +38,7 @@ export default function SettingsConflictModal({ conflicts, onApply, onSnooze }: 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onSnooze(); }}>
       <DialogContent dir="rtl" className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader className="text-right">
+        <DialogHeader className="text-start">
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-primary" />
             إعدادات مختلفة بين جهازك وحسابك
@@ -65,7 +65,7 @@ export default function SettingsConflictModal({ conflicts, onApply, onSnooze }: 
                         key={o.side}
                         onClick={() => pick(c.key, o.side)}
                         aria-pressed={active}
-                        className={`rounded-lg border p-2.5 text-right transition-colors ${
+                        className={`rounded-lg border p-2.5 text-start transition-colors ${
                           active
                             ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/20'
                             : 'border-border/50 bg-card/20 hover:bg-muted/20'

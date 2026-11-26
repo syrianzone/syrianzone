@@ -390,7 +390,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
       ) : (
         <div ref={viewportRef} className="min-h-0 flex-1 overflow-hidden relative">
           {isFocused && (
-            <Button aria-label="إلغاء وضع التركيز" variant="secondary" size="icon" className="absolute top-4 right-4 z-50 h-10 w-10 rounded-full shadow-lg opacity-50 hover:opacity-100 transition-opacity" title="إلغاء وضع التركيز" onClick={() => setIsFocused(false)}>
+            <Button aria-label="إلغاء وضع التركيز" variant="secondary" size="icon" className="absolute top-4 start-4 z-50 h-10 w-10 rounded-full shadow-lg opacity-50 hover:opacity-100 transition-opacity" title="إلغاء وضع التركيز" onClick={() => setIsFocused(false)}>
               <Minimize className="h-5 w-5" />
             </Button>
           )}
@@ -490,7 +490,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
 
       <Dialog open={usageOpen} onOpenChange={setUsageOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
-          <DialogHeader className="text-right sm:text-right">
+          <DialogHeader className="text-start sm:text-start">
             <DialogTitle className="flex items-center gap-2">
               <HardDrive className="h-5 w-5 text-primary" />
               استهلاك البيانات

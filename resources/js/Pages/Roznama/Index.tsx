@@ -407,7 +407,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
 
                             {nextHoliday && (
                                 <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm overflow-hidden relative flex-1 flex flex-col justify-center">
-                                    <div className="absolute top-0 left-0 bg-primary/10 text-primary px-3 py-1 text-xs font-semibold rounded-br-lg border-b border-r border-primary/20">
+                                    <div className="absolute top-0 end-0 bg-primary/10 text-primary px-3 py-1 text-xs font-semibold rounded-es-lg border-b border-s border-primary/20">
                                         المناسبة القادمة
                                     </div>
                                     <CardContent className="p-6">
@@ -517,8 +517,8 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div className="text-left font-mono">
-                                                    <span className="text-xs text-foreground/70 block text-right font-medium">المتبقي</span>
+                                                <div className="text-end font-mono">
+                                                    <span className="text-xs text-foreground/70 block text-start font-medium">المتبقي</span>
                                                     <span className="text-xl font-bold text-primary tracking-wider">
                                                         {formatDuration(schedule.next.remainingMs)}
                                                     </span>

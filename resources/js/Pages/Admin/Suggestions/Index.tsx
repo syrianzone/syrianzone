@@ -221,7 +221,7 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
         });
 
         if (sortOrder === 'oldest') {
-            return [...list].reverse();
+            return list.toReversed();
         }
         return list;
     }, [overview.items, sectionFilter, categoryFilter, query, sortOrder, sectionLabelMap]);

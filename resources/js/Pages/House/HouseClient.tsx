@@ -13,6 +13,19 @@ interface HouseClientProps {
     initialMode: Mode;
 }
 
+/** Recharts defaults to #666 ticks and a white tooltip; follow the theme instead. */
+const AXIS_TICK = { fill: 'hsl(var(--muted-foreground))', fontSize: 12 };
+const TOOLTIP_STYLE = {
+    contentStyle: {
+        backgroundColor: 'hsl(var(--popover))',
+        borderColor: 'hsl(var(--border))',
+        color: 'hsl(var(--popover-foreground))',
+        borderRadius: '8px',
+    },
+    itemStyle: { color: 'hsl(var(--popover-foreground))' },
+    labelStyle: { color: 'hsl(var(--popover-foreground))' },
+};
+
 const COLORS = {
     male: '#556A4E',
     female: '#A73F46',
@@ -437,8 +450,8 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                                             <Cell key={entry.name} fill={index === 0 ? COLORS.male : COLORS.female} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
-                                    <Legend />
+                                    <Tooltip {...TOOLTIP_STYLE} />
+                                    <Legend wrapperStyle={{ color: 'hsl(var(--foreground))' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -451,9 +464,9 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         <div className="w-full h-48" aria-hidden="true">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={ageChartData} accessibilityLayer={false}>
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip />
+                                    <XAxis dataKey="name" tick={AXIS_TICK} stroke="hsl(var(--border))" />
+                                    <YAxis tick={AXIS_TICK} stroke="hsl(var(--border))" />
+                                    <Tooltip {...TOOLTIP_STYLE} cursor={{ fill: 'hsl(var(--muted))' }} />
                                     <Bar
                                         dataKey="value"
                                         fill={sexFilter === 'أنثى' ? COLORS.female : COLORS.male}

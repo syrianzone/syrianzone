@@ -162,9 +162,9 @@ test('a route link previews as the route on its city map', function () {
 
     // A draft route, an unknown one, or a route of another city: the city itself.
     foreach (['damascus-draft', 'no-such-route', 'bad id!'] as $route) {
-        expect(seoMetaFor('/transit/city/damascus?route='.urlencode($route))['title'])->toBe('مواصلات وسرافيس دمشق | ترانزيت سوريا');
+        expect(seoMetaFor('/transit/city/damascus?route='.urlencode($route))['title'])->toBe('خطوط السرافيس في دمشق — خريطة ومسارات وأجرة | ترانزيت سوريا');
     }
-    expect(seoMetaFor('/transit/city/homs?route=damascus-001')['title'])->toBe('مواصلات وسرافيس حمص | ترانزيت سوريا')
+    expect(seoMetaFor('/transit/city/homs?route=damascus-001')['title'])->toBe('خطوط السرافيس في حمص — خريطة ومسارات وأجرة | ترانزيت سوريا')
         ->and(Previews::cardSource('route')->card('damascus-draft'))->toBeNull();
 });
 
@@ -185,7 +185,7 @@ test('cities that share one map accept each other\'s routes', function () {
         ->and($meta['image'])->toContain('/og/r/route/rif-001.png?v=')
         ->and(seoMetaFor('/transit/city/rif-dimashq?route=damascus-001')['og_title'])->toBe('مزة جبل – كراج الست')
         // a city outside the shared map still does not claim the route
-        ->and(seoMetaFor('/transit/city/homs?route=rif-001')['title'])->toBe('مواصلات وسرافيس حمص | ترانزيت سوريا');
+        ->and(seoMetaFor('/transit/city/homs?route=rif-001')['title'])->toBe('خطوط السرافيس في حمص — خريطة ومسارات وأجرة | ترانزيت سوريا');
 
     expect(City::mapGroup('damascus'))->toBe(['damascus', 'rif-dimashq'])
         ->and(City::mapGroup('rif-dimashq'))->toBe(['damascus', 'rif-dimashq'])

@@ -40,12 +40,22 @@ final class TransitCityPreview implements CardSource, PreviewResolver
             return null;
         }
 
+        $routeCount = $city->routes()->where('status', 'published')->count();
+        $shareTitle = 'خطوط السرافيس في '.$city->name_ar.' — خريطة ومسارات وأجرة';
+
+        if ($routeCount > 0) {
+            $noun = Arabic::counted($routeCount, ['one' => 'خط', 'two' => 'خطّان', 'few' => 'خطوط', 'many' => 'خطاً']);
+            $description = 'دليل خطوط السرافيس والباصات في '.$city->name_ar.': '.$routeCount.' '.$noun.' منشور مع المسارات والمواقف والأجرة على خريطة ترانزيت سوريا.';
+        } else {
+            $description = 'دليل وخريطة خطوط السرافيس والباصات والمواقف في '.$city->name_ar.' على خريطة ترانزيت سوريا.';
+        }
+
         return new Preview(
-            title: 'مواصلات وسرافيس '.$city->name_ar.' | ترانزيت سوريا',
-            shareTitle: 'مواصلات '.$city->name_ar,
-            description: 'خريطة خطوط المواصلات العامة والسرافيس والباصات والمواقف في '.$city->name_ar.' مع البحث التفاعلي عن المسارات على ترانزيت سوريا.',
+            title: $shareTitle.' | ترانزيت سوريا',
+            shareTitle: $shareTitle,
+            description: $description,
             canonicalPath: $path,
-            image: $this->describe($city)->url(),
+            image: $this->describe($city, $routeCount)->url(),
             parent: self::PARENT,
         );
     }
@@ -57,16 +67,16 @@ final class TransitCityPreview implements CardSource, PreviewResolver
         return $city === null ? null : $this->describe($city);
     }
 
-    private function describe(City $city): RecordCard
+    private function describe(City $city, ?int $routeCount = null): RecordCard
     {
-        $routes = $city->routes()->where('status', 'published')->count();
+        $routes = $routeCount ?? $city->routes()->where('status', 'published')->count();
 
         return new RecordCard(self::cardType(), (string) $city->id, [
             'kind' => 'split',
             'url' => $this->address('/transit/city/'.$city->id),
             'kicker' => ['icon' => 'transit', 'label' => 'ترانزيت'],
-            'title' => 'مواصلات '.$city->name_ar,
-            'subtitle' => 'خريطة خطوط السرافيس والباصات والمواقف',
+            'title' => 'خطوط السرافيس في '.$city->name_ar,
+            'subtitle' => 'خريطة خطوط السرافيس والباصات والمواقف والأجرة',
             // The live number of published routes; a city with none shows the icon.
             'art' => $routes > 0
                 ? ['type' => 'figure', 'value' => $routes, 'label' => Arabic::counted($routes, ['one' => 'خط', 'two' => 'خطّان', 'few' => 'خطوط', 'many' => 'خطاً'])]

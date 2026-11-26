@@ -24,10 +24,11 @@ export function TransitSidebar({ pathname }: TransitSidebarProps) {
   // The city page carries its own route list; any other transit page has none.
   // The city list is a page prop on every transit page (the server renders it
   // from the table), so the sidebar names a city without a fetch of its own.
-  const page = usePage<{ id?: string; routes?: RouteProperties[]; cities?: TransitCity[] }>().props
+  const page = usePage<{ id?: string; routes?: RouteProperties[]; cities?: TransitCity[]; lastUpdated?: string | null }>().props
   const cities = page.cities ?? []
   const { data: routes } = useRoutes(cityId || '', page.id === cityId ? page.routes : undefined)
   const { data: mapData } = useMapData(cityId || undefined)
+  const lastUpdated = page.id === cityId ? (page.lastUpdated ?? null) : null
 
   const city = useMemo(() => cities.find(c => c.id === cityId), [cities, cityId])
   const route = useMemo(
@@ -52,7 +53,7 @@ export function TransitSidebar({ pathname }: TransitSidebarProps) {
     return <SidebarRouteDetail route={route} city={city} stops={stops} />
   }
 
-  return <SidebarRoutes city={city} cities={cities} routes={routes ?? []} returnFocusRouteId={lastRouteIdRef.current} />
+  return <SidebarRoutes city={city} cities={cities} routes={routes ?? []} lastUpdated={lastUpdated} returnFocusRouteId={lastRouteIdRef.current} />
 }
 
 function getCityIdFromPath(path: string): string | null {

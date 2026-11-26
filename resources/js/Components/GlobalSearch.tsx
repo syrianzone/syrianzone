@@ -361,10 +361,79 @@ export function DesktopSearchTrigger({ className = '' }: { className?: string })
     );
 }
 
+/** Whether SearchResultsContent renders cmdk items (the palette) or plain rows. */
+const CmdkModeContext = React.createContext(true);
+
+const ROW_CLASS =
+    'w-full text-right outline-none hover:bg-accent/60 active:bg-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring';
+
+function GroupWrapper({ heading, children }: { heading: string; children: React.ReactNode }) {
+    if (React.useContext(CmdkModeContext)) {
+        return <CommandGroup heading={heading}>{children}</CommandGroup>;
+    }
+    return (
+        <div className="py-1.5 text-foreground">
+            <p className="px-1 pb-1.5 text-xs font-bold text-muted-foreground/80">{heading}</p>
+            <div className="flex flex-col gap-1">{children}</div>
+        </div>
+    );
+}
+
+/**
+ * One result row. In the palette it is a cmdk item (arrow keys, Enter); in the
+ * inline mounts a row with `href` is a real link, so it can be opened in a new
+ * tab, prefetched and announced as a link, and only an action without a URL
+ * stays a button.
+ */
+function ItemRow({
+    value,
+    onSelect,
+    href,
+    external = false,
+    onNavigate,
+    className,
+    children,
+}: {
+    value: string;
+    onSelect: () => void;
+    href?: string;
+    external?: boolean;
+    onNavigate?: () => void;
+    className?: string;
+    children: React.ReactNode;
+}) {
+    if (React.useContext(CmdkModeContext)) {
+        return (
+            <CommandItem value={value} onSelect={onSelect} className={className}>
+                {children}
+            </CommandItem>
+        );
+    }
+    if (href && external) {
+        return (
+            <a href={href} target="_blank" rel="noopener noreferrer" onClick={onNavigate} className={cn(ROW_CLASS, className)}>
+                {children}
+            </a>
+        );
+    }
+    if (href) {
+        return (
+            <Link href={href} onClick={onNavigate} className={cn(ROW_CLASS, className)}>
+                {children}
+            </Link>
+        );
+    }
+    return (
+        <button type="button" onClick={onSelect} className={cn(ROW_CLASS, className)}>
+            {children}
+        </button>
+    );
+}
+
 /**
  * Shared rendering of all searchable groups (Tools TileGrid + Cities + Muslim/Surahs + Games + Crossings + Live API results).
  * - When `useCmdkPrimitives` is true (Desktop Ctrl+K modal), items render as `<CommandGroup>` + `<CommandItem>` for arrow-key navigation.
- * - When `useCmdkPrimitives` is false (Mobile Menu Sheet / Homepage inline search), items render as plain native `<section>` + `<button>` elements so cmdk never calls `scrollIntoView()` and never jumps the viewport.
+ * - When `useCmdkPrimitives` is false (Mobile Menu Sheet / Homepage inline search), items render as plain links (or a `<button>` for an action without a URL) so cmdk never calls `scrollIntoView()` and never jumps the viewport.
  */
 export function SearchResultsContent({
     data,
@@ -477,60 +546,16 @@ export function SearchResultsContent({
         );
     };
 
-    const GroupWrapper = ({
-        heading,
-        children,
-    }: {
-        heading: string;
-        children: React.ReactNode;
-    }) => {
-        if (useCmdkPrimitives) {
-            return <CommandGroup heading={heading}>{children}</CommandGroup>;
-        }
-        return (
-            <div className="py-1.5 text-foreground">
-                <p className="px-1 pb-1.5 text-xs font-bold text-muted-foreground/80">
-                    {heading}
-                </p>
-                <div className="flex flex-col gap-1">{children}</div>
-            </div>
-        );
-    };
-
-    const ItemRow = ({
-        value,
-        onSelect,
-        className,
-        children,
-    }: {
-        value: string;
-        onSelect: () => void;
-        className?: string;
-        children: React.ReactNode;
-    }) => {
-        if (useCmdkPrimitives) {
-            return (
-                <CommandItem value={value} onSelect={onSelect} className={className}>
-                    {children}
-                </CommandItem>
-            );
-        }
-        return (
-            <button
-                type="button"
-                onClick={onSelect}
-                className={cn(
-                    'w-full text-right outline-none hover:bg-accent/60 active:bg-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring',
-                    className,
-                )}
-            >
-                {children}
-            </button>
-        );
-    };
+    /** An ItemRow that opens `href`: a cmdk item navigates on select, a plain row is a real link. */
+    const linkTo = (href: string, external = false) => ({
+        href,
+        external,
+        onSelect: () => navigateTo(href, external),
+        onNavigate: onClose,
+    });
 
     return (
-        <>
+        <CmdkModeContext.Provider value={useCmdkPrimitives}>
             {totalVisibleResults === 0 && !loadingRemote && (
                 useCmdkPrimitives ? (
                     <CommandEmpty className="py-10 text-center">
@@ -618,9 +643,9 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`route-${route.id}`}
                             value={`route-${route.id}-${route.nameAr}`}
-                            onSelect={() =>
-                                navigateTo(`/transit/city/${route.cityId}?route=${encodeURIComponent(route.id)}`)
-                            }
+                            {...linkTo(
+                                `/transit/city/${encodeURIComponent(route.cityId)}?route=${encodeURIComponent(route.id)}`,
+                            )}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -653,7 +678,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`city-${city.id}`}
                                 value={`city-${city.id}-${city.nameAr}`}
-                                onSelect={() => navigateTo(`/transit/city/${city.id}`)}
+                                {...linkTo(`/transit/city/${encodeURIComponent(city.id)}`)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -690,7 +715,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`muslim-${tool.slug}`}
                                 value={`muslim-${tool.slug}-${tool.title}`}
-                                onSelect={() => navigateTo(toolHref(tool.slug))}
+                                {...linkTo(toolHref(tool.slug))}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -748,7 +773,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`game-${game.slug}`}
                                 value={`game-${game.slug}-${game.title}`}
-                                onSelect={() => navigateTo(gameEntryHref(game), game.external)}
+                                {...linkTo(gameEntryHref(game), game.external)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -777,7 +802,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`crossing-${crossing.n}`}
                                 value={`crossing-${crossing.n}-${crossing.name}`}
-                                onSelect={() => navigateTo(`/crossings?c=${crossing.n}`)}
+                                {...linkTo(`/crossings?c=${encodeURIComponent(crossing.n)}`)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -816,7 +841,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`place-${place.id}`}
                             value={`place-${place.id}-${place.name}`}
-                            onSelect={() => navigateTo(`/mishwar?place=${place.id}`)}
+                            {...linkTo(`/mishwar?place=${encodeURIComponent(place.id)}`)}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -842,9 +867,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`phone-${entry.id}`}
                             value={`phone-${entry.id}-${entry.nameAr}-${entry.number}`}
-                            onSelect={() =>
-                                navigateTo(`/phonebook?q=${encodeURIComponent(entry.nameAr)}`)
-                            }
+                            {...linkTo(`/phonebook?q=${encodeURIComponent(entry.nameAr)}`)}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -883,7 +906,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`govtcv-${person.id}`}
                                 value={`govtcv-${person.id}-${person.nameAr}-${person.roleTitleAr ?? ''}`}
-                                onSelect={() => navigateTo(`/govtcvs/${encodeURIComponent(person.slug)}`)}
+                                {...linkTo(`/govtcvs/${encodeURIComponent(person.slug)}`)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -925,9 +948,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`official-${official.id}`}
                             value={`official-${official.id}-${official.nameAr}`}
-                            onSelect={() =>
-                                navigateTo(`/syofficial?q=${encodeURIComponent(official.nameAr)}`)
-                            }
+                            {...linkTo(`/syofficial?q=${encodeURIComponent(official.nameAr)}`)}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -953,7 +974,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`govapp-${app.id}`}
                             value={`govapp-${app.id}-${app.nameAr}`}
-                            onSelect={() => navigateTo('/govapps')}
+                            {...linkTo('/govapps')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -971,7 +992,7 @@ export function SearchResultsContent({
                     ))}
                 </GroupWrapper>
             )}
-        </>
+        </CmdkModeContext.Provider>
     );
 }
 

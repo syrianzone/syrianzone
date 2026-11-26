@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
     Phone, MessageSquare, MessageSquarePlus, Copy, Check, ExternalLink, Search, Info, Settings, PencilLine
@@ -69,6 +69,11 @@ export default function Index({ initialData, categories: serverCategories = [] }
     const initialQuery = new URLSearchParams(page.url.split('?')[1] ?? '').get('q') ?? '';
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const copiedTimerRef = useRef<number | null>(null);
+
+    useEffect(() => () => {
+        if (copiedTimerRef.current !== null) window.clearTimeout(copiedTimerRef.current);
+    }, []);
 
     // The chips are the server's active categories in its own order, so a chip
     // and the admin row it edits name the same thing (`category_id`). Only a
@@ -109,7 +114,9 @@ export default function Index({ initialData, categories: serverCategories = [] }
     const handleCopy = async (number: string, id: string) => {
         if (!await copyText(number)) return;
         setCopiedId(id);
-        setTimeout(() => setCopiedId(null), 2000);
+        // Restart the window on every copy so an older timer can't clear a newer tick.
+        if (copiedTimerRef.current !== null) window.clearTimeout(copiedTimerRef.current);
+        copiedTimerRef.current = window.setTimeout(() => setCopiedId(null), 2000);
     };
 
     const getTelUrl = (number: string) => {

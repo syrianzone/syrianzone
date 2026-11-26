@@ -42,6 +42,46 @@ const SUITS: Suit[] = ['S', 'H', 'D', 'C'];
 /** How long an AI seat "thinks" before acting, so the table is followable. */
 const AI_DELAY = 750;
 
+/** "X took the trick", with the second person for the player. */
+const TOOK_TRICK = ['أكلتَ الطرنيب', 'أكل يسارك الطرنيب', 'أكل شريكك الطرنيب', 'أكل يمينك الطرنيب'];
+
+const allPlays = (round: TarneebRound) => [...round.history.flatMap((trick) => trick.plays), ...round.trick];
+
+/**
+ * What changed at the table since the last state, as one sentence for the
+ * polite live region: the AI seats' bids and cards, the trump, who took each
+ * trick, and the player's turn. The player's own moves are not repeated.
+ */
+function describeTarneeb(prev: TarneebRound | null, next: TarneebRound): string {
+  const parts: string[] = [];
+  // A new round starts with a new, empty auction.
+  const fresh =
+    !prev ||
+    (next.auction.actions.length === 0 && next.auction !== prev.auction) ||
+    next.history.length < prev.history.length;
+  const base = fresh ? null : prev;
+  if (fresh) parts.push('توزيع جديد');
+
+  for (const action of next.auction.actions.slice(base?.auction.actions.length ?? 0)) {
+    if (action.seat === HUMAN) continue;
+    parts.push('pass' in action ? `${SEAT_NAMES[action.seat]} مرّر` : `${SEAT_NAMES[action.seat]} طلب ${action.value}`);
+  }
+  if (next.trump && next.trump !== base?.trump) parts.push(`الحكم ${SUIT_NAME_AR[next.trump]}`);
+  for (const play of allPlays(next).slice(base ? allPlays(base).length : 0)) {
+    if (play.seat !== HUMAN) parts.push(`${SEAT_NAMES[play.seat]}: ${cardName(play.card)}`);
+  }
+  for (const trick of next.history.slice(base?.history.length ?? 0)) parts.push(TOOK_TRICK[trick.winner]);
+  if (next.phase === 'complete' && base?.phase !== 'complete') parts.push('انتهى الدست');
+
+  const yourTurn = next.turn === HUMAN && (base?.turn !== HUMAN || base?.phase !== next.phase);
+  if (yourTurn) {
+    if (next.phase === 'bidding') parts.push('دورك للمزايدة');
+    else if (next.phase === 'trump') parts.push('اختر الحكم');
+    else if (next.phase === 'playing') parts.push('دورك');
+  }
+  return parts.join('، ');
+}
+
 const createFreshMatch = () =>
   createMatch({ players: TARNEEB_PLAYERS, units: TARNEEB_TEAMS, target: DEFAULT_TARNEEB.target });
 
@@ -58,6 +98,9 @@ export default function Tarneeb() {
   /** The card picked on a touch screen, waiting for a second tap to play it. */
   const [selected, setSelected] = useState<string | null>(null);
 
+  /** The live region's text, and the round it was worked out against. */
+  const [announcement, setAnnouncement] = useState('');
+  const announced = useRef<TarneebRound | null>(null);
   const recorded = useRef<MatchState | null>(null);
   const seenHistory = useRef(0);
 
@@ -99,6 +142,13 @@ export default function Tarneeb() {
 
   useEffect(() => {
     setSelected(null);
+  }, [round]);
+
+  useEffect(() => {
+    if (!round) return;
+    const text = describeTarneeb(announced.current, round);
+    announced.current = round;
+    if (text) setAnnouncement(text);
   }, [round]);
 
   useEffect(() => {
@@ -203,6 +253,8 @@ export default function Tarneeb() {
 
   return (
     <div ref={tableRef} className="flex h-full select-none flex-col">
+      {/* One persistent polite region for everything the other seats do. */}
+      <div role="status" className="sr-only">{announcement}</div>
       {/* The two buttons portal into the shell header, beside القوانين. Only the
           contract line stays here; its height is reserved so the table never
           moves as the contract appears. */}
@@ -322,7 +374,7 @@ export default function Tarneeb() {
             )}
           </div>
         ) : round.phase === 'playing' ? (
-          <span aria-live="polite" className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground">
             {humanTurn ? 'دورك — نزّل ورقة' : `دور ${SEAT_NAMES[round.turn ?? 0]}…`}
           </span>
         ) : (

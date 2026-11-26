@@ -46,6 +46,9 @@ export function featureToSVG(geojson: Feature | FeatureCollection): string {
     }
   }
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${finalWidth} ${finalHeight}" width="1200" height="auto">
+  // SVG has no height="auto": give the height that keeps the viewBox ratio.
+  const pixelWidth = 1200;
+  const pixelHeight = Math.max(1, Math.round((pixelWidth * finalHeight) / finalWidth));
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${finalWidth} ${finalHeight}" width="${pixelWidth}" height="${pixelHeight}">
 ${svgPaths}</svg>`;
 }

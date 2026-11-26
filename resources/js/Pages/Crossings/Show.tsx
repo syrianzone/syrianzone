@@ -113,16 +113,24 @@ export default function CrossingShow({ slug }: CrossingShowProps) {
                 {/* Breadcrumb & Hero */}
                 <section className="border-b border-border bg-card">
                     <div className="container mx-auto max-w-5xl px-4 py-6">
-                        <nav aria-label="مسار التنقل" className="mb-5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                            <Link href="/" className="transition-colors hover:text-foreground">
-                                الرئيسية
-                            </Link>
-                            <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                            <Link href="/crossings" className="transition-colors hover:text-foreground">
-                                المنافذ الحدودية
-                            </Link>
-                            <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                            <span className="truncate font-medium text-foreground">{crossing.name}</span>
+                        <nav aria-label="مسار التنقل" className="mb-5 text-xs text-muted-foreground">
+                            <ol className="flex flex-wrap items-center gap-1.5">
+                                <li className="flex items-center gap-1.5">
+                                    <Link href="/" className="transition-colors hover:text-foreground">
+                                        الرئيسية
+                                    </Link>
+                                    <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                                </li>
+                                <li className="flex items-center gap-1.5">
+                                    <Link href="/crossings" className="transition-colors hover:text-foreground">
+                                        المنافذ الحدودية
+                                    </Link>
+                                    <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                                </li>
+                                <li className="min-w-0">
+                                    <span aria-current="page" className="block truncate font-medium text-foreground">{crossing.name}</span>
+                                </li>
+                            </ol>
                         </nav>
 
                         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">

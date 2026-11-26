@@ -18,7 +18,9 @@ export default function SitePopupAdminIndex({ popup }: { popup: SitePopup }) {
     const set = (key: keyof SitePopup, value: string | boolean) =>
         setForm((f) => ({ ...f, [key]: value }));
 
-    const handleSave = () => {
+    const handleSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (saving) return;
         setSaving(true);
         router.put('/api/v1/admin/site-popup', { ...form }, {
             preserveScroll: true,
@@ -43,7 +45,8 @@ export default function SitePopupAdminIndex({ popup }: { popup: SitePopup }) {
                             النصوص والرابط هنا تظهر للزوار في النافذة المنبثقة. رفع نسخة جديدة يعيد إظهارها لمن أغلقها سابقاً. النسخة الحالية: {popup.version}
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent>
+                      <form onSubmit={handleSave} className="space-y-4">
                         <div className="flex items-center justify-between rounded-lg border p-4">
                             <Label htmlFor="enabled">إظهار النافذة</Label>
                             <Switch
@@ -72,11 +75,12 @@ export default function SitePopupAdminIndex({ popup }: { popup: SitePopup }) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="link">الرابط (https فقط)</Label>
-                            <Input id="link" value={form.link} dir="ltr" onChange={(e) => set('link', e.target.value)} />
+                            <Input id="link" value={form.link} dir="ltr" inputMode="url" spellCheck={false} autoCapitalize="none" autoComplete="off" onChange={(e) => set('link', e.target.value)} />
                         </div>
-                        <Button onClick={handleSave} disabled={saving} className="w-full font-bold">
+                        <Button type="submit" disabled={saving} className="w-full font-bold">
                             {saving ? 'جارٍ الحفظ...' : 'حفظ'}
                         </Button>
+                      </form>
                     </CardContent>
                 </Card>
             </div>

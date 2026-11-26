@@ -442,6 +442,22 @@ export default function GameRoom({ game }: GameProps) {
     sendAction('pass_turn', {});
   };
 
+  // One persistent polite region for everything that changes without the
+  // player's own action: the opponent arriving or leaving, the turn passing
+  // and the result. It is mounted with the room so screen readers register it.
+  const announcement =
+    gameState === 'ended'
+      ? winMessage ?? 'انتهت اللعبة'
+      : peerDisconnected
+        ? 'انقطع اتصال الخصم. في انتظار إعادة الاتصال'
+        : gameState === 'playing'
+          ? myTurn
+            ? 'دورك لطرح الأسئلة والتخمين'
+            : `دور ${opponentName}`
+          : peerConnected
+            ? `انضم ${opponentName} إلى الغرفة`
+            : 'بانتظار انضمام الخصم';
+
   if (loadingJoin) {
     return (
       <MainLayout>
@@ -470,6 +486,7 @@ export default function GameRoom({ game }: GameProps) {
       <div className="min-h-screen bg-background text-foreground p-6 font-sans" dir="rtl">
         
         <div className="max-w-6xl mx-auto">
+          <div role="status" className="sr-only">{announcement}</div>
           <h1 className="sr-only">غرفة لعبة من هو؟ — {game.category.name_ar}</h1>
           <style>{`
             .perspective-1000 {

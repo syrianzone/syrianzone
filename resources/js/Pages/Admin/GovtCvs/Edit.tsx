@@ -665,8 +665,8 @@ export default function GovtCvsAdminEdit({
     };
 
     const sortableCvItems = useMemo<SortableListItem[]>(() => {
-        return [...(official?.cv_entries ?? [])]
-            .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        return (official?.cv_entries ?? [])
+            .toSorted((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
             .map((entry) => ({
                 id: entry.id,
                 label: entry.title_ar,

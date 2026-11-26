@@ -31,6 +31,7 @@ use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\OgCardController;
 use App\Http\Controllers\PhonebookController;
 use App\Http\Controllers\PlaceAdminController;
+use App\Http\Controllers\PlaceHubController;
 use App\Http\Controllers\PlaceReportController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PollController;
@@ -380,6 +381,10 @@ Route::get('/transit/studio', function () {
 
 Route::get('/mishwar', [PlaceController::class, 'renderIndex']);
 Route::get('/mishwar/{place}', [PlaceController::class, 'renderShow'])->where('place', '[0-9]+(?:-[^/]*)?');
+Route::get('/mishwar/{governorate}', [PlaceHubController::class, 'governorate'])
+    ->where('governorate', '[a-z-]+');
+Route::get('/mishwar/{governorate}/{category}', [PlaceHubController::class, 'category'])
+    ->where(['governorate' => '[a-z-]+', 'category' => '[a-z]+']);
 // legacy slug: share links from the first release said /places
 Route::get('/places', fn () => redirect('/mishwar'.(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301));
 

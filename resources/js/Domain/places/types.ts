@@ -123,3 +123,50 @@ export interface HotelFeature {
 }
 
 export interface HotelFeatureCollection { type: 'FeatureCollection'; features: HotelFeature[]; }
+
+export interface PlaceHubCategoryChip {
+  key: PlaceCategory;
+  label: string;
+  count: number;
+  url: string | null;
+}
+
+export interface PlaceHubItem {
+  id: number;
+  name: string;
+  category: PlaceCategory;
+  category_label: string;
+  description: string;
+  thumb_url: string | null;
+  photos_count: number;
+  saves_count: number;
+  url: string;
+}
+
+export interface PlaceHubOtherLink {
+  id: string;
+  name_ar: string;
+  count: number;
+  url: string;
+}
+
+export interface PlaceHubProps {
+  governorate: {
+    id: string;
+    name_ar: string;
+  };
+  category: {
+    key: PlaceCategory;
+    label: string;
+    hub_title: string;
+  } | null;
+  h1: string;
+  intro: string;
+  total: number;
+  mapUrl: string;
+  governorateUrl: string;
+  hubUrl: string;
+  categories: PlaceHubCategoryChip[];
+  places: PlaceHubItem[];
+  otherHubs: PlaceHubOtherLink[];
+}

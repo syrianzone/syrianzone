@@ -124,6 +124,7 @@ export interface GovernorateCrossingItem {
 
 export interface GovernoratePlacesData {
     total: number;
+    hub_url?: string | null;
     categories: Array<{
         key: string;
         label: string;

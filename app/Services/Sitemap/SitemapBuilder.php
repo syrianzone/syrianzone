@@ -16,6 +16,7 @@ use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\Route as TransitRoute;
 use App\Services\ExternalData\ExternalSheetCache;
+use App\Services\Places\PlaceHubService;
 use App\Services\Places\PlaceIndexability;
 use App\Support\Facts;
 use App\Support\HouseMembers;
@@ -48,6 +49,7 @@ class SitemapBuilder
             $this->transitCityUrls(),
             $this->houseMemberUrls(),
             $this->placeUrls(),
+            $this->placeHubUrls(),
         );
 
         // A path reaching both a static entry and a dynamic source would split
@@ -417,6 +419,16 @@ class SitemapBuilder
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * Indexable Mishwar governorate and category hubs.
+     *
+     * @return SitemapUrl[]
+     */
+    private function placeHubUrls(): array
+    {
+        return app(PlaceHubService::class)->sitemapHubs();
     }
 
     /**

@@ -596,10 +596,14 @@ export default function GovernorateShow({
 
                                 <div>
                                     <Link
-                                        href="/mishwar"
+                                        href={places.hub_url ?? '/mishwar'}
                                         className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary"
                                     >
-                                        <span>استكشاف خريطة مشوار كاملة</span>
+                                        <span>
+                                            {places.hub_url
+                                                ? `عرض جميع الأماكن في ${governorate.name_ar}`
+                                                : 'استكشاف خريطة مشوار كاملة'}
+                                        </span>
                                         <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                                     </Link>
                                 </div>

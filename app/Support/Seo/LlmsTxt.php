@@ -61,6 +61,7 @@ class LlmsTxt
                 .'ولكل منفذ حدودي صفحة على '.$base.'/crossings/{slug}، '
                 .'ولكل عضو في مجلس الشعب صفحة على '.$base.'/house/members/{member_number}، '
                 .'ولكل محافظة سورية صفحة شاملة على '.$base.'/governorates/{id}، '
+                .'وللأماكن السياحية في كل محافظة صفحة دليل على '.$base.'/mishwar/{governorate}، '
                 .'ولمواقيت الصلاة لكل محافظة على '.$base.'/muslim/prayer/{city}، '
                 .'ولإمساكية رمضان لكل محافظة على '.$base.'/muslim/ramadan/{city}، '
                 .'ولكل مدينة في ترانزيت صفحة على '.$base.'/transit/city/{id}. '

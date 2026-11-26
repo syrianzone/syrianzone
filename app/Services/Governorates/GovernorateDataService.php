@@ -679,7 +679,7 @@ final class GovernorateDataService
      * Approved Mishwar places within this governorate's polygon: counts per category + notable places.
      * Returns null when the governorate has 0 approved places.
      *
-     * @return array{total: int, categories: list<array{key: string, label: string, count: int}>, notable: list<array{id: int, name: string, category: string, category_label: string, description: ?string, url: string}>}|null
+     * @return array{total: int, hub_url: string, categories: list<array{key: string, label: string, count: int}>, notable: list<array{id: int, name: string, category: string, category_label: string, description: ?string, url: string}>}|null
      */
     private function placesFor(string $governorateId): ?array
     {
@@ -721,6 +721,7 @@ final class GovernorateDataService
 
         return [
             'total' => count($inGov),
+            'hub_url' => '/mishwar/'.$governorateId,
             'categories' => $categories,
             'notable' => $notable,
         ];

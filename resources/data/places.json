@@ -1,13 +1,13 @@
 {
   "categories": [
-    { "key": "historical", "label": "تاريخي", "glyph": "Landmark" },
-    { "key": "natural", "label": "طبيعي", "glyph": "TreePine" },
-    { "key": "cultural", "label": "ثقافي", "glyph": "Building2" },
-    { "key": "religious", "label": "ديني", "glyph": "Landmark" },
-    { "key": "abandoned", "label": "مهجور", "glyph": "Building2" },
-    { "key": "viewpoint", "label": "إطلالة", "glyph": "Mountain" },
-    { "key": "market", "label": "سوق", "glyph": "Store" },
-    { "key": "food", "label": "مأكولات", "glyph": "Utensils" },
+    { "key": "historical", "label": "تاريخي", "hub_title": "أماكن أثرية وتاريخية", "glyph": "Landmark" },
+    { "key": "natural", "label": "طبيعي", "hub_title": "أماكن طبيعية", "glyph": "TreePine" },
+    { "key": "cultural", "label": "ثقافي", "hub_title": "أماكن ثقافية", "glyph": "Building2" },
+    { "key": "religious", "label": "ديني", "hub_title": "أماكن دينية", "glyph": "Landmark" },
+    { "key": "abandoned", "label": "مهجور", "hub_title": "أماكن مهجورة", "glyph": "Building2" },
+    { "key": "viewpoint", "label": "إطلالة", "hub_title": "إطلالات", "glyph": "Mountain" },
+    { "key": "market", "label": "سوق", "hub_title": "أسواق", "glyph": "Store" },
+    { "key": "food", "label": "مأكولات", "hub_title": "مطاعم وأكلات", "glyph": "Utensils" },
     { "key": "other", "label": "آخر", "glyph": "MapPin" }
   ],
   "statuses": ["pending", "approved", "rejected"],

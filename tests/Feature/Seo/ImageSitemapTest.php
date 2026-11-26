@@ -203,9 +203,15 @@ test('image sitemap includes rich govapps, published promises, active syofficial
         'is_active' => true,
     ]);
 
-    // Approved Mishwar place with photo -> must NOT appear
-    $place = Place::factory()->approved()->create();
-    placePhoto($place->id);
+    // Thin approved Mishwar place (<15 words & 1 photo) -> must NOT appear; indexable place appears at its canonical place page
+    $thinPlace = Place::factory()->approved()->create(['description' => 'وصف قصير جداً']);
+    placePhoto($thinPlace->id);
+
+    $richPlace = Place::factory()->approved()->create([
+        'name' => 'الجامع الأموي الكبير',
+        'description' => 'الجامع الأموي الكبير في قلب دمشق القديمة من أقدم وأعرق المساجد التاريخية في العالم الإسلامي ويضم صحناً واسعاً وفسيفساء أثرية نادرة.',
+    ]);
+    $richPhoto = placePhoto($richPlace->id);
 
     $map = parseImageSitemap($this->get('/sitemap-images.xml')->getContent());
 
@@ -232,7 +238,9 @@ test('image sitemap includes rich govapps, published promises, active syofficial
             'https://syrian.zone/assets/officials/active.webp',
         ])
         ->and($map)->not->toHaveKey('https://syrian.zone/mishwar')
-        ->and($map)->not->toHaveKey('https://syrian.zone/mishwar?place='.$place->id);
+        ->and($map)->not->toHaveKey('https://syrian.zone/mishwar?place='.$thinPlace->id)
+        ->and($map)->not->toHaveKey('https://syrian.zone'.$thinPlace->publicPath())
+        ->and($map['https://syrian.zone'.$richPlace->publicPath()] ?? null)->not->toBeEmpty();
 
     // Every loc and image:loc must be an absolute http(s) URL.
     foreach ($map as $pageLoc => $imageLocs) {

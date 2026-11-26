@@ -24,24 +24,32 @@ function seedDeepLinkRoute(string $id, string $city, string $name, string $statu
     transitRoute($id, $city, ['name_ar' => $name, 'status' => $status, 'color_index' => $colour]);
 }
 
-test('a place link previews as the place, while the map stays the canonical page', function () {
-    $place = Place::factory()->approved()->create(['name' => 'قلعة حلب', 'category' => 'historical', 'description' => "قلعة تاريخية\nوسط المدينة القديمة."]);
+test('a place link previews as the place and canonicalizes to the dedicated place page', function () {
+    $place = Place::factory()->approved()->create([
+        'name' => 'قلعة حلب',
+        'category' => 'historical',
+        'description' => "قلعة تاريخية عريقة تقع في قلب مدينة حلب القديمة وتعد من أقدم وأكبر القلاع في العالم.\nوجهة مميزة للزوار.",
+        'lat' => 36.1992,
+        'lng' => 37.1626,
+    ]);
     PlacePhoto::factory()->create(['place_id' => $place->id, 'display_path' => "places/{$place->id}/a_display.webp"]);
 
     $meta = seoMetaFor('/mishwar?place='.$place->id);
     $card = Previews::cardSource('place')->card((string) $place->id);
+    $expectedUrl = 'https://syrian.zone'.$place->publicPath();
 
-    expect($meta['title'])->toBe('قلعة حلب | مشوار')
-        ->and($meta['description'])->toBe('قلعة تاريخية وسط المدينة القديمة.')
-        ->and($meta['url'])->toBe('https://syrian.zone/mishwar?place='.$place->id)
-        ->and($meta['canonical'])->toBe('https://syrian.zone/mishwar')
+    expect($meta['title'])->toBe('قلعة حلب في حلب — صور وموقع | مشوار')
+        ->and($meta['description'])->toBe('قلعة تاريخية عريقة تقع في قلب مدينة حلب القديمة وتعد من أقدم وأكبر القلاع في العالم. وجهة مميزة للزوار.')
+        ->and($meta['url'])->toBe($expectedUrl)
+        ->and($meta['canonical'])->toBe($expectedUrl)
+        ->and($meta['type'])->toBe('article')
         ->and($meta['image'])->toBe('https://syrian.zone/og/r/place/'.$place->id.'.jpg?v='.$card->version())
         ->and($meta['robots'])->toBe('index, follow');
 
-    // Structured data keeps describing the canonical page, the map.
-    $page = collect(json_decode($meta['json_ld'], true)['@graph'])->firstWhere('@type', 'CollectionPage');
-    expect($page['name'])->toBe(seoMetaFor('/mishwar')['title'])
-        ->and($page['url'])->toBe('https://syrian.zone/mishwar');
+    // Structured data describes the canonical place page.
+    $page = collect(json_decode($meta['json_ld'], true)['@graph'])->firstWhere('@type', 'WebPage');
+    expect($page['url'])->toBe($expectedUrl)
+        ->and($page['mainEntity']['@type'])->toBe(['TouristAttraction', 'LandmarksOrHistoricalBuildings']);
 
     expect($card->format)->toBe('jpg')
         ->and($card->model['kind'])->toBe('photo')
@@ -92,27 +100,38 @@ function deepLinkHead(string $html): array
 }
 
 test('the place tags reach the html a scraper reads', function () {
-    $place = Place::factory()->approved()->create(['name' => 'بحيرة قطينة']);
+    $place = Place::factory()->approved()->create([
+        'name' => 'بحيرة قطينة',
+        'lat' => 34.656,
+        'lng' => 36.617,
+    ]);
 
     $head = deepLinkHead($this->get('/mishwar?place='.$place->id)->assertOk()->getContent());
+    $expectedUrl = 'https://syrian.zone'.$place->publicPath();
 
-    expect($head['title'])->toBe('بحيرة قطينة | مشوار')
+    expect($head['title'])->toBe('بحيرة قطينة في حمص — صور وموقع | مشوار')
         ->and($head['meta']['og:title'])->toBe('بحيرة قطينة')
         ->and($head['meta']['twitter:title'])->toBe('بحيرة قطينة')
         ->and($head['meta']['og:image:alt'])->toBe('بحيرة قطينة')
-        ->and($head['meta']['og:url'])->toBe('https://syrian.zone/mishwar?place='.$place->id)
-        ->and($head['links']['canonical'])->toBe('https://syrian.zone/mishwar')
+        ->and($head['meta']['og:url'])->toBe($expectedUrl)
+        ->and($head['links']['canonical'])->toBe($expectedUrl)
         ->and($head['meta']['og:image'])->toStartWith('https://syrian.zone/og/r/place/'.$place->id.'.png?v=');
 });
 
 test('a place without a photograph gets a drawn card; without a description, a written one', function () {
-    $place = Place::factory()->approved()->create(['name' => 'سوق الحميدية', 'category' => 'market', 'description' => '']);
+    $place = Place::factory()->approved()->create([
+        'name' => 'سوق الحميدية',
+        'category' => 'market',
+        'description' => '',
+        'lat' => 33.5110,
+        'lng' => 36.3020,
+    ]);
     $card = Previews::cardSource('place')->card((string) $place->id);
 
     expect($card->format)->toBe('png')
         ->and($card->model)->not->toHaveKey('photo')
         ->and($card->model['art'])->toBe(['type' => 'icon', 'icon' => 'mishwar'])
-        ->and(seoMetaFor('/mishwar?place='.$place->id)['description'])->toBe('مكان سوق على خريطة مشوار: الصور والموقع والتفاصيل.');
+        ->and(seoMetaFor('/mishwar?place='.$place->id)['description'])->toBe('مكان سوق في دمشق على خريطة مشوار: الصور والموقع والتفاصيل.');
 });
 
 test('a place that is not approved, unknown or malformed previews as the map and has no card', function () {

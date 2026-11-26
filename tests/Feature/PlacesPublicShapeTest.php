@@ -16,7 +16,7 @@ test('list rows expose exactly the public list keys', function () {
     $response = $this->getJson('/api/v1/places')->assertOk();
 
     expect(array_keys($response->json('data.0')))->toBe([
-        'id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'saves_count',
+        'id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'saves_count', 'url',
     ]);
 });
 
@@ -28,7 +28,7 @@ test('detail exposes exactly the public detail keys', function () {
     $response = $this->getJson("/api/v1/places/{$place->id}")->assertOk();
 
     expect(array_keys($response->json()))->toBe([
-        'id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'saves_count',
+        'id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'saves_count', 'url',
         'status', 'user', 'photos', 'saved_by_me', 'created_at',
     ]);
     expect(array_keys($response->json('user')))->toBe(['id', 'name', 'avatar_url', 'level', 'points']);
@@ -42,7 +42,7 @@ test('owner rows expose exactly the my-places keys', function () {
     $response = $this->actingAs($owner)->getJson('/api/v1/my/places')->assertOk();
 
     expect(array_keys($response->json('data.0')))->toBe([
-        'id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'saves_count',
+        'id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'saves_count', 'url',
         'status', 'rejection_reason', 'created_at',
     ]);
 });
@@ -53,7 +53,7 @@ test('nearby rows are the public list row plus the distance', function () {
     $response = $this->getJson('/api/v1/places/nearby?lat=33.5&lng=36.3')->assertOk();
 
     expect(array_keys($response->json('places.0')))->toBe([
-        'id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'saves_count',
+        'id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'saves_count', 'url',
         'distance_m',
     ]);
 });

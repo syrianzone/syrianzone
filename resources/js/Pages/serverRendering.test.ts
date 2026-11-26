@@ -877,4 +877,127 @@ describe('pages render their content on the server', () => {
         expect(cleanHtml).not.toContain('دار الأسد للثقافة والفنون');
         expect(cleanHtml).not.toContain('العلم السوري السابق');
     });
+
+    it('renders a Mishwar place page with H1, breadcrumb, photo alts, nearby list, locator, and map CTA on SSR', async () => {
+        const html = await renderOnServer(
+            'Places/Show',
+            {
+                place: {
+                    id: 1,
+                    name: 'الجامع الأموي الكبير',
+                    category: 'religious',
+                    description: 'الجامع الأموي الكبير في قلب دمشق القديمة من أقدم وأعرق المساجد التاريخية في العالم الإسلامي.',
+                    lat: 33.5119,
+                    lng: 36.3065,
+                    thumb_url: 'https://media.syrian.zone/places/1/a_thumb.webp?v=1',
+                    saves_count: 12,
+                    url: '/mishwar/1-%D8%A7%D9%84%D8%AC%D8%A7%D9%85%D8%B9-%D8%A7%D9%84%D8%A3%D9%85%D9%88%D9%8A-%D8%A7%D9%84%D9%83%D8%A8%D9%8A%D8%B1',
+                    status: 'approved',
+                    user: {
+                        id: 7,
+                        name: 'سامي الدمشقي',
+                        avatar_url: null,
+                        level: 5,
+                        points: 520,
+                    },
+                    photos: [
+                        {
+                            id: 101,
+                            thumb_url: 'https://media.syrian.zone/places/1/a_thumb.webp?v=1',
+                            display_url: 'https://media.syrian.zone/places/1/a_display.webp?v=1',
+                            sort: 0,
+                        },
+                        {
+                            id: 102,
+                            thumb_url: 'https://media.syrian.zone/places/1/b_thumb.webp?v=1',
+                            display_url: 'https://media.syrian.zone/places/1/b_display.webp?v=1',
+                            sort: 1,
+                        },
+                    ],
+                    saved_by_me: false,
+                    created_at: '2026-01-01T00:00:00Z',
+                },
+                governorate: { id: 'damascus', name_ar: 'دمشق' },
+                isThin: false,
+                isOwner: false,
+                locator: {
+                    viewBox: '0 0 600 520',
+                    width: 600,
+                    height: 520,
+                    shapes: [
+                        { id: 'damascus', name_ar: 'دمشق', path: 'M10 10L20 10L20 20Z' },
+                    ],
+                    pin: { x: 15, y: 15 },
+                },
+                nearby: [
+                    {
+                        id: 2,
+                        name: 'سوق الحميدية',
+                        category: 'market',
+                        description: 'سوق تاريخي مسقوف.',
+                        lat: 33.511,
+                        lng: 36.302,
+                        thumb_url: 'https://media.syrian.zone/places/2/cover_thumb.webp?v=1',
+                        saves_count: 8,
+                        url: '/mishwar/2-%D8%B3%D9%88%D9%82-%D8%A7%D9%84%D8%AD%D9%85%D9%8A%D8%AF%D9%8A%D8%A9',
+                        distance_m: 450,
+                    },
+                ],
+            },
+            '/mishwar/1-%D8%A7%D9%84%D8%AC%D8%A7%D9%85%D8%B9-%D8%A7%D9%84%D8%A3%D9%85%D9%88%D9%8A-%D8%A7%D9%84%D9%83%D8%A8%D9%8A%D8%B1',
+        );
+
+        const cleanHtml = html.replace(/<!-- -->/g, '');
+        expect(cleanHtml.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml).toContain('الجامع الأموي الكبير');
+        expect(cleanHtml).toContain('href="/mishwar"');
+        expect(cleanHtml).toContain('href="/mishwar/damascus"');
+        expect(cleanHtml).toContain('href="/governorates/damascus"');
+        expect(cleanHtml).toContain('href="/mishwar?place=1"');
+        expect(cleanHtml).toContain('افتحه على خريطة مشوار');
+        expect(cleanHtml).toContain('الاتجاهات في خرائط Google');
+        expect(cleanHtml).toContain('alt="الجامع الأموي الكبير في دمشق — صورة 1"');
+        expect(cleanHtml).toContain('alt="الجامع الأموي الكبير في دمشق — صورة 2"');
+        expect(cleanHtml).toContain('loading="eager"');
+        expect(cleanHtml).toContain('loading="lazy"');
+        expect(cleanHtml).toContain('33.51190, 36.30650');
+        expect(cleanHtml).toContain('href="/mishwar?guide=7"');
+        expect(cleanHtml).toContain('أماكن قريبة');
+        expect(cleanHtml).toContain('سوق الحميدية');
+        expect(cleanHtml).toContain('href="/mishwar/2-%D8%B3%D9%88%D9%82-%D8%A7%D9%84%D8%AD%D9%85%D9%8A%D8%AF%D9%8A%D8%A9"');
+        expect(cleanHtml).toContain('0.5');
+        expect(cleanHtml).toContain('المزيد في دمشق');
+        expect(cleanHtml).not.toContain('ما تزال مختصرة');
+
+        // Thin place page renders the muted helper note
+        const thinHtml = await renderOnServer(
+            'Places/Show',
+            {
+                place: {
+                    id: 6,
+                    name: 'التكية السليمانية',
+                    category: 'historical',
+                    description: 'معلم تاريخي في دمشق.',
+                    lat: 33.512,
+                    lng: 36.292,
+                    thumb_url: null,
+                    saves_count: 1,
+                    url: '/mishwar/6-%D8%A7%D9%84%D8%AA%D9%83%D9%8A%D8%A9-%D8%A7%D9%84%D8%B3%D9%84%D9%8A%D9%85%D8%A7%D9%86%D9%8A%D8%A9',
+                    status: 'approved',
+                    user: { id: 7, name: 'سامي', avatar_url: null, level: 2, points: 20 },
+                    photos: [],
+                    saved_by_me: false,
+                    created_at: '2026-01-01T00:00:00Z',
+                },
+                governorate: { id: 'damascus', name_ar: 'دمشق' },
+                isThin: true,
+                isOwner: false,
+                locator: null,
+                nearby: [],
+            },
+            '/mishwar/6-%D8%A7%D9%84%D8%AA%D9%83%D9%8A%D8%A9-%D8%A7%D9%84%D8%B3%D9%84%D9%8A%D9%85%D8%A7%D9%86%D9%8A%D8%A9',
+        );
+        expect(thinHtml.replace(/<!-- -->/g, '')).toContain('ما تزال مختصرة');
+    });
 });

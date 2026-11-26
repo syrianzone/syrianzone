@@ -189,7 +189,7 @@ test('governorate page populates all sections and Person JSON-LD when backed by 
         'status' => 'published',
     ]);
 
-    Place::factory()->approved()->create([
+    $place = Place::factory()->approved()->create([
         'name' => 'قلعة حلب',
         'category' => 'historical',
         'lat' => 36.1992,
@@ -232,6 +232,7 @@ test('governorate page populates all sections and Person JSON-LD when backed by 
             ->has('crossings', 3)
             ->where('places.total', 1)
             ->where('places.notable.0.name', 'قلعة حلب')
+            ->where('places.notable.0.url', $place->publicPath())
             ->has('phonebook', 1)
             ->where('phonebook.0.number', '2241300'));
 });

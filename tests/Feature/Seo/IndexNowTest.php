@@ -351,18 +351,28 @@ test('model observers queue public indexable urls and removals, while ignoring u
     $draftRoute->update(['status' => 'disapproved']);
     expect($indexNow->pending())->toBe(['https://syrian.zone/transit/city/homs']);
 
-    // 6. Place: pending/rejected ignored; approved and un-approved queued to /mishwar.
+    // 6. Place: pending/rejected ignored; approved indexable queues publicPath + /mishwar.
     Cache::forget(IndexNow::CACHE_KEY);
-    $place = Place::factory()->create(['status' => 'pending']);
+    $place = Place::factory()->create([
+        'name' => 'سوق الحميدية',
+        'description' => 'سوق الحميدية التاريخي في قلب دمشق القديمة من أشهر الأسواق المسقوفة في المنطقة ويمتد حتى الجامع الأموي الكبير ويجذب الزوار.',
+        'status' => 'pending',
+    ]);
     expect($indexNow->pending())->toBe([]);
 
     $place->update(['status' => 'rejected']);
     expect($indexNow->pending())->toBe([]);
 
     $place->update(['status' => 'approved', 'approved_at' => now()]);
-    expect($indexNow->pending())->toBe(['https://syrian.zone/mishwar']);
+    expect($indexNow->pending())->toBe([
+        'https://syrian.zone'.$place->publicPath(),
+        'https://syrian.zone/mishwar',
+    ]);
 
     Cache::forget(IndexNow::CACHE_KEY);
     $place->delete();
-    expect($indexNow->pending())->toBe(['https://syrian.zone/mishwar']);
+    expect($indexNow->pending())->toBe([
+        'https://syrian.zone'.$place->publicPath(),
+        'https://syrian.zone/mishwar',
+    ]);
 });

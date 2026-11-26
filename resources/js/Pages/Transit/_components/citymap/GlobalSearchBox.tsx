@@ -215,7 +215,8 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
             <button
               type="button"
               onClick={() => { setQuery(''); setIsOpen(false) }}
-              className="rounded-full p-0.5 hover:text-foreground transition-colors"
+              // 24px hit area; the negative margin keeps the field's layout unchanged
+              className="-m-1 inline-flex size-6 items-center justify-center rounded-full hover:text-foreground transition-colors"
               aria-label="مسح البحث"
             >
               <X className="h-3.5 w-3.5" />

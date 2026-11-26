@@ -27,6 +27,8 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
   const hasMultipleImages = images.length > 1;
 
   const rawDescription = hotel?.description_ar || hotel?.description || '';
+  // scraped third-party data: only an http(s) URL may reach an href (no javascript: etc.)
+  const sourceUrl = hotel && /^https?:\/\//i.test(hotel.source_url) ? hotel.source_url : null;
 
   return (
     <div dir="rtl" className="flex h-full min-h-0 flex-col">
@@ -99,22 +101,24 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
                 </p>
               </div>
             )}
-            <a
-              href={hotel.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline"
-            >
-              اقرأ المزيد على HalaSyria
-            </a>
+            {sourceUrl && (
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                اقرأ المزيد على HalaSyria
+              </a>
+            )}
           </>
         )}
       </div>
 
-      {hotel && (
+      {sourceUrl && (
         <div className="border-t border-border p-3">
           <a
-            href={hotel.source_url}
+            href={sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent/50"

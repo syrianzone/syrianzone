@@ -451,8 +451,11 @@ export default function Home() {
                                     return (
                                         <div key={link.id} className="relative group">
                                             {editMode ? (
+                                                // A pointer shortcut only: keyboard and screen-reader users
+                                                // reach the same action through the named edit button.
                                                 <div
                                                     onClick={() => setEditingLink(link)}
+                                                    aria-hidden="true"
                                                     className="block h-full cursor-pointer"
                                                 >
                                                     <div className="flex h-full flex-col items-center justify-between gap-2 rounded-lg px-1 py-1 text-center ring-2 ring-primary/40">
@@ -522,7 +525,7 @@ export default function Home() {
 
                                             {editMode && (
                                                 <div className="absolute -top-2.5 -end-2.5 flex gap-1 z-20 opacity-100 pointer-events-auto">
-                                                    <Button aria-label="تعديل الرابط"
+                                                    <Button aria-label={`تعديل الرابط ${link.name}`}
                                                         variant="secondary"
                                                         size="icon"
                                                         className="h-8 w-8 rounded-full shadow-md bg-background border border-border hover:bg-accent text-foreground opacity-100"
@@ -535,7 +538,7 @@ export default function Home() {
                                                     >
                                                         <Edit className="h-3.5 w-3.5" />
                                                     </Button>
-                                                    <Button aria-label="حذف الرابط"
+                                                    <Button aria-label={`حذف الرابط ${link.name}`}
                                                         variant="destructive"
                                                         size="icon"
                                                         className="h-8 w-8 rounded-full shadow-md opacity-100"

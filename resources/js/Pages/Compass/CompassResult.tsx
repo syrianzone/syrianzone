@@ -27,6 +27,7 @@ export default function CompassResult({
   onRestart,
   onSavedToAccount,
   readOnly = false,
+  focusOnMount = false,
   figures = [],
   personas = [],
 }: {
@@ -36,6 +37,8 @@ export default function CompassResult({
   onRestart: () => void;
   onSavedToAccount?: () => void;
   readOnly?: boolean;
+  /** Move focus to the result heading when it replaces in-page content. */
+  focusOnMount?: boolean;
   /** Admin-managed roster; only enabled figures are passed in. */
   figures?: Figure[];
   /** Admin-managed personas; only enabled ones are passed in. */
@@ -52,6 +55,11 @@ export default function CompassResult({
   const themeKey = useThemeId();
   const storyCardRef = useRef<HTMLDivElement>(null);
   const localResultRef = useRef<Result | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  // The result replaces the quiz (or the saved list): start focus at its heading.
+  React.useEffect(() => {
+    if (focusOnMount) headingRef.current?.focus({ preventScroll: true });
+  }, [focusOnMount]);
 
   const computed = useMemo(() => {
     const { axes, align } = computeScores(answers, version);
@@ -197,7 +205,7 @@ export default function CompassResult({
       <Card className="overflow-hidden">
         <div className="bg-primary/10 border-b border-border px-4 py-5 text-center">
           <p className="text-xs text-muted-foreground mb-1">طيفك السياسي</p>
-          <h2 className="text-2xl font-extrabold text-foreground inline-flex items-center gap-2">
+          <h2 ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold text-foreground inline-flex items-center gap-2 focus:outline-none">
             <SpectrumIcon name={spectrum?.icon} className="w-6 h-6 text-primary" />
             {spectrum?.name}
           </h2>

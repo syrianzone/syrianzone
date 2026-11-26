@@ -186,6 +186,7 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
           figures={figures}
           personas={personas}
           readOnly
+          focusOnMount
         />
       </div>
     );
@@ -231,6 +232,7 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
       {phase === 'result' && (
         <CompassResult
           key={resultToken}
+          focusOnMount
           answers={answers}
           version={version}
           isLoggedIn={isLoggedIn}
@@ -343,6 +345,12 @@ function QuizPanel({
   answered: number;
 }) {
   const titleId = useId();
+  const titleRef = useRef<HTMLDivElement>(null);
+  // Each new question replaces the previous one in place: move focus to it so
+  // screen-reader and keyboard users start from the question, not a stale button.
+  useEffect(() => {
+    titleRef.current?.focus({ preventScroll: true });
+  }, [index]);
   const progress = ((index + 1) / total) * 100;
   const options = [
     { v: -2, t: 'أعارض بشدة' },
@@ -362,7 +370,7 @@ function QuizPanel({
           <div className="bg-primary h-full transition-all" style={{ width: `${progress}%` }} />
         </div>
         <Badge variant="secondary" className="mt-3 w-fit text-[11px]">{label}</Badge>
-        <CardTitle id={titleId} className="text-lg leading-relaxed min-h-[4rem]">{text}</CardTitle>
+        <CardTitle id={titleId} ref={titleRef} tabIndex={-1} className="text-lg leading-relaxed min-h-[4rem] focus:outline-none">{text}</CardTitle>
       </CardHeader>
       <CardContent>
         <fieldset aria-labelledby={titleId} className="grid grid-cols-1 gap-2">

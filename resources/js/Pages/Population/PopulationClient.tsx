@@ -402,6 +402,8 @@ export default function PopulationClient() {
                         {Object.values(DATA_TYPES).map(type => (
                             <button
                                 key={type}
+                                type="button"
+                                aria-pressed={currentDataType === type}
                                 onClick={() => {
                                     setCurrentDataType(type);
                                     if (type === DATA_TYPES.RAINFALL) {

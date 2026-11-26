@@ -49,6 +49,7 @@ import { Input } from '@/Components/ui/input'
 import { Textarea } from '@/Components/ui/textarea'
 import { Badge } from '@/Components/ui/badge'
 import { notify } from '@/Lib/notify'
+import { confirmDialog } from '@/Lib/confirm'
 import {
   Select,
   SelectContent,
@@ -912,7 +913,16 @@ function TransitStudioPageContent() {
     notify.info('انقر على الخريطة لبدء رسم المسار')
   }
 
-  const handleRedraw = () => {
+  const handleRedraw = async () => {
+    if (drawnLine && drawnLine.length > 0) {
+      const ok = await confirmDialog({
+        title: 'إعادة رسم المسار؟',
+        description: 'سيُحذف الخط المرسوم حالياً وتبدأ الرسم من جديد.',
+        confirmText: 'إعادة الرسم',
+        destructive: true,
+      })
+      if (!ok) return
+    }
     setDrawnLine(null)
     setConflictWarning(false)
     setAccordionValue('line')
@@ -952,11 +962,28 @@ function TransitStudioPageContent() {
     setActiveStopPixel(null)
   }
 
-  const handleReset = () => {
+  const resetStudio = () => {
     setMode('idle')
     reset()
     setAccordionValue('line')
     notify.info('تمت إعادة ضبط الاستوديو')
+  }
+
+  // The draft-panel reset discards unsent work, so it asks first; the success
+  // panel's "new route" follows a submission and resets straight away.
+  const handleReset = async () => {
+    const hasWork = (drawnLine?.length ?? 0) > 0 || stops.length > 0 || nameAr.trim() !== ''
+      || nameEn.trim() !== '' || String(price ?? '').trim() !== '' || notes.trim() !== ''
+    if (hasWork) {
+      const ok = await confirmDialog({
+        title: 'إعادة ضبط المسودة؟',
+        description: 'سيُحذف الخط والمحطات والتفاصيل التي أدخلتها.',
+        confirmText: 'إعادة الضبط',
+        destructive: true,
+      })
+      if (!ok) return
+    }
+    resetStudio()
   }
 
   // Supports anonymous and authenticated submission.
@@ -1081,7 +1108,7 @@ function TransitStudioPageContent() {
           isEditMode={isEditMode}
           isPublishedRouteEdit={!!editingRouteId}
           isAnonymous={lastSubmittedIsAnon}
-          onReset={handleReset}
+          onReset={resetStudio}
           onEdit={() => { setSubmittedDraftId(null); setAccordionValue('details') }}
           onExit={() => router.visit(cityId ? `/transit/city/${cityId}` : '/transit')}
         />

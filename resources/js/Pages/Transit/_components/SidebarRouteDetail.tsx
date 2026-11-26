@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Navigation, ChevronRight, Plus } from 'lucide-react'
 import { Link } from '@inertiajs/react'
 import { useMapStore } from '../_store/useMapStore'
@@ -25,6 +26,17 @@ function formatPriceAr(value: unknown): string {
 export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailProps) {
   const { setSelectedRouteId } = useMapStore()
   const { user } = useAuth()
+  const titleRef = useRef<HTMLHeadingElement>(null)
+
+  // Opening from a list card unmounts that card under focus: move focus to the
+  // title of the visible copy, unless focus already sits elsewhere (e.g. the map).
+  useEffect(() => {
+    const title = titleRef.current
+    if (!title || title.getClientRects().length === 0) return
+    const active = document.activeElement
+    if (active && active !== document.body) return
+    title.focus({ preventScroll: true })
+  }, [route?.id])
 
   if (!city || !route) return <div className="p-4 text-muted-foreground">المسار غير موجود</div>
 
@@ -54,7 +66,7 @@ export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailPro
                   <path d="M18 19v2" />
                 </svg>
               </span>
-              <h3 className="font-bold text-foreground truncate">{route.nameAr}</h3>
+              <h3 ref={titleRef} tabIndex={-1} className="font-bold text-foreground truncate focus:outline-none">{route.nameAr}</h3>
             </div>
             {route.nameEn && (
               <p className="text-xs text-muted-foreground mt-1 truncate">{route.nameEn}</p>

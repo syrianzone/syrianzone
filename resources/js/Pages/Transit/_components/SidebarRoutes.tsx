@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Link } from '@inertiajs/react'
 import { MapPin, ChevronRight, Plus } from 'lucide-react'
 import { useAuth } from '@/Contexts/AuthContext'
@@ -14,11 +15,27 @@ interface SidebarRoutesProps {
   /** The city list, for the names of the other cities a shared map draws. */
   cities: TransitCity[]
   routes: RouteProperties[]
+  /** Set when the list replaces a route's detail: that route's card takes focus back. */
+  returnFocusRouteId?: string | null
 }
 
-export function SidebarRoutes({ city, cities, routes }: SidebarRoutesProps) {
+export function SidebarRoutes({ city, cities, routes, returnFocusRouteId = null }: SidebarRoutesProps) {
   const { user } = useAuth()
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // The detail's back button unmounted under focus, leaving it on <body>.
+  // Only the visible copy acts (the sidebar also lives in the hidden sheet/aside).
+  useEffect(() => {
+    const root = rootRef.current
+    if (!returnFocusRouteId || !root || root.getClientRects().length === 0) return
+    const active = document.activeElement
+    if (active && active !== document.body) return
+    root.querySelector<HTMLElement>(`[data-route-id="${CSS.escape(returnFocusRouteId)}"]`)?.focus()
+    // mount only: later list updates must not pull focus
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   if (!city) return null
 
   const handleRouteClick = (routeId: string) => {
@@ -51,6 +68,8 @@ export function SidebarRoutes({ city, cities, routes }: SidebarRoutesProps) {
     return (
     <button
       key={route.id}
+      type="button"
+      data-route-id={route.id}
       onClick={() => handleRouteClick(route.id)}
       className={`group flex items-stretch rounded-xl border transition-all duration-200 hover:shadow-sm overflow-hidden w-full text-start ${
         selectedRouteId === route.id
@@ -88,7 +107,7 @@ export function SidebarRoutes({ city, cities, routes }: SidebarRoutesProps) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div ref={rootRef} className="flex h-full min-h-0 flex-col">
       <div className="p-4 shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>

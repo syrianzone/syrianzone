@@ -103,7 +103,7 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                                     <TableRow key={m.member_number || m.name_ar}>
                                         <TableCell className="font-medium">
                                             {m.member_number ? (
-                                                <Link href={`/house/members/${m.member_number}`} className="text-primary hover:underline">
+                                                <Link href={`/house/members/${m.member_number}`} className="text-primary underline underline-offset-2 hover:no-underline">
                                                     {m.name_ar}
                                                 </Link>
                                             ) : (

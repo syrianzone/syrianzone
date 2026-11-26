@@ -36,6 +36,19 @@ watchFontStorage();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Syrian Zone';
 
+// React reports a Suspense boundary the server could not finish (error #419)
+// as a recoverable error, then renders that part in the browser. That is the
+// expected path for the lazily loaded maps and board widgets: they never
+// resolve during the server's renderToString. Every other recoverable error,
+// a real hydration mismatch included, is still reported the way React does by
+// default.
+function reportRecoverableError(error: unknown): void {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/#419\b|could not finish this Suspense boundary/.test(message)) return;
+    if (typeof window.reportError === 'function') window.reportError(error);
+    else console.error(error);
+}
+
 const pages = import.meta.glob<{ default: ComponentType }>('./Pages/**/*.tsx');
 
 createInertiaApp({
@@ -53,7 +66,7 @@ createInertiaApp({
         // SSR server was unavailable the container is empty (Inertia falls back
         // to client rendering), and there is nothing to hydrate.
         if (el.hasChildNodes()) {
-            hydrateRoot(el, tree);
+            hydrateRoot(el, tree, { onRecoverableError: reportRecoverableError });
         } else {
             createRoot(el).render(tree);
         }

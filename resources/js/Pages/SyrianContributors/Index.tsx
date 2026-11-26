@@ -101,7 +101,7 @@ const TopThreeCard = ({
   metric: keyof Contributor
   icon: React.ReactNode
 }) => {
-  const sortedContributors = [...contributors].sort((a, b) => (b[metric] as number) - (a[metric] as number))
+  const sortedContributors = contributors.toSorted((a, b) => (b[metric] as number) - (a[metric] as number))
   const winner = sortedContributors[0]
   const runnerUps = sortedContributors.slice(1, 3)
 
@@ -166,7 +166,7 @@ const ContributorsList = ({
   contributors: Contributor[]
   metric: keyof Contributor
 }) => {
-  const sortedContributors = [...contributors].sort((a, b) => (b[metric] as number) - (a[metric] as number)).slice(3)
+  const sortedContributors = contributors.toSorted((a, b) => (b[metric] as number) - (a[metric] as number)).slice(3)
 
   if (sortedContributors.length === 0) {
     return null

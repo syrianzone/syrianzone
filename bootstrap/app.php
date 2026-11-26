@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // bypass IP-keyed throttles (voting, public-api) and ip_hash fraud
         // signals, so public ranges are deliberately not trusted.
         $middleware->trustProxies(at: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']);
+        $middleware->prepend(\App\Http\Middleware\RedirectTrailingSlash::class);
         
         // Order is significant: SecurityHeaders generates the CSP nonce that
         // the Inertia root view stamps onto its script tags, so it has to run

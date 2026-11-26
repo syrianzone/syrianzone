@@ -179,6 +179,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                                             endpoint="/api/v1/promises/speakers"
                                             value={form.speaker}
                                             onChange={(s) => set('speaker', s)}
+                                            required
                                             invalid={!!errors.speaker_ref}
                                             describedBy={errors.speaker_ref ? 'speaker-error' : undefined}
                                         />
@@ -188,7 +189,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <div className="space-y-1.5">
                                             <Label htmlFor="speaker-name">الاسم</Label>
-                                            <Input id="speaker-name" value={form.speakerName} onChange={(e) => set('speakerName', e.target.value)} {...fieldA11y('speaker-name-error', errors.speaker_name)} />
+                                            <Input id="speaker-name" aria-required="true" value={form.speakerName} onChange={(e) => set('speakerName', e.target.value)} {...fieldA11y('speaker-name-error', errors.speaker_name)} />
                                             <FieldError id="speaker-name-error" message={errors.speaker_name} />
                                         </div>
                                         <div className="space-y-1.5">
@@ -211,18 +212,18 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                             <CardContent className="space-y-4">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="title">عنوان مختصر</Label>
-                                    <Input id="title" value={form.title} onChange={(e) => set('title', e.target.value)} maxLength={200} placeholder="مثال: 12 ساعة كهرباء يومياً قبل الصيف" {...fieldA11y('title-error', errors.title)} />
+                                    <Input id="title" aria-required="true" value={form.title} onChange={(e) => set('title', e.target.value)} maxLength={200} placeholder="مثال: 12 ساعة كهرباء يومياً قبل الصيف" {...fieldA11y('title-error', errors.title)} />
                                     <FieldError id="title-error" message={errors.title} />
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label htmlFor="quote">ماذا قال بالضبط؟</Label>
-                                    <Textarea id="quote" value={form.quote} onChange={(e) => set('quote', e.target.value)} rows={4} maxLength={5000} {...fieldA11y('quote-error', errors.quote)} />
+                                    <Textarea id="quote" aria-required="true" value={form.quote} onChange={(e) => set('quote', e.target.value)} rows={4} maxLength={5000} {...fieldA11y('quote-error', errors.quote)} />
                                     <FieldError id="quote-error" message={errors.quote} />
                                 </div>
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="space-y-1.5">
                                         <Label htmlFor="statement-date">متى قاله؟</Label>
-                                        <Input id="statement-date" type="date" dir="ltr" min={earliestDate} max={today} value={form.statementDate} onChange={(e) => set('statementDate', e.target.value)} {...fieldA11y('statement-date-error', errors.statement_date)} />
+                                        <Input id="statement-date" aria-required="true" type="date" dir="ltr" min={earliestDate} max={today} value={form.statementDate} onChange={(e) => set('statementDate', e.target.value)} {...fieldA11y('statement-date-error', errors.statement_date)} />
                                         <FieldError id="statement-date-error" message={errors.statement_date} />
                                     </div>
                                     <div className="space-y-1.5">
@@ -261,6 +262,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                                                 value={s}
                                                 onChange={(e) => set('sources', form.sources.map((v, j) => (j === i ? e.target.value : v)))}
                                                 aria-label={`رابط المصدر ${i + 1}`}
+                                                aria-required={i === 0 || undefined}
                                                 {...fieldA11y(`source-${i}-error`, sourceError(i) ?? (i === 0 ? errors.source_urls : undefined))}
                                             />
                                             {form.sources.length > 1 && (

@@ -18,8 +18,17 @@ export function EngagementBar(props: {
   initialSaved: boolean;
   initialSaves: number;
   directionsLabel?: string;
+  variant?: 'panel' | 'page';
 }) {
-  const { placeId, placeName, placeUrl, lat, lng, directionsLabel = 'افتح في خرائط جوجل' } = props;
+  const {
+    placeId,
+    placeName,
+    placeUrl,
+    lat,
+    lng,
+    variant = 'panel',
+    directionsLabel = variant === 'page' ? 'الاتجاهات في خرائط Google' : 'افتح في خرائط جوجل',
+  } = props;
   const { user } = useAuth();
   const [saved, setSaved] = useState(props.initialSaved);
   const [saves, setSaves] = useState(props.initialSaves);
@@ -72,46 +81,75 @@ export function EngagementBar(props: {
     else if (outcome === 'failed') flashShareFeedback('failed');
   };
 
+  const isPage = variant === 'page';
+
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className={cn('space-y-2', isPage && 'w-full sm:w-auto')}>
+      <div className={cn(
+        isPage
+          ? 'grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center'
+          : 'flex flex-wrap items-center gap-2',
+      )}>
         <Button
           type="button"
           variant={saved ? 'default' : 'outline'}
-          size="sm"
+          size={isPage ? 'default' : 'sm'}
+          className={cn(isPage && 'h-10 gap-1.5 px-2.5 sm:h-9 sm:px-3')}
           // aria-disabled rather than disabled: a disabled button drops keyboard focus mid-toggle
           aria-disabled={saveBusy}
           aria-pressed={saved}
           aria-label={`حفظ المكان (${saves})`}
           onClick={toggleSave}
         >
-          <Bookmark className={cn('h-4 w-4', saved && 'fill-current')} />
-          <span dir="ltr">{saves}</span>
+          <Bookmark className={cn('h-4 w-4 shrink-0', saved && 'fill-current')} aria-hidden="true" />
+          {isPage ? (
+            <>
+              <span>حفظ</span>
+              <span dir="ltr" className="tabular-nums">({saves})</span>
+            </>
+          ) : (
+            <span dir="ltr">{saves}</span>
+          )}
         </Button>
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className={cn(shareFeedback === 'failed' && 'text-destructive')}
+          size={isPage ? 'default' : 'sm'}
+          className={cn(
+            isPage && 'h-10 gap-1.5 px-2.5 sm:h-9 sm:px-3',
+            shareFeedback === 'failed' && 'text-destructive',
+          )}
           onClick={share}
         >
-          {shareFeedback === 'copied' ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-          {shareFeedback === 'copied' ? 'تم نسخ الرابط' : shareFeedback === 'failed' ? 'تعذر نسخ الرابط' : 'مشاركة'}
+          {shareFeedback === 'copied' ? <Check className="h-4 w-4 shrink-0" aria-hidden="true" /> : <Share2 className="h-4 w-4 shrink-0" aria-hidden="true" />}
+          <span>
+            {shareFeedback === 'copied'
+              ? (isPage ? 'تم النسخ' : 'تم نسخ الرابط')
+              : shareFeedback === 'failed'
+                ? (isPage ? 'تعذر النسخ' : 'تعذر نسخ الرابط')
+                : 'مشاركة'}
+          </span>
         </Button>
-        <Button asChild variant="outline" size="sm">
+        <Button
+          asChild
+          variant="outline"
+          size={isPage ? 'default' : 'sm'}
+          className={cn(isPage && 'h-10 gap-1.5 px-2.5 sm:h-9 sm:px-3')}
+        >
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={isPage ? directionsLabel : undefined}
           >
-            <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            {directionsLabel}
+            <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>{isPage ? 'الاتجاهات' : directionsLabel}</span>
           </a>
         </Button>
-        <ReportButton placeId={placeId} />
+        {!isPage && <ReportButton placeId={placeId} />}
       </div>
       {showLogin && (
-        <a href="/auth/google" className="text-sm text-primary underline underline-offset-4">
+        <a href="/auth/google" className="inline-block text-sm text-primary underline underline-offset-4">
           تسجيل الدخول للتفاعل
         </a>
       )}

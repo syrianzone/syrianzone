@@ -3,6 +3,7 @@ import { Flag, Loader2 } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Button } from '@/Components/ui/button';
+import { cn } from '@/Lib/utils';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import {
@@ -26,8 +27,8 @@ import { apiErrorMessage } from '@/Lib/api';
 import { REPORT_REASONS } from '@/Domain/places/reports';
 import type { PlaceReportReason } from '@/Domain/places/types';
 
-export function ReportButton(props: { placeId: number }) {
-  const { placeId } = props;
+export function ReportButton(props: { placeId: number; muted?: boolean; className?: string }) {
+  const { placeId, muted = false, className } = props;
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<PlaceReportReason | null>(null);
@@ -62,9 +63,18 @@ export function ReportButton(props: { placeId: number }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <Button type="button" variant="ghost" size="sm" onClick={() => handleOpenChange(true)}>
-        <Flag className="h-4 w-4" />
-        إبلاغ
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={cn(
+          muted && 'h-auto min-h-9 gap-1.5 px-2 py-1 text-xs font-normal text-muted-foreground hover:bg-transparent hover:text-foreground',
+          className,
+        )}
+        onClick={() => handleOpenChange(true)}
+      >
+        <Flag className={muted ? 'h-3.5 w-3.5' : 'h-4 w-4'} aria-hidden="true" />
+        <span>{muted ? 'إبلاغ عن المكان' : 'إبلاغ'}</span>
       </Button>
       <DialogContent dir="rtl" className="text-start">
         <DialogHeader className="text-start">

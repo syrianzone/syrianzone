@@ -921,13 +921,15 @@ describe('pages render their content on the server', () => {
                 isThin: false,
                 isOwner: false,
                 locator: {
-                    viewBox: '0 0 600 520',
+                    viewBox: '23.5 368.6 96 72',
+                    fullViewBox: '0 0 600 544',
                     width: 600,
-                    height: 520,
+                    height: 544,
                     shapes: [
-                        { id: 'damascus', name_ar: 'دمشق', path: 'M10 10L20 10L20 20Z' },
+                        { id: 'damascus', name_ar: 'دمشق', path: 'M65 399L78 399L78 410Z', label_x: 71.3, label_y: 404.6 },
+                        { id: 'quneitra', name_ar: 'القنيطرة', path: 'M20 420L48 420L48 450Z', label_x: 36, label_y: 418 },
                     ],
-                    pin: { x: 15, y: 15 },
+                    pin: { x: 71.5, y: 404.5 },
                 },
                 nearby: [
                     {
@@ -957,10 +959,19 @@ describe('pages render their content on the server', () => {
         expect(cleanHtml).toContain('href="/mishwar?place=1"');
         expect(cleanHtml).toContain('افتحه على خريطة مشوار');
         expect(cleanHtml).toContain('الاتجاهات في خرائط Google');
+        expect(cleanHtml).toContain('>الاتجاهات<');
+        expect(cleanHtml).toContain('إبلاغ عن المكان');
+        expect(cleanHtml).toContain('aria-roledescription="carousel"');
+        expect(cleanHtml).toContain('1 / 2');
+        expect(cleanHtml).toContain('صورة 1 من 2');
+        expect(cleanHtml).toContain('صورة 2 من 2');
         expect(cleanHtml).toContain('alt="الجامع الأموي الكبير في دمشق — صورة 1"');
         expect(cleanHtml).toContain('alt="الجامع الأموي الكبير في دمشق — صورة 2"');
         expect(cleanHtml).toContain('loading="eager"');
+        expect(cleanHtml).toContain('fetchPriority="high"');
         expect(cleanHtml).toContain('loading="lazy"');
+        expect(cleanHtml).toContain('vector-effect="non-scaling-stroke"');
+        expect(cleanHtml).toContain('القنيطرة');
         expect(cleanHtml).toContain('33.51190, 36.30650');
         expect(cleanHtml).toContain('href="/mishwar?guide=7"');
         expect(cleanHtml).toContain('أماكن قريبة');
@@ -969,6 +980,49 @@ describe('pages render their content on the server', () => {
         expect(cleanHtml).toContain('0.5');
         expect(cleanHtml).toContain('المزيد في دمشق');
         expect(cleanHtml).not.toContain('ما تزال مختصرة');
+
+        // Multi-photo (7 photos) renders all 7 images on SSR, hides 4..7 on md+, and shows +4 صور overlay
+        const sevenPhotosHtml = await renderOnServer(
+            'Places/Show',
+            {
+                place: {
+                    id: 1,
+                    name: 'الجامع الأموي الكبير',
+                    category: 'religious',
+                    description: 'الجامع الأموي الكبير في قلب دمشق القديمة.',
+                    lat: 33.5119,
+                    lng: 36.3065,
+                    thumb_url: 'https://media.syrian.zone/places/1/0_thumb.webp?v=1',
+                    saves_count: 12,
+                    url: '/mishwar/1',
+                    status: 'approved',
+                    user: { id: 7, name: 'سامي', avatar_url: null, level: 5, points: 520 },
+                    photos: Array.from({ length: 7 }, (_, i) => ({
+                        id: 200 + i,
+                        thumb_url: `https://media.syrian.zone/places/1/${i}_thumb.webp?v=1`,
+                        display_url: `https://media.syrian.zone/places/1/${i}_display.webp?v=1`,
+                        sort: i,
+                    })),
+                    saved_by_me: false,
+                    created_at: '2026-01-01T00:00:00Z',
+                },
+                governorate: { id: 'damascus', name_ar: 'دمشق' },
+                isThin: false,
+                isOwner: false,
+                locator: null,
+                nearby: [],
+            },
+            '/mishwar/1',
+        );
+        const cleanSeven = sevenPhotosHtml.replace(/<!-- -->/g, '');
+        expect(cleanSeven).toContain('1 / 7');
+        expect(cleanSeven).toContain('>+4</span><span>صور<');
+        expect(cleanSeven).toContain('md:hidden');
+        for (let i = 0; i < 7; i++) {
+            expect(cleanSeven).toContain(`0_display.webp`);
+            expect(cleanSeven).toContain(`${i}_display.webp`);
+            expect(cleanSeven).toContain(`صورة ${i + 1} من 7`);
+        }
 
         // Thin place page renders the muted helper note
         const thinHtml = await renderOnServer(
@@ -1022,7 +1076,7 @@ describe('pages render their content on the server', () => {
                 h1: 'أماكن سياحية في حماة',
                 intro: '4 أماكن في حماة أضافها زوار مشوار، مع الصور والموقع.',
                 total: 4,
-                mapUrl: '/mishwar',
+                mapUrl: '/mishwar?gov=hama',
                 governorateUrl: '/governorates/hama',
                 hubUrl: '/mishwar/hama',
                 categories: [
@@ -1041,6 +1095,7 @@ describe('pages render their content on the server', () => {
         expect(cleanGov).toContain('أماكن سياحية في حماة');
         expect(cleanGov).toContain('4 أماكن في حماة أضافها زوار مشوار، مع الصور والموقع.');
         expect(cleanGov).toContain('افتح حماة على خريطة مشوار');
+        expect(cleanGov).toContain('href="/mishwar?gov=hama"');
         expect(cleanGov).toContain('href="/mishwar/hama/historical"');
         expect(cleanGov).not.toContain('href="/mishwar/hama/natural"');
         expect(cleanGov).toContain('طبيعي');
@@ -1059,7 +1114,7 @@ describe('pages render their content on the server', () => {
                 h1: 'أماكن أثرية وتاريخية في حماة',
                 intro: '4 أماكن من فئة تاريخي في حماة أضافها زوار مشوار، مع الصور والموقع.',
                 total: 4,
-                mapUrl: '/mishwar',
+                mapUrl: '/mishwar?gov=hama',
                 governorateUrl: '/governorates/hama',
                 hubUrl: '/mishwar/hama',
                 categories: [],

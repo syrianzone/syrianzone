@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from '@inertiajs/react';
 import { ArrowRight, Check, Copy, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
@@ -49,7 +50,16 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
           <ArrowRight className="h-4 w-4" />
         </Button>
         {/* PlacesPanel moves focus here when the detail replaces the list */}
-        <p data-panel-title tabIndex={-1} className="truncate font-medium text-foreground focus:outline-none">{place?.name ?? 'تفاصيل المكان'}</p>
+        <p data-panel-title tabIndex={-1} className="min-w-0 flex-1 truncate font-medium text-foreground focus:outline-none">{place?.name ?? 'تفاصيل المكان'}</p>
+        {place?.status === 'approved' && (
+          <Link
+            href={place.url}
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-primary transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-9"
+          >
+            <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>صفحة المكان</span>
+          </Link>
+        )}
       </div>
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
         {error && (
@@ -91,24 +101,16 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
               </Button>
             </div>
             {place.status === 'approved' ? (
-              <div className="space-y-3">
-                <EngagementBar
-                  key={place.id}
-                  placeId={place.id}
-                  placeName={place.name}
-                  placeUrl={place.url}
-                  lat={place.lat}
-                  lng={place.lng}
-                  initialSaved={place.saved_by_me}
-                  initialSaves={place.saves_count}
-                />
-                <Button asChild variant="secondary" size="sm" className="w-full gap-1.5">
-                  <a href={place.url}>
-                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                    <span>صفحة المكان</span>
-                  </a>
-                </Button>
-              </div>
+              <EngagementBar
+                key={place.id}
+                placeId={place.id}
+                placeName={place.name}
+                placeUrl={place.url}
+                lat={place.lat}
+                lng={place.lng}
+                initialSaved={place.saved_by_me}
+                initialSaves={place.saves_count}
+              />
             ) : (
               // engagement endpoints 404 for non-approved places, show the status instead
               <Badge variant={place.status === 'pending' ? 'secondary' : 'destructive'}>

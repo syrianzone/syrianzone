@@ -59,7 +59,8 @@ createInertiaApp({
         }
     },
     progress: {
-        color: '#2563eb',
+        // the active theme's primary, not a fixed blue that no theme uses
+        color: 'hsl(var(--primary))',
     },
 });
 

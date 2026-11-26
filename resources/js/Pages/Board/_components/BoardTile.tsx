@@ -52,10 +52,16 @@ export function BoardTile(props: {
     if (ok) props.onRemove();
   }
 
+  // Every tile has the same four controls, so each name says which widget it
+  // acts on. The targets are padded to 24px without growing the icons.
+  const name = def?.name ?? 'الويدجت';
+  const target = 'inline-flex min-h-6 min-w-6 items-center justify-center rounded p-1 text-muted-foreground';
+
   const actions = props.editing ? (
     <div className="flex shrink-0 items-center gap-0.5">
       {def && (
         <SizeMenu
+          name={def.name}
           def={def}
           size={{ w: props.widget.w, h: props.widget.h }}
           onResize={props.onResize}
@@ -64,18 +70,18 @@ export function BoardTile(props: {
       {def && def.fields.length > 0 && (
         <button
           type="button"
-          aria-label="إعدادات"
+          aria-label={`إعدادات ${name}`}
           onClick={props.onConfigure}
-          className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+          className={`${target} hover:bg-accent hover:text-foreground`}
         >
           <Settings className="h-3.5 w-3.5" />
         </button>
       )}
       <button
         type="button"
-        aria-label="حذف"
+        aria-label={`حذف ${name}`}
         onClick={() => void remove()}
-        className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        className={`${target} hover:bg-destructive/10 hover:text-destructive`}
       >
         <X className="h-3.5 w-3.5" />
       </button>
@@ -83,8 +89,8 @@ export function BoardTile(props: {
           touch never starts a drag */}
       <button
         type="button"
-        aria-label="نقل"
-        className="cursor-grab touch-none rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground active:cursor-grabbing"
+        aria-label={`نقل ${name}`}
+        className={`${target} cursor-grab touch-none hover:bg-accent hover:text-foreground active:cursor-grabbing`}
         {...sortable.attributes}
         {...sortable.listeners}
       >

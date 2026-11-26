@@ -23,12 +23,12 @@ export default function Index({ poll, candidates = [], groups = [], voteDay }: T
             
             <div className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
                 <div className="max-w-screen-lg mx-auto mb-4 flex justify-end">
-                    <Link href="/tierlist/leaderboard">
-                        <Button variant="outline" className="gap-2">
-                            <BarChart3Icon className="h-4 w-4" />
+                    <Button asChild variant="outline" className="gap-2">
+                        <Link href="/tierlist/leaderboard">
+                            <BarChart3Icon className="h-4 w-4" aria-hidden="true" />
                             عرض النتائج
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                 </div>
 
                 <div className="max-w-screen-lg mx-auto mb-4">

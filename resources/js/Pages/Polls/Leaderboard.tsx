@@ -298,12 +298,12 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
             
             <div className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
                 <div className="max-w-screen-md mx-auto mb-4 flex justify-end">
-                    <Link href="/tierlist">
-                        <Button variant="outline" className="gap-2">
-                            <Vote className="h-4 w-4" />
+                    <Button asChild variant="outline" className="gap-2">
+                        <Link href="/tierlist">
+                            <Vote className="h-4 w-4" aria-hidden="true" />
                             صوّت الآن
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                 </div>
 
                 <div className="max-w-screen-md mx-auto mb-4">

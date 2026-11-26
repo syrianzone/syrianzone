@@ -130,8 +130,12 @@ export default function Game2048() {
   // arrow keys.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Leave shortcuts (Alt+Arrow is browser back), keys another handler
+      // already took, and anything typed inside an open dialog alone.
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+      if (el?.closest?.('[role="dialog"], [role="alertdialog"]')) return;
       const dir = KEY_DIRECTIONS[e.key];
       if (!dir) return;
       e.preventDefault();

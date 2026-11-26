@@ -19,6 +19,7 @@ import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/Components/ui/table';
 import { Compass, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
+import { Textarea } from '@/Components/ui/textarea';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { AXES } from '@/Domain/compass/axes';
@@ -357,9 +358,9 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
 
                         <div className="space-y-2">
                             <Label htmlFor="p-factoid">اللمحة التاريخية</Label>
-                            <textarea
+                            <Textarea
                                 id="p-factoid"
-                                className="min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                className="min-h-[110px] bg-background"
                                 value={form.factoid}
                                 onChange={(e) => setForm((f) => ({ ...f, factoid: e.target.value }))}
                             />

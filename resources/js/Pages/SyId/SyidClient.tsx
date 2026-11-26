@@ -583,7 +583,13 @@ export default function SyidClient() {
                     <Card className="border border-border/80 rounded-xl overflow-hidden">
                         <CardContent className="p-6 overflow-x-auto">
                             <div className="flag-diagram-wrapper my-2">
-                                <div className="flag-diagram-container">
+                                {/* One described image: the dimension labels alone are a list of
+                                    bare numbers to a screen reader. */}
+                                <div
+                                    className="flag-diagram-container"
+                                    role="img"
+                                    aria-label="مخطط نسب العلم السوري: العرض 36 وحدة والارتفاع 24 وحدة (نسبة 2:3)، ثلاثة أشرطة أفقية متساوية ارتفاع كل منها 8 وحدات، الأخضر في الأعلى ثم الأبيض ثم الأسود. في الشريط الأبيض ثلاث نجوم حمراء خماسية، عرض كل نجمة وارتفاعها 6 وحدات، بينها فراغان من 3 وحدات، وهامش 6 وحدات من كل طرف."
+                                >
                                     <div className="flag-visual">
                                         <div className="stripe green"></div>
                                         <div className="stripe white">

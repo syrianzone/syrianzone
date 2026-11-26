@@ -87,10 +87,10 @@ export default function SwipeCardDeck({
         return;
       }
 
-      if (e.key === 'ArrowRight' || e.key === 'ص') {
+      if (e.key === 'ArrowRight') {
         e.preventDefault();
         triggerDecision(true);
-      } else if (e.key === 'ArrowLeft' || e.key === 'غ') {
+      } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         triggerDecision(false);
       }

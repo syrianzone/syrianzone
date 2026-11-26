@@ -66,7 +66,8 @@ export default function Index() {
   // When the whole page unmounts (an Inertia visit away), that flush arrives
   // after this component's own cleanup: React runs a deleted tree's effect
   // cleanups parent first. A state update then would never be persisted, so
-  // the change is applied to the latest document and saved directly.
+  // the change is applied to the latest document, written to local storage,
+  // and staged for the one final server save the sync hook sends.
   const docRef = useRef(doc);
   docRef.current = doc;
   const leaving = useRef(false);
@@ -81,7 +82,7 @@ export default function Index() {
     if (next === docRef.current) return;
     docRef.current = next;
     if (loaded) writeLocal(next);
-    sync.flushNow(next);
+    sync.stageFinal(next);
   }
 
   // Effect rather than a write inside the state updater: updaters can run twice

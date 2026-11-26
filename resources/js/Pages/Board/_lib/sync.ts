@@ -44,6 +44,9 @@ export function useBoardSync(opts: {
   enabledRef.current = opts.enabled;
   // a debounced save is waiting; cleared when it fires or is flushed
   const pending = useRef(false);
+  // the request a later keepalive save must not overtake (the server keeps
+  // whichever whole document arrives last)
+  const lastRequest = useRef<Promise<unknown>>(Promise.resolve());
 
   const onAdoptRef = useRef(opts.onAdopt);
   onAdoptRef.current = opts.onAdopt;
@@ -59,7 +62,9 @@ export function useBoardSync(opts: {
     const id = ++reqRef.current;
     setStatus('saving');
     try {
-      await api.putBoard(docRef.current);
+      const request = api.putBoard(docRef.current);
+      lastRequest.current = request.catch(() => undefined);
+      await request;
       notifiedFailure.current = false;
       if (id === reqRef.current) setStatus('idle');
     } catch (e) {
@@ -152,28 +157,41 @@ export function useBoardSync(opts: {
       window.clearTimeout(timer.current);
       timer.current = null;
       pending.current = false;
-      void api.putBoard(docRef.current, { keepalive: true }).catch(() => undefined);
+      sendAfterLast(docRef.current);
     }
 
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [opts.enabled]);
 
-  // Save a document now, outliving the page (keepalive). Used while the board
-  // unmounts, when a state update would never reach the save effect above.
-  const flushNow = useCallback((doc: BoardDoc) => {
-    if (!enabledRef.current || !hydrated.current) return;
-    if (timer.current) window.clearTimeout(timer.current);
-    timer.current = null;
-    pending.current = false;
-    void api.putBoard(doc, { keepalive: true }).catch(() => undefined);
+  // Send a whole-document keepalive save once every earlier request has
+  // settled, so an older document can never land after a newer one.
+  const sendAfterLast = useCallback((doc: BoardDoc) => {
+    const request = lastRequest.current.then(() => api.putBoard(doc, { keepalive: true }));
+    lastRequest.current = request.catch(() => undefined);
   }, []);
 
-  // Leaving the board inside the debounce window (an Inertia visit) would
-  // otherwise drop the last change on the server.
+  // Record the latest document while the board unmounts: a widget flushing
+  // its last edit then cannot reach the save effect above through state.
+  const stageFinal = useCallback((doc: BoardDoc) => {
+    docRef.current = doc;
+    pending.current = true;
+  }, []);
+
+  // Leaving the board (an Inertia visit) inside the debounce window would
+  // otherwise drop the last change on the server. React runs a deleted tree's
+  // cleanups parent first, so the widgets' final edits arrive (stageFinal)
+  // after this cleanup; the microtask runs once all of them are in and sends
+  // one document, ordered after any save still in flight.
   useEffect(() => () => {
-    if (pending.current) flushNow(docRef.current);
-  }, [flushNow]);
+    queueMicrotask(() => {
+      if (!pending.current || !enabledRef.current || !hydrated.current) return;
+      if (timer.current) window.clearTimeout(timer.current);
+      timer.current = null;
+      pending.current = false;
+      sendAfterLast(docRef.current);
+    });
+  }, [sendAfterLast]);
 
   const restore = useCallback(() => {
     if (!superseded) return;
@@ -188,5 +206,5 @@ export function useBoardSync(opts: {
     clearPrev();
   }, []);
 
-  return { status, superseded, restore, dismiss, retry: save, flushNow };
+  return { status, superseded, restore, dismiss, retry: save, stageFinal };
 }

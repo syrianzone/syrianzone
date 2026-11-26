@@ -5,7 +5,8 @@ import createServer from '@inertiajs/react/server';
 import { pageResolver } from '@/Lib/pages';
 import { AppRoot } from '@/Providers/AppRoot';
 
-const pages = import.meta.glob<{ default: ComponentType }>('./Pages/**/*.tsx');
+// Page modules only, as in app.tsx: `_`-prefixed folders are page internals.
+const pages = import.meta.glob<{ default: ComponentType }>(['./Pages/**/*.tsx', '!./Pages/**/_*/**']);
 
 createServer((page) =>
     createInertiaApp({

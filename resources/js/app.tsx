@@ -49,7 +49,11 @@ function reportRecoverableError(error: unknown): void {
     else console.error(error);
 }
 
-const pages = import.meta.glob<{ default: ComponentType }>('./Pages/**/*.tsx');
+// Page modules only. Folders starting with `_` (`_components`, `_lib`, …) hold
+// a page's private parts, never an Inertia page: listing them here would put
+// ~130 more lazy entries (with their preload lists) in this entry chunk and
+// force each into its own chunk. Keep in sync with ssr.tsx.
+const pages = import.meta.glob<{ default: ComponentType }>(['./Pages/**/*.tsx', '!./Pages/**/_*/**']);
 
 createInertiaApp({
     // SeoHead supplies the full title (already carrying the brand), so the

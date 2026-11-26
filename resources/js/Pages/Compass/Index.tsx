@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, PencilRuler } from 'lucide-react';
 import CompassApp from './CompassApp';
 import MainLayout from '@/Layouts/MainLayout';
 import type { Figure, Spectrum } from '@/Domain/compass/types';
@@ -21,13 +21,22 @@ export default function CompassPage() {
                         <p className="text-base md:text-lg text-muted-foreground">
                             اكتشف موقعك السياسي على أحد عشر محوراً وأقرب التوجّهات إليك
                         </p>
-                        <div className="mt-3">
+                        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                             <Link
                                 href="/compass/stats"
                                 className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"
                             >
                                 <BarChart3 className="h-4 w-4" />
                                 إحصاءات عامة مجهولة الهوية
+                            </Link>
+                            {/* The only in-site link to /alignment: without it the
+                                page is reachable from the sitemap alone. */}
+                            <Link
+                                href="/alignment"
+                                className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"
+                            >
+                                <PencilRuler className="h-4 w-4" aria-hidden="true" />
+                                صمّم بوصلتك السياسية الخاصة
                             </Link>
                         </div>
                     </div>

@@ -29,7 +29,9 @@ domain), so the hub opens it in a new tab and this app has no route for it.
 Guess Who is not one of these shells: it is the online, multiplayer game hosted
 by `GuessWhoController` at `/guesswho`, and it is currently marked `comingSoon`
 in `GAMES`, so the hub shows an inert card and nothing else in the UI links to
-it. Its route, API and admin surface stay live for direct access.
+it. Its route, API and admin surface stay live for direct access. Its record in
+`resources/data/seo.json` sets `"sitemap": false`; drop that when the hub card
+links to the game again.
 
 ## 2. Layout
 

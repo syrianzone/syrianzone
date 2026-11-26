@@ -32,9 +32,15 @@ test('every page in the table is a registered GET route, and every page record i
     foreach (Pages::paths() as $path) {
         $page = Pages::get($path);
 
+        // docs/guidelines/seo.md: a description of roughly 110 to 160
+        // characters, long enough to be used as the snippet and short enough
+        // not to be cut.
+        $length = mb_strlen((string) $page['description']);
+
         expect($routes)->toContain($path)
             ->and($page['title'])->not->toBeEmpty()
-            ->and(mb_strlen((string) $page['description']))->toBeGreaterThan(60)
+            ->and($length)->toBeGreaterThanOrEqual(110, "{$path}: description is {$length} characters")
+            ->and($length)->toBeLessThanOrEqual(160, "{$path}: description is {$length} characters")
             ->and($page['card'])->not->toBeEmpty();
     }
 });

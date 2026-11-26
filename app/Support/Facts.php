@@ -478,6 +478,18 @@ final class Facts
     }
 
     /**
+     * Currency redenomination facts (2026 Syrian pound reform): conversion ratio,
+     * issued new and withdrawn old denominations, verified key dates, exchange
+     * rules and FAQ entries.
+     *
+     * @return array<string, mixed>
+     */
+    public static function currency(): array
+    {
+        return self::json('currency');
+    }
+
+    /**
      * One shared facts file, decoded and memoised for the request.
      *
      * Public because every reader of `resources/data` must share this one cache

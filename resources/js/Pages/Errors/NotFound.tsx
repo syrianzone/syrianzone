@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     Home,
@@ -65,20 +65,21 @@ function detectSectionFromPath(path: string): NotFoundSection {
 const TILE_CLASS = 'group flex flex-col items-center gap-2 py-1 text-center no-underline';
 
 export default function NotFound({ path = '/404', section, transitCities = [] }: NotFoundProps) {
+    // The page URL comes from Inertia, so the server and the client agree.
+    const { url } = usePage();
     const resolvedSection: NotFoundSection = useMemo(() => {
-        if (typeof window !== 'undefined') {
-            const overrideSec = new URLSearchParams(window.location.search).get('section');
-            if (
-                overrideSec === 'general' ||
-                overrideSec === 'transit' ||
-                overrideSec === 'games' ||
-                overrideSec === 'muslim'
-            ) {
-                return overrideSec;
-            }
+        const query = url.includes('?') ? url.slice(url.indexOf('?') + 1) : '';
+        const overrideSec = new URLSearchParams(query).get('section');
+        if (
+            overrideSec === 'general' ||
+            overrideSec === 'transit' ||
+            overrideSec === 'games' ||
+            overrideSec === 'muslim'
+        ) {
+            return overrideSec;
         }
         return section ?? detectSectionFromPath(path);
-    }, [path, section]);
+    }, [url, path, section]);
 
     const goBack = () => {
         if (typeof window !== 'undefined' && window.history.length > 1) {

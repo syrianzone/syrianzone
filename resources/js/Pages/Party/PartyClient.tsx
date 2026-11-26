@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { formatSocialUrl, getLanguageName } from './data';
+import { formatSocialUrl, getLanguageName, safeHttpUrl } from './data';
 import { Organization } from './types';
 import {
     Search, MapPin, Globe, FileText, Users,
@@ -116,7 +116,9 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                         { url: org.socialInsta, icon: Instagram, key: 'instagram' as const },
                                         { url: org.youtube, icon: Youtube, key: 'youtube' as const },
                                         { url: org.telegram, icon: Send, key: 'telegram' as const }
-                                    ].filter(s => s.url);
+                                    ].filter(s => s.url && formatSocialUrl(s.key, s.url));
+                                    const website = safeHttpUrl(org.website);
+                                    const manifesto = safeHttpUrl(org.manifesto);
 
                                     return (
                                         <Card key={org.id} className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
@@ -155,18 +157,18 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                                                 <span className="line-clamp-1">{org.formattedLocation}</span>
                                                             </div>
                                                         )}
-                                                        {org.website && (
+                                                        {website && (
                                                             <div className="flex items-start gap-1.5">
                                                                 <Globe className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                                                                <a href={org.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate font-medium">
-                                                                    {org.website.replace(/^https?:\/\//, '')}
+                                                                <a href={website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate font-medium">
+                                                                    {org.website?.replace(/^https?:\/\//, '')}
                                                                 </a>
                                                             </div>
                                                         )}
-                                                        {org.manifesto && (
+                                                        {manifesto && (
                                                             <div className="flex items-start gap-1.5">
                                                                 <FileText className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                                                                <a href={org.manifesto} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+                                                                <a href={manifesto} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
                                                                     البيان التأسيسي
                                                                 </a>
                                                             </div>
@@ -236,21 +238,21 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                                 </TableCell>
                                                 <TableCell className="align-top">
                                                     <div className="flex flex-wrap gap-2 text-muted-foreground">
-                                                        {org.website && (
+                                                        {safeHttpUrl(org.website) && (
                                                             <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                                <a href={org.website} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني">
+                                                                <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني">
                                                                     <Globe className="h-4 w-4" />
                                                                 </a>
                                                             </Button>
                                                         )}
-                                                        {org.socialX && (
+                                                        {org.socialX && formatSocialUrl('x', org.socialX) && (
                                                             <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
                                                                 <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title="X">
                                                                     <Twitter className="h-4 w-4" />
                                                                 </a>
                                                             </Button>
                                                         )}
-                                                        {org.socialFb && (
+                                                        {org.socialFb && formatSocialUrl('facebook', org.socialFb) && (
                                                             <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
                                                                 <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title="Facebook">
                                                                     <Facebook className="h-4 w-4" />

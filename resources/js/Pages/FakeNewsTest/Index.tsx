@@ -186,7 +186,8 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
 
   return (
     <MainLayout>
-      <div className="min-h-[calc(100vh-8rem)] bg-background text-foreground">
+      {/* Cards are dragged and flown out past the column; clip only at the page edge. */}
+      <div className="min-h-[calc(100vh-8rem)] overflow-x-clip bg-background text-foreground">
         {phase === 'opening' && (
           <OpeningView
             stats={stats}

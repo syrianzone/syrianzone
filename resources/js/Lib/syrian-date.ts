@@ -32,10 +32,20 @@ export function toArabicDigits(n: number | string): string {
   return String(n).replace(/\d/g, (d) => AR_DIGITS[Number(d)]);
 }
 
-/** e.g. "الخميس، ١٠ أيلول ٢٠٢٦" */
-export function formatGregorianSyrian(date: Date | null): string {
+/**
+ * Which digits a date prints in: Arabic-Indic (`arab`, the default) or Western
+ * (`latn`), for pages that standardise on 0-9 such as `/roznama` and `/currency`.
+ */
+export type DateDigits = 'arab' | 'latn';
+
+function digitsOf(n: number | string, digits: DateDigits): string {
+  return digits === 'latn' ? String(n) : toArabicDigits(n);
+}
+
+/** e.g. "الخميس، ١٠ أيلول ٢٠٢٦" (or "الخميس، 10 أيلول 2026" with `latn`). */
+export function formatGregorianSyrian(date: Date | null, digits: DateDigits = 'arab'): string {
   if (!date) return '';
-  return `${SYRIAN_WEEKDAYS_AR[date.getDay()]}، ${toArabicDigits(date.getDate())} ${SYRIAN_MONTHS_AR[date.getMonth()]} ${toArabicDigits(date.getFullYear())}`;
+  return `${SYRIAN_WEEKDAYS_AR[date.getDay()]}، ${digitsOf(date.getDate(), digits)} ${SYRIAN_MONTHS_AR[date.getMonth()]} ${digitsOf(date.getFullYear(), digits)}`;
 }
 
 /** The wall-clock fields a date is printed from. */
@@ -111,10 +121,10 @@ function parseParts(value: Date | string | number): DateParts | null {
 }
 
 /** e.g. "١٠ أيلول ٢٠٢٦" (no weekday, for compact event rows). */
-export function formatGregorianSyrianShort(value: Date | string): string {
+export function formatGregorianSyrianShort(value: Date | string, digits: DateDigits = 'arab'): string {
   const parts = parseParts(value);
   if (!parts) return typeof value === 'string' ? value : '';
-  return `${toArabicDigits(parts.day)} ${SYRIAN_MONTHS_AR[parts.month]} ${toArabicDigits(parts.year)}`;
+  return `${digitsOf(parts.day, digits)} ${SYRIAN_MONTHS_AR[parts.month]} ${digitsOf(parts.year, digits)}`;
 }
 
 /** e.g. "١٠ أيلول ٢٠٢٦، ١٤:٣٠" — a timestamp, 24-hour, no weekday. */

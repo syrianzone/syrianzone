@@ -1,3 +1,4 @@
+import type { DateDigits } from '@/Lib/syrian-date';
 import type { PrayerHijri } from './times';
 
 /**
@@ -7,9 +8,13 @@ import type { PrayerHijri } from './times';
  * instead of) that response.
  */
 
-/** e.g. "٨ جمادى الآخرة ١٤٤٧ هـ". Empty when the browser has no Islamic calendar. */
-export function formatHijriDate(date: Date, timeZone?: string): string {
-  const formats = ['ar-SY-u-ca-islamic-umalqura', 'ar-SY-u-ca-islamic'];
+/**
+ * e.g. "٨ جمادى الآخرة ١٤٤٧ هـ" (or "8 جمادى الآخرة 1447 هـ" with `latn`).
+ * Empty when the browser has no Islamic calendar.
+ */
+export function formatHijriDate(date: Date, timeZone?: string, digits: DateDigits = 'arab'): string {
+  const nu = digits === 'latn' ? '-nu-latn' : '';
+  const formats = [`ar-SY-u-ca-islamic-umalqura${nu}`, `ar-SY-u-ca-islamic${nu}`];
   for (const locale of formats) {
     try {
       const fmt = new Intl.DateTimeFormat(locale, {

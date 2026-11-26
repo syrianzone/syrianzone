@@ -295,15 +295,15 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
     };
 
     const formatDateGregorian = (date: Date) => {
-        if (!prayerTimeZone) return formatGregorianSyrian(date);
+        if (!prayerTimeZone) return formatGregorianSyrian(date, 'latn');
         const wall = wallDateIn(date, prayerTimeZone);
-        return formatGregorianSyrian(new Date(wall.year, wall.month - 1, wall.day));
+        return formatGregorianSyrian(new Date(wall.year, wall.month - 1, wall.day), 'latn');
     };
 
     /** An event's `YYYY-MM-DD` is a calendar date: never parse it as UTC midnight. */
     const formatEventDate = (value: string) => {
         const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-        return m ? formatGregorianSyrian(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))) : formatGregorianSyrianShort(value);
+        return m ? formatGregorianSyrian(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), 'latn') : formatGregorianSyrianShort(value, 'latn');
     };
 
     // Active and next prayer, one implementation shared with /muslim, Home and
@@ -390,7 +390,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                             <CardContent className="p-5 space-y-1.5">
                                 <p className="text-xs font-semibold text-primary">التاريخ اليوم في سوريا</p>
                                 <p className="text-lg font-bold text-foreground">
-                                    {serverToday?.gregorianAr || formatGregorianSyrian(ssrTodayDate)}
+                                    {serverToday?.gregorianAr || formatGregorianSyrian(ssrTodayDate, 'latn')}
                                 </p>
                                 {serverToday?.hijriAr && (
                                     <p className="text-sm text-muted-foreground">{serverToday.hijriAr}</p>
@@ -402,7 +402,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                 <p className="text-xs font-semibold text-primary">العطلة الرسمية القادمة</p>
                                 <p className="text-lg font-bold text-foreground">{ssrNextHoliday.nameAr}</p>
                                 <p className="text-sm text-muted-foreground">
-                                    {formatGregorianSyrian(ssrNextHoliday.date)} —{' '}
+                                    {formatGregorianSyrian(ssrNextHoliday.date, 'latn')} —{' '}
                                     <span className="font-semibold text-foreground">
                                         {ssrNextHoliday.daysLeft === 0
                                             ? 'اليوم'
@@ -426,7 +426,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                             : `متبقٍ ${ramadanDaysLeft} يوماً`}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    الغرة الفلكية المتوقعة: {formatGregorianSyrianShort(ramadanStart)} ·{' '}
+                                    الغرة الفلكية المتوقعة: {formatGregorianSyrianShort(ramadanStart, 'latn')} ·{' '}
                                     <Link href="/muslim/ramadan" className="font-semibold text-primary hover:underline">
                                         عرض إمساكية رمضان
                                     </Link>
@@ -483,7 +483,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                     </span>
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                    الغرة الفلكية المتوقعة: {formatGregorianSyrianShort(ramadanStart)} — مواعيد الإمساك والفجر والإفطار لجميع المحافظات.
+                                    الغرة الفلكية المتوقعة: {formatGregorianSyrianShort(ramadanStart, 'latn')} — مواعيد الإمساك والفجر والإفطار لجميع المحافظات.
                                 </p>
                             </div>
                             <Link
@@ -518,7 +518,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                             {formatDateGregorian(currentTime)}
                                         </div>
                                         <div className="text-xs text-primary font-medium mt-1">
-                                            {apiHijri || formatHijriDate(currentTime, prayerTimeZone)}
+                                            {apiHijri || formatHijriDate(currentTime, prayerTimeZone, 'latn')}
                                         </div>
                                     </div>
 
@@ -563,7 +563,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                                 <div className="flex items-center gap-2 text-xs font-medium text-primary">
                                                     <CalendarDays className="h-4 w-4" />
                                                     <span>
-                                                        {formatGregorianSyrian(nextHoliday.date)}
+                                                        {formatGregorianSyrian(nextHoliday.date, 'latn')}
                                                     </span>
                                                 </div>
                                             </div>
@@ -785,7 +785,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                                             </div>
                                                             <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                                                                 <span className={`font-semibold ${isPast ? 'text-muted-foreground' : 'text-foreground/75'}`}>
-                                                                    {formatGregorianSyrianShort(holiday.date)}
+                                                                    {formatGregorianSyrianShort(holiday.date, 'latn')}
                                                                     {holiday.date.getFullYear() !== currentTime.getFullYear() && ` (${holiday.date.getFullYear()})`}
                                                                 </span>
                                                                 {holiday.description && (
@@ -916,7 +916,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                                                     : 'bg-primary/10 text-primary hover:bg-primary/15 border-primary/20'
                                                             } border text-[10px] font-bold h-5 px-1.5`}
                                                         >
-                                                            {event.isFree ? 'مجاني' : `${event.ticketPrice.toLocaleString()} ل.س`}
+                                                            {event.isFree ? 'مجاني' : `${event.ticketPrice.toLocaleString('en-US')} ل.س`}
                                                         </Badge>
                                                         
                                                         <a 

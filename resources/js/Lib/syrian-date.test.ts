@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatGregorianSyrianShort, formatSyrianDateTime } from './syrian-date';
+import { formatGregorianSyrian, formatGregorianSyrianShort, formatSyrianDateTime } from './syrian-date';
 
 describe('formatGregorianSyrianShort', () => {
   it('reads a bare date as the calendar day, not as a UTC instant', () => {
@@ -38,5 +38,16 @@ describe('Syrian time for instants', () => {
 
   it('returns an empty string for an invalid timestamp', () => {
     expect(formatSyrianDateTime('not a date')).toBe('');
+  });
+});
+
+describe('Western digits (latn), as /roznama prints them', () => {
+  it('prints the long and short Gregorian dates in 0-9', () => {
+    expect(formatGregorianSyrian(new Date(2026, 8, 10), 'latn')).toBe('الخميس، 10 أيلول 2026');
+    expect(formatGregorianSyrianShort('2026-09-10', 'latn')).toBe('10 أيلول 2026');
+  });
+
+  it('keeps Arabic-Indic digits by default for the other pages', () => {
+    expect(formatGregorianSyrian(new Date(2026, 8, 10))).toBe('الخميس، ١٠ أيلول ٢٠٢٦');
   });
 });

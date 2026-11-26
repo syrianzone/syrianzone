@@ -410,6 +410,7 @@ export default function GovtCvsAdminSlots({ slots = [], institutions = [] }: Pro
                             <Label htmlFor="slot_title_ar">المسمى الوظيفي *</Label>
                             <Input
                                 id="slot_title_ar"
+                                aria-required="true"
                                 value={form.title_ar}
                                 onChange={(e) =>
                                     setForm((f) => ({ ...f, title_ar: e.target.value }))

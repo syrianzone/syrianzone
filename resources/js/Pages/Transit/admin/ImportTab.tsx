@@ -334,6 +334,7 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
                       key={idx}
                       type="button"
                       onClick={() => setColorIndex(idx)}
+                      aria-pressed={colorIndex === idx}
                       className={`w-6 h-6 rounded-full border-2 transition-all ${colorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
                       style={{ backgroundColor: hex }}
                       title={`لون ${idx + 1}`}

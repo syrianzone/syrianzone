@@ -63,7 +63,7 @@ export default function ClaimStatsDialog({
 
   const rows = useMemo(() => {
     const items = getAllClaimOutcomeStats(stats);
-    return [...items].sort((a, b) => {
+    return items.toSorted((a, b) => {
       if (a.total === 0 && b.total === 0) return 0;
       if (a.total === 0) return 1;
       if (b.total === 0) return -1;

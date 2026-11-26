@@ -56,8 +56,8 @@ const WinnerCard = ({ contributor, metric }: { contributor: Contributor; metric:
           <div className="relative mb-4">
             <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-30"></div>
             <Avatar className="relative w-24 h-24 mx-auto border-[3px] border-yellow-400 shadow-lg">
-              <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt={contributor.username} />
-              <AvatarFallback className="text-xl font-bold bg-yellow-100 text-yellow-800">
+              <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt="" />
+              <AvatarFallback aria-hidden="true" className="text-xl font-bold bg-yellow-100 text-yellow-800">
                 {contributor.username.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -129,8 +129,8 @@ const TopThreeCard = ({
             <CardContent className="p-6 text-center">
               <div className="relative mb-4">
                 <Avatar className="w-20 h-20 mx-auto border-[3px] border-border shadow-lg">
-                  <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt={contributor.username} />
-                  <AvatarFallback className="text-lg font-semibold">
+                  <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt="" />
+                  <AvatarFallback aria-hidden="true" className="text-lg font-semibold">
                     {contributor.username.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -187,8 +187,8 @@ const ContributorsList = ({
               <div className="flex items-center space-x-4">
                 <span className="text-lg font-bold text-muted-foreground w-8">#{index + 4}</span>
                 <Avatar className="w-12 h-12">
-                  <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt={contributor.username} />
-                  <AvatarFallback className="text-sm">{contributor.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={contributor.avatar_url || "/placeholder.svg"} alt="" />
+                  <AvatarFallback aria-hidden="true" className="text-sm">{contributor.username.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="font-semibold text-foreground">{contributor.username}</p>

@@ -382,7 +382,8 @@ export default function PopulationClient() {
                     {isPanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                 </button>
 
-                <div className="p-4 border-b border-border bg-card">
+                {/* The toggle above stays reachable; the panel body is off-screen when closed. */}
+                <div className="p-4 border-b border-border bg-card" inert={!isPanelOpen}>
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Layers size={18} /> البيانات</h2>
                         <button aria-label="إغلاق" onClick={() => setIsPanelOpen(false)} className="md:hidden p-1 hover:bg-muted rounded-full transition-colors text-muted-foreground" title="إغلاق">
@@ -416,7 +417,7 @@ export default function PopulationClient() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-card">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-card" inert={!isPanelOpen}>
 
                     {currentDataType === DATA_TYPES.RAINFALL ? (
                         <div className="flex flex-col h-full">
@@ -974,7 +975,7 @@ export default function PopulationClient() {
                 </div>
 
                 {currentDataType !== DATA_TYPES.RAINFALL && currentDataType !== DATA_TYPES.ENVIRONMENTAL && (
-                    <div className="p-4 bg-muted border-t border-border text-xs text-muted-foreground">
+                    <div className="p-4 bg-muted border-t border-border text-xs text-muted-foreground" inert={!isPanelOpen}>
                         <p className="flex items-center gap-1 mb-1">
                             <Info size={14} /> اختر محافظتين للمقارنة بينهما
                         </p>

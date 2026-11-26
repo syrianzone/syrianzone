@@ -177,7 +177,7 @@ export default function NearbyTransitDrawer() {
       {/* Floating action buttons — the bottom-left corner, the one the map's
           own zoom/attribution controls leave free (the city map puts them at
           bottom-right; see Components/map/createMap). */}
-      <div className="absolute bottom-[270px] end-4 z-20 flex flex-col gap-2 sm:bottom-6">
+      <div className="absolute bottom-[calc(var(--sz-sheet-h,250px)+20px)] end-4 z-20 flex flex-col gap-2 sm:bottom-6">
         <button
           type="button"
           // One control for both steps: it asks for the location first (only on

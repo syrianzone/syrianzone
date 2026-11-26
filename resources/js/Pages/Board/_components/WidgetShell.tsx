@@ -31,11 +31,8 @@ export function WidgetShell(props: {
 
   return (
     <div dir="rtl" aria-busy={props.loading || props.refreshing} className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
-      {(props.loading || props.refreshing) && (
-        <span role="status" className="sr-only">
-          {props.loading ? 'جارٍ التحميل' : 'جارٍ التحديث'}
-        </span>
-      )}
+      {/* No live region here: a board of polling tiles would talk on every
+          background refetch. aria-busy is enough for the loading state. */}
 
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />

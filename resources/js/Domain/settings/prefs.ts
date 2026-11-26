@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import { SYRIA_TIMEZONE } from '@/Domain/geography/syria';
 import { saveAccountSettings, type AccountSettingsPatch } from './accountSettings';
 import { DEFAULT_PRAYER_METHOD } from '../prayer/methods';
 import { DEFAULT_RECITATION_CODE, normalizeRecitationCode } from '../quran/quran';
 import {
+  DEFAULT_CITY,
   readLocationPreference,
   updateLocationPreference,
   useLocationPreference,
@@ -58,7 +59,12 @@ export const MUSLIM_LS_KEYS = LS;
 
 function readLS(key: string, fallback: string): string {
   if (typeof window === 'undefined') return fallback;
-  return window.localStorage.getItem(key) ?? fallback;
+  try {
+    return window.localStorage.getItem(key) ?? fallback;
+  } catch {
+    // private mode / storage disabled
+    return fallback;
+  }
 }
 
 export const TRACKED_PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
@@ -106,6 +112,40 @@ export function readStoredMethod(): number {
   return Number(readLS(LS.method, String(DEFAULT_PRAYER_METHOD))) || DEFAULT_PRAYER_METHOD;
 }
 
+/**
+ * What the server can know: no device storage, so the first render (server and
+ * hydrating client alike) is identical. Device values arrive after mount.
+ */
+function serverSafePrefs(): MuslimPrefs {
+  return {
+    // location fields are replaced by useLocationPreference() on return
+    city: DEFAULT_CITY,
+    useCustomCoords: false,
+    customLat: '',
+    customLon: '',
+    method: DEFAULT_PRAYER_METHOD,
+    locMode: 'city',
+    geo: null,
+    prayerLog: {},
+    quranPage: 1,
+    quranReciterId: DEFAULT_RECITATION_CODE,
+  };
+}
+
+/** A signed-in account's saved values win over the device's, field by field. */
+function withServerSettings(base: MuslimPrefs, serverSettings: AuthSettings | null): MuslimPrefs {
+  if (!serverSettings) return base;
+  return {
+    ...base,
+    method: serverSettings.muslimMethod ?? base.method,
+    prayerLog: serverSettings.prayerLog ?? base.prayerLog,
+    quranPage: serverSettings.quranLastPage ?? base.quranPage,
+    quranReciterId: serverSettings.quranReciterId
+      ? normalizeRecitationCode(serverSettings.quranReciterId)
+      : base.quranReciterId,
+  };
+}
+
 function defaultMuslimPrefs(): MuslimPrefs {
   const location = readLocationPreference();
   return {
@@ -128,19 +168,15 @@ export function useMuslimPrefs() {
   const isLoggedIn = Boolean((props as unknown as { auth?: { user?: { id?: number } } }).auth?.user?.id);
   const location = useLocationPreference();
 
-  const [prefs, setPrefsState] = useState<MuslimPrefs>(() => {
-    const base = defaultMuslimPrefs();
-    if (!serverSettings) return base;
-    return {
-      ...base,
-      method: serverSettings.muslimMethod ?? base.method,
-      prayerLog: serverSettings.prayerLog ?? base.prayerLog,
-      quranPage: serverSettings.quranLastPage ?? base.quranPage,
-      quranReciterId: serverSettings.quranReciterId
-        ? normalizeRecitationCode(serverSettings.quranReciterId)
-        : base.quranReciterId,
-    };
-  });
+  // Reading localStorage here would make a guest's saved Quran page or prayer
+  // log differ from the server HTML and force React to rebuild it. Start from
+  // what the server rendered and adopt the device values after mount.
+  const [prefs, setPrefsState] = useState<MuslimPrefs>(() => withServerSettings(serverSafePrefs(), serverSettings));
+  const serverSettingsRef = useRef(serverSettings);
+  serverSettingsRef.current = serverSettings;
+  useEffect(() => {
+    setPrefsState(withServerSettings(defaultMuslimPrefs(), serverSettingsRef.current));
+  }, []);
 
   const setPrefs = useCallback(
     (patch: Partial<MuslimPrefs>) => {

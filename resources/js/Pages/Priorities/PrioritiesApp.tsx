@@ -825,9 +825,28 @@ export default function PrioritiesApp() {
               </div>
             </div>
 
-            <div className="relative w-full h-[260px] flex items-center justify-center bg-muted/20 rounded-xl border border-border p-2 mb-4">
+            <table className="sr-only">
+              <caption>مقارنة نقاط موازنتك مع {COMPARISONS[activeComparisonKey]?.title}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">الملف</th>
+                  <th scope="col">نقاط موازنتك الحالية</th>
+                  <th scope="col">{COMPARISONS[activeComparisonKey]?.title}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.map(row => (
+                  <tr key={row.topic}>
+                    <th scope="row">{row.topic}</th>
+                    <td>{row.current}%</td>
+                    <td>{row.comparison}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div aria-hidden="true" className="relative w-full h-[260px] flex items-center justify-center bg-muted/20 rounded-xl border border-border p-2 mb-4">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData} accessibilityLayer={false}>
                   <PolarGrid stroke="rgba(128, 128, 128, 0.15)" />
                   <PolarAngleAxis
                     dataKey="topic"

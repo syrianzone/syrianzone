@@ -66,6 +66,7 @@ import { PRAYER_KEYS, PRAYER_LABELS } from '@/Domain/prayer/methods';
 import { formatHijriDate, hijriDateLabel } from '@/Domain/prayer/hijri';
 import { prayerSchedule } from '@/Domain/prayer/nextPrayer';
 import { usePrayerTimes } from '@/Domain/prayer/times';
+import { wallDateIn } from '@/Domain/prayer/zonedTime';
 import { PrayerIcon } from '@/Domain/prayer/PrayerIcon';
 import PrayerSettingsFields from '@/Domain/prayer/PrayerSettingsFields';
 import ResponsiveSettingsDialog from '@/Domain/prayer/ResponsiveSettingsDialog';
@@ -250,11 +251,23 @@ export default function Index({ serverYear }: { serverYear?: number }) {
         if (isLoggedIn && Object.keys(accountPatch).length > 0) saveAccountSettings(accountPatch);
     };
 
+    // The clock and dates are labelled with the place, so they read in the
+    // place's zone (Damascus for a governorate), not this device's.
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: prayerTimeZone });
     };
 
-    const formatDateGregorian = (date: Date) => formatGregorianSyrian(date);
+    const formatDateGregorian = (date: Date) => {
+        if (!prayerTimeZone) return formatGregorianSyrian(date);
+        const wall = wallDateIn(date, prayerTimeZone);
+        return formatGregorianSyrian(new Date(wall.year, wall.month - 1, wall.day));
+    };
+
+    /** An event's `YYYY-MM-DD` is a calendar date: never parse it as UTC midnight. */
+    const formatEventDate = (value: string) => {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+        return m ? formatGregorianSyrian(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))) : formatGregorianSyrianShort(value);
+    };
 
     // Active and next prayer, one implementation shared with /muslim, Home and
     // the board widget.
@@ -372,7 +385,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                             {formatDateGregorian(currentTime)}
                                         </div>
                                         <div className="text-xs text-primary font-medium mt-1">
-                                            {apiHijri || formatHijriDate(currentTime)}
+                                            {apiHijri || formatHijriDate(currentTime, prayerTimeZone)}
                                         </div>
                                     </div>
 
@@ -445,7 +458,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                             {governorateNameForF3aliaProvince(nextEvent.province) || nextEvent.provinceName}
                                                         </span>
                                                         <span aria-hidden="true">•</span>
-                                                        <span>{formatDateGregorian(new Date(nextEvent.eventDate))}</span>
+                                                        <span>{formatEventDate(nextEvent.eventDate)}</span>
                                                         {nextEvent.eventTime && (
                                                             <>
                                                                 <span aria-hidden="true">•</span>
@@ -743,7 +756,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                                 {governorateNameForF3aliaProvince(event.province) || event.provinceName}
                                                             </span>
                                                             <span aria-hidden="true">•</span>
-                                                            <span>{formatDateGregorian(new Date(event.eventDate))}</span>
+                                                            <span>{formatEventDate(event.eventDate)}</span>
                                                             {event.eventTime && (
                                                                 <>
                                                                     <span aria-hidden="true">•</span>

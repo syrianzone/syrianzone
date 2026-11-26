@@ -339,26 +339,30 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                     {/* Candidate Selector Pills */}
                     <div className="mt-6" data-chart-controls>
                         <div className="text-sm font-semibold mb-3 text-gray-400">اختر للعرض:</div>
-                        <div className="flex flex-wrap gap-2">
-                            <div
+                        <div role="group" aria-label="المرشحون المعروضون في المخطط" className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                aria-pressed={selectedCandidates.includes("all")}
                                 className={`cursor-pointer px-3 py-1 rounded-full text-xs border transition-colors ${selectedCandidates.includes("all") ? "bg-primary text-primary-foreground border-primary" : "bg-transparent text-gray-400 border-gray-700 hover:border-gray-500"}`}
                                 onClick={() => toggleCandidate("all")}
                             >
                                 الكل (أفضل 5)
-                            </div>
+                            </button>
                             {candidates.map(candidate => {
                                 const isSelected = selectedCandidates.includes(candidate.candidateId)
                                 const color = getCandidateColor(candidate.candidateId)
                                 return (
-                                    <div
+                                    <button
+                                        type="button"
                                         key={candidate.candidateId}
+                                        aria-pressed={isSelected}
                                         onClick={() => toggleCandidate(candidate.candidateId)}
                                         className={`cursor-pointer px-3 py-1 rounded-full text-xs border flex items-center gap-2 transition-colors ${isSelected ? "text-white" : "text-gray-500 opacity-60 grayscale"}`}
                                         style={{ borderColor: isSelected ? color : '#374151', backgroundColor: isSelected ? '#1e293b' : 'transparent' }}
                                     >
-                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></div>
+                                        <span aria-hidden="true" className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></span>
                                         {candidate.name}
-                                    </div>
+                                    </button>
                                 )
                             })}
                         </div>

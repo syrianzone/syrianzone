@@ -4,6 +4,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { DirectionProvider } from '@radix-ui/react-direction';
 import { describe, expect, it } from 'vitest';
 import { QueryProvider } from '@/Providers/QueryProvider';
+import { CURRENCY_FACTS } from '@/Domain/currency/facts';
 
 /**
  * Renders a page the way the SSR server does (resources/js/ssr.tsx) and returns
@@ -217,5 +218,24 @@ describe('pages render their content on the server', () => {
         for (const official of officials) {
             expect(cleanHtml).toContain(`href="/govtcvs/${official.slug}"`);
         }
+    });
+
+    it('renders /currency with Western digits only and updated former-regime wording', async () => {
+        const html = await renderOnServer(
+            'Currency/Index',
+            { currency: CURRENCY_FACTS },
+            '/currency',
+        );
+
+        const cleanHtml = html.replace(/<!-- -->/g, '');
+        expect(cleanHtml.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(cleanHtml).not.toMatch(/[\u0660-\u0669\u06F0-\u06F9]/);
+        expect(cleanHtml).toContain('10,000');
+        expect(cleanHtml).toContain('يظهر عليها الهارب المخلوع بشار الأسد');
+        expect(cleanHtml).toContain('علم النظام المخلوع');
+        expect(cleanHtml).toContain('دار الأوبرا في دمشق');
+        expect(cleanHtml).not.toContain('دار الأسد للثقافة والفنون');
+        expect(cleanHtml).not.toContain('العلم السوري السابق');
     });
 });

@@ -40,90 +40,90 @@ export default function CurrencyIndex({ currency }: CurrencyPageProps) {
 
     return (
         <MainLayout>
-            <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
-                <header className="space-y-3">
-                    <div className="flex items-center gap-3">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border bg-card shadow-xs">
-                            <CurrencyIcon className="h-7 w-7" />
-                        </span>
-                        <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                                تحويل الليرة السورية الجديدة والقديمة
-                            </h1>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                أداة حساب تحويل العملة السورية بمعيار حذف صفرين (100 قديمة = 1 جديدة)، مع تقسيم الفئات للدفع ومعرض الأوراق النقدية الرسمية.
-                            </p>
+            <div className="min-h-screen bg-background text-foreground" dir="rtl">
+                <section className="border-b border-border bg-card py-7 shadow-xs sm:py-10">
+                    <div className="mx-auto max-w-4xl px-4 text-center">
+                        <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background shadow-xs sm:h-14 sm:w-14">
+                            <CurrencyIcon className="h-7 w-7 sm:h-8 sm:w-8" />
                         </div>
+                        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+                            تحويل الليرة السورية الجديدة والقديمة
+                        </h1>
+                        <p className="mx-auto mt-2.5 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                            أداة حساب تحويل العملة السورية بمعيار حذف صفرين (100 قديمة = 1 جديدة)، مع تقسيم الفئات للدفع ومعرض الأوراق النقدية الرسمية.
+                        </p>
                     </div>
+                </section>
 
-                    <Alert variant="warning">
-                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
-                        <div className="space-y-1">
-                            <p className="text-sm font-bold leading-none tracking-tight text-foreground">
+                <div className="mx-auto w-full max-w-6xl space-y-6 px-3.5 py-5 sm:space-y-8 sm:px-6 sm:py-8">
+                    <Alert variant="warning" className="px-3.5 py-3 sm:px-4 sm:py-3.5">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        <div className="min-w-0 space-y-1">
+                            <p className="text-xs font-bold leading-snug text-foreground sm:text-sm">
                                 {facts.legal_status.headline_ar}
                             </p>
-                            <AlertDescription className="text-xs sm:text-sm leading-relaxed">
+                            <AlertDescription className="text-xs leading-relaxed text-foreground/90 sm:text-sm">
                                 {facts.legal_status.summary_ar}{' '}
                                 <a
                                     href={facts.legal_status.source_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 font-semibold text-primary underline underline-offset-2 hover:no-underline"
+                                    className="inline-flex items-center gap-1 py-0.5 font-semibold text-primary underline underline-offset-2 hover:no-underline"
                                 >
                                     <span>القرار رقم (372/ح)</span>
-                                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                                    <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
                                 </a>
                             </AlertDescription>
                         </div>
                     </Alert>
-                </header>
 
-                <ConverterCard
-                    amountInput={amountInput}
-                    direction={direction}
-                    onAmountChange={setAmountInput}
-                    onDirectionChange={setDirection}
-                />
+                    <ConverterCard
+                        amountInput={amountInput}
+                        direction={direction}
+                        onAmountChange={setAmountInput}
+                        onDirectionChange={setDirection}
+                    />
 
-                <PaymentBreakdown newAmount={newEquivalentAmount} />
+                    <PaymentBreakdown newAmount={newEquivalentAmount} />
 
-                <CommonAmountsTable
-                    commonAmountsOld={facts.common_amounts_old}
-                    onSelectOldAmount={handleSelectOldAmount}
-                />
+                    <CommonAmountsTable
+                        commonAmountsOld={facts.common_amounts_old}
+                        onSelectOldAmount={handleSelectOldAmount}
+                    />
 
-                <BanknoteGallery
-                    newDenominations={facts.new_denominations}
-                    oldDenominations={facts.old_denominations}
-                    denominationsNote={facts.denominations_note_ar}
-                    denominationsNoteSourceUrl={facts.denominations_note_source_url}
-                />
+                    <BanknoteGallery
+                        newDenominations={facts.new_denominations}
+                        oldDenominations={facts.old_denominations}
+                        denominationsNote={facts.denominations_note_ar}
+                        denominationsNoteSourceUrl={facts.denominations_note_source_url}
+                    />
 
-                <TimelineAndExchange
-                    exchangeInfo={facts.exchange_info}
-                    timeline={facts.timeline}
-                />
+                    <TimelineAndExchange
+                        exchangeInfo={facts.exchange_info}
+                        timeline={facts.timeline}
+                    />
 
-                <FaqSection items={facts.faq} />
+                    <FaqSection items={facts.faq} />
 
-                <footer className="border-t border-border pt-6 text-xs text-muted-foreground space-y-2">
-                    <p className="font-semibold text-foreground">المصادر الرسمية المرجعية:</p>
-                    <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
-                        {facts.meta.sources.map((src) => (
-                            <li key={src.url}>
-                                <a
-                                    href={src.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-primary underline underline-offset-2 hover:no-underline"
-                                >
-                                    <span>{src.label_ar}</span>
-                                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                </footer>
+                    <footer className="space-y-2 border-t border-border pt-6 text-xs text-muted-foreground">
+                        <p className="font-semibold text-foreground">المصادر الرسمية المرجعية:</p>
+                        <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                            {facts.meta.sources.map((src) => (
+                                <li key={src.url}>
+                                    <a
+                                        href={src.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 py-1 text-primary underline underline-offset-2 hover:no-underline"
+                                    >
+                                        <span>{src.label_ar}</span>
+                                        <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </footer>
+                </div>
             </div>
         </MainLayout>
     );

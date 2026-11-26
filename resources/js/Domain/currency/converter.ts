@@ -20,11 +20,11 @@ export interface BreakdownResult {
 const ARABIC_INDIC_ZERO = 0x0660;
 const EASTERN_ARABIC_INDIC_ZERO = 0x06f0;
 
-const ARABIC_FORMATTER = new Intl.NumberFormat('ar-SY', {
+const WESTERN_FORMATTER = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 4,
 });
 
-const ARABIC_INT_FORMATTER = new Intl.NumberFormat('ar-SY', {
+const WESTERN_INT_FORMATTER = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 0,
 });
 
@@ -104,17 +104,17 @@ export function convert(amount: number, direction: ConvertDirection): number {
 }
 
 /**
- * Format a number using Syrian Arabic locale grouping (e.g. `١٠٬٠٠٠٫٥`).
+ * Format a number with thousands grouping and Western digits (0-9) (e.g. `10,000.5`).
  */
-export function formatArabicNumber(value: number, maxFractionDigits = 4): string {
-    if (!Number.isFinite(value)) return ARABIC_FORMATTER.format(0);
+export function formatCurrencyNumber(value: number, maxFractionDigits = 4): string {
+    if (!Number.isFinite(value)) return WESTERN_FORMATTER.format(0);
     if (maxFractionDigits === 0) {
-        return ARABIC_INT_FORMATTER.format(Math.round(value));
+        return WESTERN_INT_FORMATTER.format(Math.round(value));
     }
     if (maxFractionDigits === 4) {
-        return ARABIC_FORMATTER.format(value);
+        return WESTERN_FORMATTER.format(value);
     }
-    return new Intl.NumberFormat('ar-SY', {
+    return new Intl.NumberFormat('en-US', {
         maximumFractionDigits: maxFractionDigits,
     }).format(value);
 }

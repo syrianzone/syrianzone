@@ -15,11 +15,11 @@ interface FaqSectionProps {
 export function FaqSection({ items }: FaqSectionProps) {
     return (
         <section aria-labelledby="faq-heading" className="space-y-4">
-            <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <HelpCircle className="h-4 w-4" aria-hidden="true" />
                 </span>
-                <h2 id="faq-heading" className="text-xl sm:text-2xl font-bold text-foreground">
+                <h2 id="faq-heading" className="text-xl font-bold text-foreground sm:text-2xl">
                     الأسئلة الشائعة
                 </h2>
             </div>
@@ -27,20 +27,20 @@ export function FaqSection({ items }: FaqSectionProps) {
             <Accordion type="single" defaultValue={items[0]?.id}>
                 {items.map((item) => (
                     <AccordionItem key={item.id} value={item.id}>
-                        <AccordionTrigger className="text-sm sm:text-base">
+                        <AccordionTrigger className="min-h-11 text-sm sm:text-base">
                             <span>{item.question_ar}</span>
                         </AccordionTrigger>
-                        <AccordionContent className="text-xs sm:text-sm leading-relaxed text-muted-foreground">
+                        <AccordionContent className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
                             <p className="text-foreground/90">{item.answer_ar}</p>
                             <p>
                                 <a
                                     href={item.source_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs font-medium text-primary underline underline-offset-2 hover:no-underline"
+                                    className="inline-flex items-center gap-1 py-0.5 text-xs font-medium text-primary underline underline-offset-2 hover:no-underline"
                                 >
                                     <span>المرجع الرسمي</span>
-                                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                                    <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
                                 </a>
                             </p>
                         </AccordionContent>

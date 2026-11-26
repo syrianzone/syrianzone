@@ -421,7 +421,8 @@ function TransitStudioPageContent() {
     setTimeout(() => {
       const inputEl = document.getElementById(`stop-input-${stopId}`)
       if (inputEl) {
-        inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        inputEl.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
         inputEl.focus()
       }
     }, 150)

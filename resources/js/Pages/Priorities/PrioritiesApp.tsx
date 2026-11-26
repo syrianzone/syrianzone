@@ -714,6 +714,7 @@ export default function PrioritiesApp() {
                       <input
                         type="range"
                         aria-label={`نسبة ${getShortTopicName(topic.id, topic.name)}`}
+                        aria-valuetext={`${topic.points}%`}
                         min="0"
                         max="100"
                         step="1"

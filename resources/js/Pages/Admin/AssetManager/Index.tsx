@@ -362,11 +362,11 @@ export default function AssetManagerIndex() {
                                                             {copiedUrl === item.url ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                                                         </Button>
 
-                                                        <a href={item.url} download target="_blank" rel="noreferrer">
-                                                            <Button aria-label="تنزيل الملف" size="icon" variant="ghost" className="h-8 w-8" title="تنزيل الملف">
-                                                                <Download className="h-4 w-4" />
-                                                            </Button>
-                                                        </a>
+                                                        <Button asChild size="icon" variant="ghost" className="h-8 w-8">
+                                                            <a href={item.url} download target="_blank" rel="noreferrer" aria-label={`تنزيل ${item.filename}`} title="تنزيل الملف">
+                                                                <Download className="h-4 w-4" aria-hidden="true" />
+                                                            </a>
+                                                        </Button>
 
                                                         <Button aria-label="حذف الملف"
                                                             size="icon"

@@ -9,7 +9,7 @@ export function WeatherIcon({ code, className = 'w-8 h-8' }: { code: string; cla
   if (code.startsWith('09') || code.startsWith('10'))
     return <CloudRain className={`${className} text-blue-400`} />;
   if (code.startsWith('11')) return <CloudLightning className={`${className} text-purple-500`} />;
-  if (code.startsWith('13')) return <Snowflake className={`${className} text-white`} />;
-  if (code.startsWith('50')) return <Wind className={`${className} text-gray-300`} />;
+  if (code.startsWith('13')) return <Snowflake className={`${className} text-foreground`} />;
+  if (code.startsWith('50')) return <Wind className={`${className} text-muted-foreground`} />;
   return <Sun className={`${className} text-yellow-500`} />;
 }

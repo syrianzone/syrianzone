@@ -1,5 +1,5 @@
 import { promisesApi } from '@/Domain/promises/api';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
@@ -183,6 +183,12 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
     // not promise.version, or a stale form would pass the server's check.
     const [formVersion, setFormVersion] = useState(initial?.version ?? 0);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const errorSummaryRef = useRef<HTMLDivElement>(null);
+    // After a rejected save, move focus to the error summary so it is read
+    // once, in place, instead of a toast competing with the field alerts.
+    useEffect(() => {
+        if (Object.keys(errors).length > 0) errorSummaryRef.current?.focus();
+    }, [errors]);
     const [saving, setSaving] = useState(false);
     const [statusOpen, setStatusOpen] = useState(false);
     const [rescheduleOpen, setRescheduleOpen] = useState(false);
@@ -222,8 +228,11 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                 router.visit(`/admin/promises/${res.promise.id}/edit`);
             }
         } catch (err) {
-            setErrors(apiFieldErrors(err));
-            notify.error(apiErrorMessage(err, 'تعذّر الحفظ'));
+            const fields = apiFieldErrors(err);
+            setErrors(fields);
+            // Field errors get the focused summary; only a failure without
+            // them needs the toast.
+            if (Object.keys(fields).length === 0) notify.error(apiErrorMessage(err, 'تعذّر الحفظ'));
         } finally {
             setSaving(false);
         }
@@ -271,9 +280,16 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                 />
 
                 {errorList.length > 0 && (
-                    <Alert variant="destructive" role="alert">
+                    <Alert
+                        ref={errorSummaryRef}
+                        variant="destructive"
+                        role="region"
+                        aria-labelledby="save-errors-title"
+                        tabIndex={-1}
+                        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
                         <AlertDescription>
-                            <p className="font-semibold">راجع الحقول التالية:</p>
+                            <p id="save-errors-title" className="font-semibold">راجع الحقول التالية:</p>
                             <ul className="mt-1 list-disc ps-5">{errorList.slice(0, 8).map((m, i) => <li key={i}>{m}</li>)}</ul>
                         </AlertDescription>
                     </Alert>
@@ -527,14 +543,27 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                                         <Label htmlFor="related_promise_select">وعود مرتبطة بهذا الملف</Label>
                                         {form.relatedPromiseIds.length > 0 && (
                                             <div className="flex flex-wrap gap-2 pb-1" role="list" aria-label="الوعود المرتبطة المختارة">
-                                                {form.relatedPromiseIds.map((id) => {
+                                                {form.relatedPromiseIds.map((id, index) => {
                                                     const r = restatableList.find((item) => item.id === id);
                                                     return (
-                                                        <Badge key={id} variant="secondary" className="flex items-center gap-1.5 py-1 pe-1.5 ps-2.5 text-xs font-normal">
-                                                            <span>{r ? `#{r.number} — ${r.title}` : `#${id}`}</span>
+                                                        <Badge key={id} role="listitem" variant="secondary" className="flex items-center gap-1.5 py-1 pe-1.5 ps-2.5 text-xs font-normal">
+                                                            <span>{r ? `#${r.number} — ${r.title}` : `#${id}`}</span>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => set('relatedPromiseIds', form.relatedPromiseIds.filter((item) => item !== id))}
+                                                                data-related-remove={id}
+                                                                onClick={() => {
+                                                                    // The removed chip takes focus with it; hand it to
+                                                                    // the next chip, or the picker when none is left.
+                                                                    const ids = form.relatedPromiseIds;
+                                                                    const next = ids[index + 1] ?? ids[index - 1] ?? null;
+                                                                    set('relatedPromiseIds', ids.filter((item) => item !== id));
+                                                                    requestAnimationFrame(() => {
+                                                                        const target = next
+                                                                            ? document.querySelector<HTMLElement>(`[data-related-remove="${CSS.escape(next)}"]`)
+                                                                            : document.getElementById('related_promise_select');
+                                                                        target?.focus();
+                                                                    });
+                                                                }}
                                                                 className="rounded-full p-0.5 hover:bg-muted-foreground/20 focus:outline-none focus:ring-1 focus:ring-ring"
                                                                 aria-label={`إزالة الوعد ${r ? `#${r.number}` : id}`}
                                                             >

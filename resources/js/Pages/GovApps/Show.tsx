@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -111,6 +111,11 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
     const canAny = useCanAny();
     const canEdit = canAny('govapps.edit');
     const [suggestionOpen, setSuggestionOpen] = useState(false);
+    // Stable identity: the dialog resets its fields whenever fixedTarget changes.
+    const suggestionTarget = useMemo(
+        () => ({ id: app.id, label: app.name, subtitle: app.description ?? null }),
+        [app.id, app.name, app.description],
+    );
 
     const androidLink = app.links?.android?.trim() || null;
     const appleLink = app.links?.apple?.trim() || null;
@@ -533,11 +538,7 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                 open={suggestionOpen}
                 onOpenChange={setSuggestionOpen}
                 defaultKind="edit"
-                fixedTarget={{
-                    id: app.id,
-                    label: app.name,
-                    subtitle: app.description ?? null,
-                }}
+                fixedTarget={suggestionTarget}
             />
         </MainLayout>
     );

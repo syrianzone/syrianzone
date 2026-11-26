@@ -176,7 +176,9 @@ export function loadAll(): Promise<UnifiedData> {
   
   unifiedState.allPromise = (async () => {
     try {
-      const res = await fetch('/quran-data/mushaf-unified.json');
+      // The parse below fills the surah table a manifest creates, but the
+      // download needs nothing from it: fetch both at once, not one after the other.
+      const [res] = await Promise.all([fetch('/quran-data/mushaf-unified.json'), loadManifest(ANCHORS[0])]);
       if (!res.ok) throw new Error('Mushaf unified failed');
       const data = await res.json() as any[];
       
@@ -313,16 +315,18 @@ export async function renderMushafPage(page: number, fontSize: number, signal?: 
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
   const anchor = nearestAnchor(fontSize);
-  const [manifest, other] = await Promise.all([loadManifest(anchor), loadManifest(otherAnchor(fontSize))]);
+  // The text data is independent of the two manifests: load all three together.
+  const [manifest, other] = await Promise.all([
+    loadManifest(anchor),
+    loadManifest(otherAnchor(fontSize)),
+    ensureUnified(),
+  ]);
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
   const lw16 = manifest.font_size === 16 ? manifest.line_width : other.line_width;
   const lw24 = manifest.font_size === 24 ? manifest.line_width : other.line_width;
   const fitted = fittedLineWidth(fontSize, lw16, lw24);
   const scale = stretchScaleFor(fontSize, lw16, lw24);
-
-  await ensureUnified();
-  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
   
   const bounds = manifest.pages[page - 1];

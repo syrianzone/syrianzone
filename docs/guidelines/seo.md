@@ -81,7 +81,8 @@ a resolver, set `title` (document) and `shareTitle` (preview).
 ## Adding a fixed page
 
 1. Add one record to `resources/data/seo.json`: the `path`, an Arabic `title`,
-   a `description` of roughly 110 to 160 characters, the `card` slug, and — when
+   a `description` of 110 to 160 characters (`PagesTableTest` enforces it)
+   that says what the page lets a visitor do, the `card` slug, and — when
    they differ from the defaults — `type` (`article`), `schema` (a JSON-LD type
    more specific than `WebPage`), `parent` (the hub's path), `parentLabel`
    (only when the hub's own title is too long to repeat in a breadcrumb) and
@@ -245,6 +246,16 @@ Routes under `SeoMeta::NOINDEX_PREFIXES` (`admin`, `superadmin`,
 `admin`, `superadmin`, `transit/admin`, `dashboard`, `auth`, `user`, `dev`,
 `mcp` and `guesswho/room`, and none of these routes is in the sitemap. A
 non-indexed page can still have a card: a game room link is meant to be shared.
+
+JSON answered under `/api` carries `X-Robots-Tag: noindex`
+(`App\Http\Middleware\NoindexApiResponses`). robots.txt does not block `/api`:
+a crawler that renders pages has to fetch what the page fetches.
+
+A page that nothing on the site links to does not belong in the sitemap either:
+set `"sitemap": false` on its record (`/party`, removed from the catalogue, and
+`/guesswho`, still "coming soon") and remove it when a page links to it again.
+The crawl a search engine makes from the home page should reach every URL the
+sitemap lists.
 
 ## Structured data (JSON-LD)
 

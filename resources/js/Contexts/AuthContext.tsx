@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import { api } from '@/Lib/api';
 import { hasCapability, type Capability } from '@/Lib/capabilities';
@@ -27,40 +27,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(sharedUser);
     }, [sharedUser]);
 
-    const refreshUser = async () => {
+    const refreshUser = useCallback(async () => {
         try {
             const res = await api.get<AuthUser>('/user');
             setUser(res);
         } catch {
             setUser(null);
         }
-    };
+    }, []);
 
-    // Role implications are resolved on the server and arrive as
-    // effective_permissions, so this delegates to the same function useCan()
-    // uses. There is deliberately no role table in this module.
-    const can = (permission: Capability): boolean =>
-        hasCapability(user?.effective_permissions, permission);
+    // One value per user, not per render: MainLayout re-renders with every
+    // page state change, and a fresh object here would re-render every
+    // consumer (the navbar included) on each keystroke.
+    const value = useMemo<AuthContextType>(() => {
+        // Role implications are resolved on the server and arrive as
+        // effective_permissions, so this delegates to the same function useCan()
+        // uses. There is deliberately no role table in this module.
+        const can = (permission: Capability): boolean =>
+            hasCapability(user?.effective_permissions, permission);
 
-    // The scope rule (superadmin bypass, stored scopes trimmed and emptied) is
-    // `User::allowedTransitCities()`, and it arrives resolved as `transit_scope`
-    // on the auth payload. This module only compares against it.
-    const allowedTransitCities = (): string[] | null => user?.transit_scope ?? null;
+        // The scope rule (superadmin bypass, stored scopes trimmed and emptied) is
+        // `User::allowedTransitCities()`, and it arrives resolved as `transit_scope`
+        // on the auth payload. This module only compares against it.
+        const allowedTransitCities = (): string[] | null => user?.transit_scope ?? null;
 
-    const canInCity = (permission: Capability, cityId?: string | null): boolean => {
-        if (!can(permission)) return false;
-        // Only transit.* capabilities carry a governorate scope
-        // (User::hasPermissionInCity()).
-        if (!permission.startsWith('transit.')) return true;
+        const canInCity = (permission: Capability, cityId?: string | null): boolean => {
+            if (!can(permission)) return false;
+            // Only transit.* capabilities carry a governorate scope
+            // (User::hasPermissionInCity()).
+            if (!permission.startsWith('transit.')) return true;
 
-        const allowed = allowedTransitCities();
-        if (allowed === null) return true;
+            const allowed = allowedTransitCities();
+            if (allowed === null) return true;
 
-        return !!cityId && allowed.includes(cityId);
-    };
+            return !!cityId && allowed.includes(cityId);
+        };
+
+        return { user, can, canInCity, allowedTransitCities, refreshUser };
+    }, [user, refreshUser]);
 
     return (
-        <AuthContext.Provider value={{ user, can, canInCity, allowedTransitCities, refreshUser }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

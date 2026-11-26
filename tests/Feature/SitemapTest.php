@@ -112,6 +112,16 @@ test('sitemap omits gated, ephemeral and redirect urls', function () {
     expect(sitemapLocs($body))->not->toContain('https://syrian.zone/places');
 });
 
+test('sitemap leaves out pages nothing on the site links to yet', function () {
+    // Guess Who is "coming soon" and unlinked from the UI (docs/modules/games.md),
+    // and the parties directory was taken out of the catalogue: neither should
+    // be advertised to crawlers until a page links to it again.
+    $locs = sitemapLocs($this->get('/sitemap.xml')->getContent());
+
+    expect($locs)->not->toContain('https://syrian.zone/guesswho')
+        ->and($locs)->not->toContain('https://syrian.zone/party');
+});
+
 test('sitemap includes active polls and skips inactive ones', function () {
     Poll::factory()->create(['slug' => 'live-poll', 'is_active' => true]);
     Poll::factory()->create(['slug' => 'retired-poll', 'is_active' => false]);

@@ -13,7 +13,7 @@
     { "slug": "priorities", "title": "أولويات سوريا", "subtitle": "رتّب أولوياتك لسوريا المستقبل وشاركها", "icon": "priorities" },
     { "slug": "compass", "title": "بوصلة سوريا", "subtitle": "اكتشف موقعك السياسي على أحد عشر محوراً", "icon": "compass" },
     { "slug": "compass-stats", "title": "إحصاءات البوصلة", "subtitle": "نتائج مجمّعة ومجهولة الهوية لاختبار بوصلة سوريا", "icon": "compass" },
-    { "slug": "alignment", "title": "مواءمة البوصلة", "subtitle": "قارن توجّهاتك بالقوى والتيارات السياسية", "icon": "compass" },
+    { "slug": "alignment", "title": "مولّد البوصلة السياسية", "subtitle": "أنشئ بوصلتك وخصّص محاورها وألوانها ونقاطها", "icon": "compass" },
     { "slug": "games-fakenews", "title": "هل تميّزها؟", "subtitle": "اختبر قدرتك على التمييز بين الأخبار الحقيقية والشائعات في سوريا", "icon": "fakenews" },
 
     { "slug": "mishwar", "title": "مشوار", "subtitle": "دليل وخريطة الأماكن والمطاعم والمقاهي في سوريا", "icon": "mishwar" },

@@ -115,6 +115,8 @@ export default function RevealPanel({
       const now = performance.now();
       const delta = now - lastTickRef.current;
       lastTickRef.current = now;
+      // Time spent in a background tab is not reading time: hold the countdown.
+      if (document.visibilityState === 'hidden') return;
       setRemainingMs((prev) => {
         const next = Math.max(0, prev - delta);
         if (next === 0 && !committedRef.current) {
@@ -122,7 +124,7 @@ export default function RevealPanel({
         }
         return next;
       });
-    }, 50);
+    }, 100);
 
     return () => window.clearInterval(intervalId);
   }, [dragging, timerStopped, flyVector, dismissCard, claim.id]);
@@ -421,7 +423,7 @@ export default function RevealPanel({
                 <div className="h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
                   <div
                     className={cn(
-                      'h-full rounded-full transition-[width] duration-75 ease-linear',
+                      'h-full rounded-full transition-[width] duration-100 ease-linear',
                       timerStopped
                         ? 'bg-muted-foreground/40'
                         : isCorrect

@@ -71,6 +71,21 @@ function CharacterCard({
   onToggleEliminate: (id: number) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  // The face that is turned away is inert, so the focused button would drop to
+  // <body> on every flip. Focus follows the flip instead: onto "نعم" when the
+  // question shows, back onto the button that asked it when it closes.
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const flipped = useRef(false);
+  useEffect(() => {
+    if (confirming) {
+      flipped.current = true;
+      confirmRef.current?.focus();
+    } else if (flipped.current) {
+      flipped.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [confirming]);
 
   const handleActionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -116,6 +131,7 @@ function CharacterCard({
             
             {gameState === 'lobby' && (
               <Button
+                ref={triggerRef}
                 onClick={handleActionClick}
                 className="w-full py-1 sm:py-1.5 h-auto text-[10px] sm:text-xs bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold rounded-lg"
               >
@@ -127,6 +143,7 @@ function CharacterCard({
               <div className="flex flex-col gap-1 sm:gap-1.5">
                 {!char.eliminated && (
                   <Button
+                    ref={triggerRef}
                     onClick={handleActionClick}
                     disabled={!myTurn}
                     className="w-full py-1 h-auto text-[10px] sm:text-[11px] bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
@@ -168,6 +185,7 @@ function CharacterCard({
 
           <div className="flex flex-col w-full gap-1 mt-1 sm:mt-2">
             <Button
+              ref={confirmRef}
               onClick={handleConfirm}
               className="w-full py-1 h-auto text-[10px] sm:text-xs bg-primary text-primary-foreground hover:bg-primary/90 font-extrabold rounded-lg flex items-center justify-center gap-1"
             >

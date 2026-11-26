@@ -1,5 +1,5 @@
 import React from 'react';
-import { PIP_LAYOUTS, RANK_LABEL, SUIT_LABEL, isCourt, isRed, type Card } from './cards';
+import { PIP_LAYOUTS, RANK_LABEL, SUIT_LABEL, cardName, isCourt, isRed, type Card } from './cards';
 
 interface PlayingCardProps {
   card: Card;
@@ -55,15 +55,8 @@ export default function PlayingCard({
     dropTarget ? 'sz-card--drop' : ''
   } ${extra ?? ''}`;
 
-  const SUIT_AR: Record<Card["suit"], string> = {
-    S: "بستوني",
-    H: "كبة",
-    D: "ديناري",
-    C: "سباتي",
-  };
-  const accessibleLabel = `${RANK_LABEL[card.rank]} ${SUIT_AR[card.suit]} (${SUIT_LABEL[card.suit]})${
-    picked ? " — محددة" : ""
-  }`;
+  // The picked state is exposed by aria-pressed, so the name does not repeat it.
+  const accessibleLabel = cardName(card);
 
   const body = (
     <span aria-hidden="true" className="contents">

@@ -30,6 +30,18 @@ export const SUIT_LABEL: Record<Suit, string> = {
 
 export const RANK_LABEL = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
+/** The suits as players say them, for accessible names and announcements. */
+export const SUIT_NAME_AR: Record<Suit, string> = {
+  S: 'بستوني',
+  H: 'كبة',
+  D: 'ديناري',
+  C: 'سباتي',
+};
+
+/** A card as a screen reader should say it: "10 كبة (♥)". */
+export const cardName = (card: Pick<Card, 'rank' | 'suit'>): string =>
+  `${RANK_LABEL[card.rank]} ${SUIT_NAME_AR[card.suit]} (${SUIT_LABEL[card.suit]})`;
+
 /** Whether a card is drawn as pips, a single ace pip, or a court letter. */
 export const isCourt = (rank: number): boolean => rank >= 11;
 

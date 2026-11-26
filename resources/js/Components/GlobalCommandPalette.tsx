@@ -76,7 +76,8 @@ export default function GlobalCommandPalette() {
                             value={query}
                             onValueChange={setQuery}
                             onKeyDown={(e) => {
-                                if (e.key !== 'Enter') return;
+                                // An IME's Enter confirms the composed word; it is not a selection.
+                                if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
                                 // cmdk highlights a result on pointer movement or
                                 // an arrow key, so a query that has just produced
                                 // results has nothing highlighted yet: open the

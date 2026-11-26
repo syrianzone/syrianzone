@@ -37,7 +37,7 @@ export function PlaceCard(props: { place: PlaceListItem; onClick: (id: number, l
       type="button"
       data-place-id={place.id}
       onClick={() => onClick(place.id, place.lat, place.lng)}
-      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-right transition-colors hover:bg-accent/50"
+      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-accent/50"
     >
       {place.thumb_url && !broken ? (
         <img

@@ -366,16 +366,16 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                             <div className="space-y-2">
                                 {form.stances.map((s, i) => (
                                     <div key={i} className="flex items-center gap-2">
-                                        <Input value={s} onChange={(e) => setStance(i, e.target.value)} />
+                                        <Input aria-label={`موقف ${i + 1}`} value={s} onChange={(e) => setStance(i, e.target.value)} />
                                         <Button
                                             type="button"
                                             variant="ghost"
                                             size="icon"
                                             className="text-destructive shrink-0"
                                             onClick={() => removeStance(i)}
-                                            aria-label="حذف الموقف"
+                                            aria-label={`حذف الموقف ${i + 1}`}
                                         >
-                                            <X className="h-4 w-4" />
+                                            <X className="h-4 w-4" aria-hidden="true" />
                                         </Button>
                                     </div>
                                 ))}
@@ -399,6 +399,7 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                                             min={-1}
                                             max={1}
                                             className="w-20"
+                                            aria-label={a.name}
                                             value={form.center[a.id] ?? ''}
                                             onChange={(e) => setCenter(a.id, e.target.value)}
                                         />
@@ -416,7 +417,7 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                                 {AXES.map((a) => (
                                     <div key={a.id} className="flex items-center gap-2">
                                         <span className="min-w-0 flex-1 truncate text-xs">{a.name}</span>
-                                        <Input aria-label="من"
+                                        <Input aria-label={`${a.name} — من`}
                                             type="number"
                                             step="0.05"
                                             min={-1}
@@ -426,7 +427,7 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                                             value={form.ranges[a.id]?.min ?? ''}
                                             onChange={(e) => setRange(a.id, 'min', e.target.value)}
                                         />
-                                        <Input aria-label="إلى"
+                                        <Input aria-label={`${a.name} — إلى`}
                                             type="number"
                                             step="0.05"
                                             min={-1}

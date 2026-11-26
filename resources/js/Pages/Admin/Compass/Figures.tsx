@@ -400,6 +400,7 @@ export default function CompassFigures({ figures, categories, canViewStats }: Pr
                                             min={-1}
                                             max={1}
                                             className="w-20"
+                                            aria-label={a.name}
                                             value={form.positions[a.id] ?? ''}
                                             onChange={(e) => setPosition(a.id, e.target.value)}
                                         />

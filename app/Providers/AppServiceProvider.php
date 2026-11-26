@@ -2,11 +2,26 @@
 
 namespace App\Providers;
 
+use App\Models\City;
+use App\Models\GovApp;
+use App\Models\GovtOfficial;
+use App\Models\GovtTenure;
 use App\Models\HouseMember2026;
+use App\Models\Place;
+use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\PromiseSector;
 use App\Models\PromiseSpeaker;
 use App\Models\PromiseUpdate;
+use App\Models\Route as TransitRoute;
+use App\Observers\IndexNow\CityObserver;
+use App\Observers\IndexNow\GovAppObserver;
+use App\Observers\IndexNow\GovtOfficialObserver;
+use App\Observers\IndexNow\GovtTenureObserver;
+use App\Observers\IndexNow\PlaceObserver;
+use App\Observers\IndexNow\PollObserver;
+use App\Observers\IndexNow\PromiseObserver;
+use App\Observers\IndexNow\TransitRouteObserver;
 use App\Services\Promises\PromiseIndexCache;
 use App\Support\Agents\AgentAuthorizer;
 use App\Support\Agents\AgentContext;
@@ -60,6 +75,16 @@ class AppServiceProvider extends ServiceProvider
         // The cached /house roster follows edits made through the model.
         HouseMember2026::saved(fn () => HouseMember2026::forgetRosterCache());
         HouseMember2026::deleted(fn () => HouseMember2026::forgetRosterCache());
+
+        // Queue public URLs for IndexNow on publish, update, or removal.
+        Promise::observe(PromiseObserver::class);
+        GovtOfficial::observe(GovtOfficialObserver::class);
+        GovtTenure::observe(GovtTenureObserver::class);
+        GovApp::observe(GovAppObserver::class);
+        Poll::observe(PollObserver::class);
+        City::observe(CityObserver::class);
+        TransitRoute::observe(TransitRouteObserver::class);
+        Place::observe(PlaceObserver::class);
 
         if (config('app.env') === 'production') {
             URL::forceScheme('https');

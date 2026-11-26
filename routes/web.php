@@ -22,6 +22,7 @@ use App\Http\Controllers\GuessWhoAdminController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IncomingSuggestionsAdminController;
+use App\Http\Controllers\IndexNowController;
 use App\Http\Controllers\PhonebookAdminController;
 use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\OgCardController;
@@ -67,8 +68,17 @@ Route::get('/healthcheck', function () {
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])
     ->withoutMiddleware('web');
 
+Route::get('/sitemap-images.xml', [SitemapController::class, 'images'])
+    ->withoutMiddleware('web');
+
 // A Markdown index of the site for language-model tools (see Seo\LlmsTxt).
 Route::get('/llms.txt', [LlmsTxtController::class, 'show'])
+    ->withoutMiddleware('web');
+
+// IndexNow ownership verification key file. Answers only when {key} matches
+// the configured key; everything else 404s.
+Route::get('/{key}.txt', [IndexNowController::class, 'key'])
+    ->where('key', '[A-Za-z0-9\-]+')
     ->withoutMiddleware('web');
 
 // Share cards of single records, drawn on demand (see OgCardController). Kept

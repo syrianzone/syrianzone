@@ -1,10 +1,9 @@
-import React, { Suspense, type ComponentType } from 'react';
+import { type ComponentType } from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { createInertiaApp } from '@inertiajs/react';
 import createServer from '@inertiajs/react/server';
 import { pageResolver } from '@/Lib/pages';
-import { QueryProvider } from '@/Providers/QueryProvider';
-import { DirectionProvider } from '@radix-ui/react-direction';
+import { AppRoot } from '@/Providers/AppRoot';
 
 const pages = import.meta.glob<{ default: ComponentType }>('./Pages/**/*.tsx');
 
@@ -18,13 +17,9 @@ createServer((page) =>
         title: (title) => title,
         resolve: pageResolver(pages, { deferred: false }),
         setup: ({ App, props }) => (
-            <DirectionProvider dir="rtl">
-                <QueryProvider>
-                    <Suspense fallback={null}>
-                        <App {...props} />
-                    </Suspense>
-                </QueryProvider>
-            </DirectionProvider>
+            <AppRoot>
+                <App {...props} />
+            </AppRoot>
         ),
     })
 );

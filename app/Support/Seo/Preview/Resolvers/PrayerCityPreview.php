@@ -15,6 +15,21 @@ final class PrayerCityPreview implements CardSource, PreviewResolver
 {
     use DescribesCards;
 
+    private const SYRIAN_MONTHS_AR = [
+        1 => 'كانون الثاني',
+        2 => 'شباط',
+        3 => 'آذار',
+        4 => 'نيسان',
+        5 => 'أيار',
+        6 => 'حزيران',
+        7 => 'تموز',
+        8 => 'آب',
+        9 => 'أيلول',
+        10 => 'تشرين الأول',
+        11 => 'تشرين الثاني',
+        12 => 'كانون الأول',
+    ];
+
     public static function cardType(): string
     {
         return 'prayer-city';
@@ -37,11 +52,14 @@ final class PrayerCityPreview implements CardSource, PreviewResolver
         }
 
         $cityName = (string) $gov['name_ar'];
+        $now = now()->timezone(Facts::syria()['timezone']);
+        $monthName = self::SYRIAN_MONTHS_AR[(int) $now->format('n')] ?? '';
+        $monthLabel = trim($monthName.' '.$now->format('Y'));
 
         return new Preview(
-            title: 'مواقيت الصلاة في '.$cityName.' اليوم | الركن الإسلامي',
-            shareTitle: 'مواقيت الصلاة في '.$cityName,
-            description: 'مواقيت الصلاة اليومية في '.$cityName.' (الفجر، الشروق، الظهر، العصر، المغرب، العشاء) بتوقيت سوريا مع عدّاد للصلاة القادمة وتتبّع الصلوات.',
+            title: 'مواقيت الصلاة في '.$cityName.' اليوم — '.$monthLabel.' | الركن الإسلامي',
+            shareTitle: 'مواقيت الصلاة في '.$cityName.' — '.$monthLabel,
+            description: 'مواقيت الصلاة اليومية والشهرية في '.$cityName.' لشهر '.$monthLabel.' (الفجر، الشروق، الظهر، العصر، المغرب، العشاء) بتوقيت سوريا مع اتجاه القبلة وعدّاد الصلاة القادمة.',
             canonicalPath: '/muslim/prayer/'.$gov['id'],
             image: $this->describe($gov)->url(),
             parent: ['/muslim/prayer', 'مواقيت الصلاة'],

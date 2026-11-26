@@ -62,6 +62,16 @@
      "iconUrl": null
     },
     {
+     "id": "muslim_ramadan",
+     "title": "إمساكية رمضان",
+     "subtitle": "إمساكية رمضان 1448 هـ / 2027 م لجميع المحافظات",
+     "href": "/muslim/ramadan",
+     "type": "native",
+     "target": "muslim_ramadan",
+     "iconKey": "muslim",
+     "iconUrl": null
+    },
+    {
      "id": "muslim_quran",
      "title": "القرآن الكريم",
      "subtitle": "قارئ القرآن بالرسم العثماني والتلاوة",

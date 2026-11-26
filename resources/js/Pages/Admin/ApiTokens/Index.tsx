@@ -347,11 +347,11 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                                                 type="checkbox"
                                                                 checked={checked}
                                                                 onChange={() => toggle(permission)}
-                                                                className="sr-only"
+                                                                className="peer sr-only"
                                                             />
                                                             <span
                                                                 aria-hidden
-                                                                className={`w-4 h-4 shrink-0 rounded-sm border flex items-center justify-center transition-all ${
+                                                                className={`w-4 h-4 shrink-0 rounded-sm border flex items-center justify-center transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background ${
                                                                     checked
                                                                         ? 'bg-primary border-primary text-primary-foreground'
                                                                         : 'border-input'

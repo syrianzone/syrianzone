@@ -77,9 +77,10 @@ export default function RadioMiniPlayer() {
   );
 
   return (
-    <div dir="rtl">
-      {/* Desktop: a floating now-playing card, bottom-right. */}
-      <div className="fixed bottom-4 right-4 z-40 hidden w-80 md:block">
+    // A labelled region: the player sits outside <main>, so it needs its own landmark.
+    <section dir="rtl" aria-label="إذاعة القرآن">
+      {/* Desktop: a floating now-playing card, bottom-right (inline start in RTL). */}
+      <div className="fixed bottom-4 start-4 z-40 hidden w-80 md:block">
         <Card className="border-border/60 bg-card/95 shadow-lg backdrop-blur">
           <CardContent className="space-y-3 p-3">
             <div className="flex items-start justify-between gap-2">
@@ -162,6 +163,6 @@ export default function RadioMiniPlayer() {
           </SheetContent>
         </Sheet>
       </div>
-    </div>
+    </section>
   );
 }

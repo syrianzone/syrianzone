@@ -5,6 +5,7 @@ import { createRoot, hydrateRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { pageResolver } from '@/Lib/pages';
 import { watchSystemTheme } from '@/Lib/theme';
+import { watchFontStorage } from '@/Lib/font';
 import { loadAnalytics, trackPageView } from '@/Lib/analyticsConsent';
 import { AppRoot } from '@/Providers/AppRoot';
 
@@ -28,8 +29,10 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     });
 }
 
-// keep data-theme in sync with the device scheme while the preference is 'system'
+// keep data-theme in sync with the device scheme while the preference is
+// 'system', and theme/font with choices made in other tabs
 watchSystemTheme();
+watchFontStorage();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Syrian Zone';
 

@@ -156,7 +156,9 @@ export function applyTheme(pref: string) {
   notifyThemeChanged();
 }
 
-// Follow the device scheme while the preference is 'system'. Call once at boot.
+// Follow the device scheme while the preference is 'system', and a theme picked
+// in another tab (the `storage` event only fires in the other tabs). Call once
+// at boot.
 export function watchSystemTheme(): () => void {
   const query = darkQuery();
   const onChange = () => {
@@ -165,8 +167,18 @@ export function watchSystemTheme(): () => void {
       notifyThemeChanged();
     }
   };
+  const onStorage = (event: StorageEvent) => {
+    // key is null when another tab cleared storage altogether
+    if (event.key !== THEME_KEY && event.key !== null) return;
+    applyThemeAttributes(resolveTheme(getThemePreference()));
+    notifyThemeChanged();
+  };
   query.addEventListener('change', onChange);
-  return () => query.removeEventListener('change', onChange);
+  window.addEventListener('storage', onStorage);
+  return () => {
+    query.removeEventListener('change', onChange);
+    window.removeEventListener('storage', onStorage);
+  };
 }
 
 export function getColorScheme(): ColorScheme {

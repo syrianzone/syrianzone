@@ -9,6 +9,7 @@ import { Label } from '@/Components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { notify as toastNotify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
+import { confirmDialog } from '@/Lib/confirm';
 import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -143,6 +144,13 @@ export default function ApiTokensIndex(props: ApiTokensData) {
     };
 
     const revoke = async (id: number) => {
+        const ok = await confirmDialog({
+            title: 'إبطال هذا الرمز؟',
+            description: 'سيتوقف أي وكيل يستخدمه فوراً، ولا يمكن التراجع عن الإبطال.',
+            destructive: true,
+            confirmText: 'إبطال',
+        });
+        if (!ok) return;
         try {
             const res = await apiTokensApi.revoke(id);
             notify(res.message);
@@ -153,6 +161,13 @@ export default function ApiTokensIndex(props: ApiTokensData) {
     };
 
     const revokeAll = async (userId: number) => {
+        const ok = await confirmDialog({
+            title: 'إبطال كل رموز هذا المستخدم؟',
+            description: 'تُبطل كل رموز الوكلاء الخاصة به وتنتهي جلساته على الهاتف، ولا يمكن التراجع.',
+            destructive: true,
+            confirmText: 'إبطال الكل',
+        });
+        if (!ok) return;
         try {
             const res = await apiTokensApi.revokeAllForUser(userId);
             notify(res.message);

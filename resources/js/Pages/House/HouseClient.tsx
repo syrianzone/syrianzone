@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId } from 'react';
 import { useTabList } from '@/Lib/useTabList';
 import { HouseRow, PROVINCES, Mode } from './types';
 import { fetchHouseData } from './data';
@@ -44,6 +44,7 @@ const AGE_GROUPS = [
 export default function HouseClient({ initialData, initialHeaders, initialMode }: HouseClientProps) {
     const [mode, setMode] = useState<Mode>(initialMode);
     const tabs = useTabList({ ids: MODES, active: mode, onChange: setMode });
+    const fieldId = useId();
     const [province, setProvince] = useState('damascus');
     const [data, setData] = useState<HouseRow[]>(initialData);
     const [headers, setHeaders] = useState<string[]>(initialHeaders);
@@ -252,12 +253,12 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                     {/* Province Selector (Voters/Winners). Presidential is a single national list. */}
                     {(mode === 'voters' || mode === 'winners') && (
                         <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">
+                            <label htmlFor={`${fieldId}-place`} className="block text-xs font-medium text-muted-foreground mb-1">
                                 {mode === 'winners' ? 'الدائرة الانتخابية' : 'المحافظة'}
                             </label>
                             {mode === 'winners' ? (
                                 <select
-                                    aria-label="الدائرة الانتخابية"
+                                    id={`${fieldId}-place`}
                                     className="w-full h-10 px-3 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={districtFilter}
                                     onChange={e => setFacet('district', e.target.value === 'all' ? '' : e.target.value)}
@@ -267,7 +268,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                                 </select>
                             ) : (
                                 <select
-                                    aria-label="المحافظة"
+                                    id={`${fieldId}-place`}
                                     className="w-full h-10 px-3 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={province}
                                     onChange={e => setProvince(e.target.value)}
@@ -279,7 +280,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                     )}
 
                     <div className={mode === 'candidates' ? "md:col-span-2" : "md:col-span-1"}>
-                        <label className="block text-xs font-medium text-muted-foreground mb-1">بحث</label>
+                        <span aria-hidden="true" className="block text-xs font-medium text-muted-foreground mb-1">بحث</span>
                         <DirectorySearch
                             value={directory.query}
                             onChange={directory.setQuery}
@@ -290,8 +291,9 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
                     <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">الجنس</label>
+                            <label htmlFor={`${fieldId}-sex`} className="block text-xs font-medium text-muted-foreground mb-1">الجنس</label>
                             <select
+                                id={`${fieldId}-sex`}
                                 className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                 value={sexFilter}
                                 onChange={e => setFacet('sex', e.target.value)}
@@ -302,8 +304,9 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">العمر</label>
+                            <label htmlFor={`${fieldId}-age`} className="block text-xs font-medium text-muted-foreground mb-1">العمر</label>
                             <select
+                                id={`${fieldId}-age`}
                                 className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                 value={ageFilter}
                                 onChange={e => setFacet('age', e.target.value)}
@@ -319,8 +322,9 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
                         {mode === 'voters' && (
                             <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">حالة الطعن</label>
+                                <label htmlFor={`${fieldId}-appeal`} className="block text-xs font-medium text-muted-foreground mb-1">حالة الطعن</label>
                                 <select
+                                    id={`${fieldId}-appeal`}
                                     className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={appealFilter}
                                     onChange={e => setFacet('appeal', e.target.value)}
@@ -334,8 +338,9 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
 
                         {mode === 'candidates' && (
                             <div>
-                                <label className="block text-xs font-medium text-muted-foreground mb-1">النتيجة</label>
+                                <label htmlFor={`${fieldId}-result`} className="block text-xs font-medium text-muted-foreground mb-1">النتيجة</label>
                                 <select
+                                    id={`${fieldId}-result`}
                                     className="w-full h-10 px-2 bg-muted border border-border rounded-md outline-none focus:ring-2 focus:ring-primary text-sm text-foreground"
                                     value={resultFilter}
                                     onChange={e => setFacet('result', e.target.value)}

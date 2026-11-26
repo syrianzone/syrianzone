@@ -1350,10 +1350,11 @@ function TransitStudioPageContent() {
               <AccordionContent>
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                      اسم المسار بالعربية <span className="text-destructive">*</span>
+                    <label htmlFor="studio-name-ar" className="text-xs font-semibold text-foreground flex items-center gap-1">
+                      اسم المسار بالعربية <span className="text-destructive" aria-hidden="true">*</span>
                     </label>
-                    <Input aria-label="الاسم بالعربية"
+                    <Input
+                      id="studio-name-ar"
                       type="text"
                       required
                       value={nameAr}
@@ -1364,10 +1365,11 @@ function TransitStudioPageContent() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label htmlFor="studio-name-en" className="text-xs font-medium text-muted-foreground">
                       الاسم بالإنجليزية (اختياري)
                     </label>
-                    <Input aria-label="e.g. Bab Touma — Baramkeh"
+                    <Input
+                      id="studio-name-en"
                       type="text"
                       value={nameEn}
                       onChange={(e) => setMeta({ nameEn: e.target.value })}
@@ -1378,11 +1380,13 @@ function TransitStudioPageContent() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label htmlFor="studio-price" className="text-xs font-medium text-muted-foreground">
                       التعرفة / سعر التذكرة (ل.س - اختياري)
                     </label>
-                    <Input aria-label="السعر"
+                    <Input
+                      id="studio-price"
                       type="number"
+                      inputMode="numeric"
                       min="0"
                       value={price}
                       onChange={(e) => setMeta({ price: e.target.value })}
@@ -1393,10 +1397,11 @@ function TransitStudioPageContent() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label htmlFor="studio-notes" className="text-xs font-medium text-muted-foreground">
                       ملاحظات إضافية (اختياري)
                     </label>
-                    <Textarea aria-label="ملاحظات الخط"
+                    <Textarea
+                      id="studio-notes"
                       value={notes}
                       onChange={(e) => setMeta({ notes: e.target.value })}
                       placeholder="محطات بارزة، جداول التشغيل، تفاصيل إضافية..."

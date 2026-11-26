@@ -403,17 +403,23 @@ export default function RevealPanel({
                 <BdiText text={claim.explain} />
               </p>
 
-              {/* Subtle 3-second auto-dismiss timer bar (tap/click card to stop) */}
+              {/* Reading-length auto-dismiss timer. Tapping the card stops it; the
+                  button is the keyboard and screen-reader equivalent (WCAG 2.2.1). */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  {timerStopped ? (
-                    <span className="inline-flex items-center gap-1 font-medium text-foreground">
-                      <Pause className="h-3 w-3" aria-hidden="true" />
-                      <span>تم إيقاف المؤقّت</span>
-                    </span>
-                  ) : (
-                    <span>اضغط على البطاقة لإيقاف المؤقّت</span>
-                  )}
+                <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <button
+                    type="button"
+                    aria-pressed={timerStopped}
+                    onClick={() => setTimerStopped((stopped) => !stopped)}
+                    className={cn(
+                      'inline-flex min-h-6 items-center gap-1 rounded-sm font-medium hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      timerStopped && 'text-foreground',
+                    )}
+                  >
+                    <Pause className="h-3 w-3" aria-hidden="true" />
+                    <span>إيقاف المؤقّت</span>
+                  </button>
+                  {!timerStopped && <span aria-hidden="true">أو اضغط على البطاقة</span>}
                 </div>
                 <div className="h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
                   <div
@@ -444,6 +450,7 @@ export default function RevealPanel({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setTimerStopped(true)}
+                onFocus={() => setTimerStopped(true)}
                 className="inline-flex items-center justify-center gap-2 text-center whitespace-normal"
               >
                 <ExternalLink className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />

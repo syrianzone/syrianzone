@@ -282,7 +282,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                 className="w-full text-center py-2 bg-muted/50 hover:bg-muted/80 rounded-xl border border-border/60 font-mono text-base font-extrabold text-foreground tracking-wide transition-colors cursor-pointer group flex items-center justify-center gap-2"
                                                 title="انقر لنسخ الرقم"
                                             >
-                                                <span>{item.number}</span>
+                                                <bdi dir="ltr">{item.number}</bdi>
                                                 {copiedId === item.id ? (
                                                     <Check className="h-4 w-4 text-emerald-500 animate-in zoom-in-50" />
                                                 ) : (
@@ -366,7 +366,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                     <span className="text-[10px] text-muted-foreground font-normal">{item.category_ar}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="font-mono text-sm font-extrabold text-foreground">{item.number}</TableCell>
+                                            <TableCell className="font-mono text-sm font-extrabold text-foreground"><bdi dir="ltr">{item.number}</bdi></TableCell>
                                             <TableCell>
                                                 {item.is_whatsapp ? (
                                                     <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-semibold">

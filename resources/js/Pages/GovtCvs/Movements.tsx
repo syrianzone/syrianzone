@@ -415,6 +415,13 @@ export default function GovtCvsMovements({
                                                                     aria-hidden="true"
                                                                 />
                                                                 <span>المصدر الرسمي</span>
+                                                                <span className="sr-only">
+                                                                    : {movement.official_name_ar}
+                                                                    {movement.date
+                                                                        ? ` — ${formatGovtDate(movement.date, movement.date_precision)}`
+                                                                        : ''}{' '}
+                                                                    (يفتح في نافذة جديدة)
+                                                                </span>
                                                             </a>
                                                         )}
                                                     </div>

@@ -62,7 +62,7 @@ import {
     useLocationPreference,
     type LocationPatch,
 } from '@/Domain/location/preference';
-import { PRAYER_KEYS, PRAYER_LABELS } from '@/Domain/prayer/methods';
+import { DEFAULT_PRAYER_METHOD, PRAYER_KEYS, PRAYER_LABELS, PRAYER_METHODS } from '@/Domain/prayer/methods';
 import { formatHijriDate, hijriDateLabel } from '@/Domain/prayer/hijri';
 import { prayerSchedule } from '@/Domain/prayer/nextPrayer';
 import { usePrayerTimes } from '@/Domain/prayer/times';
@@ -144,6 +144,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
     // stored on this device and mirrored to the account, the same as /muslim.
     const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();
     const method = prefs.method;
+    const chosenMethod = PRAYER_METHODS.find((m) => m.id === method);
     const [roznamaSettingsOpen, setRoznamaSettingsOpen] = usePageDialog('roznama-settings');
 
     const handleMethodChange = (next: number) => {
@@ -589,7 +590,9 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                     </div>
 
                                     <div className="text-[10px] text-muted-foreground mt-4 text-center leading-relaxed">
-                                        طريقة رابطة العالم الإسلامي (فجر 18° وعشاء 17°)، معتمد من وزارة الأوقاف.
+                                        {method === DEFAULT_PRAYER_METHOD || !chosenMethod
+                                            ? 'طريقة رابطة العالم الإسلامي (فجر 18° وعشاء 17°)، معتمد من وزارة الأوقاف.'
+                                            : `طريقة ${chosenMethod.nameAr} (${chosenMethod.detail}) — اخترتها في الإعدادات.`}
                                     </div>
                                 </CardContent>
                             </Card>

@@ -248,7 +248,8 @@ export default function SyidClient() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // Revoking in the same task can cancel the download in some browsers.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
 
         notify.success(`تم تحميل ملف SVG بنجاح`);
     };
@@ -278,7 +279,8 @@ export default function SyidClient() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // Revoking in the same task can cancel the download in some browsers.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
 
         notify.success(`تم تحميل ملف GeoJSON بنجاح`);
     };
@@ -835,7 +837,8 @@ export default function SyidClient() {
                                 document.body.appendChild(link);
                                 link.click();
                                 document.body.removeChild(link);
-                                URL.revokeObjectURL(url);
+                                // Revoking in the same task can cancel the download in some browsers.
+                                setTimeout(() => URL.revokeObjectURL(url), 1000);
                                 notify.success(`تم تنزيل أيقونة ${icon.name} - ${currentTheme.name}`);
                             };
 

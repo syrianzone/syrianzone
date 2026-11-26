@@ -31,6 +31,10 @@
    "viewBox": "0 0 32 32",
    "body": "<rect x=\"4\" y=\"10\" width=\"6\" height=\"18\" rx=\"2\" class=\"fill-[#94A3B8]/20 dark:fill-[#CBD5E1]/25 stroke-[#475569] dark:stroke-[#CBD5E1]\" stroke-width=\"2\"></rect><path d=\"M11 14.5L28 11\" class=\"stroke-[#DC2626] dark:stroke-[#F87171]\" stroke-width=\"4\" stroke-linecap=\"round\"></path><path d=\"M13 14.1L26 11.4\" class=\"stroke-[#F8FAFC] dark:stroke-[#0F172A]\" stroke-width=\"4\" stroke-dasharray=\"3 4\"></path><path d=\"M3 28h26\" class=\"stroke-[#475569] dark:stroke-[#CBD5E1]\" stroke-width=\"2\" stroke-linecap=\"round\"></path><circle cx=\"23\" cy=\"21\" r=\"3\" fill=\"hsl(var(--primary))\"></circle>"
   },
+  "currency": {
+   "viewBox": "0 0 32 32",
+   "body": "<rect x=\"3\" y=\"8\" width=\"22\" height=\"14\" rx=\"2.5\" class=\"fill-[#10B981]/15 dark:fill-[#34D399]/20 stroke-[#059669] dark:stroke-[#34D399]\" stroke-width=\"2\"></rect><circle cx=\"14\" cy=\"15\" r=\"3\" fill=\"hsl(var(--primary))\"></circle><circle cx=\"24\" cy=\"21\" r=\"5\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></circle>"
+  },
   "game_2048": {
    "viewBox": "0 0 32 32",
    "body": "<rect x=\"4\" y=\"4\" width=\"11\" height=\"11\" rx=\"2.5\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></rect><rect x=\"17\" y=\"4\" width=\"11\" height=\"11\" rx=\"2.5\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></rect><rect x=\"4\" y=\"17\" width=\"11\" height=\"11\" rx=\"2.5\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></rect><rect x=\"17\" y=\"17\" width=\"11\" height=\"11\" rx=\"2.5\" class=\"fill-[#D97706]/25 dark:fill-[#FBBF24]/35 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></rect><rect x=\"17\" y=\"17\" width=\"11\" height=\"11\" rx=\"2.5\" fill=\"hsl(var(--primary))\" opacity=\"0.35\"></rect>"

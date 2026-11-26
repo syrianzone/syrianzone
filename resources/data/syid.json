@@ -1,0 +1,674 @@
+{
+  "meta": {
+    "title_ar": "الهوية البصرية للجمهورية العربية السورية",
+    "official_site_url": "https://syrianidentity.sy",
+    "official_site_note_ar": "الموقع الرسمي متوقف عن العمل منذ فترة، وتتوفر الملفات الرسمية المؤرشفة للتحميل المباشر هنا.",
+    "official_zip_path": "/downloads/191b8f0d278fc2ab095fb4f344e3e9b4-vGF1L1.zip",
+    "sources": [
+      {
+        "id": "syrianidentity",
+        "label_ar": "الموقع الرسمي للهوية البصرية للجمهورية العربية السورية (syrianidentity.sy)",
+        "url": "https://syrianidentity.sy"
+      },
+      {
+        "id": "sana-story",
+        "label_ar": "سانا — حكاية الهوية البصرية الجديدة للجمهورية العربية السورية (3 تموز 2025)",
+        "url": "https://sana.sy/locals/2242953/"
+      },
+      {
+        "id": "sana-design",
+        "label_ar": "سانا — كيف صُمّم شعار سوريا الجديد وما هي دلالاته؟ (5 تموز 2025)",
+        "url": "https://sana.sy/locals/2243648/"
+      },
+      {
+        "id": "naits-guide",
+        "label_ar": "الهيئة الوطنية لخدمات تقانة المعلومات — دليل الإجراءات الاسترشادية لتطوير مواقع ومنصات الويب الحكومية (الإصدار الثالث، ص 30–35)",
+        "url": "https://naits.gov.sy/storage/media/laws/aldlyl-alastrshady-lttoyr-almoakaa-alhkomy/files/26c24b30-fbb5-48f4-b96b-fbe6de2836cb.pdf"
+      },
+      {
+        "id": "constitutional-declaration",
+        "label_ar": "الإعلان الدستوري للجمهورية العربية السورية — المادة (6) (13 آذار 2025، عبر أرشيف سانا)",
+        "url": "https://sana.sy/?p=2198312"
+      }
+    ]
+  },
+  "palettes": [
+    {
+      "name": "Forest",
+      "name_ar": "الأخضر الداكن (Forest)",
+      "colors": [
+        {
+          "hex": "#428177",
+          "hsl": "hsl(171 32% 38%)",
+          "cmyk": "C76% M32% Y54% K10%",
+          "oklch": "oklch(0.536 0.061 189.6)",
+          "textColor": "white"
+        },
+        {
+          "hex": "#054239",
+          "hsl": "hsl(171 86% 14%)",
+          "cmyk": "C89% M49% Y70% K50%",
+          "oklch": "oklch(0.334 0.057 186.2)",
+          "textColor": "white"
+        },
+        {
+          "hex": "#002623",
+          "hsl": "hsl(173 100% 7%)",
+          "cmyk": "C87% M59% Y68% K71%",
+          "oklch": "oklch(0.208 0.038 184.5)",
+          "textColor": "white"
+        }
+      ]
+    },
+    {
+      "name": "Golden Wheat",
+      "name_ar": "الذهبي والقمحي (Golden Wheat)",
+      "colors": [
+        {
+          "hex": "#edebe0",
+          "hsl": "hsl(49 26% 90%)",
+          "cmyk": "C6% M9% Y19% K0%",
+          "oklch": "oklch(0.938 0.010 95.8)",
+          "textColor": "black"
+        },
+        {
+          "hex": "#b9a779",
+          "hsl": "hsl(43 32% 60%)",
+          "cmyk": "C20% M29% Y52% K7%",
+          "oklch": "oklch(0.722 0.063 88.5)",
+          "textColor": "black"
+        },
+        {
+          "hex": "#988561",
+          "hsl": "hsl(40 22% 49%)",
+          "cmyk": "C39% M46% Y67% K20%",
+          "oklch": "oklch(0.598 0.058 87.2)",
+          "textColor": "white"
+        }
+      ]
+    },
+    {
+      "name": "Deep Umber",
+      "name_ar": "الأحمر الداكن (Deep Umber)",
+      "colors": [
+        {
+          "hex": "#6b1f2a",
+          "hsl": "hsl(351 55% 27%)",
+          "cmyk": "C35% M92% Y72% K46%",
+          "oklch": "oklch(0.354 0.108 20.7)",
+          "textColor": "white"
+        },
+        {
+          "hex": "#4a151e",
+          "hsl": "hsl(350 56% 19%)",
+          "cmyk": "C44% M86% Y68% K65%",
+          "oklch": "oklch(0.279 0.083 19.5)",
+          "textColor": "white"
+        },
+        {
+          "hex": "#260f14",
+          "hsl": "hsl(348 43% 10%)",
+          "cmyk": "C60% M75% Y64% K79%",
+          "oklch": "oklch(0.183 0.039 18.2)",
+          "textColor": "white"
+        }
+      ]
+    },
+    {
+      "name": "Charcoal",
+      "name_ar": "الرمادي والفحمي (Charcoal)",
+      "colors": [
+        {
+          "hex": "#ffffff",
+          "hsl": "hsl(0 0% 100%)",
+          "cmyk": "C0% M0% Y0% K0%",
+          "oklch": "oklch(1 0 0)",
+          "textColor": "black"
+        },
+        {
+          "hex": "#3d3a3b",
+          "hsl": "hsl(340 3% 24%)",
+          "cmyk": "C67% M53% Y60% K50%",
+          "oklch": "oklch(0.344 0.005 348.0)",
+          "textColor": "white"
+        },
+        {
+          "hex": "#161616",
+          "hsl": "hsl(0 0% 9%)",
+          "cmyk": "C73% M67% Y65% K80%",
+          "oklch": "oklch(0.185 0 0)",
+          "textColor": "white"
+        }
+      ]
+    }
+  ],
+  "logo": {
+    "hero_image": {
+      "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-1080.png",
+      "full_path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-4k.png",
+      "width": 1080,
+      "height": 1080,
+      "full_width": 3840,
+      "full_height": 3840,
+      "alt_ar": "شعار الجمهورية العربية السورية الجديد — العقاب الذهبي السوري تعلوه ثلاث نجوم",
+      "name_ar": "شعار الجمهورية العربية السورية الجديد (العقاب الذهبي)",
+      "caption_ar": "العقاب الذهبي السوري، الشعار الرسمي للجمهورية العربية السورية المُطلق في 3 تموز 2025: 14 ريشة في الجناحين و5 ريشات في الذيل وتعلوه ثلاث نجوم.",
+      "credit_text": "الهوية البصرية للجمهورية العربية السورية (syrianidentity.sy)",
+      "creator_name": "فريق تطوير الهوية البصرية للجمهورية العربية السورية"
+    },
+    "variants": [
+      {
+        "id": "gold",
+        "title_ar": "النسخة الذهبية الرسمية (اللون الأساسي)",
+        "description_ar": "الشعار الرسمي للعقاب الذهبي السوري بخلفية شفافة، جاهز للاستخدام الرقمي والمطبوع.",
+        "preview_path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-1080.png",
+        "preview_width": 1080,
+        "preview_height": 1080,
+        "preview_bg": "light",
+        "alt_ar": "شعار الجمهورية العربية السورية — النسخة الذهبية الرسمية بخلفية شفافة",
+        "downloads": [
+          {
+            "id": "gold-svg",
+            "format": "SVG",
+            "label_ar": "ملف فيكتور SVG (قابل للتكبير)",
+            "path": "/syid-assets/materials/logo.ai.svg",
+            "download_name": "شعار-الجمهورية-العربية-السورية.svg",
+            "dimensions_ar": "متّجه (Vector)",
+            "width": null,
+            "height": null,
+            "size_bytes": 13052,
+            "size_label": "13 KB"
+          },
+          {
+            "id": "gold-png-4k",
+            "format": "PNG 4K",
+            "label_ar": "صورة PNG بدقة 4K (خلفية شفافة)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-4k.png",
+            "download_name": "شعار-الجمهورية-العربية-السورية-4K.png",
+            "dimensions_ar": "3840 × 3840 px",
+            "width": 3840,
+            "height": 3840,
+            "size_bytes": 136502,
+            "size_label": "133 KB"
+          },
+          {
+            "id": "gold-png-1080",
+            "format": "PNG 1080p",
+            "label_ar": "صورة PNG بدقة 1080px (خلفية شفافة)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-1080.png",
+            "download_name": "شعار-الجمهورية-العربية-السورية-1080.png",
+            "dimensions_ar": "1080 × 1080 px",
+            "width": 1080,
+            "height": 1080,
+            "size_bytes": 32878,
+            "size_label": "32 KB"
+          },
+          {
+            "id": "gold-pdf",
+            "format": "PDF",
+            "label_ar": "ملف PDF متّجه للطباعة",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem.pdf",
+            "download_name": "شعار-الجمهورية-العربية-السورية.pdf",
+            "dimensions_ar": "متّجه (Vector PDF)",
+            "width": null,
+            "height": null,
+            "size_bytes": 4632,
+            "size_label": "5 KB"
+          }
+        ]
+      },
+      {
+        "id": "black",
+        "title_ar": "النسخة السوداء الأحادية (Monochrome Black)",
+        "description_ar": "نسخة أحادية باللون الفحمي (#161616) مناسبة للخلفيات الفاتحة والمطبوعات الرسمية أحادية اللون.",
+        "preview_path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-black-1080.png",
+        "preview_width": 1080,
+        "preview_height": 823,
+        "preview_bg": "light",
+        "alt_ar": "شعار الجمهورية العربية السورية — النسخة السوداء الأحادية بخلفية شفافة",
+        "downloads": [
+          {
+            "id": "black-svg",
+            "format": "SVG",
+            "label_ar": "ملف فيكتور SVG (أسود)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-black.svg",
+            "download_name": "شعار-الجمهورية-العربية-السورية-أسود.svg",
+            "dimensions_ar": "متّجه (Vector)",
+            "width": null,
+            "height": null,
+            "size_bytes": 3500,
+            "size_label": "3.4 KB"
+          },
+          {
+            "id": "black-png-4k",
+            "format": "PNG 4K",
+            "label_ar": "صورة PNG بدقة 4K (أسود، خلفية شفافة)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-black-4k.png",
+            "download_name": "شعار-الجمهورية-العربية-السورية-أسود-4K.png",
+            "dimensions_ar": "3840 × 2925 px",
+            "width": 3840,
+            "height": 2925,
+            "size_bytes": 205743,
+            "size_label": "201 KB"
+          },
+          {
+            "id": "black-png-1080",
+            "format": "PNG 1080p",
+            "label_ar": "صورة PNG بدقة 1080px (أسود)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-black-1080.png",
+            "download_name": "شعار-الجمهورية-العربية-السورية-أسود-1080.png",
+            "dimensions_ar": "1080 × 823 px",
+            "width": 1080,
+            "height": 823,
+            "size_bytes": 50247,
+            "size_label": "49 KB"
+          },
+          {
+            "id": "black-pdf",
+            "format": "PDF",
+            "label_ar": "ملف PDF متّجه (أسود)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-black.pdf",
+            "download_name": "شعار-الجمهورية-العربية-السورية-أسود.pdf",
+            "dimensions_ar": "متّجه (Vector PDF)",
+            "width": null,
+            "height": null,
+            "size_bytes": 3193,
+            "size_label": "3.1 KB"
+          }
+        ]
+      },
+      {
+        "id": "white",
+        "title_ar": "النسخة البيضاء الأحادية (Monochrome White)",
+        "description_ar": "نسخة بيضاء صافية (#FFFFFF) مخصّصة للخلفيات الداكنة والصور والعروض التقديمية.",
+        "preview_path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-white-1080.png",
+        "preview_width": 1080,
+        "preview_height": 823,
+        "preview_bg": "dark",
+        "alt_ar": "شعار الجمهورية العربية السورية — النسخة البيضاء الأحادية على خلفية داكنة",
+        "downloads": [
+          {
+            "id": "white-svg",
+            "format": "SVG",
+            "label_ar": "ملف فيكتور SVG (أبيض)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-white.svg",
+            "download_name": "شعار-الجمهورية-العربية-السورية-أبيض.svg",
+            "dimensions_ar": "متّجه (Vector)",
+            "width": null,
+            "height": null,
+            "size_bytes": 3497,
+            "size_label": "3.4 KB"
+          },
+          {
+            "id": "white-png-4k",
+            "format": "PNG 4K",
+            "label_ar": "صورة PNG بدقة 4K (أبيض، خلفية شفافة)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-white-4k.png",
+            "download_name": "شعار-الجمهورية-العربية-السورية-أبيض-4K.png",
+            "dimensions_ar": "3840 × 2925 px",
+            "width": 3840,
+            "height": 2925,
+            "size_bytes": 184107,
+            "size_label": "180 KB"
+          },
+          {
+            "id": "white-png-1080",
+            "format": "PNG 1080p",
+            "label_ar": "صورة PNG بدقة 1080px (أبيض)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-white-1080.png",
+            "download_name": "شعار-الجمهورية-العربية-السورية-أبيض-1080.png",
+            "dimensions_ar": "1080 × 823 px",
+            "width": 1080,
+            "height": 823,
+            "size_bytes": 43518,
+            "size_label": "42 KB"
+          },
+          {
+            "id": "white-pdf",
+            "format": "PDF",
+            "label_ar": "ملف PDF متّجه (أبيض)",
+            "path": "/syid-assets/downloads/syrian-arab-republic-eagle-emblem-white.pdf",
+            "download_name": "شعار-الجمهورية-العربية-السورية-أبيض.pdf",
+            "dimensions_ar": "متّجه (Vector PDF)",
+            "width": null,
+            "height": null,
+            "size_bytes": 3186,
+            "size_label": "3.1 KB"
+          }
+        ]
+      }
+    ],
+    "symbolism": [
+      {
+        "id": "historical-roots",
+        "title_ar": "الاستمرارية التاريخية والعقاب الذهبي",
+        "body_ar": "أُطلقت الهوية البصرية الجديدة في 3 تموز 2025 في قصر الشعب بدمشق متخذةً «العقاب الذهبي السوري» شعاراً رسمياً للدولة، امتداداً لما صمّمه الفنان التشكيلي السوري خالد العسلي عام 1945، واستحضاراً لرمزية العقاب في الحضارات السورية القديمة وتاريخ فتح الشام في معركة ثنية العقاب؛ فيما يرمز اللون الذهبي إلى السمو والرفعة.",
+        "source_label_ar": "سانا — حكاية الهوية البصرية الجديدة (3 تموز 2025)",
+        "source_url": "https://sana.sy/locals/2242953/"
+      },
+      {
+        "id": "three-stars",
+        "title_ar": "تحرّر النجوم الثلاث فوق العقاب",
+        "body_ar": "تختصر النجوم الثلاث العلم السوري شكلاً والشعب السوري مضموناً. وبعد أن كانت محصورة داخل صدر الشعار السابق، تحرّرت لتعتلي رأس العقاب وتحيط به، في دلالة رسمية على أن الشعب يعلو السلطة وأن الدولة منبثقة منه وخادمة له، مع تحرير العقاب من الترس القتالي لتجسيد مفهوم «الدولة الحارسة».",
+        "source_label_ar": "سانا — حكاية الهوية البصرية الجديدة (3 تموز 2025)",
+        "source_url": "https://sana.sy/locals/2242953/"
+      },
+      {
+        "id": "wing-feathers",
+        "title_ar": "14 ريشة في الجناحين (المحافظات الأربع عشرة)",
+        "body_ar": "يتكوّن كل جناح من سبع ريشات متناظرة ليصبح المجموع 14 ريشة تمثل المحافظات السورية الأربع عشرة في حالة اتزان واستعداد لا عدوان، ما يؤكد وحدة الأراضي السورية وتكامل جميع محافظاتها في استقرار الدولة.",
+        "source_label_ar": "سانا — كيف صُمّم شعار سوريا الجديد وما هي دلالاته؟ (5 تموز 2025)",
+        "source_url": "https://sana.sy/locals/2243648/"
+      },
+      {
+        "id": "tail-feathers",
+        "title_ar": "5 ريشات في الذيل (المناطق الجغرافية الخمس)",
+        "body_ar": "ينسدل ذيل العقاب بخمس ريشات تمثل المناطق الجغرافية الكبرى في سوريا: الشمالية، الشرقية، الغربية، الجنوبية، والوسطى، تعبيراً عن وحدة الأرض والهوية والتكامل بينها دون تفاضل أو إقصاء.",
+        "source_label_ar": "سانا — حكاية الهوية البصرية الجديدة (3 تموز 2025)",
+        "source_url": "https://sana.sy/locals/2242953/"
+      },
+      {
+        "id": "head-direction",
+        "title_ar": "اتجاه الرأس والتطلّع إلى المستقبل",
+        "body_ar": "أوضح مدير فريق تطوير الهوية البصرية وسيم قدورة لوكالة سانا أن توجيه رأس العقاب نحو يمين الشعار جاء للدلالة على التطلّع إلى المستقبل والتطوّر، بعد أن كان الشعار القديم يوجّه الرأس إلى الجهة المقابلة، مشيراً إلى أن المشروع أنجزه فريق من 40 مختصاً سورياً في أكثر من 30 دولة بعد بحث تاريخي واستبيان شارك فيه آلاف السوريين.",
+        "source_label_ar": "سانا — كيف صُمّم شعار سوريا الجديد وما هي دلالاته؟ (5 تموز 2025)",
+        "source_url": "https://sana.sy/locals/2243648/"
+      }
+    ],
+    "usage_rules": [
+      {
+        "id": "no-distortion",
+        "title_ar": "الحفاظ على الوضوح والأبعاد والألوان الأصلية",
+        "body_ar": "يجب عرض الشعار بوضوح وبدقة عالية، ويُمنع تحريف أبعاده أو تغيير نسبه أو ألوانه المعتمدة. يُنصح باستخدام ملفات SVG أو PDF المتّجهة في التصاميم والمطبوعات لضمان عدم فقدان الجودة.",
+        "source_label_ar": "دليل الهيئة الوطنية لخدمات تقانة المعلومات (NAITS) — ص 34",
+        "source_url": "https://naits.gov.sy/storage/media/laws/aldlyl-alastrshady-lttoyr-almoakaa-alhkomy/files/26c24b30-fbb5-48f4-b96b-fbe6de2836cb.pdf"
+      },
+      {
+        "id": "placement-direction",
+        "title_ar": "الموضع الرسمي حسب اتجاه اللغة",
+        "body_ar": "في المواقع والمنصات الحكومية، يُعرض العقاب الذهبي في الجزء العلوي الأيمن في الواجهات العربية، وفي الجزء العلوي الأيسر في الواجهات الإنجليزية.",
+        "source_label_ar": "دليل الهيئة الوطنية لخدمات تقانة المعلومات (NAITS) — ص 34",
+        "source_url": "https://naits.gov.sy/storage/media/laws/aldlyl-alastrshady-lttoyr-almoakaa-alhkomy/files/26c24b30-fbb5-48f4-b96b-fbe6de2836cb.pdf"
+      },
+      {
+        "id": "ministry-usage",
+        "title_ar": "الاستخدام على المواقع الحكومية والوزارات",
+        "body_ar": "يُعرض شعار الجمهورية العربية السورية (العقاب الذهبي) على الصفحة الرئيسية لمواقع الوزارات كافة، كما تعتمده الجهات الحكومية الأخرى التي لا تمتلك شعاراً خاصاً بها، مع ضمان وضوح الشعار واسم الجهة على الهواتف والشاشات الصغيرة.",
+        "source_label_ar": "دليل الهيئة الوطنية لخدمات تقانة المعلومات (NAITS) — ص 30 و33",
+        "source_url": "https://naits.gov.sy/storage/media/laws/aldlyl-alastrshady-lttoyr-almoakaa-alhkomy/files/26c24b30-fbb5-48f4-b96b-fbe6de2836cb.pdf"
+      },
+      {
+        "id": "official-source",
+        "title_ar": "الاعتماد على الأصول الرسمية فقط",
+        "body_ar": "تُستمد ملفات الشعار من المنصة الرسمية للهوية البصرية (syrianidentity.sy) أو من الحزمة الرسمية المؤرشفة، وقد سلّم فريق الهوية البصرية الحكومة دليلاً تفصيلياً يزيد على 250 صفحة ينظم الاستخدام المطبوع والرقمي.",
+        "source_label_ar": "دليل NAITS (ص 34) وتغطية سانا (5 تموز 2025)",
+        "source_url": "https://sana.sy/locals/2243648/"
+      }
+    ]
+  },
+  "flag": {
+    "emoji": "🇸🇾",
+    "hero_image": {
+      "path": "/syid-assets/downloads/syrian-flag-1280.png",
+      "full_path": "/syid-assets/downloads/syrian-flag-3840.png",
+      "width": 1280,
+      "height": 853,
+      "full_width": 3840,
+      "full_height": 2560,
+      "alt_ar": "علم الجمهورية العربية السورية — ثلاثة أشرطة أفقية أخضر وأبيض وأسود تتوسطه ثلاث نجمات حمراء خماسية",
+      "name_ar": "علم الجمهورية العربية السورية الجديد (نسبة 2:3)",
+      "caption_ar": "علم الجمهورية العربية السورية وفق المادة (6) من الإعلان الدستوري لعام 2025: نسبة 2:3، ثلاثة أشرطة أفقية متساوية (أخضر، أبيض، أسود) وثلاث نجمات حمراء خماسية في الشريط الأبيض.",
+      "credit_text": "المساحة السورية (وفق نسب المادة 6 من الإعلان الدستوري 2025)"
+    },
+    "specs": {
+      "aspect_ratio": "3:2",
+      "grid_width": 36,
+      "grid_height": 24,
+      "stripe_height": 8,
+      "star_size": 6,
+      "star_gap": 3,
+      "star_side_margin": 6,
+      "constitutional_article_ar": "نصّت المادة (6) من الإعلان الدستوري للجمهورية العربية السورية الصادر في 13 آذار 2025 على أن العلم السوري مستطيل طوله يساوي ثلثي عرضه (نسبة 2:3)، يتكوّن من ثلاثة مستطيلات أفقية متساوية يعلوها الأخضر ويتوسطها الأبيض والأسود في الأسفل، وتتوسط الشريط الأبيض ثلاث نجمات حمراء.",
+      "constitutional_source_url": "https://sana.sy/?p=2198312",
+      "diagram_aria_label_ar": "مخطط نسب العلم السوري: العرض 36 وحدة والارتفاع 24 وحدة (نسبة 2:3)، ثلاثة أشرطة أفقية متساوية ارتفاع كل منها 8 وحدات، الأخضر في الأعلى ثم الأبيض ثم الأسود. في الشريط الأبيض ثلاث نجوم حمراء خماسية، عرض كل نجمة وارتفاعها 6 وحدات، بينها فراغان من 3 وحدات، وهامش 6 وحدات من كل طرف."
+    },
+    "colors": [
+      {
+        "name_ar": "الأخضر (الشريط العلوي)",
+        "hex": "#007A3D",
+        "rgb": "rgb(0, 122, 61)",
+        "hsl": "hsl(150 100% 24%)",
+        "textColor": "white"
+      },
+      {
+        "name_ar": "الأبيض (الشريط الأوسط)",
+        "hex": "#FFFFFF",
+        "rgb": "rgb(255, 255, 255)",
+        "hsl": "hsl(0 0% 100%)",
+        "textColor": "black"
+      },
+      {
+        "name_ar": "الأسود (الشريط السفلي)",
+        "hex": "#000000",
+        "rgb": "rgb(0, 0, 0)",
+        "hsl": "hsl(0 0% 0%)",
+        "textColor": "white"
+      },
+      {
+        "name_ar": "الأحمر (النجوم الثلاث)",
+        "hex": "#CE1126",
+        "rgb": "rgb(206, 17, 38)",
+        "hsl": "hsl(353 85% 44%)",
+        "textColor": "white"
+      }
+    ],
+    "downloads": [
+      {
+        "id": "flag-svg",
+        "format": "SVG",
+        "label_ar": "علم سوريا بصيغة SVG المتّجهة",
+        "path": "/syid-assets/downloads/syrian-flag.svg",
+        "download_name": "علم-سوريا-الجديد.svg",
+        "dimensions_ar": "متّجه (نسبة 3:2)",
+        "width": 900,
+        "height": 600,
+        "size_bytes": 478,
+        "size_label": "0.5 KB"
+      },
+      {
+        "id": "flag-png-3840",
+        "format": "PNG 4K",
+        "label_ar": "صورة PNG بدقة 4K فائقة الوضوح",
+        "path": "/syid-assets/downloads/syrian-flag-3840.png",
+        "download_name": "علم-سوريا-الجديد-4K-3840.png",
+        "dimensions_ar": "3840 × 2560 px",
+        "width": 3840,
+        "height": 2560,
+        "size_bytes": 73026,
+        "size_label": "71 KB"
+      },
+      {
+        "id": "flag-png-1920",
+        "format": "PNG Full HD",
+        "label_ar": "صورة PNG بدقة 1920px",
+        "path": "/syid-assets/downloads/syrian-flag-1920.png",
+        "download_name": "علم-سوريا-الجديد-1920.png",
+        "dimensions_ar": "1920 × 1280 px",
+        "width": 1920,
+        "height": 1280,
+        "size_bytes": 27018,
+        "size_label": "26 KB"
+      },
+      {
+        "id": "flag-png-1280",
+        "format": "PNG HD",
+        "label_ar": "صورة PNG بدقة 1280px",
+        "path": "/syid-assets/downloads/syrian-flag-1280.png",
+        "download_name": "علم-سوريا-الجديد-1280.png",
+        "dimensions_ar": "1280 × 853 px",
+        "width": 1280,
+        "height": 853,
+        "size_bytes": 14016,
+        "size_label": "14 KB"
+      },
+      {
+        "id": "flag-png-640",
+        "format": "PNG",
+        "label_ar": "صورة PNG خفيفة للويب (640px)",
+        "path": "/syid-assets/downloads/syrian-flag-640.png",
+        "download_name": "علم-سوريا-الجديد-640.png",
+        "dimensions_ar": "640 × 427 px",
+        "width": 640,
+        "height": 427,
+        "size_bytes": 3429,
+        "size_label": "3.3 KB"
+      }
+    ],
+    "proportion_downloads": [
+      {
+        "id": "prop-png",
+        "format": "PNG",
+        "label_ar": "مخطط النسب الهندسية (PNG)",
+        "path": "/syid-assets/materials/syrian-flag-proportions.png",
+        "download_name": "نسب-العلم-السوري.png",
+        "dimensions_ar": "3600 × 2400 px",
+        "width": 3600,
+        "height": 2400,
+        "size_bytes": 59709,
+        "size_label": "58 KB"
+      },
+      {
+        "id": "prop-svg",
+        "format": "SVG",
+        "label_ar": "ملف النسب المتّجه (SVG)",
+        "path": "/syid-assets/materials/syrian-flag-proportions.svg",
+        "download_name": "نسب-العلم-السوري.svg",
+        "dimensions_ar": "متّجه (900 × 600)",
+        "width": 900,
+        "height": 600,
+        "size_bytes": 424,
+        "size_label": "0.4 KB"
+      },
+      {
+        "id": "prop-dwg",
+        "format": "DWG",
+        "label_ar": "ملف هندسي أوتوكاد (DWG)",
+        "path": "/syid-assets/materials/syrian-flag.dwg",
+        "download_name": "العلم-السوري-هندسي.dwg",
+        "dimensions_ar": "ملف CAD هندسي",
+        "width": null,
+        "height": null,
+        "size_bytes": 52344,
+        "size_label": "51 KB"
+      }
+    ],
+    "wallpapers": [
+      {
+        "id": "desktop",
+        "title_ar": "خلفية سطح المكتب للهوية البصرية السورية",
+        "description_ar": "خلفية عريضة بدقة 4K (16:9) مستوحاة من ألوان وشعار الهوية البصرية السورية.",
+        "preview_path": "/syid-assets/materials/syrian-identity-wallpaper-desktop.png",
+        "alt_ar": "خلفية سطح المكتب للهوية البصرية السورية بدقة 4K",
+        "width": 3840,
+        "height": 2160,
+        "downloads": [
+          {
+            "id": "wp-desktop-png",
+            "format": "PNG 4K",
+            "path": "/syid-assets/materials/syrian-identity-wallpaper-desktop.png",
+            "download_name": "خلفية-الهوية-السورية-سطح-المكتب-4K.png",
+            "dimensions_ar": "3840 × 2160 px",
+            "size_bytes": 107924,
+            "size_label": "105 KB"
+          },
+          {
+            "id": "wp-desktop-svg",
+            "format": "SVG",
+            "path": "/syid-assets/materials/syrian-identity-wallpaper-desktop.svg",
+            "download_name": "خلفية-الهوية-السورية-سطح-المكتب.svg",
+            "dimensions_ar": "متّجه (Vector)",
+            "size_bytes": 17983,
+            "size_label": "18 KB"
+          }
+        ]
+      },
+      {
+        "id": "mobile",
+        "title_ar": "خلفية الهاتف المحمول للهوية البصرية السورية",
+        "description_ar": "خلفية عمودية عالية الدقة للهواتف الذكية مستوحاة من الهوية البصرية السورية.",
+        "preview_path": "/syid-assets/materials/syrian-identity-wallpaper-mobile.png",
+        "alt_ar": "خلفية هاتف محمول للهوية البصرية السورية بدقة عالية",
+        "width": 2160,
+        "height": 3840,
+        "downloads": [
+          {
+            "id": "wp-mobile-png",
+            "format": "PNG 4K",
+            "path": "/syid-assets/materials/syrian-identity-wallpaper-mobile.png",
+            "download_name": "خلفية-الهوية-السورية-هاتف-4K.png",
+            "dimensions_ar": "2160 × 3840 px",
+            "size_bytes": 156641,
+            "size_label": "153 KB"
+          },
+          {
+            "id": "wp-mobile-svg",
+            "format": "SVG",
+            "path": "/syid-assets/materials/syrian-identity-wallpaper-mobile.svg",
+            "download_name": "خلفية-الهوية-السورية-هاتف.svg",
+            "dimensions_ar": "متّجه (Vector)",
+            "size_bytes": 17307,
+            "size_label": "17 KB"
+          }
+        ]
+      }
+    ],
+    "guide": {
+      "title_ar": "الدليل الإرشادي للعلم السوري",
+      "contributor_name_ar": "عبدالرحمن حداد (@abd_hmh)",
+      "contributor_url": "https://x.com/abd_hmh",
+      "note_ar": "مبادرة تطوعية مستقلة ضمن مشروع المساحة السورية (غير رسمية) لضبط النسب الهندسية ومعايرة الألوان في التصاميم والمطبوعات.",
+      "preview_path": "/syid-assets/materials/syrian-flag-guide.webp",
+      "preview_width": 912,
+      "preview_height": 514,
+      "alt_ar": "غلاف الدليل الإرشادي للعلم السوري",
+      "pdf_url": "https://drive.google.com/uc?export=download&id=1-HbfWI2PC76TTR6rKpmGl7GDcUlcZFXl"
+    },
+    "faq": [
+      {
+        "id": "flag-colors-order",
+        "question_ar": "ما ألوان علم سوريا الجديد وترتيبها الرسمي؟",
+        "answer_ar": "وفق المادة (6) من الإعلان الدستوري للجمهورية العربية السورية الصادر في 13 آذار 2025، يتكوّن العلم السوري من ثلاثة أشرطة أفقية متساوية: الأخضر في الأعلى، يليه الأبيض في الوسط، ثم الأسود في الأسفل، وتتوسط الشريط الأبيض ثلاث نجمات حمراء خماسية على خط مستقيم.",
+        "source_label_ar": "الإعلان الدستوري — المادة (6) (13 آذار 2025)",
+        "source_url": "https://sana.sy/?p=2198312"
+      },
+      {
+        "id": "flag-proportions",
+        "question_ar": "ما هي النسب الهندسية المعتمدة للعلم السوري؟",
+        "answer_ar": "حدّدت المادة (6) من الإعلان الدستوري لعام 2025 شكل العلم كمستطيل طوله يساوي ثلثي عرضه، أي بنسبة 2:3 (36 وحدة عرضاً × 24 وحدة ارتفاعاً)، حيث يبلغ ارتفاع كل شريط أفقي 8 وحدات، وارتفاع كل نجمة 6 وحدات بفاصل 3 وحدات بين النجمات وهامش 6 وحدات من كل طرف.",
+        "source_label_ar": "الإعلان الدستوري — المادة (6) (13 آذار 2025)",
+        "source_url": "https://sana.sy/?p=2198312"
+      },
+      {
+        "id": "flag-three-stars-meaning",
+        "question_ar": "ما دلالة النجوم الثلاث الحمراء في الهوية السورية الجديدة؟",
+        "answer_ar": "بحسب تغطية وكالة سانا لإطلاق الهوية البصرية السورية في 3 و5 تموز 2025، تختصر النجوم الثلاث العلم السوري (علم الاستقلال والثورة) وتعكس رمزية الشعب السوري وحريته وسيادته، ولذلك اعتلت النجوم الثلاث رأس العقاب الذهبي في شعار الجمهورية الجديد.",
+        "source_label_ar": "سانا — حكاية الهوية البصرية الجديدة (3 تموز 2025)",
+        "source_url": "https://sana.sy/locals/2242953/"
+      },
+      {
+        "id": "flag-color-codes",
+        "question_ar": "ما أكواد ألوان العلم السوري الرقمية (HEX)؟",
+        "answer_ar": "الأكواد الرقمية القياسية المستخدمة في ملفات العلم المتّجهة والصور في هذه الصفحة هي: الأخضر (#007A3D)، والأبيض (#FFFFFF)، والأسود (#000000)، والأحمر للنجوم الثلاث (#CE1126).",
+        "source_label_ar": "ملف العلم المتّجه المعتمد في المساحة السورية",
+        "source_url": "https://syrian.zone/syid/flag"
+      },
+      {
+        "id": "flag-copy-emoji",
+        "question_ar": "كيف أنسخ رمز إيموجي علم سوريا الجديد 🇸🇾؟",
+        "answer_ar": "يمكنك الضغط على زر «نسخ 🇸🇾» في أعلى هذه الصفحة لنسخ إيموجي العلم السوري مباشرةً إلى الحافظة، أو تحديد الرمز 🇸🇾 يدوياً ولصقه في تطبيقات المحادثة ومنصات التواصل الاجتماعي.",
+        "source_label_ar": "المساحة السورية — صفحة العلم السوري",
+        "source_url": "https://syrian.zone/syid/flag"
+      }
+    ]
+  }
+}

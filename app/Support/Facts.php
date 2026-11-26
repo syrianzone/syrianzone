@@ -558,6 +558,18 @@ final class Facts
     }
 
     /**
+     * Syrian visual identity facts: official colour palettes, eagle emblem
+     * downloads/symbolism/usage rules, flag downloads/specs/wallpapers/FAQ,
+     * and verified source URLs.
+     *
+     * @return array<string, mixed>
+     */
+    public static function syid(): array
+    {
+        return self::json('syid');
+    }
+
+    /**
      * One shared facts file, decoded and memoised for the request.
      *
      * Public because every reader of `resources/data` must share this one cache

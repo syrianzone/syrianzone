@@ -58,7 +58,7 @@ export default function ShawarmaPage() {
     return (
         <MainLayout>
             
-            <div className="container mx-auto px-4 pt-6 pb-12" dir="ltr">
+            <div className="container mx-auto px-4 pt-6 pb-12" dir="ltr" lang="en">
                 <h1 className="text-3xl md:text-4xl font-extrabold text-center mb-8 text-foreground">
                     @macdoos&apos;s Shawarma Tier List
                 </h1>

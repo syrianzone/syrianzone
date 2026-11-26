@@ -23,7 +23,6 @@ import {
   GitFork,
   UserCheck,
   Sparkles,
-  X,
   ChevronDown,
   ChevronUp,
   Info,
@@ -42,6 +41,7 @@ import { Instagram } from '@/Components/ui/icons';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
 import { THEME_REGISTRY, getThemeById, hexToRgbString, shareCardPalette, useThemeId } from '@/Lib/theme';
 import { Button } from "@/Components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 
 import {
   INITIAL_TOPICS,
@@ -1000,22 +1000,18 @@ export default function PrioritiesApp() {
         </div>
       </div>
 
-      {isStoryModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <Card className="bg-card text-card-foreground border-border border shadow-2xl p-6 max-w-lg w-full flex flex-col items-center">
+      <Dialog open={isStoryModalOpen} onOpenChange={setIsStoryModalOpen}>
+        <DialogContent className="bg-card text-card-foreground border-border shadow-2xl p-6 max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto flex flex-col items-center gap-0">
 
-            <div className="w-full flex items-center justify-between pb-3 mb-4 border-b border-border">
-              <h3 className="font-extrabold text-foreground text-base flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
+            <DialogHeader className="w-full pb-3 pe-8 mb-4 border-b border-border">
+              <DialogTitle className="font-extrabold text-foreground text-base flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" aria-hidden="true" />
                 تصدير بطاقة القصة (Instagram Story)
-              </h3>
-              <button
-                onClick={() => setIsStoryModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                معاينة بطاقة القصة مع اختيار لونها وتنزيلها كصورة.
+              </DialogDescription>
+            </DialogHeader>
 
             <div className="w-full flex justify-center py-2 overflow-x-auto">
 
@@ -1355,9 +1351,8 @@ export default function PrioritiesApp() {
               </Button>
             </div>
 
-          </Card>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

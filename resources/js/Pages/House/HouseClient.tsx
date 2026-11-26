@@ -151,11 +151,12 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
     useEffect(() => {
 
         let active = true;
+        const controller = new AbortController();
         const fetchData = async () => {
             setLoading(true);
             setLoadError(null);
             try {
-                const res = await fetchHouseData(mode, province);
+                const res = await fetchHouseData(mode, province, controller.signal);
                 if (active) {
                     setData(res.rows);
                     setHeaders(res.headers);
@@ -176,7 +177,10 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
             fetchData();
         }
 
-        return () => { active = false; };
+        return () => {
+            active = false;
+            controller.abort();
+        };
     }, [mode, province]);
 
     const districts = useMemo(() => {

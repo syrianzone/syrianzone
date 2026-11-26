@@ -125,7 +125,7 @@ function parseCSVToObjects(csvText: string): HouseRow[] {
     return data;
 }
 
-export async function fetchHouseData(mode: Mode, provinceKey: string = 'damascus'): Promise<{ rows: HouseRow[], headers: string[] }> {
+export async function fetchHouseData(mode: Mode, provinceKey: string = 'damascus', signal?: AbortSignal): Promise<{ rows: HouseRow[], headers: string[] }> {
     try {
         let url;
         if (mode === 'winners') {
@@ -139,14 +139,8 @@ export async function fetchHouseData(mode: Mode, provinceKey: string = 'damascus
             url = csvUrlFor(province);
         }
 
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 10000);
-        let res: Response;
-        try {
-            res = await fetch(url, { signal: ctrl.signal });
-        } finally {
-            clearTimeout(timer);
-        }
+        const timeout = AbortSignal.timeout(10000);
+        const res = await fetch(url, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const text = await res.text();

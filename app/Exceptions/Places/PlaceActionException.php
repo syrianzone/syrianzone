@@ -25,6 +25,14 @@ class PlaceActionException extends DomainActionException
 
     public const PHOTO_FILE_MISSING = 'photo_file_missing';
 
+    public const MERGE_SAME_PLACE = 'merge_same_place';
+
+    public const ALREADY_MERGED = 'already_merged';
+
+    public const MERGE_REQUIRES_APPROVED = 'merge_requires_approved';
+
+    public const INVALID_MERGE_OPTION = 'invalid_merge_option';
+
     public static function notPending(string $status): self
     {
         // Wording is pinned by the dashboard's contract (PlacesAdminTest asserts
@@ -87,6 +95,42 @@ class PlaceActionException extends DomainActionException
         );
     }
 
+    public static function cannotMergeSamePlace(int $id): self
+    {
+        return new self(
+            self::MERGE_SAME_PLACE,
+            "Cannot merge place {$id} into itself: source_id and target_id must be different.",
+            ['id' => $id],
+        );
+    }
+
+    public static function alreadyMerged(int $sourceId, int $mergedIntoId): self
+    {
+        return new self(
+            self::ALREADY_MERGED,
+            "Place {$sourceId} has already been merged into place {$mergedIntoId}.",
+            ['source_id' => $sourceId, 'merged_into_id' => $mergedIntoId],
+        );
+    }
+
+    public static function mergeRequiresApproved(string $role, int $id, string $status): self
+    {
+        return new self(
+            self::MERGE_REQUIRES_APPROVED,
+            "Merge {$role} place {$id} has status '{$status}'; both source and target must be approved.",
+            ['role' => $role, 'id' => $id, 'status' => $status],
+        );
+    }
+
+    public static function invalidMergeOption(string $field, string $value): self
+    {
+        return new self(
+            self::INVALID_MERGE_OPTION,
+            "Invalid {$field} option '{$value}'.",
+            ['field' => $field, 'value' => $value],
+        );
+    }
+
     /**
      * HTTP status the web admin has always returned for this refusal. Kept
      * here so the HTTP mapping is a lookup rather than a scattered if-chain.
@@ -96,6 +140,7 @@ class PlaceActionException extends DomainActionException
         return match ($this->kind) {
             self::NOT_FOUND => 404,
             self::NOT_PENDING, self::NOT_APPROVED => 400,
+            self::ALREADY_MERGED => 409,
             default => 422,
         };
     }

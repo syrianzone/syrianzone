@@ -36,11 +36,13 @@ use App\Mcp\Tools\GuessWho\ListGuessWhoCharactersTool;
 use App\Mcp\Tools\Phonebook\ListPhonebookCategoriesTool;
 use App\Mcp\Tools\Phonebook\ListPhonebookEntriesTool;
 use App\Mcp\Tools\Places\ApprovePlaceTool;
+use App\Mcp\Tools\Places\AuditPlacesTool;
 use App\Mcp\Tools\Places\DeletePlacePhotoTool;
 use App\Mcp\Tools\Places\DeletePlaceTool;
 use App\Mcp\Tools\Places\GetPlaceTool;
 use App\Mcp\Tools\Places\ListPlaceReportsTool;
 use App\Mcp\Tools\Places\ListPlacesTool;
+use App\Mcp\Tools\Places\MergePlacesTool;
 use App\Mcp\Tools\Places\RejectPlaceTool;
 use App\Mcp\Tools\Places\RotatePlacePhotoTool;
 use App\Mcp\Tools\Places\UpdatePlaceTool;
@@ -137,6 +139,9 @@ government apps directory, transit route governance, and the promises tracker.
 Moderation lifecycle: a submitted place starts `pending`. Approve it to publish
 it to the map, or reject it with a reason. Only `pending` places can be
 moderated — approving an already-approved place is an error, not a no-op.
+Use `audit-places` to find approved duplicates, misplaced pins, Latin-only
+names, or thin pages; use `update-place` for edits/renames and `merge-places`
+(dry-run first) for true duplicates.
 
 Transit drafts work the same way: a submitted draft starts `pending`; approving
 it publishes a new route or applies the edit to the existing route it targets.
@@ -182,6 +187,7 @@ class AdminServer extends Server
         ListPlacesTool::class,
         GetPlaceTool::class,
         ListPlaceReportsTool::class,
+        AuditPlacesTool::class,
         ListSyOfficialCategoriesTool::class,
         ListSyOfficialEntitiesTool::class,
         ListGovAppsTool::class,
@@ -218,6 +224,7 @@ class AdminServer extends Server
             RotatePlacePhotoTool::class,
             DeletePlacePhotoTool::class,
             DeletePlaceTool::class,
+            MergePlacesTool::class,
 
             CreateSyOfficialCategoryTool::class,
             UpdateSyOfficialCategoryTool::class,

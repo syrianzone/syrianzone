@@ -38,6 +38,23 @@ class PlaceController extends Controller
 
   public function renderIndex(Request $request, GovernorateGeometry $geometry)
   {
+    $placeParam = $request->query('place');
+    if (is_string($placeParam) && ctype_digit($placeParam)) {
+      $shared = Place::find((int) $placeParam);
+      if ($shared !== null && $shared->merged_into_id !== null) {
+        $target = $shared->resolveCanonicalTarget();
+        if ($target !== null) {
+          $url = $target->publicPath();
+          $otherQuery = $request->except('place');
+          if ($otherQuery !== []) {
+            $url .= '?'.http_build_query($otherQuery);
+          }
+
+          return redirect($url, 301);
+        }
+      }
+    }
+
     $govId = $request->query('gov');
     $initialBounds = null;
     if (is_string($govId) && $govId !== '' && Facts::governorate($govId) !== null) {
@@ -63,8 +80,27 @@ class PlaceController extends Controller
     }
 
     [$id] = $parsed;
-    $record = Place::where('status', 'approved')->with(['user', 'photos'])->find($id);
+    $record = Place::with(['user', 'photos'])->find($id);
     if ($record === null) {
+      abort(404);
+    }
+
+    if ($record->merged_into_id !== null) {
+      $target = $record->resolveCanonicalTarget();
+      if ($target === null) {
+        abort(404);
+      }
+
+      $url = $target->publicPath();
+      $qs = $request->getQueryString();
+      if ($qs !== null && $qs !== '') {
+        $url .= '?'.$qs;
+      }
+
+      return redirect($url, 301);
+    }
+
+    if ($record->status !== 'approved') {
       abort(404);
     }
 
@@ -470,7 +506,7 @@ class PlaceController extends Controller
   {
     $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
 
-    if ($place->status !== 'rejected') {
+    if ($place->status !== 'rejected' || $place->merged_into_id !== null) {
       return response()->json(['message' => 'لا يمكن إعادة إرسال هذا المكان'], 400);
     }
 

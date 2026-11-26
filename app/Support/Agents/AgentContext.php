@@ -71,6 +71,24 @@ final class AgentContext
         return false;
     }
 
+    /**
+     * @param  array<int, string>  $permissions
+     */
+    public function canAll(array $permissions): bool
+    {
+        if ($permissions === []) {
+            return true;
+        }
+
+        foreach ($permissions as $permission) {
+            if (! $this->can($permission)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function canInCity(string $permission, ?string $cityId): bool
     {
         return $this->authorizer->allowsInCity($this->user, $permission, $cityId, $this->token);

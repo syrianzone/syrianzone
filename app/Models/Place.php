@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\FoldsSearchColumns;
+use App\Services\Places\PlaceUrls;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -19,4 +20,7 @@ class Place extends Model
   public function photos() { return $this->hasMany(PlacePhoto::class)->orderBy('sort'); }
   public function saves() { return $this->hasMany(PlaceSave::class); }
   public function reports() { return $this->hasMany(PlaceReport::class); }
+
+  /** Percent-encoded /mishwar/{id}-{slug}; see PlaceUrls. */
+  public function publicPath(): string { return PlaceUrls::path((int) $this->id, (string) $this->name); }
 }

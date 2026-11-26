@@ -93,7 +93,7 @@ export default function StatusDialog({ promise, today, open, onOpenChange, onSav
                     </div>
                     <div className="space-y-1.5">
                         <Label htmlFor="status-source">رابط المصدر (مطلوب)</Label>
-                        <Input id="status-source" type="url" dir="ltr" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} {...fieldA11y('status-source-error', errors.source_url)} />
+                        <Input id="status-source" type="url" dir="ltr" aria-required="true" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} {...fieldA11y('status-source-error', errors.source_url)} />
                         <FieldError id="status-source-error" message={errors.source_url} />
                     </div>
                     <div className="space-y-1.5">

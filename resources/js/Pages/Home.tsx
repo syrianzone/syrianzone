@@ -8,7 +8,7 @@ import {
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 import MainLayout from '@/Layouts/MainLayout';
-import { applyTheme as persistTheme, getThemePreference, useColorScheme } from '@/Lib/theme';
+import { applyTheme as persistTheme, getThemePreference } from '@/Lib/theme';
 import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
 import AppearanceMenu from '@/Components/AppearanceMenu';
@@ -76,7 +76,6 @@ export default function Home() {
     const [lastPage, setLastPage] = useState<string | null>(null);
     const location = useLocationPreference();
     const [mounted, setMounted] = useState(false);
-    const scheme = useColorScheme();
 
     const [eventsGovernorate, setEventsGovernorateState] = useState('all');
 
@@ -135,8 +134,6 @@ export default function Home() {
         setMounted(true);
     }, []);
 
-    const isDark = scheme === 'dark';
-
     const addCustomLink = (link: CustomLink) => {
         const updated = [...customLinks, link];
         setCustomLinks(updated);
@@ -183,10 +180,17 @@ export default function Home() {
                     <div className="mx-auto max-w-6xl px-3 pt-1.5 pb-3 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-5">
                         <a href="/" className="flex items-center shrink-0">
+                            {/* Both logos ship in the HTML; CSS picks one, so the server
+                                render already shows the right one (no swap on hydration). */}
                             <img
-                                src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
+                                src="/assets/logo-lightmode.svg"
                                 alt="المساحة السورية"
-                                className="h-10 w-auto"
+                                className="h-10 w-auto dark:hidden"
+                            />
+                            <img
+                                src="/assets/logo-darkmode.svg"
+                                alt="المساحة السورية"
+                                className="hidden h-10 w-auto dark:block"
                             />
                         </a>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">

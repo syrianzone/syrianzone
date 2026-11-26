@@ -20,7 +20,7 @@ export default function Index({ polls = [] }: PollsPageProps) {
         <MainLayout>
             <div className="min-h-screen bg-background text-foreground">
                 <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center mb-8">
+                    <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
                         <h1 className="text-3xl font-bold">الاستبيانات واستطلاعات الرأي</h1>
                         {canManage && (
                             <Button asChild variant="outline">

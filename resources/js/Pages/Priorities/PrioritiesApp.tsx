@@ -995,7 +995,7 @@ export default function PrioritiesApp() {
               <div className="space-y-2">
                 <Button
                   onClick={openStoryModal}
-                  className="w-full text-white font-bold text-sm py-6 bg-primary hover:bg-primary/95 transition-all shadow-md shadow-primary/10"
+                  className="w-full text-primary-foreground font-bold text-sm py-6 bg-primary hover:bg-primary/95 transition-all shadow-md shadow-primary/10"
                 >
                   <Instagram className="w-5 h-5 me-2" />
                   تصميم وتنزيل صورة لـ ستوري إنستغرام / سناب

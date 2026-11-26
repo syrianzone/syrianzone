@@ -1151,7 +1151,7 @@ function TransitStudioPageContent() {
                   {conflictWarning && !conflictDismissed && (
                     <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[11px] text-amber-700 dark:text-amber-300 flex items-start justify-between gap-2">
                       <span>⚠ يوجد مسار قريب بالفعل. تأكد أن مسارك يختلف أو يكمل الخطوط الحالية.</span>
-                      <button type="button" onClick={() => setConflictDismissed(true)} className="text-amber-500 hover:text-amber-700">✕</button>
+                      <button type="button" onClick={() => setConflictDismissed(true)} aria-label="إخفاء التحذير" className="text-amber-500 hover:text-amber-700"><span aria-hidden="true">✕</span></button>
                     </div>
                   )}
 

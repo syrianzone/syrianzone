@@ -174,14 +174,21 @@ export default function Index({ serverYear }: { serverYear?: number }) {
         return events.length > 0 ? events[0] : null;
     }, [events]);
     
+    // Storage can throw (blocked site data, private mode): the toggle still works.
     const [hidePassed, setHidePassed] = useState<boolean>(() => {
-        if (typeof window !== 'undefined') {
+        if (typeof window === 'undefined') return false;
+        try {
             return localStorage.getItem('sz-hide-passed-holidays') === 'true';
+        } catch {
+            return false;
         }
-        return false;
     });
     useEffect(() => {
-        localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
+        try {
+            localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
+        } catch {
+            // not persisted on this device
+        }
     }, [hidePassed]);
 
     useEffect(() => {
@@ -277,7 +284,9 @@ export default function Index({ serverYear }: { serverYear?: number }) {
     );
     const apiHijri = hijriDateLabel(hijri);
 
-    const holidays = useMemo(() => holidaysForYear(currentTime.getFullYear()), [currentTime]);
+    // Once per year, not once per clock tick.
+    const currentYear = currentTime.getFullYear();
+    const holidays = useMemo(() => holidaysForYear(currentYear), [currentYear]);
 
     // The national calendar day, not this browser's: the same boundary the
     // prayer log and the timings API use. One value for the holiday filter, the
@@ -286,11 +295,11 @@ export default function Index({ serverYear }: { serverYear?: number }) {
     const startOfToday = useMemo(() => todayInSyria(currentTime), [syriaDayKey]);
 
     const nextHoliday = useMemo(() => {
-        const next = holidays.find(h => h.date >= startOfToday) ?? holidaysForYear(currentTime.getFullYear() + 1)[0];
+        const next = holidays.find(h => h.date >= startOfToday) ?? holidaysForYear(currentYear + 1)[0];
 
         const daysLeft = Math.ceil((next.date.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
         return { ...next, daysLeft };
-    }, [holidays, currentTime, startOfToday]);
+    }, [holidays, currentYear, startOfToday]);
 
     const filteredHolidays = useMemo(() => {
         if (!hidePassed) return holidays;

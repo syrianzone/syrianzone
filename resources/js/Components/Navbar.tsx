@@ -16,7 +16,6 @@ import {
 
 import { useAuth } from '@/Contexts/AuthContext';
 import { useAppShell } from '@/Lib/appShell';
-import { useColorScheme } from '@/Lib/theme';
 import { cn } from '@/Lib/utils';
 import { Button } from '@/Components/ui/button';
 import {
@@ -288,6 +287,35 @@ function MorePanel({
   );
 }
 
+/**
+ * The wordmark in both schemes. CSS picks the visible one from `data-scheme`
+ * (set before first paint), so the server markup is already right for a dark
+ * theme instead of swapping images after hydration; the intrinsic size from
+ * the SVG viewBox reserves the space before it loads.
+ */
+function SiteLogo({ className }: { className: string }) {
+  return (
+    <>
+      <img
+        src="/assets/logo-lightmode.svg"
+        width={571}
+        height={298}
+        decoding="async"
+        className={cn(className, 'w-auto dark:hidden')}
+        alt="Syrian Zone"
+      />
+      <img
+        src="/assets/logo-darkmode.svg"
+        width={571}
+        height={298}
+        decoding="async"
+        className={cn(className, 'hidden w-auto dark:block')}
+        alt="Syrian Zone"
+      />
+    </>
+  );
+}
+
 /** A desktop top-level nav link: inline icon + label, sharing the trigger look. */
 function NavTopLink({
   href,
@@ -382,7 +410,6 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const transitCityId = routeSegment(pathname, `${transitHref}/city`);
   const studioHref = transitCityId ? `${studioPath}?city=${transitCityId}` : studioPath;
   const [isOpen, setIsOpen] = React.useState(false);
-  const isDark = useColorScheme() === 'dark';
   const { user } = useAuth();
   const { navbarLinks, navbarTopLinks, navbarMoreLinks, groups } = useSiteNavigation();
 
@@ -500,11 +527,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
               <SheetHeader className="flex-row items-center justify-between gap-2 space-y-0 px-4 pt-4 pb-2 text-right shrink-0">
                 <SheetTitle className="flex h-10 items-center">
                   <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
-                    <img
-                      src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
-                      className="h-8"
-                      alt="Syrian Zone"
-                    />
+                    <SiteLogo className="h-8" />
                   </Link>
                 </SheetTitle>
                 <SheetClose asChild>
@@ -583,11 +606,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
         {/* Logo */}
         <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex shrink-0 lg:me-3 xl:me-10">
           <Link href="/" className="flex items-center gap-2">
-            <img
-              src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
-              className="h-8 sm:h-10"
-              alt="Syrian Zone"
-            />
+            <SiteLogo className="h-8 sm:h-10" />
           </Link>
         </div>
 

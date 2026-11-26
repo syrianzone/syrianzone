@@ -474,7 +474,13 @@ export default function Dashboard({
 
   const handleCreatePoll = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!createTitle.trim() || !createSlug.trim()) return;
+    if (creating) return;
+    // `required` lets whitespace through; send focus to the blank field
+    // instead of ignoring the submit.
+    if (!createTitle.trim() || !createSlug.trim()) {
+      document.getElementById(!createTitle.trim() ? 'create-poll-title' : 'create-poll-slug')?.focus();
+      return;
+    }
     setCreating(true);
     try {
       const created = await pollsApi.create({
@@ -942,7 +948,7 @@ export default function Dashboard({
                         </div>
                         <DialogFooter className="flex-row-reverse gap-2">
                           <Button type="button" variant="outline" size="sm" onClick={() => setCreateOpen(false)}>إلغاء</Button>
-                          <Button type="submit" size="sm" disabled={creating || !createTitle.trim() || !createSlug.trim()}>
+                          <Button type="submit" size="sm" disabled={creating}>
                             {creating ? 'جاري الإنشاء…' : 'إنشاء ومتابعة التحرير'}
                           </Button>
                         </DialogFooter>

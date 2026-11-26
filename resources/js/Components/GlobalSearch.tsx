@@ -1111,7 +1111,8 @@ export function HomeInlineSearchSection({
             const input = inputRef.current;
             if (!input) return;
             input.focus();
-            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            input.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
         });
         return () => registerInlineSearch(null);
     }, [registerInlineSearch]);

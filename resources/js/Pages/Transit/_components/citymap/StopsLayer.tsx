@@ -6,10 +6,12 @@ import { useMapColors } from '@/Components/map/mapColors'
 import { firstSymbolLayerId } from '@/Components/map/layers'
 import { useMapStore } from '../../_store/useMapStore'
 import { TRANSIT_MAP_COLORS } from '../../_lib/mapColors'
-import type { FeatureCollection, StopProperties } from '../../_types'
+import type { FeatureCollection, RouteProperties, StopProperties } from '../../_types'
 
 interface StopsLayerProps {
   data: FeatureCollection<StopProperties>
+  /** The city's routes, so a stop's popup names its lines instead of their ids. */
+  routes?: FeatureCollection<RouteProperties>
 }
 
 // Escape user/dataset-sourced strings before interpolating into popup HTML
@@ -22,8 +24,11 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#39;')
 }
 
-export default function StopsLayer({ data }: StopsLayerProps) {
+export default function StopsLayer({ data, routes }: StopsLayerProps) {
   const map = useMap()
+  // read at click time through a ref, so new route data never re-adds the layer
+  const routeNamesRef = useRef(new Map<string, string>())
+  routeNamesRef.current = new Map((routes?.features ?? []).map((f) => [f.properties.id, f.properties.nameAr]))
   const colors = useMapColors(TRANSIT_MAP_COLORS)
   const showStops = useMapStore(s => s.showStops)
   const selectedRouteId = useMapStore(s => s.selectedRouteId)
@@ -77,14 +82,17 @@ export default function StopsLayer({ data }: StopsLayerProps) {
 
       // MapLibre serializes array properties as JSON strings — parse them back
       const rawRouteIds = props.routeIds
-      const routeIds: string[] = Array.isArray(rawRouteIds)
-        ? rawRouteIds
-        : (typeof rawRouteIds === 'string' ? JSON.parse(rawRouteIds) : [])
+      let routeIds: unknown = rawRouteIds
+      if (typeof rawRouteIds === 'string') {
+        try { routeIds = JSON.parse(rawRouteIds) } catch { routeIds = [] }
+      }
+      const ids: string[] = Array.isArray(routeIds) ? routeIds.map(String) : []
 
-      const badgesHtml = routeIds.length
-        ? routeIds.map(id =>
-            `<span class="inline-block px-2 py-1 text-xs font-semibold bg-[var(--pomegranate)] text-white rounded">مسار ${escapeHtml(id)}</span>`
-          ).join('')
+      const badgesHtml = ids.length
+        ? ids.map(id => {
+            const name = routeNamesRef.current.get(id)
+            return `<span class="inline-block px-2 py-1 text-xs font-semibold bg-[var(--pomegranate)] text-white rounded">${name ? escapeHtml(name) : `مسار ${escapeHtml(id)}`}</span>`
+          }).join('')
         : '<span class="text-xs" style="opacity: 0.65;">لا توجد مسارات</span>'
 
       // Text inherits the themed popup color (transit.css); never hardcode a

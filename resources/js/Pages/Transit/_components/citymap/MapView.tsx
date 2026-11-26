@@ -96,7 +96,7 @@ export default function MapView({ cityId, bounds, routes, stops }: MapViewProps)
     <MapCanvas bounds={bounds}>
       <GlobalSearchBox cityId={cityId} />
       <RouteLayer data={routes} />
-      <StopsLayer data={stops} />
+      <StopsLayer data={stops} routes={routes} />
       <UserLocationLayer />
       <NearbyTransitDrawer />
       <FitToCity bounds={bounds} />

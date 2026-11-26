@@ -140,10 +140,15 @@ export default function CompassClient() {
         drawCompass();
     }, [axes, colors, dots]);
 
+    // Observe the container, not the window: the grid column can change width
+    // without a window resize (sidebar, font load, layout shifts).
     useEffect(() => {
-        window.addEventListener('resize', resizeCanvas);
+        const container = containerRef.current;
         resizeCanvas();
-        return () => window.removeEventListener('resize', resizeCanvas);
+        if (!container || typeof ResizeObserver === 'undefined') return;
+        const observer = new ResizeObserver(() => resizeCanvas());
+        observer.observe(container);
+        return () => observer.disconnect();
     }, [resizeCanvas]);
 
     const drawCompass = useCallback(() => {

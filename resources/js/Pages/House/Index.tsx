@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 import HouseClient from './HouseClient';
 import Hero2026 from './Hero2026';
@@ -13,6 +13,15 @@ interface Props {
 
 export default function HousePage({ members2026 }: Props) {
     const [archiveOpen, setArchiveOpen] = useState(false);
+    // A link to #historical-archive (the hero's, or a shared URL) opens the section.
+    useEffect(() => {
+        const sync = () => {
+            if (window.location.hash === '#historical-archive') setArchiveOpen(true);
+        };
+        sync();
+        window.addEventListener('hashchange', sync);
+        return () => window.removeEventListener('hashchange', sync);
+    }, []);
     const [dim, setDim] = useState<Dim>('selection');
     const [gov, setGov] = useState('all');
     const [gender, setGender] = useState('all');
@@ -57,7 +66,7 @@ export default function HousePage({ members2026 }: Props) {
             
             <div className="min-h-screen bg-background pb-16">
                 <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
-                    <Hero2026 total={counts.total} female={counts.female} male={counts.male} />
+                    <Hero2026 total={counts.total} female={counts.female} male={counts.male} onOpenArchive={() => setArchiveOpen(true)} />
                     <ParliamentChart2026
                         members={members}
                         dim={dim}

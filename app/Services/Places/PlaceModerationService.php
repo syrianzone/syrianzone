@@ -5,6 +5,7 @@ namespace App\Services\Places;
 use App\Exceptions\Places\PlaceActionException;
 use App\Models\Place;
 use App\Models\PlacePhoto;
+use App\Services\Governorates\GovernorateDataService;
 use App\Services\PlaceImageService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -279,5 +280,7 @@ class PlaceModerationService
     public static function forgetMapCache(): void
     {
         Cache::forget(self::MAP_CACHE_KEY);
+        PlaceGovernorates::forget();
+        Cache::forget(GovernorateDataService::PLACES_CACHE_KEY);
     }
 }

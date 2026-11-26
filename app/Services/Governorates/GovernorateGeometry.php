@@ -21,6 +21,9 @@ final class GovernorateGeometry
     /** @var array{viewBox: string, width: int, height: int, shapes: list<array{id: string, name_ar: string, path: string, label_x: float, label_y: float}>}|null */
     private static ?array $svgMap = null;
 
+    /** @var array{minLon: float, maxLon: float, minLat: float, maxLat: float, cosLat: float, pad: float, width: int, height: int, scale: float}|null */
+    private static ?array $projection = null;
+
     /**
      * Resolve a (lat, lng) coordinate to a governorate id from `Facts::governorates()`.
      * Falls back to the nearest polygon vertex within `$nearestMaxDegrees` (~5.5 km at 0.05°)
@@ -76,6 +79,32 @@ final class GovernorateGeometry
     }
 
     /**
+     * Project a (lat, lng) coordinate into the same SVG coordinate space used by `svgMap()`.
+     * Returns null when geometry is unavailable or the point falls outside Syria's SVG bounds.
+     *
+     * @return array{x: float, y: float}|null
+     */
+    public function projectPoint(float $lat, float $lng): ?array
+    {
+        $proj = $this->projection();
+        if ($proj === null) {
+            return null;
+        }
+
+        $x = $proj['pad'] + ($lng - $proj['minLon']) * $proj['cosLat'] * $proj['scale'];
+        $y = $proj['pad'] + ($proj['maxLat'] - $lat) * $proj['scale'];
+
+        if ($x < 0 || $x > $proj['width'] || $y < 0 || $y > $proj['height']) {
+            return null;
+        }
+
+        return [
+            'x' => round($x, 1),
+            'y' => round($y, 1),
+        ];
+    }
+
+    /**
      * Server-rendered SVG Syria map geometry: one `<path d="...">` + label anchor per governorate
      * projected into a shared viewBox so the hub renders a crisp interactive map without client JS.
      *
@@ -88,7 +117,8 @@ final class GovernorateGeometry
         }
 
         $features = $this->features();
-        if ($features === []) {
+        $proj = $this->projection();
+        if ($features === [] || $proj === null) {
             return self::$svgMap = [
                 'viewBox' => '0 0 600 520',
                 'width' => 600,
@@ -97,44 +127,12 @@ final class GovernorateGeometry
             ];
         }
 
-        $minLon = INF;
-        $maxLon = -INF;
-        $minLat = INF;
-        $maxLat = -INF;
+        $width = $proj['width'];
+        $height = $proj['height'];
 
-        foreach ($features as $feature) {
-            foreach ($feature['polygons'] as $polygon) {
-                foreach ($polygon as $ring) {
-                    foreach ($ring as $pt) {
-                        if ($pt[0] < $minLon) {
-                            $minLon = $pt[0];
-                        }
-                        if ($pt[0] > $maxLon) {
-                            $maxLon = $pt[0];
-                        }
-                        if ($pt[1] < $minLat) {
-                            $minLat = $pt[1];
-                        }
-                        if ($pt[1] > $maxLat) {
-                            $maxLat = $pt[1];
-                        }
-                    }
-                }
-            }
-        }
-
-        // Aspect-corrected equirectangular projection around Syria's midpoint (~35°N).
-        $cosLat = cos(deg2rad(($minLat + $maxLat) / 2.0));
-        $pad = 16.0;
-        $width = 600;
-        $spanX = ($maxLon - $minLon) * $cosLat;
-        $spanY = $maxLat - $minLat;
-        $scale = ($width - 2 * $pad) / max($spanX, 1e-6);
-        $height = (int) ceil($spanY * $scale + 2 * $pad);
-
-        $project = static function (float $lon, float $lat) use ($minLon, $maxLat, $cosLat, $scale, $pad): array {
-            $x = $pad + ($lon - $minLon) * $cosLat * $scale;
-            $y = $pad + ($maxLat - $lat) * $scale;
+        $project = static function (float $lon, float $lat) use ($proj): array {
+            $x = $proj['pad'] + ($lon - $proj['minLon']) * $proj['cosLat'] * $proj['scale'];
+            $y = $proj['pad'] + ($proj['maxLat'] - $lat) * $proj['scale'];
 
             return [round($x, 1), round($y, 1)];
         };
@@ -204,6 +202,70 @@ final class GovernorateGeometry
             'width' => $width,
             'height' => $height,
             'shapes' => $shapes,
+        ];
+    }
+
+    /**
+     * Shared equirectangular projection bounds and scale for `svgMap()` and `projectPoint()`.
+     *
+     * @return array{minLon: float, maxLon: float, minLat: float, maxLat: float, cosLat: float, pad: float, width: int, height: int, scale: float}|null
+     */
+    private function projection(): ?array
+    {
+        if (self::$projection !== null) {
+            return self::$projection;
+        }
+
+        $features = $this->features();
+        if ($features === []) {
+            return null;
+        }
+
+        $minLon = INF;
+        $maxLon = -INF;
+        $minLat = INF;
+        $maxLat = -INF;
+
+        foreach ($features as $feature) {
+            foreach ($feature['polygons'] as $polygon) {
+                foreach ($polygon as $ring) {
+                    foreach ($ring as $pt) {
+                        if ($pt[0] < $minLon) {
+                            $minLon = $pt[0];
+                        }
+                        if ($pt[0] > $maxLon) {
+                            $maxLon = $pt[0];
+                        }
+                        if ($pt[1] < $minLat) {
+                            $minLat = $pt[1];
+                        }
+                        if ($pt[1] > $maxLat) {
+                            $maxLat = $pt[1];
+                        }
+                    }
+                }
+            }
+        }
+
+        // Aspect-corrected equirectangular projection around Syria's midpoint (~35°N).
+        $cosLat = cos(deg2rad(($minLat + $maxLat) / 2.0));
+        $pad = 16.0;
+        $width = 600;
+        $spanX = ($maxLon - $minLon) * $cosLat;
+        $spanY = $maxLat - $minLat;
+        $scale = ($width - 2 * $pad) / max($spanX, 1e-6);
+        $height = (int) ceil($spanY * $scale + 2 * $pad);
+
+        return self::$projection = [
+            'minLon' => $minLon,
+            'maxLon' => $maxLon,
+            'minLat' => $minLat,
+            'maxLat' => $maxLat,
+            'cosLat' => $cosLat,
+            'pad' => $pad,
+            'width' => $width,
+            'height' => $height,
+            'scale' => $scale,
         ];
     }
 

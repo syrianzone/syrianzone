@@ -379,6 +379,7 @@ Route::get('/transit/studio', function () {
 });
 
 Route::get('/mishwar', [PlaceController::class, 'renderIndex']);
+Route::get('/mishwar/{place}', [PlaceController::class, 'renderShow'])->where('place', '[0-9]+(?:-[^/]*)?');
 // legacy slug: share links from the first release said /places
 Route::get('/places', fn () => redirect('/mishwar'.(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301));
 

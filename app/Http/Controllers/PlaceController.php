@@ -4,14 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Place;
 use App\Models\PlacePhoto;
+use App\Services\Governorates\GovernorateGeometry;
 use App\Services\GuideLevelService;
 use App\Services\PlaceImageService;
+use App\Services\Places\PlaceGovernorates;
+use App\Services\Places\PlaceIndexability;
 use App\Services\Places\PlaceModerationService;
 use App\Services\Places\PlacePresenter;
 use App\Services\Places\PlaceRules;
+use App\Services\Places\PlaceUrls;
 use App\Support\ArabicSearch;
 use App\Support\Facts;
 use App\Support\Permissions\PermissionCatalogue;
+use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +39,109 @@ class PlaceController extends Controller
   public function renderIndex()
   {
     return Inertia::render('Places/Index');
+  }
+
+  public function renderShow(
+    Request $request,
+    string $place,
+    GuideLevelService $levels,
+    PlacePresenter $presenter,
+    PlaceGovernorates $governorates,
+    GovernorateGeometry $geometry,
+  ) {
+    $parsed = PlaceUrls::parse($place);
+    if ($parsed === null) {
+      abort(404);
+    }
+
+    [$id] = $parsed;
+    $record = Place::where('status', 'approved')->with(['user', 'photos'])->find($id);
+    if ($record === null) {
+      abort(404);
+    }
+
+    $canonicalSlug = PlaceUrls::slug((string) $record->name);
+    $expectedSegment = $record->id.($canonicalSlug === '' ? '' : '-'.$canonicalSlug);
+    if (rawurldecode($place) !== $expectedSegment) {
+      $target = $record->publicPath();
+      $qs = $request->getQueryString();
+      if ($qs !== null && $qs !== '') {
+        $target .= '?'.$qs;
+      }
+
+      return redirect($target, 301);
+    }
+
+    SeoMeta::remember($request, 'place', $record);
+
+    $govId = $governorates->forPlace($record);
+    $govRow = $govId !== null ? Facts::governorate($govId) : null;
+    $governorate = $govRow !== null ? [
+      'id' => (string) $govRow['id'],
+      'name_ar' => (string) $govRow['name_ar'],
+    ] : null;
+
+    $svgMap = $geometry->svgMap();
+    $pin = $geometry->projectPoint((float) $record->lat, (float) $record->lng);
+    $locator = ($pin !== null && $svgMap['shapes'] !== []) ? [
+      'viewBox' => $svgMap['viewBox'],
+      'width' => $svgMap['width'],
+      'height' => $svgMap['height'],
+      'shapes' => array_map(static fn (array $s) => [
+        'id' => $s['id'],
+        'name_ar' => $s['name_ar'],
+        'path' => $s['path'],
+      ], $svgMap['shapes']),
+      'pin' => $pin,
+    ] : null;
+
+    $user = $request->user();
+    $guide = $levels->forUser($record->user_id);
+    $savedByMe = $user ? $record->saves()->where('user_id', $user->id)->exists() : false;
+
+    return Inertia::render('Places/Show', [
+      'place' => $presenter->publicDetail($record, $guide, $savedByMe),
+      'governorate' => $governorate,
+      'isThin' => PlaceIndexability::isThin($record),
+      'isOwner' => $user !== null && (int) $user->id === (int) $record->user_id,
+      'locator' => $locator,
+      'nearby' => $this->nearbyApprovedPlaces($record, $presenter),
+    ]);
+  }
+
+  /**
+   * Up to `$limit` nearest approved places within `$radiusKm` km, excluding `$record`.
+   *
+   * @return list<array<string, mixed>>
+   */
+  private function nearbyApprovedPlaces(Place $record, PlacePresenter $presenter, float $radiusKm = 15.0, int $limit = 6): array
+  {
+    $lat = (float) $record->lat;
+    $lng = (float) $record->lng;
+    $latDelta = $radiusKm / 111.045;
+    $lngDelta = $radiusKm / (111.045 * max(cos(deg2rad($lat)), 0.01));
+    $radiusM = $radiusKm * 1000;
+
+    return Place::where('status', 'approved')
+      ->where('id', '!=', $record->id)
+      ->whereBetween('lat', [$lat - $latDelta, $lat + $latDelta])
+      ->whereBetween('lng', [$lng - $lngDelta, $lng + $lngDelta])
+      ->with(self::thumbPhotos())
+      ->get()
+      ->map(function (Place $p) use ($lat, $lng) {
+        $dLat = deg2rad($p->lat - $lat);
+        $dLng = deg2rad($p->lng - $lng);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat)) * cos(deg2rad($p->lat)) * sin($dLng / 2) ** 2;
+        $p->distance_m = (int) round(6371000 * 2 * asin(sqrt($a)));
+
+        return $p;
+      })
+      ->filter(fn (Place $p) => $p->distance_m <= $radiusM)
+      ->sortBy('distance_m')
+      ->take($limit)
+      ->values()
+      ->map(fn (Place $p) => $presenter->publicListItem($p) + ['distance_m' => $p->distance_m])
+      ->all();
   }
 
   public function mapData()

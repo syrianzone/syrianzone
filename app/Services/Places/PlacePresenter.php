@@ -92,6 +92,7 @@ class PlacePresenter
             'lng' => $p->lng,
             'thumb_url' => $p->photos->first()?->thumb_url,
             'saves_count' => $p->saves_count,
+            'url' => $p->publicPath(),
         ];
     }
 

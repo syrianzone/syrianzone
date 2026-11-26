@@ -9,6 +9,8 @@ use App\Models\GovtTenure;
 use App\Models\PhonebookEntry;
 use App\Models\Place;
 use App\Models\Population\PopulationDemographic;
+use App\Services\Places\PlaceGovernorates;
+use App\Services\Places\PlaceUrls;
 use App\Support\ArabicSearch;
 use App\Support\Facts;
 use Illuminate\Support\Facades\Cache;
@@ -76,8 +78,11 @@ final class GovernorateDataService
         'instagram_url' => 'https://www.instagram.com/walaa_akdesign/',
     ];
 
+    public const PLACES_CACHE_KEY = 'governorates:places-by-governorate:v1';
+
     public function __construct(
         private readonly GovernorateGeometry $geometry,
+        private readonly PlaceGovernorates $placeGovernorates,
     ) {}
 
     /**
@@ -634,22 +639,27 @@ final class GovernorateDataService
      */
     private function placesByGovernorate(): array
     {
-        return Cache::remember('governorates:places-by-governorate:v1', now()->addMinutes(30), function (): array {
+        return Cache::remember(self::PLACES_CACHE_KEY, now()->addMinutes(30), function (): array {
             try {
+                $govByPlace = $this->placeGovernorates->map();
+                if ($govByPlace === []) {
+                    return [];
+                }
+
                 $places = Place::query()
                     ->where('status', 'approved')
                     ->whereNotNull('lat')
                     ->whereNotNull('lng')
                     ->orderByDesc('saves_count')
                     ->orderBy('id')
-                    ->get(['id', 'name', 'category', 'description', 'lat', 'lng']);
+                    ->get(['id', 'name', 'category', 'description']);
             } catch (\Throwable) {
                 return [];
             }
 
             $grouped = [];
             foreach ($places as $place) {
-                $governorateId = $this->geometry->governorateIdForPoint((float) $place->lat, (float) $place->lng);
+                $governorateId = $govByPlace[(int) $place->id] ?? null;
                 if ($governorateId === null) {
                     continue;
                 }
@@ -706,7 +716,7 @@ final class GovernorateDataService
             'category' => $p['category'],
             'category_label' => $categoryLabels[$p['category']] ?? $p['category'],
             'description' => filled($p['description']) ? mb_strimwidth(trim((string) $p['description']), 0, 120, '…') : null,
-            'url' => '/mishwar?place='.$p['id'],
+            'url' => PlaceUrls::path($p['id'], $p['name']),
         ], array_slice($inGov, 0, 6));
 
         return [

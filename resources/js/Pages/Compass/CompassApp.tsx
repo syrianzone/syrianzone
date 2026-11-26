@@ -166,11 +166,12 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
         return;
       // RTL: the previous button sits on the right, so ArrowRight goes back
       } else if (e.key === 'ArrowRight') goPrev();
-      else if (e.key === 'ArrowLeft') goNext();
+      // Mirrors the disabled "next" button: no skipping an unanswered question.
+      else if (e.key === 'ArrowLeft' && current && answers[current.key] !== undefined) goNext();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, index, current, goNext, goPrev]);
+  }, [phase, index, current, answers, goNext, goPrev]);
 
   if (viewing) {
     return (

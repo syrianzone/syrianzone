@@ -233,8 +233,9 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                 href="/admin/syofficial"
                                 className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md flex items-center gap-1 text-xs font-bold shrink-0"
                                 title="إدارة وإضافة وتعديل الحسابات الرسمية"
+                                aria-label="لوحة التحكم: إدارة الحسابات الرسمية"
                             >
-                                <Settings className="w-4 h-4" />
+                                <Settings className="w-4 h-4" aria-hidden="true" />
                                 <span className="hidden sm:inline">لوحة التحكم</span>
                             </a>
                         )}
@@ -356,8 +357,9 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                 href={`/admin/syofficial?edit=${item.id}`}
                                                                 className="absolute top-2 start-2 z-10 p-1.5 rounded-lg bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border border-border/70 shadow-md transition-all duration-200 opacity-90 hover:opacity-100 hover:scale-110 flex items-center gap-1 text-xs font-bold"
                                                                 title="تعديل هذا الكرت في لوحة التحكم"
+                                                                aria-label={`تعديل ${item.name_ar || item.name} في لوحة التحكم`}
                                                             >
-                                                                <Pencil className="w-3.5 h-3.5" />
+                                                                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                                                                 <span className="hidden sm:inline">تعديل</span>
                                                             </a>
                                                         )}
@@ -501,7 +503,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                 href={`/admin/syofficial?edit=${item.id}`}
                                                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-colors"
                                                             >
-                                                                <Pencil className="w-3.5 h-3.5" />
+                                                                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                                                                 تعديل
                                                             </a>
                                                         )}

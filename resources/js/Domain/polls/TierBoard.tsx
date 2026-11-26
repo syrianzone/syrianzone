@@ -12,6 +12,7 @@ import { exportTierListFromData } from "./exportTierList";
 import { getDeviceId } from "@/Lib/deviceId";
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
+import { confirmDialog } from '@/Lib/confirm';
 import JSZip from "jszip";
 
 export type Candidate = {
@@ -833,7 +834,14 @@ export default function TierBoard({
                 <Button
                     type="button"
                     variant="destructive"
-                    onClick={() => {
+                    onClick={async () => {
+                        const ok = await confirmDialog({
+                            title: "مسح كل الاختيارات؟",
+                            description: "ستعود كل البطاقات إلى قائمة المرشحين.",
+                            confirmText: "مسح",
+                            destructive: true,
+                        });
+                        if (!ok) return;
                         setBank(shuffledInitial);
                         setTiers(createEmptyTiers());
                         setSelectedIds(new Set());

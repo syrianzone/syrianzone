@@ -111,4 +111,51 @@ describe('pages render their content on the server', () => {
         // With nothing to send, the server render shows the loading state in words.
         expect(html).toContain('جاري تحميل البيانات...');
     });
+
+    it('renders prayer city monthly timetable, qibla, FAQ, and links on the server', async () => {
+        const html = await renderOnServer(
+            'Muslim/Prayer/Index',
+            {
+                initialCity: 'aleppo',
+                initialCityName: 'حلب',
+                initialPrayer: {
+                    governorate: 'aleppo',
+                    method: 3,
+                    timings: { Fajr: '05:49', Sunrise: '07:19', Dhuhr: '12:19', Asr: '15:00', Maghrib: '17:18', Isha: '18:43' },
+                    hijri: { day: '16', month: 'جمادى الآخرة', year: '1448' },
+                },
+                monthlyCalendar: {
+                    year: 2026,
+                    month: 11,
+                    month_ar: 'تشرين الثاني',
+                    days: [
+                        {
+                            date: '2026-11-26',
+                            gregorian_day: 26,
+                            weekday_ar: 'الخميس',
+                            hijri_day: '16',
+                            hijri_month: 'جمادى الآخرة',
+                            hijri_year: '1448',
+                            timings: { Fajr: '05:49', Sunrise: '07:19', Dhuhr: '12:19', Asr: '15:00', Maghrib: '17:18', Isha: '18:43' },
+                        },
+                    ],
+                },
+                qibla: {
+                    degrees: 173.4,
+                    direction_ar: 'الجنوب',
+                    description_ar: 'يتجه القبلة في حلب بزاوية 173.4° من الشمال الحقيقي باتجاه الجنوب نحو الكعبة المشرفة.',
+                },
+                todayInfo: { iso: '2026-11-26', gregorian_ar: 'الخميس، 26 تشرين الثاني 2026' },
+            },
+            '/muslim/prayer/aleppo',
+        );
+
+        expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(html.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(html).toContain('مواقيت الصلاة في حلب');
+        expect(html).toContain('aria-current="date"');
+        expect(html).toContain('173.4°');
+        expect(html).toContain('/muslim/ramadan/aleppo');
+        expect(html).toContain('مواقيت الصلاة في محافظات أخرى');
+    });
 });

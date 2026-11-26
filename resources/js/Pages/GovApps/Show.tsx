@@ -28,6 +28,7 @@ import type {
     GovAppDetail,
 } from '@/Domain/govapps/types';
 import { formatEntityImage } from '@/Lib/entityImage';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import { useCanAny } from '@/Lib/useCan';
 import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
 
@@ -97,17 +98,13 @@ function getAppleButtonLabel(source: GovAppAppleSource | null): string {
     return 'تحميل لآيفون';
 }
 
+/**
+ * The presenter sends `YYYY-MM-DD` calendar dates: format them with the shared
+ * Syrian month names so server and browser render the same text in any zone/ICU.
+ */
 function formatArabicDate(isoDate?: string | null): string | null {
     if (!isoDate) return null;
-    try {
-        return new Intl.DateTimeFormat('ar-SY', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        }).format(new Date(`${isoDate}T00:00:00`));
-    } catch {
-        return isoDate;
-    }
+    return formatGregorianSyrianShort(isoDate);
 }
 
 export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {

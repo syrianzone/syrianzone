@@ -429,7 +429,9 @@ function TransitStudioPageContent() {
 
   // Restore pending session after login redirect
   useEffect(() => {
-    const pending = localStorage.getItem('transit:studio:pending')
+    // storage can throw (blocked site data, private mode): treat that as "nothing pending"
+    let pending: string | null = null
+    try { pending = localStorage.getItem('transit:studio:pending') } catch { /* unavailable */ }
     if (pending) {
       try {
         const s = JSON.parse(pending)
@@ -454,7 +456,7 @@ function TransitStudioPageContent() {
         useStudioStore.setState(patch)
         notify.success('تمت استعادة مسارك لتقديمه تحت حسابك المسجل')
       } catch { /* */ }
-      localStorage.removeItem('transit:studio:pending')
+      try { localStorage.removeItem('transit:studio:pending') } catch { /* unavailable */ }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -975,7 +977,13 @@ function TransitStudioPageContent() {
 
     if (requireLogin && !user) {
       const stateToSave = { cityId, drawnLine, stops, nameAr, nameEn, price, notes, editingRouteId, editingDraftId }
-      localStorage.setItem('transit:studio:pending', JSON.stringify(stateToSave))
+      try {
+        localStorage.setItem('transit:studio:pending', JSON.stringify(stateToSave))
+      } catch {
+        // without storage the drawing cannot survive the login redirect: stay here
+        notify.error('تعذر حفظ المسار مؤقتاً قبل تسجيل الدخول، تحقق من إعدادات المتصفح')
+        return
+      }
       notify.info('يرجى تسجيل الدخول بحساب Google لتُنسب المساهمة لك')
       window.location.href = '/auth/google?redirect=' + encodeURIComponent(window.location.pathname + window.location.search)
       return

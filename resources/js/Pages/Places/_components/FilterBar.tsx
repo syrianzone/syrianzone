@@ -157,6 +157,12 @@ export function FilterBar(props: {
   }
 
   const hasActiveFilter = props.category !== null || props.viewFilter !== 'all';
+  // announced through a status region outside the listbox: options are only read on arrowing
+  const resultsStatus = !showDropdown || props.coordCandidate
+    ? ''
+    : props.resultsLoading
+      ? 'جاري البحث'
+      : optionCount === 0 ? 'لا توجد نتائج' : `${optionCount} نتيجة`;
 
   return (
     // relative here: the dropdown and popover anchor to the whole bar, not the narrow pill/button
@@ -182,6 +188,7 @@ export function FilterBar(props: {
           placeholder="ابحث عن مكان أو إحداثيات"
           className="h-9 rounded-full border-border bg-card/95 ps-9 shadow-md"
         />
+        <span role="status" className="sr-only">{resultsStatus}</span>
         {showDropdown && (
           <Card
             id="place-search-listbox"

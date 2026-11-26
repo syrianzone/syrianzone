@@ -17,6 +17,7 @@ import {
     DialogDescription,
     DialogTitle,
 } from '@/Components/ui/dialog';
+import { Command as CommandPrimitive } from 'cmdk';
 import {
     Command,
     CommandList,
@@ -61,16 +62,19 @@ export default function GlobalCommandPalette() {
 
                 <Command
                     shouldFilter={false}
+                    label="ابحث في المنصة"
                     className="bg-transparent text-foreground"
                 >
                     {/* Top Search Input Row */}
                     <div className="flex items-center gap-2.5 border-b border-border/80 px-3.5 py-3 bg-muted/25">
                         <Search className="h-5 w-5 text-primary shrink-0" />
-                        <input
+                        {/* cmdk's own input: it is the combobox that owns the
+                            listbox (aria-controls / aria-activedescendant), so a
+                            screen reader follows the highlighted result. */}
+                        <CommandPrimitive.Input
                             ref={inputRef}
-                            type="text"
                             value={query}
-                            onChange={(e) => setQuery(e.target.value)}
+                            onValueChange={setQuery}
                             onKeyDown={(e) => {
                                 if (e.key !== 'Enter') return;
                                 // cmdk highlights a result on pointer movement or
@@ -87,7 +91,6 @@ export default function GlobalCommandPalette() {
                                 first.click();
                             }}
                             placeholder="ابحث عن أداة، مسؤول، مدينة، خط سرفيس، سورة، معبر، أو رقم طوارئ..."
-                            aria-label="ابحث في المنصة"
                             autoFocus
                             className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
                         />

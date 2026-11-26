@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\SiteSetting;
 use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -30,6 +31,12 @@ class HandleInertiaRequests extends Middleware
         $devMode = AutoLoginDevUser::isDevMode();
 
         $site = SiteSetting::shared();
+        // Once-prop keys are a hash of the content itself, not the stored
+        // `version` alone: the navigation is merged with the
+        // `resources/data/site-modules.json` defaults, so a deploy that adds a
+        // module changes it without an admin edit bumping the version.
+        $navKey = self::contentKey($site['navigation']);
+        $popupKey = self::contentKey($site['popup']);
 
         return [
             ...parent::share($request),
@@ -43,11 +50,12 @@ class HandleInertiaRequests extends Middleware
                     ? (new AutoLoginDevUser)->resolveRole($request)
                     : null,
             ],
-            'sitePopup' => $site['popup'],
+            'sitePopup' => Inertia::once(fn () => $site['popup'])->as("sitePopup:{$popupKey}"),
             // The site-module catalogue merged with the admin's stored override
             // row: `resources/data/site-modules.json` is the default, so the
-            // browser never falls back to a second, hand-written list.
-            'siteNavigation' => $site['navigation'],
+            // browser never falls back to a second, hand-written list. Sent once:
+            // Inertia omits it on later visits until its content key changes.
+            'siteNavigation' => Inertia::once(fn () => $site['navigation'])->as("siteNavigation:{$navKey}"),
             // One resolved SEO object per request, rendered by the single
             // <SeoHead> component. The root view renders the same values
             // server-side when SSR is off. See docs/guidelines/seo.md.
@@ -66,6 +74,14 @@ class HandleInertiaRequests extends Middleware
      * Without this, navigating back can surface the raw Inertia JSON payload.
      * We only apply these headers to Inertia XHR requests so full-page responses are unaffected.
      */
+    /**
+     * A short, stable key for a once-prop's content.
+     */
+    private static function contentKey(mixed $value): string
+    {
+        return substr(hash('xxh128', json_encode($value) ?: ''), 0, 12);
+    }
+
     public function handle(Request $request, \Closure $next)
     {
         $response = parent::handle($request, $next);

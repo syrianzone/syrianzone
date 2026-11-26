@@ -39,6 +39,7 @@ class SitemapBuilder
             $this->govAppUrls(),
             $this->crossingUrls(),
             $this->prayerCityUrls(),
+            $this->ramadanCityUrls(),
             $this->transitCityUrls(),
         );
 
@@ -177,6 +178,25 @@ class SitemapBuilder
                 continue;
             }
             $urls[] = new SitemapUrl('/muslim/prayer/'.$id, 0.7, 'daily', null);
+        }
+
+        return $urls;
+    }
+
+    /**
+     * One Ramadan imsakiya landing page per Syrian governorate.
+     *
+     * @return SitemapUrl[]
+     */
+    private function ramadanCityUrls(): array
+    {
+        $urls = [];
+        foreach (\App\Support\Facts::governorates() as $gov) {
+            $id = trim((string) ($gov['id'] ?? ''));
+            if ($id === '') {
+                continue;
+            }
+            $urls[] = new SitemapUrl('/muslim/ramadan/'.$id, 0.8, 'daily', null);
         }
 
         return $urls;

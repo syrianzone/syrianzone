@@ -204,29 +204,49 @@ export interface GovtAliasItem {
     source_note: string | null;
 }
 
+export interface GovtActiveTenure {
+    institution_id?: string | null;
+    institution_name_ar?: string | null;
+    role_title_ar: string;
+    tier: string;
+    government_phase: string;
+    started_at?: string | null;
+    start_date_precision?: string;
+    ended_at?: string | null;
+    end_date_precision?: string | null;
+    is_acting?: boolean;
+}
+
 export interface GovtOfficialSummary {
     id: string;
     slug: string;
     full_name_ar: string;
-    display_name_ar: string;
-    full_name_en: string | null;
-    honorific_ar: string | null;
+    display_name_ar?: string;
+    full_name_en?: string | null;
+    honorific_ar?: string | null;
+    bio_summary_ar?: string | null;
+    birth_place_ar?: string | null;
     office_status: string;
     highest_tier: string;
-    birth_year: number | null;
-    birth_place_ar: string | null;
-    gender: string | null;
-    bio_summary_ar: string | null;
-    portrait_url: string | null;
-    resolved_portrait_url: string | null;
     cv_completeness: string;
+    portrait_url?: string | null;
+    first_seen_in_office_at?: string | null;
+    tenures_count: number;
+    active_tenure?: GovtActiveTenure | null;
+}
+
+export interface GovtOfficialAdminSummary extends Omit<GovtOfficialSummary, 'active_tenure' | 'bio_summary_ar' | 'birth_place_ar'> {
+    display_name_ar: string;
+    bio_summary_ar?: string | null;
+    birth_year?: number | null;
+    birth_place_ar?: string | null;
+    gender?: string | null;
+    resolved_portrait_url: string | null;
     verification_level: string;
     publish_status: string;
-    first_seen_in_office_at: string | null;
     last_seen_in_office_at: string | null;
     current_tenure: GovtTenureItem | null;
     latest_tenure: GovtTenureItem | null;
-    tenures_count: number;
     cv_entries_count: number;
     evidence_count: number;
     version: number;
@@ -244,7 +264,11 @@ export interface GovtHouseLink {
     label: string;
 }
 
-export interface GovtOfficialDetail extends GovtOfficialSummary {
+export interface GovtOfficialDetail extends GovtOfficialAdminSummary {
+    bio_summary_ar: string | null;
+    birth_year: number | null;
+    birth_place_ar: string | null;
+    gender: string | null;
     languages: string[];
     socials: Record<string, string>;
     candidate_id: string | null;

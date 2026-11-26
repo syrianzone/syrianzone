@@ -21,6 +21,11 @@ export const TOOLS: ToolEntry[] = [
     icon: MuslimIcon,
   },
   {
+    slug: 'ramadan',
+    title: 'إمساكية رمضان',
+    icon: MuslimIcon,
+  },
+  {
     slug: 'quran',
     title: 'قارئ القرآن',
     icon: QuranIcon,

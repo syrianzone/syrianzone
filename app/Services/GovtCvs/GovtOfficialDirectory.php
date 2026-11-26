@@ -11,6 +11,7 @@ use App\Services\Promises\SpeakerDirectory;
 use App\Support\ArabicSearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Public and admin read directory for Government CVs (`السير الذاتية للمسؤولين`):
@@ -19,6 +20,8 @@ use Illuminate\Support\Collection;
  */
 final class GovtOfficialDirectory
 {
+    private const PUBLIC_CACHE_TTL_SECONDS = 3600;
+
     public function __construct(private readonly GovtCvPresenter $presenter) {}
 
     /**
@@ -38,22 +41,58 @@ final class GovtOfficialDirectory
      * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
-    public function index(array $filters = [], bool $includeOptions = true): array
+    public function index(array $filters = [], bool $includeOptions = true, bool $compact = false): array
+    {
+        $cleaned = $this->cleanFilters($filters);
+
+        if ($this->hasNoFilters($cleaned)) {
+            return Cache::remember(
+                $this->publicCacheKey('index', $compact, $includeOptions),
+                self::PUBLIC_CACHE_TTL_SECONDS,
+                fn () => $this->buildIndex($filters, $cleaned, $includeOptions, $compact),
+            );
+        }
+
+        return $this->buildIndex($filters, $cleaned, $includeOptions, $compact);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @param  array<string, string|null>  $cleanedFilters
+     * @return array<string, mixed>
+     */
+    private function buildIndex(array $filters, array $cleanedFilters, bool $includeOptions, bool $compact): array
     {
         $query = GovtOfficial::published()
-            ->with(GovtCvPresenter::PUBLIC_CARD_WITH)
-            ->withCount(['tenures', 'cvEntries', 'evidenceLinks']);
+            ->with($compact ? GovtCvPresenter::PUBLIC_LIST_WITH : GovtCvPresenter::PUBLIC_CARD_WITH)
+            ->withCount($compact ? ['tenures'] : ['tenures', 'cvEntries', 'evidenceLinks']);
 
         $this->applyFilters($query, $filters);
 
         $officials = $this->sortOfficials($query->get());
         $options = $includeOptions ? $this->options() : null;
+        $serializedOfficials = $officials
+            ->map(fn (GovtOfficial $o) => $compact ? $this->presenter->publicListCard($o) : $this->presenter->publicCard($o))
+            ->values()
+            ->all();
+
+        $institutions = $options !== null ? $options['institutions'] : $this->institutions();
+        if ($compact) {
+            $usedInstitutionIds = [];
+            foreach ($serializedOfficials as $item) {
+                $instId = $item['active_tenure']['institution_id'] ?? null;
+                if (is_string($instId) && $instId !== '') {
+                    $usedInstitutionIds[$instId] = true;
+                }
+            }
+            $institutions = $this->compactInstitutions($institutions, $usedInstitutionIds);
+        }
 
         $payload = [
-            'officials' => $officials->map(fn (GovtOfficial $o) => $this->presenter->publicCard($o))->values()->all(),
+            'officials' => $serializedOfficials,
             'stats' => $this->stats(),
-            'institutions' => $options !== null ? $options['institutions'] : $this->institutions(),
-            'filters' => $this->cleanFilters($filters),
+            'institutions' => $institutions,
+            'filters' => $cleanedFilters,
         ];
 
         if ($options !== null) {
@@ -116,6 +155,26 @@ final class GovtOfficialDirectory
      * @return array<string, mixed>
      */
     public function movements(array $filters = [], bool $includeOptions = true, bool $compact = false): array
+    {
+        $cleaned = $this->cleanFilters($filters);
+
+        if ($this->hasNoFilters($cleaned)) {
+            return Cache::remember(
+                $this->publicCacheKey('movements', $compact, $includeOptions),
+                self::PUBLIC_CACHE_TTL_SECONDS,
+                fn () => $this->buildMovements($filters, $cleaned, $includeOptions, $compact),
+            );
+        }
+
+        return $this->buildMovements($filters, $cleaned, $includeOptions, $compact);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @param  array<string, string|null>  $cleanedFilters
+     * @return array<string, mixed>
+     */
+    private function buildMovements(array $filters, array $cleanedFilters, bool $includeOptions, bool $compact): array
     {
         $query = GovtTenure::query()
             ->with([
@@ -227,12 +286,24 @@ final class GovtOfficialDirectory
         });
 
         $options = $includeOptions ? $this->options() : null;
+        $serializedEvents = array_values($events);
+        $institutions = $options !== null ? $options['institutions'] : $this->institutions();
+        if ($compact) {
+            $usedInstitutionIds = [];
+            foreach ($serializedEvents as $item) {
+                $instId = $item['institution_id'] ?? null;
+                if (is_string($instId) && $instId !== '') {
+                    $usedInstitutionIds[$instId] = true;
+                }
+            }
+            $institutions = $this->compactInstitutions($institutions, $usedInstitutionIds);
+        }
 
         $payload = [
-            'movements' => array_values($events),
+            'movements' => $serializedEvents,
             'stats' => $this->stats(),
-            'institutions' => $options !== null ? $options['institutions'] : $this->institutions(),
-            'filters' => $this->cleanFilters($filters),
+            'institutions' => $institutions,
+            'filters' => $cleanedFilters,
         ];
 
         if ($options !== null) {
@@ -420,5 +491,77 @@ final class GovtOfficialDirectory
     private function escapeLike(string $value): string
     {
         return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $value);
+    }
+
+    /**
+     * Filter institutions down to those referenced on the surface and drop fields
+     * not read by the frontend filter facets.
+     *
+     * @param  array<int, array{id: string, name_ar: string, category_id: string}>  $institutions
+     * @param  array<string, bool>  $usedInstitutionIds
+     * @return array<int, array{id: string, name_ar: string}>
+     */
+    private function compactInstitutions(array $institutions, array $usedInstitutionIds): array
+    {
+        $out = [];
+        foreach ($institutions as $inst) {
+            if (isset($usedInstitutionIds[$inst['id']])) {
+                $out[] = ['id' => $inst['id'], 'name_ar' => $inst['name_ar']];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  array<string, string|null>  $cleanedFilters
+     */
+    private function hasNoFilters(array $cleanedFilters): bool
+    {
+        foreach ($cleanedFilters as $value) {
+            if ($value !== null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Cheap version-keyed cache identifier so any publish, unpublish, edit, or
+     * tenure/institution change automatically busts cached public payloads.
+     */
+    private function publicCacheKey(string $surface, bool $compact, bool $includeOptions): string
+    {
+        $officialAgg = GovtOfficial::published()
+            ->selectRaw('COUNT(*) as cnt, MAX(updated_at) as max_updated')
+            ->first();
+
+        $tenureAgg = GovtTenure::query()
+            ->whereHas('official', fn ($q) => $q->published())
+            ->selectRaw('COUNT(*) as cnt, MAX(updated_at) as max_updated')
+            ->first();
+
+        $entityAgg = OfficialEntity::query()
+            ->whereNotIn('category_id', SpeakerDirectory::PEOPLE_CATEGORIES)
+            ->selectRaw('COUNT(*) as cnt, MAX(updated_at) as max_updated')
+            ->first();
+
+        $signature = implode('|', [
+            (int) ($officialAgg?->cnt ?? 0),
+            (string) ($officialAgg?->max_updated ?? '0'),
+            (int) ($tenureAgg?->cnt ?? 0),
+            (string) ($tenureAgg?->max_updated ?? '0'),
+            (int) ($entityAgg?->cnt ?? 0),
+            (string) ($entityAgg?->max_updated ?? '0'),
+        ]);
+
+        return sprintf(
+            'govtcvs:v1:%s:%d:%d:%s',
+            $surface,
+            $compact ? 1 : 0,
+            $includeOptions ? 1 : 0,
+            md5($signature),
+        );
     }
 }

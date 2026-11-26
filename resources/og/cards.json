@@ -33,6 +33,7 @@
 
     { "slug": "muslim", "title": "الركن الإسلامي", "subtitle": "مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن", "icon": "muslim" },
     { "slug": "muslim-prayer", "title": "مواقيت الصلاة", "subtitle": "بحسب مدينتك، مع عدّاد للصلاة القادمة", "icon": "muslim" },
+    { "slug": "ramadan", "title": "إمساكية رمضان 1448 هـ", "subtitle": "مواقيت الإمساك والفجر والإفطار لجميع المحافظات السورية", "icon": "muslim" },
     { "slug": "muslim-quran", "title": "قارئ القرآن", "subtitle": "بالرسم العثماني مع التلاوة، ويعمل دون اتصال", "icon": "quran" },
     { "slug": "muslim-radio", "title": "إذاعة القرآن", "subtitle": "تلاوة مستمرة مع اختيار القارئ ومؤقّت للنوم", "icon": "quran_radio" },
     { "slug": "roznama", "title": "الروزنامة السورية", "subtitle": "التقويم السوري والهجري والأعياد والعطل الرسمية", "icon": "roznama" },
@@ -54,6 +55,7 @@
     { "slug": "stats", "title": "إحصائيات المنصة", "subtitle": "أرقام الزيارات والنشاط العام في المساحة السورية", "icon": "stats" },
     { "slug": "about", "title": "عن المنصة", "subtitle": "مشروع غير تجاري ومفتوح المصدر للشأن السوري", "emblem": true },
     { "slug": "privacy", "title": "سياسة الخصوصية", "subtitle": "كيف نحمي بياناتك وما التقنيات التي نستخدمها", "emblem": true },
-    { "slug": "terms", "title": "الشروط والأحكام", "subtitle": "شروط الاستخدام والسلوك المقبول", "emblem": true }
+    { "slug": "terms", "title": "الشروط والأحكام", "subtitle": "شروط الاستخدام والسلوك المقبول", "emblem": true },
+    { "slug": "currency", "title": "تحويل الليرة السورية", "subtitle": "حاسبة الليرة الجديدة والقديمة وتقسيم الفئات النقدية", "icon": "currency" }
   ]
 }

@@ -23,7 +23,7 @@ class LlmsTxt
             '/promises', '/govtcvs', '/syofficial', '/phonebook', '/govapps', '/sites',
             '/house', '/justice', '/crossings', '/atlas',
         ],
-        'خدمات يومية' => ['/transit', '/mishwar', '/roznama', '/muslim/prayer'],
+        'خدمات يومية' => ['/transit', '/mishwar', '/currency', '/roznama', '/muslim/prayer', '/muslim/ramadan'],
         'رأي ومشاركة' => [
             '/tierlist', '/tierlist/leaderboard', '/polls', '/compass',
             '/compass/stats', '/priorities',
@@ -59,6 +59,7 @@ class LlmsTxt
                 .'ولكل تطبيق حكومي دليل رسمي على '.$base.'/govapps/{id}، '
                 .'ولكل منفذ حدودي صفحة على '.$base.'/crossings/{slug}، '
                 .'ولمواقيت الصلاة لكل محافظة على '.$base.'/muslim/prayer/{city}، '
+                .'ولإمساكية رمضان لكل محافظة على '.$base.'/muslim/ramadan/{city}، '
                 .'ولكل مدينة في ترانزيت صفحة على '.$base.'/transit/city/{id}. '
                 .'القائمة الكاملة بالصفحات في [sitemap.xml]('.$base.'/sitemap.xml).',
         ];

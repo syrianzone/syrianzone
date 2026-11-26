@@ -123,6 +123,21 @@ export default function Index() {
 
           <NextPrayerLink timings={timings} timeZone={timeZone} hijriLabel={apiHijri} />
 
+          <Link
+            href={toolHref('ramadan')}
+            className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-start no-underline transition-colors hover:border-primary/40"
+          >
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-bold text-foreground">
+                إمساكية رمضان 1448 هـ / 2027 م
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                مواعيد الإمساك والفجر والإفطار لجميع المحافظات السورية
+              </span>
+            </span>
+            <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          </Link>
+
           {lastBookmark && (
             <Link
               href={toolHref('quran')}

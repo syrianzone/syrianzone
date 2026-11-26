@@ -478,6 +478,86 @@ final class Facts
     }
 
     /**
+     * Pre-generated Ramadan imsakiya timetable for a Hijri year.
+     *
+     * @return array{
+     *     meta: array{
+     *         hijri_year: int,
+     *         method: int,
+     *         source: string,
+     *         timezone: string,
+     *         generated_at: string,
+     *         expected_start_date: string,
+     *         expected_end_date: string,
+     *         days_count: int,
+     *         day_offset: int,
+     *         minute_offset: int,
+     *         official_source_url: ?string
+     *     },
+     *     governorates: array<string, list<array{
+     *         hijri_day: int,
+     *         date: string,
+     *         weekday_ar: string,
+     *         imsak: string,
+     *         fajr: string,
+     *         sunrise: string,
+     *         dhuhr: string,
+     *         asr: string,
+     *         maghrib: string,
+     *         isha: string
+     *     }>>
+     * }
+     */
+    public static function imsakiya(int $hijriYear = 1448): array
+    {
+        /** @var array<string, mixed> $data */
+        $data = self::json("imsakiya/{$hijriYear}");
+
+        return $data;
+    }
+
+    /**
+     * SANA-sourced Ramadan governorate photos and attribution metadata.
+     *
+     * @return array<string, array{
+     *     id: string,
+     *     file: string,
+     *     width: int,
+     *     height: int,
+     *     alt_ar: string,
+     *     caption_ar: string,
+     *     source_article_url: string,
+     *     source_image_url: string,
+     *     credit_ar: string
+     * }>
+     */
+    public static function ramadanImages(): array
+    {
+        /** @var array<int, array<string, mixed>> $rows */
+        $rows = self::json('ramadan-images');
+        $byId = [];
+        foreach ($rows as $row) {
+            if (isset($row['id'])) {
+                $byId[(string) $row['id']] = $row;
+            }
+        }
+
+        return $byId;
+    }
+
+    /**
+     * Currency redenomination facts (2026 Syrian pound reform): conversion ratio,
+     * issued new and withdrawn old denominations, verified key dates, exchange
+     * rules and FAQ entries.
+     *
+     * @return array<string, mixed>
+     */
+    public static function currency(): array
+    {
+        return self::json('currency');
+    }
+
+    /**
      * One shared facts file, decoded and memoised for the request.
      *
      * Public because every reader of `resources/data` must share this one cache

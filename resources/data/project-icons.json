@@ -35,6 +35,10 @@
    "viewBox": "0 0 32 32",
    "body": "<rect x=\"4\" y=\"5\" width=\"24\" height=\"22\" rx=\"3.5\" class=\"fill-[#3B82F6]/15 dark:fill-[#60A5FA]/25 stroke-[#2563EB] dark:stroke-[#60A5FA]\" stroke-width=\"2\"></rect><path d=\"M8 10h11M8 14.5h16\" class=\"stroke-[#475569] dark:stroke-[#CBD5E1]\" stroke-width=\"2\" stroke-linecap=\"round\"></path><path d=\"M8.5 21l2.2 2.2 4.3-4.7\" class=\"stroke-[#10B981] dark:stroke-[#34D399]\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path><path d=\"M19 19l4 4M23 19l-4 4\" class=\"stroke-[#EF4444] dark:stroke-[#F87171]\" stroke-width=\"2.2\" stroke-linecap=\"round\"></path><circle cx=\"23\" cy=\"10\" r=\"1.8\" fill=\"hsl(var(--primary))\"></circle>"
   },
+  "currency": {
+   "viewBox": "0 0 32 32",
+   "body": "<rect x=\"3\" y=\"8\" width=\"22\" height=\"14\" rx=\"2.5\" class=\"fill-[#10B981]/15 dark:fill-[#34D399]/20 stroke-[#059669] dark:stroke-[#34D399]\" stroke-width=\"2\"></rect><circle cx=\"14\" cy=\"15\" r=\"3\" fill=\"hsl(var(--primary))\"></circle><circle cx=\"24\" cy=\"21\" r=\"5\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></circle>"
+  },
   "game_2048": {
    "viewBox": "0 0 32 32",
    "body": "<rect x=\"4\" y=\"4\" width=\"11\" height=\"11\" rx=\"2.5\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></rect><rect x=\"17\" y=\"4\" width=\"11\" height=\"11\" rx=\"2.5\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></rect><rect x=\"4\" y=\"17\" width=\"11\" height=\"11\" rx=\"2.5\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></rect><rect x=\"17\" y=\"17\" width=\"11\" height=\"11\" rx=\"2.5\" class=\"fill-[#D97706]/25 dark:fill-[#FBBF24]/35 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"2\"></rect><rect x=\"17\" y=\"17\" width=\"11\" height=\"11\" rx=\"2.5\" fill=\"hsl(var(--primary))\" opacity=\"0.35\"></rect>"

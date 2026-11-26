@@ -13,6 +13,7 @@ use App\Support\Seo\Preview\Resolvers\PollPreview;
 use App\Support\Seo\Preview\Resolvers\PrayerCityPreview;
 use App\Support\Seo\Preview\Resolvers\PrioritiesSharePreview;
 use App\Support\Seo\Preview\Resolvers\PromisePreview;
+use App\Support\Seo\Preview\Resolvers\RamadanCityPreview;
 use App\Support\Seo\Preview\Resolvers\TransitCityPreview;
 use App\Support\Seo\Preview\Resolvers\TransitRoutePreview;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ final class Previews
         TransitCityPreview::class,
         CrossingPreview::class,
         PrayerCityPreview::class,
+        RamadanCityPreview::class,
         GuessWhoRoomPreview::class,
         CompassSharePreview::class,
         PrioritiesSharePreview::class,

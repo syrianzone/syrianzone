@@ -38,9 +38,9 @@ PUBLIC_ROUTES = [
     "/crossings", "/shawarma", "/roznama", "/priorities", "/alignment",
     "/compass", "/compass/stats", "/tierlist", "/tierlist/leaderboard",
     "/polls", "/guesswho", "/muslim",
-    "/muslim/prayer", "/muslim/quran", "/muslim/radio",
+    "/muslim/prayer", "/muslim/ramadan", "/muslim/quran", "/muslim/radio",
     "/games", "/games/2048", "/games/solitare", "/games/tarneeb", "/games/trix", "/games/fakenews", "/board",
-    "/mishwar", "/transit", "/transit/studio",
+    "/mishwar", "/transit", "/transit/studio", "/currency",
     "/promises", "/promises/suggest",
     "/govtcvs", "/govtcvs/movements",
 ]

@@ -51,6 +51,7 @@ const NAMED_ICONS: Record<string, string> = {
     CodexCommunityIcon: 'codex',
     CrossingsIcon: 'crossings',
     FakeNewsTestIcon: 'fakenews',
+    CurrencyIcon: 'currency',
 };
 
 const COMPONENTS: Record<string, IconComponent> = {
@@ -87,6 +88,7 @@ const COMPONENTS: Record<string, IconComponent> = {
     CodexCommunityIcon: ProjectIconExport.CodexCommunityIcon,
     CrossingsIcon: ProjectIconExport.CrossingsIcon,
     FakeNewsTestIcon: ProjectIconExport.FakeNewsTestIcon,
+    CurrencyIcon: ProjectIconExport.CurrencyIcon,
 };
 
 /** Drawings that exist for the administration side only (no React module). */

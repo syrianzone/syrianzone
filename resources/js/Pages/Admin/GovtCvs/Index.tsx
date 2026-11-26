@@ -40,13 +40,13 @@ import {
     TIER_LABELS,
     TIER_META,
 } from '@/Domain/govtcvs/constants';
-import type { GovtOfficialSummary } from '@/Domain/govtcvs/types';
+import type { GovtOfficialAdminSummary } from '@/Domain/govtcvs/types';
 import AdminHeader from './_components/AdminHeader';
 
 const ALL = 'all';
 
 interface Props {
-    officials: GovtOfficialSummary[];
+    officials: GovtOfficialAdminSummary[];
     pendingSuggestionsCount?: number;
 }
 
@@ -115,7 +115,7 @@ export default function GovtCvsAdminIndex({
     }, [officials, q, publishFilter, officeFilter, tierFilter, completenessFilter]);
 
     const runAction = async (
-        official: GovtOfficialSummary,
+        official: GovtOfficialAdminSummary,
         action: () => Promise<unknown>,
         successMessage: string,
     ) => {
@@ -131,7 +131,7 @@ export default function GovtCvsAdminIndex({
         }
     };
 
-    const togglePublish = async (official: GovtOfficialSummary) => {
+    const togglePublish = async (official: GovtOfficialAdminSummary) => {
         const nextStatus = official.publish_status === 'published' ? 'archived' : 'published';
         if (nextStatus === 'archived') {
             const ok = await confirmDialog({
@@ -148,7 +148,7 @@ export default function GovtCvsAdminIndex({
         );
     };
 
-    const removeOfficial = async (official: GovtOfficialSummary) => {
+    const removeOfficial = async (official: GovtOfficialAdminSummary) => {
         const ok = await confirmDialog({
             title: `حذف ملف «${official.display_name_ar || official.full_name_ar}» نهائياً؟`,
             description:

@@ -3,6 +3,7 @@
     "non_pages": [
         "healthcheck",
         "sitemap.xml",
+        "sitemap-images.xml",
         "llms.txt",
         "broadcasting/auth",
         "sanctum/csrf-cookie",
@@ -185,6 +186,15 @@
             "card": "muslim-prayer",
             "parent": "/muslim",
             "priority": 0.8,
+            "changefreq": "daily"
+        },
+        {
+            "path": "/muslim/ramadan",
+            "title": "إمساكية رمضان 1448 هـ / 2027 م | الركن الإسلامي",
+            "description": "إمساكية شهر رمضان المبارك 1448 هـ / 2027 م لجميع المحافظات السورية بتوقيت دمشق، مع عدّاد لبداية الشهر ومواعيد الإمساك والفجر والإفطار.",
+            "card": "ramadan",
+            "parent": "/muslim",
+            "priority": 0.9,
             "changefreq": "daily"
         },
         {
@@ -410,6 +420,14 @@
             "card": "terms",
             "priority": 0.3,
             "changefreq": "yearly"
+        },
+        {
+            "path": "/currency",
+            "title": "تحويل الليرة السورية الجديدة والقديمة",
+            "description": "حاسبة تحويل الليرة السورية الجديدة والقديمة بنسبة ١٠٠ إلى ١، مع تفصيل أقل عدد أوراق نقدية ودليل الفئات ومواعيد الاستبدال الرسمية.",
+            "card": "currency",
+            "priority": 0.9,
+            "changefreq": "monthly"
         }
     ]
 }

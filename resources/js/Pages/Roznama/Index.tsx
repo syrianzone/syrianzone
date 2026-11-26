@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from '@inertiajs/react';
 import {
     Calendar, Clock, MapPin, Sparkles, AlertCircle, Info, CalendarDays,
     ExternalLink, Settings,
@@ -356,6 +357,20 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                             </ul>
                         </CardContent>
                     </Card>
+                    <Card className="border-primary/20 bg-primary/5 shadow-sm">
+                        <CardContent className="p-5 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 className="font-bold text-base text-foreground">إمساكية رمضان 1448 هـ / 2027 م</h2>
+                                <p className="text-xs text-muted-foreground mt-0.5">مواعيد الإمساك والفجر والإفطار لجميع المحافظات السورية</p>
+                            </div>
+                            <Link
+                                href="/muslim/ramadan"
+                                className="text-xs font-semibold text-primary hover:underline"
+                            >
+                                عرض الإمساكية
+                            </Link>
+                        </CardContent>
+                    </Card>
                     <Card className="border-border bg-muted/20 shadow-sm p-5">
                         <div className="flex gap-3.5 items-start text-xs text-muted-foreground leading-relaxed">
                             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
@@ -589,10 +604,17 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                         ) : null}
                                     </div>
 
-                                    <div className="text-[10px] text-muted-foreground mt-4 text-center leading-relaxed">
-                                        {method === DEFAULT_PRAYER_METHOD || !chosenMethod
-                                            ? 'طريقة رابطة العالم الإسلامي (فجر 18° وعشاء 17°)، معتمد من وزارة الأوقاف.'
-                                            : `طريقة ${chosenMethod.nameAr} (${chosenMethod.detail}) — اخترتها في الإعدادات.`}
+                                    <div className="text-[10px] text-muted-foreground mt-4 text-center leading-relaxed space-y-1.5">
+                                        <p>
+                                            {method === DEFAULT_PRAYER_METHOD || !chosenMethod
+                                                ? 'طريقة رابطة العالم الإسلامي (فجر 18° وعشاء 17°)، معتمد من وزارة الأوقاف.'
+                                                : `طريقة ${chosenMethod.nameAr} (${chosenMethod.detail}) — اخترتها في الإعدادات.`}
+                                        </p>
+                                        <p>
+                                            <Link href="/muslim/ramadan" className="font-semibold text-primary hover:underline">
+                                                إمساكية رمضان 1448 هـ / 2027 م
+                                            </Link>
+                                        </p>
                                     </div>
                                 </CardContent>
                             </Card>

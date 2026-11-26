@@ -143,8 +143,47 @@
         };
     </script>
     
+    @php
+        $viteEntries = ['resources/js/app.tsx'];
+        $pageComponent = is_array($page ?? null) ? ($page['component'] ?? null) : null;
+        // Keep in sync with DEFERRED_PAGES in resources/js/Lib/pages.ts.
+        $deferredPrefixes = ['Transit/admin'];
+        $isDeferredComponent = is_string($pageComponent) && collect($deferredPrefixes)->contains(
+            static fn (string $prefix): bool => $pageComponent === $prefix || str_starts_with($pageComponent, $prefix.'/')
+        );
+
+        if (
+            is_string($pageComponent)
+            && $pageComponent !== ''
+            && ! str_contains($pageComponent, '..')
+            && ! $isDeferredComponent
+            && is_file(resource_path("js/Pages/{$pageComponent}.tsx"))
+        ) {
+            $componentEntry = "resources/js/Pages/{$pageComponent}.tsx";
+            $vite = app(\Illuminate\Foundation\Vite::class);
+            if ($vite->isRunningHot()) {
+                $viteEntries[] = $componentEntry;
+            } else {
+                $manifestPath = public_path('build/manifest.json');
+                if (is_file($manifestPath)) {
+                    static $viteManifestCache = [];
+                    $mtime = (int) @filemtime($manifestPath);
+                    if (! isset($viteManifestCache[$manifestPath]) || $viteManifestCache[$manifestPath]['mtime'] !== $mtime) {
+                        $viteManifestCache[$manifestPath] = [
+                            'mtime' => $mtime,
+                            'data' => json_decode((string) file_get_contents($manifestPath), true),
+                        ];
+                    }
+                    $manifest = $viteManifestCache[$manifestPath]['data'] ?? null;
+                    if (is_array($manifest) && isset($manifest[$componentEntry])) {
+                        $viteEntries[] = $componentEntry;
+                    }
+                }
+            }
+        }
+    @endphp
     @viteReactRefresh
-    @vite(['resources/js/app.tsx'])
+    @vite($viteEntries)
     @inertiaHead
 </head>
 <body class="font-sans antialiased">

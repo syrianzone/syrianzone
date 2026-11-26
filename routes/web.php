@@ -23,6 +23,7 @@ use App\Http\Controllers\GuessWhoAdminController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IncomingSuggestionsAdminController;
+use App\Http\Controllers\IndexNowController;
 use App\Http\Controllers\PhonebookAdminController;
 use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\OgCardController;
@@ -68,8 +69,17 @@ Route::get('/healthcheck', function () {
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])
     ->withoutMiddleware('web');
 
+Route::get('/sitemap-images.xml', [SitemapController::class, 'images'])
+    ->withoutMiddleware('web');
+
 // A Markdown index of the site for language-model tools (see Seo\LlmsTxt).
 Route::get('/llms.txt', [LlmsTxtController::class, 'show'])
+    ->withoutMiddleware('web');
+
+// IndexNow ownership verification key file. Answers only when {key} matches
+// the configured key; everything else 404s.
+Route::get('/{key}.txt', [IndexNowController::class, 'key'])
+    ->where('key', '[A-Za-z0-9\-]+')
     ->withoutMiddleware('web');
 
 // Share cards of single records, drawn on demand (see OgCardController). Kept
@@ -118,20 +128,63 @@ Route::get('/muslim', function () {
     return Inertia::render('Muslim/Index');
 });
 Route::get('/muslim/prayer', function () {
+    $defaultCity = 'damascus';
+
     return Inertia::render('Muslim/Prayer/Index', [
         'initialCity' => null,
         'initialCityName' => null,
-        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate('damascus'),
+        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate($defaultCity),
+        'monthlyCalendar' => \App\Http\Controllers\PrayerController::monthlyCalendarForGovernorate($defaultCity),
+        'qibla' => \App\Http\Controllers\PrayerController::qiblaForGovernorate($defaultCity),
+        'todayInfo' => \App\Http\Controllers\PrayerController::todaySyriaInfo(),
     ]);
 });
 Route::get('/muslim/prayer/{city}', function (string $city) {
     $gov = \App\Support\Facts::governorate($city);
     abort_if($gov === null, 404);
+    $id = (string) $gov['id'];
 
     return Inertia::render('Muslim/Prayer/Index', [
-        'initialCity' => (string) $gov['id'],
+        'initialCity' => $id,
         'initialCityName' => (string) $gov['name_ar'],
-        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate((string) $gov['id']),
+        'initialPrayer' => \App\Http\Controllers\PrayerController::timingsForGovernorate($id),
+        'monthlyCalendar' => \App\Http\Controllers\PrayerController::monthlyCalendarForGovernorate($id),
+        'qibla' => \App\Http\Controllers\PrayerController::qiblaForGovernorate($id),
+        'todayInfo' => \App\Http\Controllers\PrayerController::todaySyriaInfo(),
+    ]);
+})->where('city', '[a-z0-9-]+');
+Route::get('/muslim/ramadan', function () {
+    $imsakiya = \App\Support\Facts::imsakiya(1448);
+
+    return Inertia::render('Muslim/Ramadan/Index', [
+        'meta' => $imsakiya['meta'],
+        'images' => \App\Support\Facts::ramadanImages(),
+        'todayInfo' => \App\Http\Controllers\PrayerController::todaySyriaInfo(),
+    ]);
+});
+Route::get('/muslim/ramadan/{city}', function (string $city) {
+    $gov = \App\Support\Facts::governorate($city);
+    abort_if($gov === null, 404);
+
+    $id = (string) $gov['id'];
+    $imsakiya = \App\Support\Facts::imsakiya(1448);
+    $rows = $imsakiya['governorates'][$id] ?? null;
+    abort_if(! is_array($rows), 404);
+
+    $images = \App\Support\Facts::ramadanImages();
+
+    return Inertia::render('Muslim/Ramadan/Show', [
+        'city' => [
+            'id' => $id,
+            'nameAr' => (string) $gov['name_ar'],
+            'nameEn' => (string) $gov['name_en'],
+            'lat' => (float) $gov['lat'],
+            'lng' => (float) $gov['lng'],
+        ],
+        'meta' => $imsakiya['meta'],
+        'rows' => $rows,
+        'image' => $images[$id] ?? null,
+        'todayInfo' => \App\Http\Controllers\PrayerController::todaySyriaInfo(),
     ]);
 })->where('city', '[a-z0-9-]+');
 Route::get('/muslim/quran', function () {
@@ -189,6 +242,11 @@ Route::get('/privacy', function () {
 });
 Route::get('/terms', function () {
     return Inertia::render('Terms');
+});
+Route::get('/currency', function () {
+    return Inertia::render('Currency/Index', [
+        'currency' => \App\Support\Facts::currency(),
+    ]);
 });
 Route::get('/syid', [ExternalDataController::class, 'syid']);
 Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors']);

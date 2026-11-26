@@ -189,6 +189,13 @@ export function selectScoreboardTile(
     return { search: '', sort: value.sort, filters: {} };
 }
 
+export function hasActiveGovtFilters(value: SmartFilterValue): boolean {
+    return (
+        value.search.trim() !== '' ||
+        Object.values(value.filters).some((values) => values.length > 0)
+    );
+}
+
 /** Leave status filtering to `visibleOfficials` so status counts use this full base set. */
 export function filterOfficials(
     officials: readonly GovtOfficialSummary[],
@@ -199,7 +206,7 @@ export function filterOfficials(
         !value.filters[key]?.length || value.filters[key].some(matches);
 
     return officials.filter((official) => {
-        const activeTenure = official.current_tenure ?? official.latest_tenure;
+        const activeTenure = official.active_tenure;
         const tenureTier = activeTenure?.tier;
         const activePhase = activeTenure?.government_phase;
         const instId = activeTenure?.institution_id;
@@ -250,13 +257,11 @@ export function visibleOfficials(
     if (value.sort === 'newest') {
         return list.toSorted((a, b) => {
             const dateA =
-                a.current_tenure?.started_at ??
-                a.latest_tenure?.started_at ??
+                a.active_tenure?.started_at ??
                 a.first_seen_in_office_at ??
                 '0000-00-00';
             const dateB =
-                b.current_tenure?.started_at ??
-                b.latest_tenure?.started_at ??
+                b.active_tenure?.started_at ??
                 b.first_seen_in_office_at ??
                 '0000-00-00';
             return dateB.localeCompare(dateA);

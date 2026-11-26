@@ -638,7 +638,7 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                                         <Badge variant="outline">{ORIGIN_LABEL[promise.origin] ?? promise.origin}</Badge>
                                     </div>
                                     {promise.submitterName && <p className="text-muted-foreground">اقترحه: {promise.submitterName}</p>}
-                                    {promise.submitterNote && <p className="whitespace-pre-line rounded-md bg-muted p-2 text-muted-foreground">{promise.submitterNote}</p>}
+                                    {promise.submitterNote && <p className="whitespace-pre-line break-words rounded-md bg-muted p-2 text-muted-foreground">{promise.submitterNote}</p>}
                                     {promise.rejectionReason && <p className="text-destructive">سبب الرفض: {promise.rejectionReason}</p>}
                                     {promise.reviewStatus === 'published' && promise.number && (
                                         <a href={`/promises/${promise.number}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">

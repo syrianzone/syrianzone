@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useId, useRef } from 'react'
 import { LocateFixed } from 'lucide-react'
 import { useMap } from '@/Components/map/MapContext'
 import { Button } from '@/Components/ui/button'
@@ -18,25 +18,54 @@ export default function NearbyTransitDrawer() {
   const locationStatus = useContext(LocationStatusContext)
   const requestLocation = useRequestUserLocation()
   const { setSelectedRouteId } = useMapStore()
+  const drawerId = useId()
+  const toggleRef = useRef<HTMLButtonElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const wasOpenRef = useRef(false)
 
   useEffect(() => {
     if (!userLocation || !isOpen) return
 
+    // A live GPS watch moves the point while the drawer is open: each new fix
+    // aborts the previous request so an older answer never overwrites a newer one.
+    const ctrl = new AbortController()
     const fetchNearby = async () => {
       setLoading(true)
       setFetchError(false)
       try {
-        const rows = await transitApi.nearbyStops(userLocation.lat, userLocation.lng, NEARBY_STOPS_RADIUS_M)
-        setStops(rows)
+        const rows = await transitApi.nearbyStops(userLocation.lat, userLocation.lng, NEARBY_STOPS_RADIUS_M, ctrl.signal)
+        if (!ctrl.signal.aborted) setStops(rows)
       } catch {
-        setFetchError(true)
+        if (!ctrl.signal.aborted) setFetchError(true)
       } finally {
-        setLoading(false)
+        if (!ctrl.signal.aborted) setLoading(false)
       }
     }
 
     fetchNearby()
+    return () => ctrl.abort()
   }, [userLocation, isOpen])
+
+  // Opening moves focus into the drawer; closing returns it to the toggle, but
+  // only when focus was inside the drawer (a route pick moves on to the sidebar).
+  useEffect(() => {
+    if (isOpen) {
+      closeRef.current?.focus({ preventScroll: true })
+    } else if (wasOpenRef.current) {
+      const active = document.activeElement
+      if (!active || active === document.body) toggleRef.current?.focus({ preventScroll: true })
+    }
+    wasOpenRef.current = isOpen
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [isOpen])
 
   // Clear results when drawer closes so stale data doesn't flash on reopen
   useEffect(() => {
@@ -112,7 +141,7 @@ export default function NearbyTransitDrawer() {
     }
 
     return (
-      <div className="space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(50vh - 80px)' }}>
+      <div className="space-y-3 overflow-y-auto" style={{ maxHeight: 'calc(50dvh - 80px)' }}>
         {stops.map((stop) => (
           <div key={stop.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
             <div className="mb-2 flex items-center gap-2">
@@ -126,11 +155,12 @@ export default function NearbyTransitDrawer() {
               {stop.routes.map((route) => (
                 <button
                   key={route.id}
+                  type="button"
                   onClick={() => {
                     setSelectedRouteId(route.id)
                     setIsOpen(false)
                   }}
-                  className="rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs font-medium text-[var(--text)] transition-colors hover:bg-primary hover:text-white"
+                  className="rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs font-medium text-[var(--text)] transition-colors hover:bg-primary hover:text-primary-foreground"
                 >
                   {route.name_ar}
                 </button>
@@ -164,8 +194,12 @@ export default function NearbyTransitDrawer() {
         </button>
 
         <button
+          ref={toggleRef}
+          type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105"
+          aria-expanded={isOpen}
+          aria-controls={drawerId}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105"
           aria-label="المحطات القريبة"
           title="المحطات القريبة"
         >
@@ -177,15 +211,22 @@ export default function NearbyTransitDrawer() {
       </div>
 
       <div
+        id={drawerId}
+        role="region"
+        aria-label="مواقف قريبة منك"
+        // Closed, the drawer is only translated off-screen: inert keeps its
+        // controls out of the tab order and the accessibility tree.
+        inert={!isOpen}
         className={`absolute inset-x-0 bottom-0 z-30 transform rounded-t-2xl bg-[var(--surface)] p-4 shadow-2xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
         dir="rtl"
-        style={{ maxHeight: '50vh' }}
+        style={{ maxHeight: '50dvh' }}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-[var(--text)]">مواقف قريبة منك</h2>
           <button
+            ref={closeRef}
             type="button"
             onClick={() => setIsOpen(false)}
             aria-label="إغلاق"

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, MapPin, Search, SlidersHorizontal } from 'lucide-react';
 import { Card } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
-import { Badge, badgeVariants } from '@/Components/ui/badge';
+import { Badge } from '@/Components/ui/badge';
+import { FilterChip } from '@/Components/ui/filter-chip';
 import { cn } from '@/Lib/utils';
 import { CATEGORIES, CATEGORY_LABELS } from '@/Domain/places/categories';
 import type { GeoSuggestion, LatLng, PlaceCategory, PlaceListItem } from '@/Domain/places/types';
@@ -303,42 +304,39 @@ export function FilterBar(props: {
                 { key: 'places' as const, label: 'أماكن' },
                 { key: 'hotels' as const, label: 'فنادق' },
               ]).map((v) => (
-                <button
+                <FilterChip
                   key={v.key}
-                  type="button"
-                  className={cn(badgeVariants({ variant: props.viewFilter === v.key ? 'default' : 'outline' }), 'cursor-pointer')}
+                  active={props.viewFilter === v.key}
                   onClick={() => props.onViewFilterChange(v.key)}
                 >
                   {v.label}
-                </button>
+                </FilterChip>
               ))}
             </div>
             {props.viewFilter !== 'hotels' && (
               <>
                 <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">الفئة</p>
                 <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    className={cn(badgeVariants({ variant: props.category === null ? 'default' : 'outline' }), 'cursor-pointer')}
+                  <FilterChip
+                    active={props.category === null}
                     onClick={() => {
                       props.onCategoryChange(null);
                       setFilterOpen(false);
                     }}
                   >
                     الكل
-                  </button>
+                  </FilterChip>
                   {CATEGORIES.map((c) => (
-                    <button
+                    <FilterChip
                       key={c.key}
-                      type="button"
-                      className={cn(badgeVariants({ variant: props.category === c.key ? 'default' : 'outline' }), 'cursor-pointer')}
+                      active={props.category === c.key}
                       onClick={() => {
                         props.onCategoryChange(props.category === c.key ? null : c.key);
                         setFilterOpen(false);
                       }}
                     >
                       {c.label}
-                    </button>
+                    </FilterChip>
                   ))}
                 </div>
               </>

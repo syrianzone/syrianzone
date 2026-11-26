@@ -232,6 +232,11 @@ Route::get('/privacy', function () {
 Route::get('/terms', function () {
     return Inertia::render('Terms');
 });
+Route::get('/currency', function () {
+    return Inertia::render('Currency/Index', [
+        'currency' => \App\Support\Facts::currency(),
+    ]);
+});
 Route::get('/syid', [ExternalDataController::class, 'syid']);
 Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors']);
 Route::get('/sites', [ExternalDataController::class, 'sites']);

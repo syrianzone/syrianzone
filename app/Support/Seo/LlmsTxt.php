@@ -23,7 +23,7 @@ class LlmsTxt
             '/promises', '/govtcvs', '/syofficial', '/phonebook', '/govapps', '/sites',
             '/house', '/justice', '/crossings', '/atlas',
         ],
-        'خدمات يومية' => ['/transit', '/mishwar', '/roznama', '/muslim/prayer', '/muslim/ramadan'],
+        'خدمات يومية' => ['/transit', '/mishwar', '/currency', '/roznama', '/muslim/prayer', '/muslim/ramadan'],
         'رأي ومشاركة' => [
             '/tierlist', '/tierlist/leaderboard', '/polls', '/compass',
             '/compass/stats', '/priorities',

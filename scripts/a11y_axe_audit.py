@@ -40,7 +40,7 @@ PUBLIC_ROUTES = [
     "/polls", "/guesswho", "/muslim",
     "/muslim/prayer", "/muslim/ramadan", "/muslim/quran", "/muslim/radio",
     "/games", "/games/2048", "/games/solitare", "/games/tarneeb", "/games/trix", "/board",
-    "/mishwar", "/transit", "/transit/studio",
+    "/mishwar", "/transit", "/transit/studio", "/currency",
     "/promises", "/promises/suggest",
     "/govtcvs", "/govtcvs/movements",
 ]

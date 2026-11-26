@@ -1,5 +1,5 @@
 {
-  "recipe": "543e160d46bc5375",
+  "recipe": "6d8cbcb49909700d",
   "cards": {
     "home": "a1a1048328",
     "tierlist": "03ef938c8c",
@@ -47,6 +47,7 @@
     "stats": "40eff0270f",
     "about": "f904e73ea0",
     "privacy": "8ded54161b",
-    "terms": "7873a1c0be"
+    "terms": "7873a1c0be",
+    "currency": "cbe871abd7"
   }
 }

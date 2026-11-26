@@ -106,7 +106,9 @@ export default function SwipeCardDeck({
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
-      /* the drag still works without capture while the pointer stays on the card */
+      // Without capture a release off the card never reaches us and the card
+      // would stay displaced, so don't start a drag; the buttons and keys still work.
+      return;
     }
     dragStartRef.current = {
       x: e.clientX,

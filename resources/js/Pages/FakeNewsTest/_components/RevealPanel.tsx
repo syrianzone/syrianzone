@@ -127,6 +127,17 @@ export default function RevealPanel({
     return () => window.clearInterval(intervalId);
   }, [dragging, timerStopped, flyVector, dismissCard, claim.id]);
 
+  // Scrolling with a wheel or trackpad means the reader is reading: stop the
+  // countdown. (Touch scrolling cancels the pointer drag and is handled there.)
+  useEffect(() => {
+    if (timerStopped) return;
+    const handleWheel = () => {
+      if (!committedRef.current) setTimerStopped(true);
+    };
+    window.addEventListener('wheel', handleWheel, { passive: true });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [timerStopped, claim.id]);
+
   // Keyboard shortcuts: Enter / Space / Arrow keys dismiss to next card
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -171,7 +182,11 @@ export default function RevealPanel({
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
-      /* the drag still works without capture while the pointer stays on the card */
+      // Without capture a release off the card never reaches us and the card
+      // would stay displaced with the countdown paused, so don't start a drag.
+      // The reader touched the card, so treat it as a tap: stop the countdown.
+      setTimerStopped(true);
+      return;
     }
     dragStartRef.current = {
       x: e.clientX,

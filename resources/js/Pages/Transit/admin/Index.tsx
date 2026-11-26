@@ -383,7 +383,11 @@ function TransitAdminPageContent() {
     } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [selectedDraft, rejectReason, showToast, queryClient, drafts, statusFilter, cityFilter])
 
+  // Picking routes in quick succession must not let an older route's full
+  // geometry arrive last and replace the newer selection on the map.
+  const routeRequestRef = useRef(0)
   const handleSelectRoute = useCallback(async (route: PublishedRoute) => {
+    const requestId = ++routeRequestRef.current
     setSelectedRoute(route)
     setMobileView('map')
 
@@ -399,6 +403,7 @@ function TransitAdminPageContent() {
 
     try {
       const full = await transitApi.routeGeoJson(route.id)
+      if (requestId !== routeRequestRef.current) return
       const fullGeojson = normalizeFeatureCollection(full)
       setSelectedRouteGeoJson(fullGeojson)
       if (mapRef.current) {

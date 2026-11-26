@@ -320,7 +320,7 @@ export default function AssetManagerIndex() {
                                                     <div className="flex items-center gap-3 overflow-hidden">
                                                         {isImageFile(item.filename) ? (
                                                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0 border">
-                                                                <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                                                <img src={item.url} alt="" width={40} height={40} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                                             </div>
                                                         ) : (
                                                             <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">

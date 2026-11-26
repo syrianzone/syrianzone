@@ -213,7 +213,7 @@ export default function GovAppsAdminIndex({
                                                 <TableCell className="text-end">
                                                     <div className="flex items-center justify-end gap-1.5">
                                                         {canEdit && (
-                                                            <Button aria-label="تعديل البيانات"
+                                                            <Button aria-label={`تعديل بيانات ${item.name_ar || item.name}`}
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 onClick={() => {
@@ -222,17 +222,17 @@ export default function GovAppsAdminIndex({
                                                                 }}
                                                                 title="تعديل البيانات"
                                                             >
-                                                                <Edit3 className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                                                <Edit3 className="w-4 h-4 text-muted-foreground hover:text-primary" aria-hidden="true" />
                                                             </Button>
                                                         )}
                                                         {canDelete && (
-                                                            <Button aria-label="حذف"
+                                                            <Button aria-label={`حذف ${item.name_ar || item.name}`}
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 onClick={() => handleDeleteApp(item.id)}
                                                                 title="حذف"
                                                             >
-                                                                <Trash2 className="w-4 h-4 text-destructive" />
+                                                                <Trash2 className="w-4 h-4 text-destructive" aria-hidden="true" />
                                                             </Button>
                                                         )}
                                                     </div>

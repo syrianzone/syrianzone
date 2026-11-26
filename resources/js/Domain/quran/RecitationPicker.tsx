@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Check, ChevronsUpDown, Mic } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
+import { Popover, PopoverAnchor, PopoverContent } from '@/Components/ui/popover';
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/Components/ui/command';
 import { QURAN_RECITATIONS, recitationByCode, styleLabelAr } from './quran';
 
 interface Props {
@@ -10,93 +11,92 @@ interface Props {
   onChange: (code: string) => void;
 }
 
-// Searchable recitation picker (shadcn-styled Button + Input dropdown).
-// Opens upward: the player sits at the viewport bottom.
+// Searchable recitation picker: the shared Popover + Command combobox, so
+// focus, Escape, outside taps and arrow-key navigation behave like every other
+// picker. Opens upward: the player sits at the viewport bottom.
 export default function RecitationPicker({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  // Two triggers (icon on mobile, full button on desktop): focus returns to
+  // whichever one opened the list.
+  const openerRef = useRef<HTMLButtonElement | null>(null);
   const current = recitationByCode(value);
 
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [open]);
-
-  const items = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return QURAN_RECITATIONS;
-    return QURAN_RECITATIONS.filter(
-      (r) => r.nameAr.includes(query.trim()) || r.nameEn.toLowerCase().includes(q),
-    );
-  }, [query]);
+  const toggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+    openerRef.current = e.currentTarget;
+    setOpen((o) => !o);
+  };
 
   return (
-    <div ref={wrapRef} className="relative">
-      {/* Mobile: icon only (full dropdown overflows narrow screens). */}
-      <Button aria-label={`القارئ: ${current.nameAr}`}
-        variant="outline"
-        size="icon"
-        className="h-9 w-9 rounded-full sm:hidden"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        title={`القارئ: ${current.nameAr}`}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverAnchor asChild>
+        <div ref={wrapRef} className="relative">
+          {/* Mobile: icon only (full dropdown overflows narrow screens). */}
+          <Button aria-label={`القارئ: ${current.nameAr}`}
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-full sm:hidden"
+            onClick={toggle}
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            title={`القارئ: ${current.nameAr}`}
+          >
+            <Mic className="h-4 w-4" />
+          </Button>
+          {/* Desktop: full-width dropdown trigger. */}
+          <Button aria-label={`اختيار القارئ: ${current.nameAr}`}
+            variant="outline"
+            size="sm"
+            className="hidden h-9 w-[170px] justify-between gap-1 px-2 text-xs sm:flex"
+            onClick={toggle}
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            title="اختيار القارئ"
+          >
+            <span className="truncate">{current.nameAr}</span>
+            <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+          </Button>
+        </div>
+      </PopoverAnchor>
+      <PopoverContent
+        side="top"
+        align="end"
+        dir="rtl"
+        className="w-[210px] p-0"
+        // The triggers toggle on click; a press on them is not "outside".
+        onInteractOutside={(e) => {
+          if (wrapRef.current?.contains(e.target as Node)) e.preventDefault();
+        }}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          openerRef.current?.focus();
+        }}
       >
-        <Mic className="h-4 w-4" />
-      </Button>
-      {/* Desktop: full-width dropdown trigger. */}
-      <Button aria-label="اختيار القارئ"
-        variant="outline"
-        size="sm"
-        className="hidden h-9 w-[170px] justify-between gap-1 px-2 text-xs sm:flex"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        title="اختيار القارئ"
-      >
-        <span className="truncate">{current.nameAr}</span>
-        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
-      </Button>
-      {open && (
-        <div className="absolute bottom-full end-0 z-50 mb-1.5 w-full min-w-[210px] rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md">
-          <Input aria-label="ابحث عن قارئ…"
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="ابحث عن قارئ…"
-            className="mb-1 h-8 text-xs"
-          />
-          <div role="listbox" className="max-h-48 overflow-y-auto">
-            {items.map((r) => (
-              <button
+        <Command>
+          <CommandInput placeholder="ابحث عن قارئ…" aria-label="ابحث عن قارئ" className="h-9 text-xs" />
+          <CommandList className="max-h-48">
+            <CommandEmpty className="px-2 py-3 text-center text-[11px] text-muted-foreground">لا نتائج مطابقة</CommandEmpty>
+            {QURAN_RECITATIONS.map((r) => (
+              <CommandItem
                 key={r.code}
-                role="option"
-                aria-selected={r.code === current.code}
-                onClick={() => {
+                value={r.code}
+                keywords={[r.nameAr, r.nameEn]}
+                onSelect={() => {
                   onChange(r.code);
                   setOpen(false);
-                  setQuery('');
                 }}
-                className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-start text-xs transition-colors hover:bg-accent hover:text-accent-foreground"
+                className="flex w-full items-center justify-between gap-2 text-xs"
               >
                 <span className="min-w-0 truncate">{r.nameAr}</span>
                 <span className="shrink-0 text-[10px] text-muted-foreground">
                   {styleLabelAr(r.style)}
                 </span>
                 {r.code === current.code && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
-              </button>
+              </CommandItem>
             ))}
-            {items.length === 0 && (
-              <p className="px-2 py-3 text-center text-[11px] text-muted-foreground">لا نتائج مطابقة</p>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -295,9 +295,9 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                     </Alert>
                 )}
 
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
                     <form onSubmit={save} className="space-y-6" noValidate>
-                        <fieldset disabled={!canSave} className="space-y-6">
+                        <fieldset disabled={!canSave} className="min-w-0 space-y-6">
                             <Card>
                                 <CardHeader><h2 className="text-base font-semibold leading-none">صاحب الوعد والجهة</h2></CardHeader>
                                 <CardContent className="grid gap-4 md:grid-cols-2">
@@ -638,7 +638,7 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                                         <Badge variant="outline">{ORIGIN_LABEL[promise.origin] ?? promise.origin}</Badge>
                                     </div>
                                     {promise.submitterName && <p className="text-muted-foreground">اقترحه: {promise.submitterName}</p>}
-                                    {promise.submitterNote && <p className="whitespace-pre-line break-words rounded-md bg-muted p-2 text-muted-foreground">{promise.submitterNote}</p>}
+                                    {promise.submitterNote && <p className="whitespace-pre-line wrap-anywhere rounded-md bg-muted p-2 text-muted-foreground">{promise.submitterNote}</p>}
                                     {promise.rejectionReason && <p className="text-destructive">سبب الرفض: {promise.rejectionReason}</p>}
                                     {promise.reviewStatus === 'published' && promise.number && (
                                         <a href={`/promises/${promise.number}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">

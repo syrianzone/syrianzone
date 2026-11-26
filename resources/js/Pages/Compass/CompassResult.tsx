@@ -18,7 +18,6 @@ import AxisBars from '@/Domain/compass/AxisBars';
 import AlignmentCard from '@/Domain/compass/AlignmentCard';
 import CompassCanvas from './components/CompassCanvas';
 import CompassShareCard from './components/CompassShareCard';
-import { exportElementAsPng } from '@/Lib/exportElementAsPng';
 
 export default function CompassResult({
   answers,
@@ -179,6 +178,8 @@ export default function CompassResult({
     if (!storyCardRef.current) return;
     setImageBusy(true);
     try {
+      // Imported on demand: html2canvas is heavy and only this button needs it.
+      const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
       await exportElementAsPng(storyCardRef.current, `bousalat-syria-${Date.now()}.png`);
     } catch {
       notify.error('تعذّر إنشاء صورة النتيجة، حاول مرة أخرى');

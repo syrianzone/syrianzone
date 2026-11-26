@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
+import { Alert } from "@/Components/ui/alert";
 import { formatGregorianSyrianShort } from "@/Lib/syrian-date";
 import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
 import { getGovernorateNameAr, governorateNameForF3aliaProvince } from '@/Domain/geography/governorates';
@@ -72,15 +73,15 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
         <div className="w-full" dir="rtl">
             {/* Notification when showing fallback events */}
             {isShowingFallbackEvents && !loading && !error && displayedEvents.length > 0 && (
-                <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-500 flex items-start gap-3">
-                    <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
+                <Alert variant="warning" role="status" className="mb-6 rounded-xl text-xs">
+                    <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" aria-hidden="true" />
                     <div>
                         <span className="font-semibold block mb-0.5">
                             {`لا توجد فعاليات قادمة مسجلة حالياً في ${currentGovName}`}
                         </span>
                         نعرض لك الفعاليات القادمة في باقي المحافظات السورية.
                     </div>
-                </div>
+                </Alert>
             )}
 
             {/* Content Area */}

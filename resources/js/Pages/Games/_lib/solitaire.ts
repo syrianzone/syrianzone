@@ -135,8 +135,7 @@ export function drawStock(deal: Deal): Deal {
   return {
     ...deal,
     stock: deal.waste
-      .slice()
-      .reverse()
+      .toReversed()
       .map((c) => ({ ...c, faceUp: false })),
     waste: [],
   };

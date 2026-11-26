@@ -120,7 +120,7 @@ export default function Trix() {
     if (!game?.deal) return [];
     const { deal } = game;
     const cards = deal.contract === 'trix' ? deal.hands[HUMAN] : deal.round.hands[HUMAN];
-    return [...cards].sort((a, b) => SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || power(a) - power(b));
+    return cards.toSorted((a, b) => SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || power(a) - power(b));
   }, [game]);
 
   useEffect(() => {

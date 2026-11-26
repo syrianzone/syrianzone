@@ -108,7 +108,7 @@ export default function Tarneeb() {
 
   const hand = useMemo(() => {
     if (!round) return [];
-    return [...round.hands[HUMAN]].sort(
+    return round.hands[HUMAN].toSorted(
       (a, b) => SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit] || power(b) - power(a),
     );
   }, [round]);

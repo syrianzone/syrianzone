@@ -43,6 +43,17 @@ export interface PrayerSettingsFieldsProps {
   onLocationChange?: (patch: LocationPatch) => void;
 }
 
+/** Error copy for a typed coordinate, or null when empty or in range. */
+export function coordinateError(raw: string, limit: 90 | 180): string | null {
+  const value = raw.trim();
+  if (value === '') return null;
+  // A half-typed number ("-", "33.") is not an error yet.
+  if (!/^-?\d*\.?\d*$/.test(value)) return 'أدخل رقماً، مثل 33.51 أو -12.5';
+  const n = Number(value);
+  if (Number.isFinite(n) && Math.abs(n) > limit) return `القيمة بين -${limit} و ${limit}`;
+  return null;
+}
+
 export default function PrayerSettingsFields({
   cities,
   cityLabel = 'المدينة',
@@ -57,6 +68,8 @@ export default function PrayerSettingsFields({
   const location = useLocationPreference();
   const latId = useId();
   const lonId = useId();
+  const latError = coordinateError(location.customLat, 90);
+  const lonError = coordinateError(location.customLon, 180);
 
   const apply = (patch: LocationPatch) => {
     updateLocationPreference(patch);
@@ -116,11 +129,21 @@ export default function PrayerSettingsFields({
             <Input
               id={latId}
               dir="ltr"
-              inputMode="decimal"
+              // "text", not "decimal": the iOS decimal pad has no minus sign.
+              inputMode="text"
+              autoComplete="off"
+              pattern="-?\d*(\.\d*)?"
+              aria-invalid={latError ? true : undefined}
+              aria-describedby={latError ? `${latId}-error` : undefined}
               placeholder="33.51"
               value={location.customLat}
               onChange={(e) => apply({ customLat: e.target.value })}
             />
+            {latError && (
+              <p id={`${latId}-error`} role="alert" className="text-[11px] text-destructive">
+                {latError}
+              </p>
+            )}
           </div>
           <div className="space-y-1">
             <Label htmlFor={lonId} className="text-xs">
@@ -129,11 +152,21 @@ export default function PrayerSettingsFields({
             <Input
               id={lonId}
               dir="ltr"
-              inputMode="decimal"
+              // "text", not "decimal": the iOS decimal pad has no minus sign.
+              inputMode="text"
+              autoComplete="off"
+              pattern="-?\d*(\.\d*)?"
+              aria-invalid={lonError ? true : undefined}
+              aria-describedby={lonError ? `${lonId}-error` : undefined}
               placeholder="36.27"
               value={location.customLon}
               onChange={(e) => apply({ customLon: e.target.value })}
             />
+            {lonError && (
+              <p id={`${lonId}-error`} role="alert" className="text-[11px] text-destructive">
+                {lonError}
+              </p>
+            )}
           </div>
         </div>
       )}

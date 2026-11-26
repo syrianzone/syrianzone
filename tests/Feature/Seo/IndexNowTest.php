@@ -351,18 +351,31 @@ test('model observers queue public indexable urls and removals, while ignoring u
     $draftRoute->update(['status' => 'disapproved']);
     expect($indexNow->pending())->toBe(['https://syrian.zone/transit/city/homs']);
 
-    // 6. Place: pending/rejected ignored; approved and un-approved queued to /mishwar.
+    // 6. Place: pending/rejected ignored; approved and un-approved queued to /mishwar and its hubs.
     Cache::forget(IndexNow::CACHE_KEY);
-    $place = Place::factory()->create(['status' => 'pending']);
+    $place = Place::factory()->create([
+        'status' => 'pending',
+        'category' => 'historical',
+        'lat' => 35.1318,
+        'lng' => 36.7578,
+    ]);
     expect($indexNow->pending())->toBe([]);
 
     $place->update(['status' => 'rejected']);
     expect($indexNow->pending())->toBe([]);
 
     $place->update(['status' => 'approved', 'approved_at' => now()]);
-    expect($indexNow->pending())->toBe(['https://syrian.zone/mishwar']);
+    expect($indexNow->pending())->toBe([
+        'https://syrian.zone/mishwar',
+        'https://syrian.zone/mishwar/hama',
+        'https://syrian.zone/mishwar/hama/historical',
+    ]);
 
     Cache::forget(IndexNow::CACHE_KEY);
     $place->delete();
-    expect($indexNow->pending())->toBe(['https://syrian.zone/mishwar']);
+    expect($indexNow->pending())->toBe([
+        'https://syrian.zone/mishwar',
+        'https://syrian.zone/mishwar/hama',
+        'https://syrian.zone/mishwar/hama/historical',
+    ]);
 });

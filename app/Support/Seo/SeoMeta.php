@@ -295,9 +295,12 @@ class SeoMeta
                 ['@type' => 'ListItem', 'position' => 1, 'name' => 'الرئيسية', 'item' => $base.'/'],
             ];
 
-            if ($about->parent !== null) {
-                [$parentPath, $parentLabel] = $about->parent;
-                $items[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $parentLabel, 'item' => $base.$parentPath];
+            $parents = $about->parents !== []
+                ? $about->parents
+                : ($about->parent !== null ? [$about->parent] : []);
+
+            foreach ($parents as [$parentPath, $parentLabel]) {
+                $items[] = ['@type' => 'ListItem', 'position' => count($items) + 1, 'name' => $parentLabel, 'item' => $base.$parentPath];
             }
 
             $items[] = [

@@ -23,6 +23,7 @@ final readonly class Preview
      *                                              public, for structured data
      * @param  \DateTimeInterface|null  $modified  when its content last changed
      * @param  array<string, mixed>|null  $mainEntity  Schema.org mainEntity node (e.g. Person on ProfilePage)
+     * @param  list<array{0:string,1:string}>  $parents  multi-level breadcrumb parents as [[path, label], ...] (overrides $parent when non-empty)
      */
     public function __construct(
         public string $title,
@@ -41,5 +42,7 @@ final readonly class Preview
         /** @var list<array<string, mixed>> */
         public array $extraGraph = [],
         public ?string $breadcrumbLabel = null,
+        /** @var list<array{0:string,1:string}> */
+        public array $parents = [],
     ) {}
 }

@@ -450,7 +450,7 @@ export default function PopulationClient() {
                                                 <div className="flex gap-6">
                                                     <div className="flex flex-col items-end">
                                                         <span className="text-[10px] text-muted-foreground">الهطول (ملم)</span>
-                                                        <span className="font-mono font-bold text-cyan-500">{item.rainfall.toFixed(1)}</span>
+                                                        <span className="font-mono font-bold text-cyan-700 dark:text-cyan-400">{item.rainfall.toFixed(1)}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -529,7 +529,7 @@ export default function PopulationClient() {
                                             <div className="flex items-center gap-3">
                                                 <div className="text-center">
                                                     <TrendingUp size={14} className="mx-auto text-red-400 mb-1" />
-                                                    <span className="text-lg font-bold text-red-400">
+                                                    <span className="text-lg font-bold text-red-700 dark:text-red-400">
                                                         {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_max_temp_c ?? '—'}°
                                                     </span>
                                                     <p className="text-[10px] text-muted-foreground">القصوى</p>
@@ -537,7 +537,7 @@ export default function PopulationClient() {
                                                 <div className="h-8 w-px bg-border/50"></div>
                                                 <div className="text-center">
                                                     <TrendingDown size={14} className="mx-auto text-blue-400 mb-1" />
-                                                    <span className="text-lg font-bold text-blue-400">
+                                                    <span className="text-lg font-bold text-blue-700 dark:text-blue-400">
                                                         {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_min_temp_c ?? '—'}°
                                                     </span>
                                                     <p className="text-[10px] text-muted-foreground">الدنيا</p>
@@ -545,7 +545,7 @@ export default function PopulationClient() {
                                             </div>
                                             <div className="text-center">
                                                 <CloudRain size={16} className="mx-auto text-cyan-400 mb-1" />
-                                                <span className="text-sm font-bold text-cyan-400">
+                                                <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400">
                                                     {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_precipitation_mm ?? '—'} ملم
                                                 </span>
                                                 <p className="text-[10px] text-muted-foreground">الهطول المتوقع</p>
@@ -625,10 +625,10 @@ export default function PopulationClient() {
                                                     : 'bg-gradient-to-br from-red-400/20 to-orange-500/20 border-2 border-red-500/50'
                                                 }`}>
                                                 <span className={`text-2xl font-bold ${selectedEnvProvince.data.air_quality.estimated_aqi <= 50
-                                                    ? 'text-green-500'
+                                                    ? 'text-green-700 dark:text-green-400'
                                                     : selectedEnvProvince.data.air_quality.estimated_aqi <= 100
-                                                        ? 'text-yellow-500'
-                                                        : 'text-red-500'
+                                                        ? 'text-yellow-700 dark:text-yellow-400'
+                                                        : 'text-red-700 dark:text-red-400'
                                                     }`}>
                                                     {selectedEnvProvince.data.air_quality.estimated_aqi}
                                                 </span>
@@ -651,12 +651,12 @@ export default function PopulationClient() {
                                             </h2>
                                             <div className="flex items-center gap-3 mb-3">
                                                 <div className={`px-3 py-1.5 rounded-full text-sm font-bold ${selectedEnvProvince.data.drought_risk?.drought_risk === 'Very High'
-                                                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                                    ? 'bg-red-500/20 text-red-700 dark:text-red-400 border border-red-500/30'
                                                     : selectedEnvProvince.data.drought_risk?.drought_risk === 'High'
-                                                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                                        ? 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border border-orange-500/30'
                                                         : selectedEnvProvince.data.drought_risk?.drought_risk === 'Moderate'
-                                                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                                                            : 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                            ? 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-500/30'
+                                                            : 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30'
                                                     }`}>
                                                     {selectedEnvProvince.data.drought_risk?.drought_risk || 'غير متوفر'}
                                                 </div>
@@ -665,11 +665,11 @@ export default function PopulationClient() {
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div className="bg-card/50 p-2 rounded-lg">
                                                     <span className="text-[10px] text-muted-foreground block">الهطول السنوي</span>
-                                                    <span className="text-sm font-bold text-cyan-400">{selectedEnvProvince.data.drought_risk?.annual_precipitation_mm?.toFixed(1) || 0} ملم</span>
+                                                    <span className="text-sm font-bold text-cyan-700 dark:text-cyan-400">{selectedEnvProvince.data.drought_risk?.annual_precipitation_mm?.toFixed(1) || 0} ملم</span>
                                                 </div>
                                                 <div className="bg-card/50 p-2 rounded-lg">
                                                     <span className="text-[10px] text-muted-foreground block">أشهر الجفاف</span>
-                                                    <span className="text-sm font-bold text-amber-400">{selectedEnvProvince.data.drought_risk?.dry_season_months?.length || 0} أشهر</span>
+                                                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{selectedEnvProvince.data.drought_risk?.dry_season_months?.length || 0} أشهر</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -686,7 +686,7 @@ export default function PopulationClient() {
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                         <Thermometer size={12} /> انحراف الحرارة
                                                     </span>
-                                                    <span className={`text-xs font-bold flex items-center gap-1 ${selectedEnvProvince.data.climate_trends.temperature_trend_celsius < 0 ? 'text-blue-400' : 'text-red-400'
+                                                    <span className={`text-xs font-bold flex items-center gap-1 ${selectedEnvProvince.data.climate_trends.temperature_trend_celsius < 0 ? 'text-blue-700 dark:text-blue-400' : 'text-red-700 dark:text-red-400'
                                                         }`}>
                                                         {selectedEnvProvince.data.climate_trends.temperature_trend_celsius < 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
                                                         {selectedEnvProvince.data.climate_trends.temperature_trend_celsius}°C
@@ -700,7 +700,7 @@ export default function PopulationClient() {
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                         <CloudRain size={12} /> تغير الهطول
                                                     </span>
-                                                    <span className={`text-xs font-bold flex items-center gap-1 ${selectedEnvProvince.data.climate_trends.rainfall_trend_mm < 0 ? 'text-amber-400' : 'text-cyan-400'
+                                                    <span className={`text-xs font-bold flex items-center gap-1 ${selectedEnvProvince.data.climate_trends.rainfall_trend_mm < 0 ? 'text-amber-700 dark:text-amber-400' : 'text-cyan-700 dark:text-cyan-400'
                                                         }`}>
                                                         {selectedEnvProvince.data.climate_trends.rainfall_trend_mm < 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
                                                         {selectedEnvProvince.data.climate_trends.rainfall_trend_mm} ملم
@@ -737,9 +737,9 @@ export default function PopulationClient() {
                                                     <div className="flex justify-between items-center mb-1">
                                                         <span className="text-xs text-muted-foreground">نطاق الحرارة</span>
                                                         <span className="text-xs font-medium">
-                                                            <span className="text-blue-400">{selectedEnvProvince.data.historical_summary.avg_min_temp_c}°</span>
+                                                            <span className="text-blue-700 dark:text-blue-400">{selectedEnvProvince.data.historical_summary.avg_min_temp_c}°</span>
                                                             <span className="text-muted-foreground mx-1">—</span>
-                                                            <span className="text-red-400">{selectedEnvProvince.data.historical_summary.avg_max_temp_c}°</span>
+                                                            <span className="text-red-700 dark:text-red-400">{selectedEnvProvince.data.historical_summary.avg_max_temp_c}°</span>
                                                         </span>
                                                     </div>
                                                     <div className="h-2 bg-gradient-to-l from-blue-500 via-yellow-500 to-red-500 rounded-full"></div>
@@ -748,7 +748,7 @@ export default function PopulationClient() {
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                         <CloudRain size={12} /> إجمالي الهطول
                                                     </span>
-                                                    <span className="text-xs font-bold text-cyan-400">{selectedEnvProvince.data.historical_summary.total_precipitation_mm} ملم</span>
+                                                    <span className="text-xs font-bold text-cyan-700 dark:text-cyan-400">{selectedEnvProvince.data.historical_summary.total_precipitation_mm} ملم</span>
                                                 </div>
                                                 <div className="flex justify-between items-center bg-card/50 p-2 rounded-lg">
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -837,7 +837,7 @@ export default function PopulationClient() {
                                         </h2>
                                         <div className="flex flex-wrap gap-1.5">
                                             {environmentalData.country_level.climate_context.key_water_basins.map((basin: any, idx: number) => (
-                                                <span key={idx} className="text-[10px] bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded-full border border-cyan-500/20">
+                                                <span key={idx} className="text-[10px] bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-2 py-1 rounded-full border border-cyan-500/20">
                                                     {basin}
                                                 </span>
                                             ))}

@@ -173,6 +173,10 @@ export default function DirectorySuggestionDialog({
     const formRef = useRef<HTMLFormElement>(null);
     // Bumped only when a submit fails, so focus moves after the errors render.
     const [failedSubmit, setFailedSubmit] = useState(0);
+    // Picking or clearing a target unmounts the focused control: say where focus goes next.
+    const pickerFocusRef = useRef<'change' | 'search' | null>(null);
+    const changeTargetRef = useRef<HTMLButtonElement>(null);
+    const targetSearchRef = useRef<HTMLInputElement>(null);
 
     const resetFields = (nextKind: SuggestionKind, nextTargetId: string) => {
         setKind(nextKind);
@@ -206,6 +210,13 @@ export default function DirectorySuggestionDialog({
             doneRef.current?.focus();
         }
     }, [submittedMessage]);
+
+    useEffect(() => {
+        const next = pickerFocusRef.current;
+        if (!next) return;
+        pickerFocusRef.current = null;
+        (next === 'change' ? changeTargetRef.current : targetSearchRef.current)?.focus();
+    }, [selectedTargetId]);
 
     // After a failed submit, land on the first invalid control instead of
     // leaving focus on the submit button.
@@ -436,7 +447,11 @@ export default function DirectorySuggestionDialog({
                                             size="icon"
                                             className="h-7 w-7 shrink-0"
                                             aria-label="تغيير العنصر المحدد"
-                                            onClick={() => setSelectedTargetId('')}
+                                            ref={changeTargetRef}
+                                            onClick={() => {
+                                                pickerFocusRef.current = 'search';
+                                                setSelectedTargetId('');
+                                            }}
                                         >
                                             <X className="h-4 w-4" aria-hidden="true" />
                                         </Button>
@@ -450,6 +465,7 @@ export default function DirectorySuggestionDialog({
                                             />
                                             <Input
                                                 id="suggestion-target-search"
+                                                ref={targetSearchRef}
                                                 value={targetQuery}
                                                 onChange={(e) => setTargetQuery(e.target.value)}
                                                 placeholder={copy.targetSearchPlaceholder}
@@ -468,6 +484,7 @@ export default function DirectorySuggestionDialog({
                                                         key={item.id}
                                                         type="button"
                                                         onClick={() => {
+                                                            pickerFocusRef.current = 'change';
                                                             setSelectedTargetId(item.id);
                                                             setTargetQuery('');
                                                         }}

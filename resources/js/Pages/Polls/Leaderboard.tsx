@@ -268,16 +268,23 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
             firstFetchRef.current = false;
             if (status === initialStatusRef.current) return;
         }
+        // A quick second switch must not let the slower, older response win.
+        let cancelled = false;
         setLoading(true);
         pollsApi.leaderboard<LeaderboardData>(initialProps.poll.slug ?? '', status)
             .then((next) => {
+                if (cancelled) return;
                 setData(next);
                 setLoading(false);
             })
             .catch((err) => {
+                if (cancelled) return;
                 notify.error(apiErrorMessage(err, 'تعذّر تحميل الترتيب'));
                 setLoading(false);
             });
+        return () => {
+            cancelled = true;
+        };
     }, [status]);
 
     if (loading && !data) {

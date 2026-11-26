@@ -37,6 +37,8 @@ export default function Timeline({ statementDate, statementVenue, updates, unit,
             {updates.map((u) => {
                 const source = safeHref(u.sourceUrl);
                 const archive = safeHref(u.archiveUrl);
+                // Each entry repeats the same link text: add its date for screen readers.
+                const context = `: ${formatDate(u.happenedOn)}`;
                 return (
                     <li key={u.id} className="relative">
                         {u.type === 'deadline_change' ? (
@@ -80,12 +82,12 @@ export default function Timeline({ statementDate, statementVenue, updates, unit,
                                     <div className="mt-1.5 flex flex-wrap gap-x-4 text-sm">
                                         {source && (
                                             <a href={source} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline">
-                                                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />المصدر
+                                                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />المصدر<span className="sr-only">{context} (يفتح في نافذة جديدة)</span>
                                             </a>
                                         )}
                                         {archive && (
                                             <a href={archive} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline">
-                                                <Archive className="h-3.5 w-3.5" aria-hidden="true" />نسخة مؤرشفة
+                                                <Archive className="h-3.5 w-3.5" aria-hidden="true" />نسخة مؤرشفة<span className="sr-only">{context} (يفتح في نافذة جديدة)</span>
                                             </a>
                                         )}
                                     </div>

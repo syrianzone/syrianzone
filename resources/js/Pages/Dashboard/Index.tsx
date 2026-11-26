@@ -718,15 +718,16 @@ export default function Dashboard({
                       <p className="text-lg">لا توجد استبيانات مسجلة في الوقت الحالي.</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-right border-collapse">
+                    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="الاستبيانات">
+                      <table className="w-full text-start border-collapse">
+                        <caption className="sr-only">الاستبيانات وحالتها وخيارات إدارتها</caption>
                         <thead>
                           <tr className="border-b border-border text-muted-foreground text-xs">
                             <th className="pb-3 font-bold">اسم الاستبيان</th>
                             <th className="pb-3 font-bold">الرابط الفرعي (Slug)</th>
                             <th className="pb-3 font-bold text-center">المرشحين</th>
                             <th className="pb-3 font-bold text-center">الحالة</th>
-                            <th className="pb-3 font-bold text-left">خيارات</th>
+                            <th className="pb-3 font-bold text-end">خيارات</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -742,7 +743,7 @@ export default function Dashboard({
                                   {poll.is_active ? 'نشط' : 'معطل'}
                                 </Badge>
                               </td>
-                              <td className="py-4 text-left">
+                              <td className="py-4 text-end">
                                 <div className="flex justify-end gap-2">
                                   <a
                                     href={pollPublicUrl(poll.slug)}
@@ -750,8 +751,9 @@ export default function Dashboard({
                                     rel="noreferrer"
                                     className="p-1.5 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded border border-border transition-colors"
                                     title="عرض صفحة التصويت"
+                                    aria-label={`عرض صفحة التصويت: ${poll.title}`}
                                   >
-                                    <Eye className="h-4 w-4" />
+                                    <Eye className="h-4 w-4" aria-hidden="true" />
                                   </a>
                                   <a
                                     href={pollLeaderboardUrl(poll.slug)}
@@ -759,8 +761,9 @@ export default function Dashboard({
                                     rel="noreferrer"
                                     className="p-1.5 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded border border-border transition-colors"
                                     title="عرض النتائج"
+                                    aria-label={`عرض النتائج: ${poll.title}`}
                                   >
-                                    <BarChart3 className="h-4 w-4" />
+                                    <BarChart3 className="h-4 w-4" aria-hidden="true" />
                                   </a>
                                   <button aria-label={
                                       !canEditPolls

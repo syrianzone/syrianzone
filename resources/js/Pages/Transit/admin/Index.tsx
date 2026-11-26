@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
+import { useIsMobile } from '@/Lib/useIsMobile'
 import type maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection } from 'geojson'
@@ -124,6 +125,13 @@ function TransitAdminPageContent() {
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
+  // Below lg the list view collapses the map to h-0/opacity-0 (it stays mounted
+  // so MapLibre keeps real dimensions); inert keeps its controls out of the tab
+  // order. Applied after mount so the server markup still hydrates.
+  const isBelowLg = useIsMobile('lg')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const mapHidden = mounted && isBelowLg && mobileView === 'list'
   const [adminTab, setAdminTab] = useState<string>('drafts')
 
   const [publishedRoutes, setPublishedRoutes] = useState<PublishedRoute[]>([])
@@ -860,7 +868,7 @@ function TransitAdminPageContent() {
       </aside>
 
       {/* Map panel — always rendered so MapLibre has real dimensions on init */}
-      <div className={`relative overflow-hidden ${mobileView === 'map' ? 'flex-1' : 'h-0 opacity-0 pointer-events-none'} lg:h-auto lg:opacity-100 lg:pointer-events-auto lg:flex-1`}>
+      <div inert={mapHidden} className={`relative overflow-hidden ${mobileView === 'map' ? 'flex-1' : 'h-0 opacity-0 pointer-events-none'} lg:h-auto lg:opacity-100 lg:pointer-events-auto lg:flex-1`}>
         <div ref={mapContainer} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
         {selectedDraft && adminTab === 'drafts' && (

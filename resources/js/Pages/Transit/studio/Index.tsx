@@ -968,6 +968,8 @@ function TransitStudioPageContent() {
     if (!nameAr.trim()) {
       notify.error('اسم المسار بالعربية مطلوب')
       setAccordionValue('details')
+      // after the accordion section has opened and rendered the field
+      setTimeout(() => document.getElementById('studio-name-ar')?.focus(), 150)
       return
     }
     if (!drawnLine || drawnLine.length < 2) {
@@ -1457,7 +1459,8 @@ function TransitStudioPageContent() {
                       <Button
                         type="button"
                         onClick={() => handleSubmit(false)}
-                        disabled={submitting || !nameAr.trim() || !drawnLine}
+                        // only busy-disabled: a missing field is explained on click, not by a dead button
+                        disabled={submitting}
                         variant="outline"
                         className="w-full h-9 text-xs font-semibold gap-2 border-primary/40 hover:bg-primary/5"
                       >
@@ -1472,7 +1475,8 @@ function TransitStudioPageContent() {
                       <Button
                         type="button"
                         onClick={() => handleSubmit(true)}
-                        disabled={submitting || !nameAr.trim() || !drawnLine}
+                        // only busy-disabled: a missing field is explained on click, not by a dead button
+                        disabled={submitting}
                         className="w-full h-9 text-xs font-bold gap-2"
                       >
                         <Sparkles className="h-4 w-4" />
@@ -1490,7 +1494,8 @@ function TransitStudioPageContent() {
                       <Button
                         type="button"
                         onClick={() => handleSubmit(false)}
-                        disabled={submitting || !nameAr.trim() || !drawnLine}
+                        // only busy-disabled: a missing field is explained on click, not by a dead button
+                        disabled={submitting}
                         className="w-full h-9 text-xs font-bold gap-2"
                       >
                         {submitting ? (

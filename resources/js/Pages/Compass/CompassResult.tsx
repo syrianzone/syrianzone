@@ -1,5 +1,6 @@
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
+import { confirmDialog } from '@/Lib/confirm';
 import React, { useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
@@ -49,7 +50,6 @@ export default function CompassResult({
   const [statsBusy, setStatsBusy] = useState(false);
   const [savedToAccount, setSavedToAccount] = useState(false);
   const [savedId, setSavedId] = useState<number | string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const themeKey = useThemeId();
   const storyCardRef = useRef<HTMLDivElement>(null);
@@ -162,6 +162,15 @@ export default function CompassResult({
   };
 
   const handleDelete = async () => {
+    const confirmed = await confirmDialog({
+      title: 'حذف تقدّمك ونتائجك؟',
+      description: isLoggedIn
+        ? 'ستُحذف نتائجك المحلية والمحفوظة في حسابك، ولا يمكن التراجع عن ذلك.'
+        : 'ستُحذف نتائجك المحفوظة في هذا المتصفح، ولا يمكن التراجع عن ذلك.',
+      confirmText: 'حذف',
+      destructive: true,
+    });
+    if (!confirmed) return;
     clearLocal();
     if (isLoggedIn) {
       try {
@@ -170,7 +179,6 @@ export default function CompassResult({
         notify.error(apiErrorMessage(e, 'تعذّر حذف نتائجك المحفوظة'));
       }
     }
-    setConfirmDelete(false);
     onRestart();
   };
 
@@ -390,10 +398,10 @@ export default function CompassResult({
             <Button
               variant="ghost"
               className="text-destructive gap-2"
-              onClick={() => (confirmDelete ? handleDelete() : setConfirmDelete(true))}
+              onClick={handleDelete}
             >
-              <Trash2 className="w-4 h-4" />
-              {confirmDelete ? 'اضغط مرة أخرى للتأكيد' : 'احذف تقدّمي ونتائجي المحلية'}
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+              احذف تقدّمي ونتائجي المحلية
             </Button>
           </>
         )}

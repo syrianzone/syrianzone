@@ -309,8 +309,14 @@ export default function GameRoom({ game }: GameProps) {
   }, [game.room_code, sessionUuid]);
 
   useEffect(() => {
+    // Fisher–Yates on a fresh copy: a random comparator in sort() is biased
+    // and engine-dependent.
     const items = game.category.characters.map(c => ({ ...c, eliminated: false }));
-    setBoard([...items].sort(() => Math.random() - 0.5));
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+    setBoard(items);
   }, [game]);
 
   useEffect(() => {

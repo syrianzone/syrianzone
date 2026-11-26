@@ -1,6 +1,6 @@
 import React, { useState, useMemo, Suspense, useEffect } from 'react';
 import {
-    Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Search, Tag, Eye, Palette
+    Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Tag, Eye, Palette
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { notify } from '@/Lib/notify';
@@ -30,7 +30,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/Components/ui/select";
-import { Input } from "@/Components/ui/input";
 
 const SyriaMap = React.lazy(() => import('./SyriaMap'));
 
@@ -146,7 +145,6 @@ export default function SyidClient() {
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [geoJsonData, setGeoJsonData] = useState<any>(null);
     const [selectedGov, setSelectedGov] = useState<string>("full");
-    const [govSearch, setGovSearch] = useState("");
     const [mapLoaded, setMapLoaded] = useState(false);
     const [loadingMap, setLoadingMap] = useState(false);
     const [loadFontPreview, setLoadFontPreview] = useState(false);
@@ -213,12 +211,6 @@ export default function SyidClient() {
             }))
             .sort((a: any, b: any) => a.nameAr.localeCompare(b.nameAr, 'ar'));
     }, [geoJsonData]);
-
-    const filteredGovernorates = useMemo(() => {
-        return governorates.filter((gov: any) =>
-            gov.nameAr.includes(govSearch)
-        );
-    }, [governorates, govSearch]);
 
     const handleExportSVG = async () => {
         if (!geoJsonData) {
@@ -890,20 +882,10 @@ export default function SyidClient() {
                                                 <SelectValue placeholder="اختر المحافظة..." />
                                             </SelectTrigger>
                                             <SelectContent className="bg-popover border border-border shadow-md rounded-lg">
-                                                <div className="p-2 sticky top-0 bg-popover border-b border-border mb-1">
-                                                    <div className="relative">
-                                                        <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                                                        <Input aria-label="بحث..."
-                                                            placeholder="بحث..."
-                                                            value={govSearch}
-                                                            onChange={(e) => setGovSearch(e.target.value)}
-                                                            className="h-7 ps-8 text-xs border-none bg-muted/40"
-                                                            onKeyDown={(e) => e.stopPropagation()}
-                                                        />
-                                                    </div>
-                                                </div>
+                                                {/* 14 items: Select's own type-ahead finds one; a text
+                                                    input inside a listbox is not reachable as one. */}
                                                 <SelectItem value="full">سوريا كاملة</SelectItem>
-                                                {filteredGovernorates.map((gov: any) => (
+                                                {governorates.map((gov: any) => (
                                                     <SelectItem key={gov.id} value={gov.id}>
                                                         {gov.nameAr}
                                                     </SelectItem>

@@ -84,7 +84,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
 
   const go = useCallback((p: number) => {
     setPage(clampPage(p));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   }, [setPage]);
 
   // Madina 15-line pages from the vendored skill database (offline-capable).

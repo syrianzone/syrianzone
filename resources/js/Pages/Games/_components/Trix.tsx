@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { SUIT_LABEL, type Card, type Suit } from '@/Domain/games/cards';
+import { RANK_LABEL, SUIT_LABEL, SUIT_NAME_AR, cardName, type Card, type Suit } from '@/Domain/games/cards';
 import { power } from '../_lib/cardGames/hand';
 import type { Play } from '../_lib/cardGames/trick';
 import { readLargeCards, writeLargeCards } from '../_lib/cardDisplay';
@@ -264,16 +264,16 @@ export default function Trix() {
         <Seat name={names[3]} count={handCount(game, 3)} className="sz-tbl__seat--east" />
 
         <div className="sz-tbl__centre">
-          <div className="sz-tbl__trick">
+          <div className="sz-tbl__trick" role="group" aria-label="الطاولة">
             {deal?.contract === 'trix' ? (
               <Layout deal={deal} large={large} />
             ) : deal ? (
               <>
-                <Slot position="n" card={cardAtSeat(trickPlays, 2)} win={trickWinnerSeat === 2} large={large} />
-                <Slot position="w" card={cardAtSeat(trickPlays, 1)} win={trickWinnerSeat === 1} large={large} />
+                <Slot position="n" seatName={names[2]} card={cardAtSeat(trickPlays, 2)} win={trickWinnerSeat === 2} large={large} />
+                <Slot position="w" seatName={names[1]} card={cardAtSeat(trickPlays, 1)} win={trickWinnerSeat === 1} large={large} />
                 <div className="sz-tbl__slot sz-tbl__slot--c" />
-                <Slot position="e" card={cardAtSeat(trickPlays, 3)} win={trickWinnerSeat === 3} large={large} />
-                <Slot position="s" card={cardAtSeat(trickPlays, HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
+                <Slot position="e" seatName={names[3]} card={cardAtSeat(trickPlays, 3)} win={trickWinnerSeat === 3} large={large} />
+                <Slot position="s" seatName={names[HUMAN]} card={cardAtSeat(trickPlays, HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
               </>
             ) : null}
           </div>
@@ -387,9 +387,16 @@ function Layout({ deal, large }: { deal: Extract<TrixDeal, { contract: 'trix' }>
     <div className="sz-tbl__layout">
       {SUITS.map((suit) => {
         const laid = new Set(deal.layout.laid[suit] ?? []);
+        const ranks = Array.from({ length: 13 }, (_, i) => i + 2)
+          .filter((power) => laid.has(power))
+          .map((power) => RANK_LABEL[power === 14 ? 1 : power]);
         return (
           <div key={suit} className="sz-tbl__run">
-            {laid.size === 0 && <span className="sz-tbl__run-suit">{SUIT_LABEL[suit]}</span>}
+            {/* The column is a picture of the run; this is its text. */}
+            <span className="sr-only">
+              {`${SUIT_NAME_AR[suit]}: ${ranks.length > 0 ? ranks.join(' ') : 'لا شيء بعد'}`}
+            </span>
+            {laid.size === 0 && <span className="sz-tbl__run-suit" aria-hidden="true">{SUIT_LABEL[suit]}</span>}
             {/* Slots run Ace (top) to 2 (bottom), so the Jack lands mid-column:
                 Q/K/A above it, 10 down to 2 below — the rank order, not the
                 order they were played, and the height is already reserved. */}
@@ -470,10 +477,24 @@ function Seat({ name, count, className = '' }: { name: string; count: number; cl
   );
 }
 
-function Slot({ position, card, win, large }: { position: string; card?: Card; win: boolean; large: boolean }) {
+function Slot({
+  position,
+  seatName,
+  card,
+  win,
+  large,
+}: {
+  position: string;
+  seatName: string;
+  card?: Card;
+  win: boolean;
+  large: boolean;
+}) {
   return (
     <div className={`sz-tbl__slot sz-tbl__slot--${position} ${win ? 'sz-tbl__slot--win' : ''}`}>
       {card && <PlayingCard card={card} decorative large={large} />}
+      {/* The drawn card is decorative; this is what a screen reader hears. */}
+      {card && <span className="sr-only">{`${seatName}: ${cardName(card)}${win ? '، الأعلى' : ''}`}</span>}
     </div>
   );
 }

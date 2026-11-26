@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { SUIT_LABEL, type Card, type Suit } from '@/Domain/games/cards';
+import { SUIT_LABEL, SUIT_NAME_AR, cardName, type Card, type Suit } from '@/Domain/games/cards';
 import { applyRound, createMatch, isMatchOver, type MatchState } from '../_lib/cardGames/match';
 import { power } from '../_lib/cardGames/hand';
 import { readStats, recordMatch, type MatchStats } from '../_lib/scores';
@@ -256,14 +256,19 @@ export default function Tarneeb() {
         <Seat name={SEAT_NAMES[3]} count={round.hands[3].length} action={lastAction(3)} orientation="v" className="sz-tbl__seat--east" />
 
         <div className="sz-tbl__centre">
-          <div className="sz-tbl__trick">
-            <Slot position="n" card={cardAt(2)} win={trickWinnerSeat === 2} large={large} />
-            <Slot position="w" card={cardAt(1)} win={trickWinnerSeat === 1} large={large} />
+          <div className="sz-tbl__trick" role="group" aria-label="الطاولة">
+            <Slot position="n" seatName={SEAT_NAMES[2]} card={cardAt(2)} win={trickWinnerSeat === 2} large={large} />
+            <Slot position="w" seatName={SEAT_NAMES[1]} card={cardAt(1)} win={trickWinnerSeat === 1} large={large} />
             <div className="sz-tbl__slot sz-tbl__slot--c">
-              {round.trump ? <span className="sz-tbl__trump">{SUIT_LABEL[round.trump]}</span> : null}
+              {round.trump ? (
+                <span className="sz-tbl__trump">
+                  <span aria-hidden="true">{SUIT_LABEL[round.trump]}</span>
+                  <span className="sr-only">الحكم {SUIT_NAME_AR[round.trump]}</span>
+                </span>
+              ) : null}
             </div>
-            <Slot position="e" card={cardAt(3)} win={trickWinnerSeat === 3} large={large} />
-            <Slot position="s" card={cardAt(HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
+            <Slot position="e" seatName={SEAT_NAMES[3]} card={cardAt(3)} win={trickWinnerSeat === 3} large={large} />
+            <Slot position="s" seatName={SEAT_NAMES[HUMAN]} card={cardAt(HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
           </div>
         </div>
 
@@ -464,10 +469,24 @@ function Seat({
   );
 }
 
-function Slot({ position, card, win, large }: { position: string; card?: Card; win: boolean; large: boolean }) {
+function Slot({
+  position,
+  seatName,
+  card,
+  win,
+  large,
+}: {
+  position: string;
+  seatName: string;
+  card?: Card;
+  win: boolean;
+  large: boolean;
+}) {
   return (
     <div className={`sz-tbl__slot sz-tbl__slot--${position} ${win ? 'sz-tbl__slot--win' : ''}`}>
       {card && <PlayingCard card={card} decorative large={large} />}
+      {/* The drawn card is decorative; this is what a screen reader hears. */}
+      {card && <span className="sr-only">{`${seatName}: ${cardName(card)}${win ? '، الأعلى' : ''}`}</span>}
     </div>
   );
 }

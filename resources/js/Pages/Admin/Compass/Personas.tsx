@@ -140,7 +140,14 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
     const setRange = (axis: string, bound: 'min' | 'max', value: string) =>
         setForm((f) => ({ ...f, ranges: { ...f.ranges, [axis]: { ...f.ranges[axis], [bound]: value } } }));
 
-    const handleSave = () => {
+    const handleSave = (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (saving) return;
+        // `required` lets whitespace through; send focus back to the name.
+        if (!form.name.trim()) {
+            document.getElementById('p-name')?.focus();
+            return;
+        }
         setSaving(true);
         const center: Record<string, number | null> = {};
         for (const a of AXES) {
@@ -306,11 +313,13 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                         </DialogDescription>
                     </DialogHeader>
 
+                    {/* display:contents keeps the dialog's grid layout while Enter submits. */}
+                    <form className="contents" onSubmit={handleSave}>
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="p-name">الاسم</Label>
-                                <Input id="p-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                                <Input id="p-name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                             </div>
                             <div className="space-y-2">
                                 <Label id="p-icon-label">الأيقونة</Label>
@@ -444,12 +453,13 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                     </div>
 
                     <DialogFooter className="flex-row-reverse gap-2">
-                        <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-                        <Button onClick={handleSave} disabled={saving || !form.name.trim()} className="gap-2">
+                        <Button type="button" variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
+                        <Button type="submit" disabled={saving} className="gap-2">
                             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                             {editing ? 'حفظ التعديلات' : 'إضافة'}
                         </Button>
                     </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
         </MainLayout>

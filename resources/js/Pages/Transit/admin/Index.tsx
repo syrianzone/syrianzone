@@ -204,7 +204,7 @@ function TransitAdminPageContent() {
     if (href) {
       notify.success(msg, {
         duration: 8000,
-        action: { label: linkLabel ?? 'عرض', onClick: () => { window.location.href = href } },
+        action: { label: linkLabel ?? 'عرض', onClick: () => router.visit(href) },
       })
       return
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -23,22 +23,24 @@ export const ROW_HEIGHT = 76;
 // emit their own tailwind layer, so responsive classes lose cascade order in a
 // page chunk (same reason Places/Lightbox.tsx does this). Column count is data
 // here anyway, since spans are computed from it.
+//
+// useSyncExternalStore with a server snapshot: the server has no viewport, so
+// it renders 'lg', and hydration must start from that same value before the
+// client's real breakpoint takes over (reading matchMedia during the first
+// render would make the client's tree differ from the server HTML).
 export function useBreakpoint(): Breakpoint {
-  const [bp, setBp] = useState<Breakpoint>(() => read());
+  return useSyncExternalStore(subscribe, read, () => 'lg');
+}
 
-  useEffect(() => {
-    const md = window.matchMedia('(min-width: 768px)');
-    const lg = window.matchMedia('(min-width: 1024px)');
-    const sync = () => setBp(read());
-    md.addEventListener('change', sync);
-    lg.addEventListener('change', sync);
-    return () => {
-      md.removeEventListener('change', sync);
-      lg.removeEventListener('change', sync);
-    };
-  }, []);
-
-  return bp;
+function subscribe(onChange: () => void): () => void {
+  const md = window.matchMedia('(min-width: 768px)');
+  const lg = window.matchMedia('(min-width: 1024px)');
+  md.addEventListener('change', onChange);
+  lg.addEventListener('change', onChange);
+  return () => {
+    md.removeEventListener('change', onChange);
+    lg.removeEventListener('change', onChange);
+  };
 }
 
 function read(): Breakpoint {

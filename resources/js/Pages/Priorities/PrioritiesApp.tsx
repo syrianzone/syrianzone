@@ -614,12 +614,15 @@ export default function PrioritiesApp() {
         </div>
       </div>
 
-      {showWarning && (
-        <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2 animate-pulse">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
-          <span>لقد استنفدت نقاطك المتاحة. لزيادة نقاط هذا الملف، يرجى تقليل نقاط ملف آخر أولاً.</span>
-        </div>
-      )}
+      {/* The live region stays mounted so screen readers announce the warning. */}
+      <div role="status" className="empty:hidden">
+        {showWarning && (
+          <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2 motion-safe:animate-pulse">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" aria-hidden="true" />
+            <span>لقد استنفدت نقاطك المتاحة. لزيادة نقاط هذا الملف، يرجى تقليل نقاط ملف آخر أولاً.</span>
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 

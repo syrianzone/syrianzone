@@ -275,60 +275,59 @@
     box-shadow: 0 0 0 3px hsl(var(--primary) / 0.35);
 }
 
+/* Scrollbars. The thumb uses --muted-foreground (not --border, which sat near
+   1.3:1 against the page) so it stays at least 3:1 visible in every theme.
+   Overflow areas (.sz-scroll and the native ones) get a thin bar; the page's
+   own scrollbar keeps the platform width so it stays easy to grab. Browsers
+   with the standard properties ignore the ::-webkit-scrollbar rules, which are
+   only the fallback for engines without them. Never transition scrollbar-color:
+   it repaints the whole scroller on every frame. */
+:root {
+    --sz-scrollbar-thumb: hsl(var(--muted-foreground) / 0.8);
+    --sz-scrollbar-thumb-hover: hsl(var(--muted-foreground));
+}
+@media (prefers-contrast: more) {
+    :root {
+        --sz-scrollbar-thumb: hsl(var(--foreground));
+        --sz-scrollbar-thumb-hover: hsl(var(--foreground));
+    }
+}
+
 /* shadcn-style thin scrollbar for native overflow areas (dialogs, dropdowns). */
 .sz-scroll {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
+    scrollbar-color: var(--sz-scrollbar-thumb) transparent;
 }
 
-.sz-scroll::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.sz-scroll::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.sz-scroll::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-
-.sz-scroll::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.4);
-    background-clip: content-box;
-    border: 2px solid transparent;
-}
-
-/* The site's own scrollbar (page + every native overflow area) shares the same
-   thin, themed bar as .sz-scroll, so no surface falls back to the OS default. */
 html {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
+    scrollbar-width: auto;
+    scrollbar-color: var(--sz-scrollbar-thumb) transparent;
 }
-::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.4);
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-::-webkit-scrollbar-corner {
-    background: transparent;
+
+@supports not (scrollbar-color: auto) {
+    .sz-scroll::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: var(--sz-scrollbar-thumb);
+        border-radius: 9999px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--sz-scrollbar-thumb-hover);
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
 }
 
 @custom-variant dark (&:where([data-scheme="dark"], [data-scheme="dark"] *));

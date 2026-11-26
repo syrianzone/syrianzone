@@ -177,6 +177,10 @@ export default function GovAppsAdminIndex({
                                                             <img
                                                                 src={item.icon || DEFAULT_GOVAPP_ICON}
                                                                 alt=""
+                                                                width={40}
+                                                                height={40}
+                                                                loading="lazy"
+                                                                decoding="async"
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
                                                                     (e.target as HTMLImageElement).src = DEFAULT_GOVAPP_ICON;

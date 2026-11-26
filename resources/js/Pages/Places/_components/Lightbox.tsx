@@ -162,7 +162,7 @@ export function Lightbox(props: {
       <DialogContent
         dir="rtl"
         onKeyDown={onKeyDown}
-        className="flex h-dvh w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 bg-background/95 p-0 sm:rounded-none [&>button]:hidden"
+        className="flex h-dvh max-h-none w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 bg-background/95 p-0 sm:rounded-none [&>button]:hidden"
       >
         <DialogTitle className="sr-only">{name}</DialogTitle>
         <div className="relative flex items-center gap-2 p-3">

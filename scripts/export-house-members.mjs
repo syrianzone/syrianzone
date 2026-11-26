@@ -79,14 +79,22 @@ const COLUMNS = [
   'facebook_url', 'twitter_url',
 ];
 
-const members = rows
-  .filter((row) => row.length >= header.length)
-  .map((row) => Object.fromEntries(COLUMNS.map((column) => [column, cell(row, column)])));
+const dataRows = rows.filter((row) => row.length >= header.length);
 
-const sourceUrls = new Set(rows.map((row) => cell(row, 'source_url')).filter(Boolean));
-if (sourceUrls.size !== 1) {
-  throw new Error(`house_members_2026.csv must carry one source_url, found ${sourceUrls.size}`);
+// Most rows come from the Omran snapshot; that URL travels once. A member
+// added later from another source (e.g. an appointment decree) keeps that
+// source in the CSV and the DB; the bundled fallback cites Omran only.
+const sourceCounts = new Map();
+for (const row of dataRows) {
+  const url = cell(row, 'source_url');
+  if (url) sourceCounts.set(url, (sourceCounts.get(url) ?? 0) + 1);
 }
+if (sourceCounts.size === 0) {
+  throw new Error('house_members_2026.csv carries no source_url');
+}
+const omranSource = [...sourceCounts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+
+const members = dataRows.map((row) => Object.fromEntries(COLUMNS.map((column) => [column, cell(row, column)])));
 
 const q = (value) => JSON.stringify(value);
 
@@ -97,7 +105,7 @@ const file =
   `export interface Member2026 {\n` +
   `  name_ar: string; governorate_ar: string; district: string; town: string; gender: string; birth_year: string; age: string; selection_method: string; category: string; status: string; member_number: string; management_position: string; facebook_url?: string | null; twitter_url?: string | null;\n` +
   `}\n` +
-  `export const OMran_SOURCE_URL = ${q(encodeURI([...sourceUrls][0]))};\n` +
+  `export const OMran_SOURCE_URL = ${q(encodeURI(omranSource))};\n` +
   `export const MEMBERS_2026: Member2026[] = [${members.map((m) => JSON.stringify(m)).join(', ')}];\n`;
 
 fs.writeFileSync(OUT, file);

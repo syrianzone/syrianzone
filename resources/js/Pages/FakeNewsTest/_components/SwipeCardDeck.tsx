@@ -59,6 +59,15 @@ export default function SwipeCardDeck({
     };
   }, [claim.id]);
 
+  // Warm the cache for the next card's image so it doesn't pop in after the swipe.
+  const nextImage = upcomingClaims[0]?.image;
+  useEffect(() => {
+    if (!nextImage) return;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = nextImage;
+  }, [nextImage]);
+
   const triggerDecision = useCallback(
     (answer: boolean) => {
       if (committedRef.current) return;

@@ -52,6 +52,21 @@ interface TimeseriesChartProps {
 }
 
 type Timeframe = "day" | "week" | "month" | "year"
+
+/**
+ * "YYYY-MM-DD" as a local calendar date. `new Date("YYYY-MM-DD")` is UTC
+ * midnight, which is the previous day west of Greenwich and makes the server
+ * and the browser disagree.
+ */
+function localDate(day: string): Date {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day)
+    return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(day)
+}
+
+/** A local date back to "YYYY-MM-DD" (toISOString would shift it to UTC). */
+function dayKey(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
 type Metric = "votes" | "score"
 type ViewMode = "cumulative" | "periodic"
 
@@ -177,22 +192,20 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
         if (timeframe === "day") {
             return dailyData.map(d => ({
                 ...d,
-                displayDate: new Date(d.date).toLocaleDateString('ar-SY')
+                displayDate: localDate(d.date).toLocaleDateString('ar-SY')
             }))
         }
 
         const aggregatedMap: { [key: string]: any } = {}
 
         dailyData.forEach(dayEntry => {
-            const dateObj = new Date(dayEntry.date)
+            const dateObj = localDate(dayEntry.date)
             let key = ""
 
             if (timeframe === "week") {
-                const d = new Date(dateObj)
-                const day = d.getDay()
-                const diff = d.getDate() - day + (day == 0 ? -6 : 1)
-                const monday = new Date(d.setDate(diff))
-                key = monday.toISOString().split('T')[0]
+                const day = dateObj.getDay()
+                const diff = dateObj.getDate() - day + (day === 0 ? -6 : 1)
+                key = dayKey(new Date(dateObj.getFullYear(), dateObj.getMonth(), diff))
             } else if (timeframe === "month") {
                 key = `${dateObj.getFullYear()}-${dateObj.getMonth() + 1}`
             } else if (timeframe === "year") {
@@ -218,7 +231,7 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
             } else if (timeframe === "year") {
                 aggregatedMap[key].displayDate = dateObj.toLocaleDateString('ar-SY-u-nu-latn', { year: 'numeric' })
             } else if (timeframe === "week") {
-                aggregatedMap[key].displayDate = new Date(key).toLocaleDateString('ar-SY-u-nu-latn', { day: 'numeric', month: 'numeric' })
+                aggregatedMap[key].displayDate = localDate(key).toLocaleDateString('ar-SY-u-nu-latn', { day: 'numeric', month: 'numeric' })
             }
         })
 

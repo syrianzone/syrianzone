@@ -7,6 +7,7 @@ import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
 import { ViewToggle } from './_components/ViewToggle';
 import { BottomSheet } from '@/Components/BottomSheet';
+import { useIsMobile } from '@/Lib/useIsMobile';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
@@ -47,6 +48,14 @@ export default function Index() {
   const [view, setView] = useState<'map' | 'grid'>(() =>
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'grid' ? 'grid' : 'map',
   );
+
+  // One panel instance: the sheet below `md`, the side panel from `md` up. The
+  // server renders the side panel (CSS-hidden on phones); the sheet replaces it
+  // after mount so hydration still matches the server markup.
+  const isMobile = useIsMobile('md');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const showSheet = mounted && isMobile;
 
   // stale-response guard for the debounced list fetch
   const requestRef = useRef(0);
@@ -258,6 +267,24 @@ export default function Index() {
     setSelectedType('place');
   }
 
+  const panel = (
+    <PlacesPanel
+      places={listPlaces?.data ?? []}
+      loading={listLoading}
+      selectedId={selectedId}
+      selectedType={selectedType}
+      onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
+      onClose={handleClose}
+      onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
+      hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
+      onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
+      onSelectGuide={selectGuide}
+      addMode={addMode}
+      onAddToggle={() => setAddMode((v) => !v)}
+      className="min-h-0 flex-1"
+    />
+  );
+
   return (
     <MainLayout>
       
@@ -345,43 +372,15 @@ export default function Index() {
         {/* FAB and the sheet/panel are conditionally unmounted in grid view (not css-hidden) */}
         {view === 'map' && (
           <>
-            {/* Desktop sidebar */}
-            <div className="hidden md:flex absolute top-0 right-0 h-full w-96 flex-col bg-card border-l border-border z-10">
-              <PlacesPanel
-                places={listPlaces?.data ?? []}
-                loading={listLoading}
-                selectedId={selectedId}
-                selectedType={selectedType}
-                onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
-                onClose={handleClose}
-                onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
-                hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
-                onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
-                onSelectGuide={selectGuide}
-                addMode={addMode}
-                onAddToggle={() => setAddMode((v) => !v)}
-                className="min-h-0 flex-1"
-              />
-            </div>
-
-            {/* Mobile bottom sheet */}
-            <BottomSheet storageKey="mishwar-sheet-height">
-              <PlacesPanel
-                places={listPlaces?.data ?? []}
-                loading={listLoading}
-                selectedId={selectedId}
-                selectedType={selectedType}
-                onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
-                onClose={handleClose}
-                onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
-                hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
-                onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
-                onSelectGuide={selectGuide}
-                addMode={addMode}
-                onAddToggle={() => setAddMode((v) => !v)}
-                className="min-h-0 flex-1"
-              />
-            </BottomSheet>
+            {showSheet ? (
+              <BottomSheet storageKey="mishwar-sheet-height" hideBreakpoint="md">
+                {panel}
+              </BottomSheet>
+            ) : (
+              <div className="hidden md:flex absolute top-0 start-0 h-full w-96 flex-col bg-card border-e border-border z-10">
+                {panel}
+              </div>
+            )}
           </>
         )}
 

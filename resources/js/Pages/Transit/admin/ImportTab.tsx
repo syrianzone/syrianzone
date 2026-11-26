@@ -303,32 +303,32 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
             )}
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold">اسم الخط بالعربية <span className="text-destructive">*</span></label>
-              <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="h-8 text-xs" />
+              <label htmlFor="import-name-ar" className="text-xs font-semibold">اسم الخط بالعربية <span className="text-destructive" aria-hidden="true">*</span></label>
+              <Input id="import-name-ar" required value={nameAr} onChange={(e) => setNameAr(e.target.value)} className="h-8 text-xs" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">الاسم بالإنجليزية</label>
-                <Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} dir="ltr" className="h-8 text-xs" />
+                <label htmlFor="import-name-en" className="text-xs text-muted-foreground">الاسم بالإنجليزية</label>
+                <Input id="import-name-en" value={nameEn} onChange={(e) => setNameEn(e.target.value)} dir="ltr" className="h-8 text-xs" />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">التعرفة (ل.س)</label>
-                <Input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} dir="ltr" className="h-8 text-xs" />
+                <label htmlFor="import-price" className="text-xs text-muted-foreground">التعرفة (ل.س)</label>
+                <Input id="import-price" type="number" inputMode="numeric" min="0" value={price} onChange={(e) => setPrice(e.target.value)} dir="ltr" className="h-8 text-xs" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">المدينة <span className="text-destructive">*</span></label>
+                <label htmlFor="import-city" className="text-xs text-muted-foreground">المدينة <span className="text-destructive" aria-hidden="true">*</span></label>
                 <Select value={cityId} onValueChange={setCityId}>
-                  <SelectTrigger className="h-8 text-xs" aria-label="اختر المدينة…"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
+                  <SelectTrigger id="import-city" className="h-8 text-xs" aria-required="true"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
                   <SelectContent>
                     {cities.map((c) => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground block">لون الخط</label>
-                <div className="flex items-center gap-1 flex-wrap h-8">
+                <span id="import-color-label" className="text-xs text-muted-foreground block">لون الخط</span>
+                <div role="group" aria-labelledby="import-color-label" className="flex items-center gap-1 flex-wrap h-8">
                   {ROUTE_PALETTE.map((hex, idx) => (
                     <button aria-label={`لون ${idx + 1}`}
                       key={idx}
@@ -343,8 +343,8 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">ملاحظات</label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-xs resize-none" />
+              <label htmlFor="import-notes" className="text-xs text-muted-foreground">ملاحظات</label>
+              <Textarea id="import-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-xs resize-none" />
             </div>
 
             <div className="space-y-1.5">

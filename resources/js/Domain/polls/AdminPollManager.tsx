@@ -481,11 +481,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="inline-flex rounded-md border bg-background p-0.5 text-xs">
+                        <div role="group" aria-label="المرشحون المعروضون" className="inline-flex rounded-md border bg-background p-0.5 text-xs">
                             {(["active", "archived", "all"] as const).map(opt => (
                                 <button
                                     key={opt}
                                     type="button"
+                                    aria-pressed={statusFilter === opt}
                                     onClick={() => setStatusFilter(opt)}
                                     className={`px-2 py-1 rounded-sm transition-colors ${
                                         statusFilter === opt ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
@@ -559,21 +560,21 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         {canEdit && (
-                                            <Button aria-label="تعديل" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEditCandidate(candidate)} title="تعديل">
+                                            <Button aria-label={`تعديل ${candidate.name}`} variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEditCandidate(candidate)} title="تعديل">
                                                 <Edit2 className="h-3 w-3" />
                                             </Button>
                                         )}
                                         {canEdit && (isArchived ? (
-                                            <Button aria-label="إعادة تفعيل" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleRestore(candidate)} title="إعادة تفعيل">
+                                            <Button aria-label={`إعادة تفعيل ${candidate.name}`} variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleRestore(candidate)} title="إعادة تفعيل">
                                                 <Undo2 className="h-3 w-3" />
                                             </Button>
                                         ) : (
-                                            <Button aria-label="أرشفة" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openArchive(candidate)} title="أرشفة">
+                                            <Button aria-label={`أرشفة ${candidate.name}`} variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openArchive(candidate)} title="أرشفة">
                                                 <Archive className="h-3 w-3" />
                                             </Button>
                                         ))}
                                         {canDelete && (
-                                            <Button aria-label="حذف" variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDeleteCandidate(candidate.id)} title="حذف">
+                                            <Button aria-label={`حذف ${candidate.name}`} variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDeleteCandidate(candidate.id)} title="حذف">
                                                 <Trash2 className="h-3 w-3" />
                                             </Button>
                                         )}

@@ -220,7 +220,7 @@ final class PlacePreview implements CardSource, PreviewResolver
 
         $model = [
             'kind' => 'photo',
-            'url' => $this->address('/mishwar'),
+            'url' => $this->address('/mishwar/'.$place->id),
             'kicker' => ['icon' => 'mishwar', 'label' => 'مشوار'],
             'pills' => [['label' => $label, 'glyph' => $glyph]],
             'title' => $place->name,

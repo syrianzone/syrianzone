@@ -53,6 +53,7 @@ test('a place link previews as the place and canonicalizes to the dedicated plac
 
     expect($card->format)->toBe('jpg')
         ->and($card->model['kind'])->toBe('photo')
+        ->and($card->model['url'])->toBe('syrian.zone/mishwar/'.$place->id)
         ->and($card->model['title'])->toBe('قلعة حلب')
         ->and($card->model['pills'])->toBe([['label' => 'تاريخي', 'glyph' => 'Landmark']])
         ->and($card->model['photo'])->toContain("places/{$place->id}/a_display.webp");
@@ -247,7 +248,8 @@ test('a shared priorities link previews as an invitation and keeps its ranking',
 
 test('an unrelated query string leaves a fixed page exactly as it is', function () {
     $plain = seoMetaFor('/mishwar');
-    $withNoise = seoMetaFor('/mishwar?view=grid&utm_source=x&guide=4');
+    $withNoise = seoMetaFor('/mishwar?view=grid&utm_source=x&guide=4&gov=hama');
 
-    expect($withNoise)->toBe($plain);
+    expect($withNoise)->toBe($plain)
+        ->and($withNoise['canonical'])->toBe('https://syrian.zone/mishwar');
 });

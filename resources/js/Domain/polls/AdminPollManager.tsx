@@ -612,7 +612,10 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         <div className="grid grid-cols-4 items-start gap-4">
                             <Label className="text-right pt-2">Image</Label>
                             <div className="col-span-3 space-y-2">
-                                <div
+                                {/* A label for the file input: click, Enter and Space all open
+                                    the picker natively, and the input stays focusable. */}
+                                <label
+                                    htmlFor={canUploadImages ? "c-image-file" : undefined}
                                     {...(canUploadImages ? {
                                         onDragEnter: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); },
                                         onDragOver: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); },
@@ -623,11 +626,10 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             setIsDragging(false);
                                             if (!isUploading) handleDroppedFiles(e.dataTransfer.files);
                                         },
-                                        onClick: () => !isUploading && fileInputRef.current?.click(),
                                     } : {})}
                                     className={`flex items-center gap-3 rounded-md border-2 border-dashed p-3 transition-colors ${
                                         canUploadImages
-                                            ? `cursor-pointer ${isDragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"} ${isUploading ? "opacity-60 cursor-wait" : ""}`
+                                            ? `cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring ${isDragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"} ${isUploading ? "opacity-60 cursor-wait" : ""}`
                                             : "border-border"
                                     }`}
                                     title={canUploadImages ? undefined : "رفع الصور متاح للمدير العام فقط"}
@@ -641,10 +643,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                     </div>
                                     <input
                                         ref={fileInputRef}
+                                        id="c-image-file"
+                                        aria-label="رفع صورة المرشح (JPEG أو PNG أو WEBP)"
                                         type="file"
                                         accept="image/jpeg,image/png,image/webp"
-                                        className="hidden"
-                                        disabled={!canUploadImages}
+                                        className="sr-only"
+                                        disabled={!canUploadImages || isUploading}
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             if (file) startUpload([file]);
@@ -664,12 +668,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             type="button"
                                             variant="ghost"
                                             size="sm"
-                                            onClick={(e) => { e.stopPropagation(); setCImage(""); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCImage(""); }}
                                         >
                                             مسح
                                         </Button>
                                     )}
-                                </div>
+                                </label>
                                 <Input
                                     id="c-image"
                                     value={cImage}

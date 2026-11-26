@@ -1052,7 +1052,7 @@ export function MobileMenuSearchSection({
                                     inputRef.current?.focus();
                                 }}
                                 aria-label="مسح البحث"
-                                className="rounded-lg p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                className="-m-0.5 rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                             >
                                 <X className="h-4 w-4" />
                             </button>

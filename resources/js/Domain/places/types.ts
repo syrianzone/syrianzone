@@ -31,10 +31,13 @@ export interface PlaceLocatorShape {
   id: string;
   name_ar: string;
   path: string;
+  label_x?: number;
+  label_y?: number;
 }
 
 export interface PlaceLocator {
   viewBox: string;
+  fullViewBox?: string;
   width: number;
   height: number;
   shapes: PlaceLocatorShape[];

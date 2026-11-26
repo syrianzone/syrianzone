@@ -79,6 +79,175 @@ final class GovernorateGeometry
     }
 
     /**
+     * Lat/lng bounding box `[[minLng, minLat], [maxLng, maxLat]]` for one governorate,
+     * suitable for MapLibre `fitBounds`, or null when the governorate is unknown.
+     *
+     * @return array{0: array{0: float, 1: float}, 1: array{0: float, 1: float}}|null
+     */
+    public function latLngBounds(string $governorateId): ?array
+    {
+        foreach ($this->features() as $feature) {
+            if ($feature['id'] !== $governorateId) {
+                continue;
+            }
+
+            $minLon = INF;
+            $maxLon = -INF;
+            $minLat = INF;
+            $maxLat = -INF;
+
+            foreach ($feature['polygons'] as $polygon) {
+                foreach ($polygon as $ring) {
+                    foreach ($ring as $pt) {
+                        if ($pt[0] < $minLon) {
+                            $minLon = $pt[0];
+                        }
+                        if ($pt[0] > $maxLon) {
+                            $maxLon = $pt[0];
+                        }
+                        if ($pt[1] < $minLat) {
+                            $minLat = $pt[1];
+                        }
+                        if ($pt[1] > $maxLat) {
+                            $maxLat = $pt[1];
+                        }
+                    }
+                }
+            }
+
+            if ($minLon === INF) {
+                return null;
+            }
+
+            return [
+                [round($minLon, 6), round($minLat, 6)],
+                [round($maxLon, 6), round($maxLat, 6)],
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Server-rendered locator map payload for a Mishwar place, zoomed to the
+     * place's governorate (with padding and a minimum span for small governorates
+     * like Damascus or Quneitra so surrounding governorates stay visible).
+     *
+     * @return array{
+     *     viewBox: string,
+     *     fullViewBox: string,
+     *     width: int,
+     *     height: int,
+     *     shapes: list<array{id: string, name_ar: string, path: string, label_x: float, label_y: float}>,
+     *     pin: array{x: float, y: float}
+     * }|null
+     */
+    public function locatorForPlace(float $lat, float $lng, ?string $governorateId): ?array
+    {
+        $svgMap = $this->svgMap();
+        $pin = $this->projectPoint($lat, $lng);
+
+        if ($pin === null || $svgMap['shapes'] === []) {
+            return null;
+        }
+
+        $viewBox = $this->zoomedViewBox($governorateId, $pin) ?? $svgMap['viewBox'];
+
+        return [
+            'viewBox' => $viewBox,
+            'fullViewBox' => $svgMap['viewBox'],
+            'width' => $svgMap['width'],
+            'height' => $svgMap['height'],
+            'shapes' => array_map(static fn (array $s) => [
+                'id' => $s['id'],
+                'name_ar' => $s['name_ar'],
+                'path' => $s['path'],
+                'label_x' => $s['label_x'],
+                'label_y' => $s['label_y'],
+            ], $svgMap['shapes']),
+            'pin' => $pin,
+        ];
+    }
+
+    /**
+     * Compute a zoomed 4:3 SVG viewBox centered on the governorate (plus the pin)
+     * in `svgMap()` coordinates, enforcing a minimum span so tiny governorates
+     * keep neighbouring context.
+     *
+     * @param  array{x: float, y: float}  $pin
+     */
+    private function zoomedViewBox(?string $governorateId, array $pin): ?string
+    {
+        if ($governorateId === null) {
+            return null;
+        }
+
+        $proj = $this->projection();
+        if ($proj === null) {
+            return null;
+        }
+
+        $targetFeature = null;
+        foreach ($this->features() as $feature) {
+            if ($feature['id'] === $governorateId) {
+                $targetFeature = $feature;
+                break;
+            }
+        }
+        if ($targetFeature === null) {
+            return null;
+        }
+
+        $minX = $pin['x'];
+        $maxX = $pin['x'];
+        $minY = $pin['y'];
+        $maxY = $pin['y'];
+
+        foreach ($targetFeature['polygons'] as $polygon) {
+            foreach ($polygon as $ring) {
+                foreach ($ring as $pt) {
+                    $x = $proj['pad'] + ($pt[0] - $proj['minLon']) * $proj['cosLat'] * $proj['scale'];
+                    $y = $proj['pad'] + ($proj['maxLat'] - $pt[1]) * $proj['scale'];
+                    if ($x < $minX) {
+                        $minX = $x;
+                    }
+                    if ($x > $maxX) {
+                        $maxX = $x;
+                    }
+                    if ($y < $minY) {
+                        $minY = $y;
+                    }
+                    if ($y > $maxY) {
+                        $maxY = $y;
+                    }
+                }
+            }
+        }
+
+        $rawW = $maxX - $minX;
+        $rawH = $maxY - $minY;
+        $padX = max(14.0, $rawW * 0.22);
+        $padY = max(12.0, $rawH * 0.22);
+
+        $aspect = 4.0 / 3.0;
+        $w = max($rawW + 2 * $padX, 96.0);
+        $h = max($rawH + 2 * $padY, 72.0);
+
+        if (($w / $h) < $aspect) {
+            $w = $h * $aspect;
+        } else {
+            $h = $w / $aspect;
+        }
+
+        $cx = ($minX + $maxX) / 2.0;
+        $cy = ($minY + $maxY) / 2.0;
+        $x0 = round($cx - $w / 2.0, 1);
+        $y0 = round($cy - $h / 2.0, 1);
+
+        return sprintf('%.1f %.1f %.1f %.1f', $x0, $y0, round($w, 1), round($h, 1));
+    }
+
+    /**
      * Project a (lat, lng) coordinate into the same SVG coordinate space used by `svgMap()`.
      * Returns null when geometry is unavailable or the point falls outside Syria's SVG bounds.
      *

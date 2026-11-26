@@ -36,9 +36,17 @@ class PlaceController extends Controller
       ->whereRaw('place_photos.sort = (select min(cover.sort) from place_photos as cover where cover.place_id = place_photos.place_id)')];
   }
 
-  public function renderIndex()
+  public function renderIndex(Request $request, GovernorateGeometry $geometry)
   {
-    return Inertia::render('Places/Index');
+    $govId = $request->query('gov');
+    $initialBounds = null;
+    if (is_string($govId) && $govId !== '' && Facts::governorate($govId) !== null) {
+      $initialBounds = $geometry->latLngBounds($govId);
+    }
+
+    return Inertia::render('Places/Index', $initialBounds !== null ? [
+      'initialBounds' => $initialBounds,
+    ] : []);
   }
 
   public function renderShow(
@@ -81,19 +89,7 @@ class PlaceController extends Controller
       'name_ar' => (string) $govRow['name_ar'],
     ] : null;
 
-    $svgMap = $geometry->svgMap();
-    $pin = $geometry->projectPoint((float) $record->lat, (float) $record->lng);
-    $locator = ($pin !== null && $svgMap['shapes'] !== []) ? [
-      'viewBox' => $svgMap['viewBox'],
-      'width' => $svgMap['width'],
-      'height' => $svgMap['height'],
-      'shapes' => array_map(static fn (array $s) => [
-        'id' => $s['id'],
-        'name_ar' => $s['name_ar'],
-        'path' => $s['path'],
-      ], $svgMap['shapes']),
-      'pin' => $pin,
-    ] : null;
+    $locator = $geometry->locatorForPlace((float) $record->lat, (float) $record->lng, $govId);
 
     $user = $request->user();
     $guide = $levels->forUser($record->user_id);

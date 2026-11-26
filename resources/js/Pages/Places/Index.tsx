@@ -18,7 +18,11 @@ const PlacesMap = lazy(() => import('./_components/PlacesMap').then(m => ({ defa
 
 const EMPTY_HOTEL_GEOJSON: HotelFeatureCollection = { type: 'FeatureCollection', features: [] };
 
-export default function Index() {
+export interface PlacesIndexProps {
+  initialBounds?: [[number, number], [number, number]] | null;
+}
+
+export default function Index({ initialBounds = null }: PlacesIndexProps) {
   const [features, setFeatures] = useState<PlaceFeatureCollection | null>(null);
   const [hotelFeatures, setHotelFeatures] = useState<HotelFeatureCollection>(EMPTY_HOTEL_GEOJSON);
   const [category, setCategory] = useState<PlaceCategory | null>(null);
@@ -297,6 +301,7 @@ export default function Index() {
             selectedId={selectedId}
             selectedType={selectedType}
             addMode={addMode}
+            initialBounds={initialBounds}
             focus={focus}
             highlight={highlight}
             onPinClick={(id) => handlePinClick(id, 'place')}

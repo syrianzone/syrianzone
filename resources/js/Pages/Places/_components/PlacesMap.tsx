@@ -11,6 +11,7 @@ export function PlacesMap(props: {
   selectedId: number | null;
   selectedType: 'place' | 'hotel' | null;
   addMode: boolean;
+  initialBounds?: [[number, number], [number, number]] | null;
   focus: { lng: number; lat: number; zoom?: number; key: number } | null;
   highlight: LatLng | null;
   onPinClick: (id: number) => void;
@@ -20,7 +21,7 @@ export function PlacesMap(props: {
   className?: string;
 }) {
   return (
-    <MapCanvas className={props.className}>
+    <MapCanvas bounds={props.initialBounds ?? undefined} className={props.className}>
       <PinLayer
         style={PLACE_PINS}
         data={props.features}

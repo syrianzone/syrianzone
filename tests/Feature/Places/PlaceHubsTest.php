@@ -89,7 +89,7 @@ test('governorate hub returns 200 with index, follow at >= 3 places, ordered by 
             ->where('governorate.name_ar', 'حماة')
             ->where('h1', 'أماكن سياحية في حماة')
             ->where('total', 3)
-            ->where('mapUrl', '/mishwar')
+            ->where('mapUrl', '/mishwar?gov=hama')
             ->where('governorateUrl', '/governorates/hama')
             ->where('places.0.id', $oldestMostSaved->id)
             ->where('places.0.photos_count', 3)
@@ -331,4 +331,29 @@ test('PlaceObserver queues governorate and category hubs for IndexNow and drops 
 
     expect($indexNow->pending())->toContain('https://syrian.zone/mishwar/hama')
         ->not->toContain('https://syrian.zone/mishwar/hama/other');
+});
+
+test('mishwar map passes initialBounds only for a valid ?gov= id and keeps canonical /mishwar', function () {
+    $this->get('/mishwar?gov=hama')
+        ->assertOk()
+        ->assertSee('rel="canonical" href="https://syrian.zone/mishwar"', false)
+        ->assertInertia(fn ($page) => $page
+            ->component('Places/Index')
+            ->has('initialBounds', 2)
+            ->where('initialBounds.0.0', fn ($v) => is_numeric($v))
+            ->where('initialBounds.0.1', fn ($v) => is_numeric($v))
+            ->where('initialBounds.1.0', fn ($v) => is_numeric($v))
+            ->where('initialBounds.1.1', fn ($v) => is_numeric($v)));
+
+    $this->get('/mishwar?gov=not-a-governorate')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Places/Index')
+            ->missing('initialBounds'));
+
+    $this->get('/mishwar')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Places/Index')
+            ->missing('initialBounds'));
 });

@@ -70,7 +70,14 @@ export function GuideProfileCard(props: {
                   {RANK_NAMES[next.level]} عند <span dir="ltr" className="tabular-nums">{next.points}</span>
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+              <div
+                role="progressbar"
+                aria-label={`التقدّم نحو رتبة ${RANK_NAMES[next.level]}`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(progress)}
+                className="h-1.5 w-full overflow-hidden rounded-full bg-secondary"
+              >
                 <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
               </div>
             </div>

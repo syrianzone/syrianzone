@@ -24,6 +24,7 @@ use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IncomingSuggestionsAdminController;
 use App\Http\Controllers\IndexNowController;
+use App\Http\Controllers\LegacyRedirectController;
 use App\Http\Controllers\PhonebookAdminController;
 use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\OgCardController;
@@ -249,6 +250,13 @@ Route::get('/currency', function () {
     ]);
 });
 Route::get('/syid', [ExternalDataController::class, 'syid']);
+Route::redirect('/syid/materials', '/syid', 301);
+Route::get('/syid/materials/{file}', [LegacyRedirectController::class, 'syidMaterial'])
+    ->where('file', '.*');
+Route::get('/syofficial/images/governorates/{file}.webp', [LegacyRedirectController::class, 'syofficialGovernorate'])
+    ->where('file', '[^/]+');
+Route::redirect('/leaderboard', '/tierlist/leaderboard', 301);
+Route::redirect('/bingo', '/games', 301);
 Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors']);
 Route::get('/sites', [ExternalDataController::class, 'sites']);
 Route::get('/party', [ExternalDataController::class, 'party']);

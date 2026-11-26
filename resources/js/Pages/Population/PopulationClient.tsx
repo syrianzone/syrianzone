@@ -7,7 +7,7 @@ import {
     Activity, AlertTriangle, TrendingDown, TrendingUp, Calendar, Cloud, Navigation,
     History, Users, Heart, MapPin, Clock, Compass, Thermometer, Leaf
 } from 'lucide-react';
-import { sortCitiesByOrder, getCanonicalGovernorateName, getGovernorateDatasetNameEn, getGovernoratePcode } from '@/Domain/geography/governorates';
+import { GOVERNORATES, sortCitiesByOrder, getCanonicalGovernorateName, getGovernorateDatasetNameEn, getGovernoratePcode, type Governorate } from '@/Domain/geography/governorates';
 import { buildLegend } from './utils/color-calculator';
 import { useIsMobile } from '@/Lib/useIsMobile';
 import { notify } from '@/Lib/notify';
@@ -31,6 +31,28 @@ const getWindDirection = (degrees: number) => {
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     return directions[Math.round(degrees / 45) % 8];
 };
+
+/** Keyboard and screen-reader route to the governorates the map makes clickable. */
+function GovernoratePicker({ governorates, onSelect }: { governorates: Governorate[]; onSelect: (governorate: Governorate) => void }) {
+    if (governorates.length === 0) return null;
+    return (
+        <ul aria-label="المحافظات" className="grid grid-cols-2 gap-2 w-full">
+            {governorates.map(governorate => (
+                <li key={governorate.id}>
+                    <button
+                        type="button"
+                        onClick={() => onSelect(governorate)}
+                        className="w-full rounded-md border border-border bg-muted/40 px-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        {governorate.nameAr}
+                    </button>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+const GOVERNORATES_BY_SORT_ORDER = GOVERNORATES.toSorted((a, b) => a.sortOrder - b.sortOrder);
 
 export default function PopulationClient() {
     const isMobile = useIsMobile();
@@ -148,6 +170,22 @@ export default function PopulationClient() {
             }
         });
         return stats;
+    };
+
+    const showRainfallProvince = (nameAr: string, data: any[]) => {
+        setSelectedRainfallProvince({ name: nameAr, data });
+        if (isMobile) setIsPanelOpen(true);
+    };
+
+    const envCityData = (nameAr: string, rawName: string = nameAr) => {
+        const cities = environmentalData?.cities;
+        if (!cities) return undefined;
+        return cities[nameAr] || cities[getGovernorateDatasetNameEn(nameAr)] || cities[rawName];
+    };
+
+    const showEnvProvince = (nameAr: string, data: any) => {
+        setSelectedEnvProvince({ name: nameAr, data });
+        setIsPanelOpen(true);
     };
 
     const comparisonData = useMemo(() => {
@@ -310,22 +348,12 @@ export default function PopulationClient() {
                                     }
                                 }
 
-                                if (rData) {
-                                    setSelectedRainfallProvince({ name: nameAr, data: rData });
-                                    if (isMobile) setIsPanelOpen(true);
-                                }
+                                if (rData) showRainfallProvince(nameAr, rData);
                             }
 
                             else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
-                                if (environmentalData && environmentalData.cities) {
-                                    const englishName = getGovernorateDatasetNameEn(nameAr);
-                                    const data = environmentalData.cities[nameAr] || environmentalData.cities[englishName] || environmentalData.cities[name];
-
-                                    if (data) {
-                                        setSelectedEnvProvince({ name: nameAr, data: data });
-                                        setIsPanelOpen(true);
-                                    }
-                                }
+                                const data = envCityData(nameAr, name);
+                                if (data) showEnvProvince(nameAr, data);
                             }
                         }}
                     />
@@ -422,7 +450,11 @@ export default function PopulationClient() {
                                 <div className="flex flex-col items-center justify-center text-center h-full text-muted-foreground py-10 px-4">
                                     <CloudRain className="opacity-50 mb-4" size={48} />
                                     <h2 className="font-bold text-foreground mb-2">خريطة الأمطار</h2>
-                                    <p className="text-sm leading-relaxed mb-6">اختر محافظة من الخريطة لعرض إحصائيات الأمطار التاريخية والمتوسط السنوي.</p>
+                                    <p className="text-sm leading-relaxed mb-6">اختر محافظة من الخريطة أو من القائمة لعرض إحصائيات الأمطار التاريخية والمتوسط السنوي.</p>
+                                    <GovernoratePicker
+                                        governorates={GOVERNORATES_BY_SORT_ORDER.filter(g => rainfallData[g.pcode])}
+                                        onSelect={g => showRainfallProvince(g.nameAr, rainfallData[g.pcode])}
+                                    />
                                 </div>
                             )}
                         </div>
@@ -748,9 +780,14 @@ export default function PopulationClient() {
                                         </div>
                                         <h2 className="font-bold text-lg text-foreground mb-1">البيانات البيئية لسوريا</h2>
                                         <p className="text-xs text-muted-foreground">
-                                            اختر محافظة من الخريطة لعرض التفاصيل
+                                            اختر محافظة من الخريطة أو من القائمة لعرض التفاصيل
                                         </p>
                                     </div>
+
+                                    <GovernoratePicker
+                                        governorates={GOVERNORATES_BY_SORT_ORDER.filter(g => envCityData(g.nameAr))}
+                                        onSelect={g => showEnvProvince(g.nameAr, envCityData(g.nameAr))}
+                                    />
 
                                     <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg p-3 border border-amber-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">

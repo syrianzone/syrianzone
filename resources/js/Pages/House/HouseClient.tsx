@@ -41,6 +41,29 @@ const AGE_GROUPS = [
     { value: '60p', label: '+60' },
 ];
 
+/** The charts' numbers for screen readers; the SVG charts are hidden from them. */
+function ChartTable({ caption, rows }: { caption: string; rows: { name: string; value: number }[] }) {
+    return (
+        <table className="sr-only">
+            <caption>{caption}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">الفئة</th>
+                    <th scope="col">العدد</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map(row => (
+                    <tr key={row.name}>
+                        <th scope="row">{row.name}</th>
+                        <td>{row.value}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
+}
+
 export default function HouseClient({ initialData, initialHeaders, initialMode }: HouseClientProps) {
     const [mode, setMode] = useState<Mode>(initialMode);
     const tabs = useTabList({ ids: MODES, active: mode, onChange: setMode });
@@ -397,9 +420,10 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         <h3 className="text-sm font-semibold mb-4 text-foreground flex items-center gap-2">
                             <Users className="h-4 w-4" /> توزيع الجنس
                         </h3>
-                        <div className="w-48">
+                        <ChartTable caption="توزيع الجنس" rows={sexChartData} />
+                        <div className="w-48" aria-hidden="true">
                             <ResponsiveContainer width="100%" height={192}>
-                                <PieChart>
+                                <PieChart accessibilityLayer={false}>
                                     <Pie
                                         data={sexChartData}
                                         cx="50%"
@@ -423,9 +447,10 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         <h3 className="text-sm font-semibold mb-4 text-foreground flex items-center gap-2">
                             <ChartBar className="h-4 w-4" /> توزيع الأعمار
                         </h3>
-                        <div className="w-full h-48">
+                        <ChartTable caption="توزيع الأعمار" rows={ageChartData} />
+                        <div className="w-full h-48" aria-hidden="true">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={ageChartData}>
+                                <BarChart data={ageChartData} accessibilityLayer={false}>
                                     <XAxis dataKey="name" />
                                     <YAxis />
                                     <Tooltip />

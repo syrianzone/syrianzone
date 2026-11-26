@@ -800,13 +800,15 @@ export default function PrioritiesApp() {
             </div>
 
             <div className="mb-4 border-t border-border/60 pt-4">
-              <label className="text-xs font-bold text-foreground block mb-2 font-sans">مقارنة بروفايلك الخاص مع:</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-xl text-[10px] sm:text-xs font-medium border border-border">
+              <p id="priorities-comparison-label" className="text-xs font-bold text-foreground block mb-2 font-sans">مقارنة بروفايلك الخاص مع:</p>
+              <div role="group" aria-labelledby="priorities-comparison-label" className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-xl text-[10px] sm:text-xs font-medium border border-border">
                 {Object.entries(COMPARISONS).map(([key, comp]) => {
                   const isActive = activeComparisonKey === key;
                   return (
                     <button
                       key={key}
+                      type="button"
+                      aria-pressed={isActive}
                       onClick={() => setActiveComparisonKey(key)}
                       className={`py-2 px-1 rounded-md text-center transition-all ${isActive
                         ? 'bg-card text-foreground shadow-sm font-bold border border-border'
@@ -1299,10 +1301,10 @@ export default function PrioritiesApp() {
             </div>
 
             <div className="w-full mt-4 mb-2" dir="rtl">
-              <label className="block text-xs font-bold text-muted-foreground text-right mb-2">
+              <p id="priorities-story-theme-label" className="block text-xs font-bold text-muted-foreground text-right mb-2">
                 اختر لون المظهر للبطاقة:
-              </label>
-              <div className="flex flex-wrap justify-start gap-2">
+              </p>
+              <div role="group" aria-labelledby="priorities-story-theme-label" className="flex flex-wrap justify-start gap-2">
                 {THEME_REGISTRY.filter(t => t.id !== 'system').map((theme) => {
                   const themeKey = theme.id;
                   const colors = {
@@ -1317,6 +1319,8 @@ export default function PrioritiesApp() {
                   return (
                     <button
                       key={themeKey}
+                      type="button"
+                      aria-pressed={isActive}
                       onClick={() => setStoryTheme(themeKey)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${isActive
                         ? 'border-transparent text-white shadow-sm scale-105'
@@ -1326,7 +1330,7 @@ export default function PrioritiesApp() {
                         backgroundColor: isActive ? colors.primary : undefined,
                       }}
                     >
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors.primary }}></span>
+                      <span className="w-2.5 h-2.5 rounded-full" aria-hidden="true" style={{ backgroundColor: colors.primary }}></span>
                       <span>{themeMeta.emoji} {themeMeta.ar}</span>
                     </button>
                   );

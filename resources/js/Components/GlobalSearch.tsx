@@ -108,6 +108,44 @@ export const FILTER_TABS: Array<{ id: FilterScope; label: string }> = [
     { id: 'directory', label: 'الأدلة والمعابر' },
 ];
 
+/**
+ * The scope filter row shared by the palette and the inline searches. Each pill
+ * is a toggle (`aria-pressed`), so the active scope is announced and not only
+ * shown by its fill.
+ */
+export function ScopePills({
+    scope,
+    onScopeChange,
+    className,
+}: {
+    scope: FilterScope;
+    onScopeChange: (scope: FilterScope) => void;
+    className: string;
+}) {
+    return (
+        <div role="group" aria-label="نطاق البحث" className={className}>
+            {FILTER_TABS.map((tab) => {
+                const active = scope === tab.id;
+                return (
+                    <button
+                        key={tab.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => onScopeChange(tab.id)}
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors ${
+                            active
+                                ? 'bg-primary text-primary-foreground shadow-2xs'
+                                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                    >
+                        {tab.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 export function useGlobalSearchData(query: string, scope: FilterScope, enabled = true) {
     const [remote, setRemote] = useState<RemoteSearchResults>(EMPTY_REMOTE);
     const [loadingRemote, setLoadingRemote] = useState(false);
@@ -973,25 +1011,11 @@ export function MobileMenuSearchSection({
                 </div>
 
                 {/* Category Filter Pills — always visible */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                    {FILTER_TABS.map((tab) => {
-                        const active = scope === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setScope(tab.id)}
-                                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors ${
-                                    active
-                                        ? 'bg-primary text-primary-foreground shadow-2xs'
-                                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        );
-                    })}
-                </div>
+                <ScopePills
+                    scope={scope}
+                    onScopeChange={setScope}
+                    className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar"
+                />
             </div>
 
             {/* Always-on Searchable Content (Sections Grid + Cities + Muslim + Games + Crossings + Live Results) */}
@@ -1114,25 +1138,11 @@ export function HomeInlineSearchSection({
                 </div>
 
                 {/* Category Filter Pills */}
-                <div className="flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto pt-0.5 pb-1 no-scrollbar">
-                    {FILTER_TABS.map((tab) => {
-                        const active = scope === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setScope(tab.id)}
-                                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors ${
-                                    active
-                                        ? 'bg-primary text-primary-foreground shadow-2xs'
-                                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        );
-                    })}
-                </div>
+                <ScopePills
+                    scope={scope}
+                    onScopeChange={setScope}
+                    className="flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto pt-0.5 pb-1 no-scrollbar"
+                />
             </div>
 
             {/* In-Place Replacement: Search Results when active, Default Homepage Grids when idle */}

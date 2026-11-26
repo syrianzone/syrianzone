@@ -25,7 +25,7 @@ import {
 import { useAppShell } from '@/Lib/appShell';
 import { pathnameOf } from '@/Lib/routes';
 import { useIsMac } from '@/Lib/platform';
-import { FILTER_TABS, SearchResultsContent, useGlobalSearchData } from './GlobalSearch';
+import { ScopePills, SearchResultsContent, useGlobalSearchData } from './GlobalSearch';
 import type { FilterScope } from './GlobalSearch';
 
 export default function GlobalCommandPalette() {
@@ -121,25 +121,11 @@ export default function GlobalCommandPalette() {
                     </div>
 
                     {/* Category Filter Pills */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border/60 bg-background/60 px-3 py-2 no-scrollbar">
-                        {FILTER_TABS.map((tab) => {
-                            const active = scope === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => setScope(tab.id)}
-                                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors ${
-                                        active
-                                            ? 'bg-primary text-primary-foreground shadow-2xs'
-                                            : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                    }`}
-                                >
-                                    {tab.label}
-                                </button>
-                            );
-                        })}
-                    </div>
+                    <ScopePills
+                        scope={scope}
+                        onScopeChange={setScope}
+                        className="flex items-center gap-1.5 overflow-x-auto border-b border-border/60 bg-background/60 px-3 py-2 no-scrollbar"
+                    />
 
                     {/* Results List */}
                     <CommandList className="max-h-[60vh] sm:max-h-[420px] overflow-y-auto p-2">

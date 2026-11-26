@@ -677,6 +677,14 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                             </DialogDescription>
                         </DialogHeader>
 
+                        {/* display:contents keeps the dialog's grid layout while Enter submits. */}
+                        <form
+                            className="contents"
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                handleSaveModalItem();
+                            }}
+                        >
                         <div className="space-y-4 py-2">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
@@ -914,10 +922,11 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                                 إلغاء
                             </Button>
-                            <Button type="button" onClick={handleSaveModalItem}>
+                            <Button type="submit">
                                 تأكيد التغييرات
                             </Button>
                         </DialogFooter>
+                        </form>
                     </DialogContent>
                 </Dialog>
             </div>

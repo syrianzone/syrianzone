@@ -779,7 +779,9 @@ function TransitAdminPageContent() {
                   <div key={route.id} role="button" tabIndex={0}
                     className={`w-full max-w-full box-border text-right p-3 rounded-lg border transition-colors cursor-pointer ${selectedRoute?.id === route.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}
                     onClick={() => handleSelectRoute(route)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelectRoute(route) }}>
+                    aria-pressed={selectedRoute?.id === route.id}
+                    // preventDefault: Space would otherwise also scroll the list
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectRoute(route) } }}>
                     <div className="flex items-start justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <span className="w-3 h-3 rounded-full shrink-0 border border-black/10 shadow-xs" style={{ backgroundColor: getRouteColor(route.color_index ?? 0) }} title={`لون المسار ${((route.color_index ?? 0) % ROUTE_COLOR_COUNT) + 1}`} />

@@ -869,7 +869,7 @@ function TransitAdminPageContent() {
                   <CardTitle className="text-base">{selectedDraft.name_ar}</CardTitle>
                   {selectedDraft.name_en && <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{selectedDraft.name_en}</p>}
                 </div>
-                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => setSelectedDraft(null)}>✕</Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => setSelectedDraft(null)} aria-label="إغلاق"><span aria-hidden="true">✕</span></Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
@@ -956,7 +956,7 @@ function TransitAdminPageContent() {
                   </div>
                   {selectedRoute.name_en && <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{selectedRoute.name_en}</p>}
                 </div>
-                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => { setSelectedRoute(null); setSelectedRouteGeoJson(null) }}>✕</Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => { setSelectedRoute(null); setSelectedRouteGeoJson(null) }} aria-label="إغلاق"><span aria-hidden="true">✕</span></Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">

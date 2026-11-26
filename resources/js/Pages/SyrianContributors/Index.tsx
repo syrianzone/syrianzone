@@ -71,12 +71,12 @@ const WinnerCard = ({ contributor, metric }: { contributor: Contributor; metric:
           <Badge className="bg-yellow-400 text-yellow-900 text-sm px-3 py-1 mb-3">🏆 المتصدر الأول</Badge>
 
           <div className="bg-muted/40 backdrop-blur-sm rounded-lg p-4 mb-4 border border-border/20">
-            <div className="text-3xl font-bold text-yellow-600 mb-1">{contributor[metric]}</div>
+            <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-400 mb-1">{contributor[metric]}</div>
             <div className="text-sm text-muted-foreground">{getMetricLabel(metric)}</div>
           </div>
 
           <Button asChild
-            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded-lg shadow-lg transition-all duration-200 hover:scale-105 w-full"
+            className="bg-yellow-500 hover:bg-yellow-600 text-yellow-950 font-semibold px-4 py-2 rounded-lg shadow-lg transition-all duration-200 hover:scale-105 w-full"
           >
             <a href={`https://github.com/${contributor.username}`} target="_blank" rel="noopener noreferrer">
               <Github className="w-4 h-4 me-2" />

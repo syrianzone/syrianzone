@@ -35,40 +35,50 @@ function usePagedList<T>(fetchPage: (page: number) => Promise<Paginated<T>>) {
   const [lastPage, setLastPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  // bumped by every request and by unmount: a late answer for a superseded
+  // request (or a closed tab) is dropped instead of overwriting newer state
+  const requestRef = useRef(0);
 
   const reload = async () => {
+    const id = ++requestRef.current;
     setLoading(true);
     setFailed(false);
     try {
       const res = await fetchPage(1);
+      if (id !== requestRef.current) return;
       setItems(res.data);
       setPage(res.current_page);
       setLastPage(res.last_page);
     } catch {
-      setFailed(true);
+      if (id === requestRef.current) setFailed(true);
     } finally {
-      setLoading(false);
+      if (id === requestRef.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     reload();
+    return () => {
+      requestRef.current++;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadMore = async () => {
     if (loading) return;
+    const id = ++requestRef.current;
     setLoading(true);
     setFailed(false);
     try {
       const res = await fetchPage(page + 1);
+      if (id !== requestRef.current) return;
       setItems((prev) => [...prev, ...res.data]);
       setPage(res.current_page);
       setLastPage(res.last_page);
     } catch {
-      setFailed(true);
+      if (id === requestRef.current) setFailed(true);
     } finally {
-      setLoading(false);
+      if (id === requestRef.current) setLoading(false);
     }
   };
 

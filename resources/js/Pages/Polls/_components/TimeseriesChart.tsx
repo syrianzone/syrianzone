@@ -382,6 +382,30 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                     </div>
                 </div>
 
+                {/* The chart is an SVG picture; this table is its text equivalent.
+                    It sits outside chartRef, so the PNG export never includes it. */}
+                <table className="sr-only">
+                    <caption>{`${title}: ${METRICS.find((m) => m.value === metric)?.label ?? ""}، ${VIEW_MODES.find((v) => v.value === viewMode)?.label ?? ""}`}</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">التاريخ</th>
+                            {displayCandidates.map((c) => (
+                                <th key={c.candidateId} scope="col">{c.name}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {chartData.map((row) => (
+                            <tr key={row.originalDate}>
+                                <th scope="row">{row.displayDate}</th>
+                                {displayCandidates.map((c) => (
+                                    <td key={c.candidateId}>{row[c.candidateId] ?? 0}</td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
                 <div className="mt-4 flex justify-end">
                     <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
                         <Download className="w-4 h-4" />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { breakdown, convert, formatArabicNumber, normalizeDigits, parseAmount } from './converter';
+import { breakdown, convert, formatCurrencyNumber, normalizeDigits, parseAmount } from './converter';
 
 describe('currency domain: parseAmount', () => {
     it('parses Western digits with thousands separators and spaces', () => {
@@ -168,8 +168,10 @@ describe('currency domain: breakdown (DP min-note change)', () => {
         ]);
     });
 
-    it('formats numbers with Arabic locale grouping', () => {
-        expect(formatArabicNumber(10000)).toBe('١٠٬٠٠٠');
-        expect(formatArabicNumber(12.5)).toBe('١٢٫٥');
+    it('formats numbers with thousands grouping and Western digits', () => {
+        expect(formatCurrencyNumber(10000)).toBe('10,000');
+        expect(formatCurrencyNumber(10000, 0)).toBe('10,000');
+        expect(formatCurrencyNumber(12.5)).toBe('12.5');
+        expect(formatCurrencyNumber(0)).toBe('0');
     });
 });

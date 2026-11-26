@@ -446,11 +446,11 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                         <span className="font-semibold text-foreground/80">
                                                             {governorateNameForF3aliaProvince(nextEvent.province) || nextEvent.provinceName}
                                                         </span>
-                                                        <span>•</span>
+                                                        <span aria-hidden="true">•</span>
                                                         <span>{formatDateGregorian(new Date(nextEvent.eventDate))}</span>
                                                         {nextEvent.eventTime && (
                                                             <>
-                                                                <span>•</span>
+                                                                <span aria-hidden="true">•</span>
                                                                 <span className="font-mono">{nextEvent.eventTime}</span>
                                                             </>
                                                         )}
@@ -637,7 +637,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                                 </span>
                                                                 {holiday.description && (
                                                                     <>
-                                                                        <span>•</span>
+                                                                        <span aria-hidden="true">•</span>
                                                                         <span>{holiday.description}</span>
                                                                     </>
                                                                 )}
@@ -744,11 +744,11 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                             <span className="font-semibold text-foreground/75">
                                                                 {governorateNameForF3aliaProvince(event.province) || event.provinceName}
                                                             </span>
-                                                            <span>•</span>
+                                                            <span aria-hidden="true">•</span>
                                                             <span>{formatDateGregorian(new Date(event.eventDate))}</span>
                                                             {event.eventTime && (
                                                                 <>
-                                                                    <span>•</span>
+                                                                    <span aria-hidden="true">•</span>
                                                                     <span className="font-mono">{event.eventTime}</span>
                                                                 </>
                                                             )}

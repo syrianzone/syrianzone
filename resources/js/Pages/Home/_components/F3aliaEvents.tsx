@@ -121,11 +121,11 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                                 <span>{formatGregorianSyrianShort(event.event_date)}</span>
                                 {event.event_time && (
                                     <>
-                                        <span>•</span>
+                                        <span aria-hidden="true">•</span>
                                         <span className="font-mono">{event.event_time}</span>
                                     </>
                                 )}
-                                <span>•</span>
+                                <span aria-hidden="true">•</span>
                                 <a
                                     href={event.url}
                                     target="_blank"

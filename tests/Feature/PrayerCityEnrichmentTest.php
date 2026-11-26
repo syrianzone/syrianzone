@@ -147,3 +147,16 @@ test('prayer city preview includes city name and current Syrian month', function
         ->and($meta['description'])->toContain('حلب')
         ->and($meta['description'])->toContain('تشرين الثاني 2026');
 });
+
+test('a failed upstream fetch is remembered so the next view does not wait on it again', function () {
+    Http::fake(['*' => Http::response(['code' => 500], 500)]);
+
+    expect(PrayerController::monthlyCalendarForGovernorate('aleppo'))->toBeNull()
+        ->and(PrayerController::timingsForGovernorate('aleppo'))->toBeNull();
+    Http::assertSentCount(2);
+
+    // Within the back-off window neither helper calls upstream again.
+    expect(PrayerController::monthlyCalendarForGovernorate('aleppo'))->toBeNull()
+        ->and(PrayerController::timingsForGovernorate('aleppo'))->toBeNull();
+    Http::assertSentCount(2);
+});

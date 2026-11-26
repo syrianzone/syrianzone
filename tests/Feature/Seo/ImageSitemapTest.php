@@ -254,11 +254,34 @@ test('image sitemap uses configured canonical host', function () {
         'publish_status' => 'published',
     ]);
 
-    $entries = app(ImageSitemapBuilder::class)->build();
-    expect($entries)->toHaveCount(1);
+    $paths = collect(app(ImageSitemapBuilder::class)->build())->pluck('path');
+    expect($paths)->toContain('/govtcvs/host-check');
 
     $map = parseImageSitemap($this->get('/sitemap-images.xml')->getContent());
+    foreach (array_keys($map) as $loc) {
+        expect($loc)->toStartWith('https://staging.example.test/');
+    }
     expect($map)->toHaveKey('https://staging.example.test/govtcvs/host-check')
         ->and($map['https://staging.example.test/govtcvs/host-check'])
         ->toBe(['https://staging.example.test/images/govtcvs/host.webp']);
+});
+
+test('image sitemap lists the Ramadan city photos and the banknote fronts', function () {
+    $map = parseImageSitemap($this->get('/sitemap-images.xml')->assertOk()->getContent());
+    $base = rtrim((string) config('seo.base_url'), '/');
+
+    foreach (Facts::ramadanImages() as $id => $image) {
+        expect($map["{$base}/muslim/ramadan/{$id}"] ?? [])->toBe(["{$base}{$image['file']}"]);
+        expect(is_file(public_path(ltrim($image['file'], '/'))))->toBeTrue();
+    }
+    expect($map["{$base}/muslim/ramadan"] ?? [])->not->toBeEmpty();
+
+    $currency = Facts::currency();
+    $fronts = collect([...$currency['new_denominations'], ...$currency['old_denominations']])
+        ->map(fn (array $note) => $base.$note['front_image']['path'])
+        ->all();
+    expect($map["{$base}/currency"] ?? [])->toEqualCanonicalizing($fronts);
+    foreach ($map["{$base}/currency"] as $url) {
+        expect($url)->not->toContain('-back.');
+    }
 });

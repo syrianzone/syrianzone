@@ -57,7 +57,63 @@ class ImageSitemapBuilder
             $this->promiseDetailImages(),
             $this->promiseIndexImages(),
             $this->syOfficialImages(),
+            $this->ramadanImages(),
+            $this->currencyImages(),
         ];
+    }
+
+    /**
+     * The SANA photo on each Ramadan city page (`/muslim/ramadan/{id}`); the
+     * hub shows all of them on its city cards.
+     *
+     * @return list<ImageSitemapUrl>
+     */
+    private function ramadanImages(): array
+    {
+        $governorateIds = array_map(
+            fn (array $gov) => (string) ($gov['id'] ?? ''),
+            Facts::governorates(),
+        );
+
+        $entries = [];
+        $all = [];
+        foreach (Facts::ramadanImages() as $id => $image) {
+            $file = $this->normalizeImage($image['file'] ?? null, false);
+            if ($file === null || ! in_array((string) $id, $governorateIds, true)) {
+                continue;
+            }
+            $entries[] = new ImageSitemapUrl('/muslim/ramadan/'.$id, [$file]);
+            $all[] = $file;
+        }
+
+        if ($all !== []) {
+            $entries[] = new ImageSitemapUrl('/muslim/ramadan', array_values(array_unique($all)));
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Banknote images on `/currency`. Only the front faces are in the
+     * server-rendered gallery; backs appear on a toggle, so they are left out.
+     *
+     * @return list<ImageSitemapUrl>
+     */
+    private function currencyImages(): array
+    {
+        $data = Facts::currency();
+        $images = [];
+
+        foreach (['new_denominations', 'old_denominations'] as $group) {
+            foreach ($data[$group] ?? [] as $note) {
+                $front = $this->normalizeImage($note['front_image']['path'] ?? null, false);
+                if ($front !== null) {
+                    $images[] = $front;
+                }
+            }
+        }
+
+        return $images === [] ? [] : [new ImageSitemapUrl('/currency', array_values(array_unique($images)))];
     }
 
     /**

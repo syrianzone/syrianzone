@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\Transit\TransitCities;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Vite;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('govtcvs index sends a lean DTO with active_tenure and caches until published data changes', function () {
@@ -87,50 +88,45 @@ test('govtcvs index sends a lean DTO with active_tenure and caches until publish
         );
 });
 
-test('siteNavigation is sent as an Inertia once-prop keyed by version and re-sent when stale or updated', function () {
+test('siteNavigation and sitePopup are once-props keyed by their content and re-sent when it changes', function () {
     Cache::flush();
 
-    // 1. Full initial page load includes siteNavigation and onceProps metadata
-    $initial = $this->get('/')->assertOk();
-    $initial->assertInertia(fn (Assert $page) => $page
-        ->has('siteNavigation.items')
-        ->where('siteNavigation.version', 1)
-    );
-
-    $html = $initial->getContent();
-    expect($html)->toContain('siteNavigation:v1');
-
-    // 2. Inertia XHR request with current except-once key omits siteNavigation
     $version = File::exists(public_path('build/manifest.json'))
         ? hash_file('xxh128', public_path('build/manifest.json'))
         : '';
-
-    $omitted = $this->get('/about', [
+    $visit = fn (string $except) => $this->get('/about', [
         'X-Inertia' => 'true',
         'X-Inertia-Version' => $version,
-        'X-Inertia-Except-Once-Props' => 'siteNavigation:v1,sitePopup:v1',
+        'X-Inertia-Except-Once-Props' => $except,
     ])->assertOk();
+    $keyFor = fn (array $onceProps, string $prop) => collect($onceProps)
+        ->filter(fn (array $meta) => $meta['prop'] === $prop)
+        ->keys()
+        ->first();
 
-    $payload = $omitted->json();
-    expect($payload['props'])->not->toHaveKey('siteNavigation')
-        ->and($payload['props'])->not->toHaveKey('sitePopup')
-        ->and($payload['onceProps'])->toHaveKey('siteNavigation:v1')
-        ->and($payload['onceProps']['siteNavigation:v1']['prop'])->toBe('siteNavigation');
+    // 1. A first visit carries both props and announces their once keys.
+    $first = $visit('');
+    expect($first->json('props'))->toHaveKey('siteNavigation')
+        ->and($first->json('props'))->toHaveKey('sitePopup');
+    $navKey = $keyFor($first->json('onceProps'), 'siteNavigation');
+    $popupKey = $keyFor($first->json('onceProps'), 'sitePopup');
+    expect($navKey)->toStartWith('siteNavigation:')
+        ->and($popupKey)->toStartWith('sitePopup:');
 
-    // 3. Stale key causes server to include siteNavigation again
-    $stale = $this->get('/about', [
-        'X-Inertia' => 'true',
-        'X-Inertia-Version' => $version,
-        'X-Inertia-Except-Once-Props' => 'siteNavigation:v0',
-    ])->assertOk();
+    // The full HTML load announces the same key.
+    expect($this->get('/')->assertOk()->getContent())->toContain($navKey);
 
-    expect($stale->json('props'))->toHaveKey('siteNavigation')
-        ->and($stale->json('props.siteNavigation.version'))->toBe(1);
+    // 2. A client that already holds the current keys gets neither prop.
+    $omitted = $visit("{$navKey},{$popupKey}");
+    expect($omitted->json('props'))->not->toHaveKey('siteNavigation')
+        ->and($omitted->json('props'))->not->toHaveKey('sitePopup');
 
-    // 4. Admin update increments navigation version so old client key (v1) gets v2
+    // 3. A stale key gets the prop again.
+    expect($visit('siteNavigation:stale')->json('props'))->toHaveKey('siteNavigation');
+
+    // 4. An admin edit changes the content, hence the key, so clients refetch.
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $nav = SiteSetting::getNavigation();
-
     $this->actingAs($superadmin)
         ->putJson('/api/v1/admin/navigation', [
             'navbarTopCount' => $nav['navbarTopCount'],
@@ -138,15 +134,9 @@ test('siteNavigation is sent as an Inertia once-prop keyed by version and re-sen
         ])
         ->assertOk();
 
-    $afterEdit = $this->get('/about', [
-        'X-Inertia' => 'true',
-        'X-Inertia-Version' => $version,
-        'X-Inertia-Except-Once-Props' => 'siteNavigation:v1',
-    ])->assertOk();
-
+    $afterEdit = $visit($navKey);
     expect($afterEdit->json('props'))->toHaveKey('siteNavigation')
-        ->and($afterEdit->json('props.siteNavigation.version'))->toBe(2)
-        ->and($afterEdit->json('onceProps'))->toHaveKey('siteNavigation:v2');
+        ->and($keyFor($afterEdit->json('onceProps'), 'siteNavigation'))->not->toBe($navKey);
 });
 
 test('app blade preloads the current page chunk and skips deferred or missing components', function () {
@@ -154,6 +144,10 @@ test('app blade preloads the current page chunk and skips deferred or missing co
     if (! is_file($manifestPath)) {
         $this->markTestSkipped('Vite manifest not built yet.');
     }
+
+    // A developer's running (or stale) `public/hot` file would switch @vite to
+    // dev-server tags, which never preload. Assert the production output.
+    Vite::useHotFile(storage_path('framework/testing-no-hot-file'));
 
     $manifest = json_decode((string) file_get_contents($manifestPath), true);
 

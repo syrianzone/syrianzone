@@ -109,6 +109,16 @@ class PrayerController extends Controller
   }
 
   /**
+   * Remember an upstream failure for ten minutes and report no data.
+   */
+  private static function markFailed(string $key): null
+  {
+    Cache::put("{$key}:failed", true, now()->addMinutes(10));
+
+    return null;
+  }
+
+  /**
    * Cached daily prayer timings for one Syrian governorate (used by both the
    * JSON API and server-rendered /muslim/prayer/{city} pages). Returns null on
    * transient upstream failure so SSR pages still render gracefully.
@@ -130,6 +140,12 @@ class PrayerController extends Controller
       return $cached;
     }
 
+    // A recent failure is remembered briefly so an upstream outage does not
+    // make every page view wait for the timeout again.
+    if (Cache::has("{$key}:failed")) {
+      return null;
+    }
+
     [$lat, $lon] = self::coordsFor($governorate);
 
     try {
@@ -139,16 +155,16 @@ class PrayerController extends Controller
         'method' => $resolvedMethod,
       ]);
     } catch (\Throwable) {
-      return null;
+      return self::markFailed($key);
     }
 
     if (! $response->successful() || $response->json('code') !== 200) {
-      return null;
+      return self::markFailed($key);
     }
 
     $timings = $response->json('data.timings');
     if (! is_array($timings)) {
-      return null;
+      return self::markFailed($key);
     }
 
     $normalized = [];
@@ -159,7 +175,7 @@ class PrayerController extends Controller
     }
 
     if ($normalized === []) {
-      return null;
+      return self::markFailed($key);
     }
 
     $payload = [
@@ -212,6 +228,12 @@ class PrayerController extends Controller
       return $cached;
     }
 
+    // A recent failure is remembered briefly so an upstream outage does not
+    // make every page view wait for the timeout again.
+    if (Cache::has("{$key}:failed")) {
+      return null;
+    }
+
     [$lat, $lon] = self::coordsFor($governorate);
 
     try {
@@ -221,16 +243,16 @@ class PrayerController extends Controller
         'method' => $resolvedMethod,
       ]);
     } catch (\Throwable) {
-      return null;
+      return self::markFailed($key);
     }
 
     if (! $response->successful() || $response->json('code') !== 200) {
-      return null;
+      return self::markFailed($key);
     }
 
     $rawDays = $response->json('data');
     if (! is_array($rawDays) || $rawDays === []) {
-      return null;
+      return self::markFailed($key);
     }
 
     $days = [];
@@ -274,7 +296,7 @@ class PrayerController extends Controller
     }
 
     if ($days === []) {
-      return null;
+      return self::markFailed($key);
     }
 
     $payload = [

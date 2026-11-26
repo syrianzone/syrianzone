@@ -11,3 +11,4 @@ Disallow: /mcp/
 Disallow: /guesswho/room/
 
 Sitemap: https://syrian.zone/sitemap.xml
+Sitemap: https://syrian.zone/sitemap-images.xml

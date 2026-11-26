@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, LogIn, MapPin, Settings, X } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Button } from '@/Components/ui/button';
+import { confirmDialog } from '@/Lib/confirm';
 import { findWidget } from '../_lib/registry';
 import { spanAt } from '../_lib/layout';
 import type { Breakpoint, WidgetInstance, WidgetSize } from '../_lib/types';
@@ -41,6 +42,16 @@ export function BoardTile(props: {
     position: 'relative' as const,
   };
 
+  async function remove() {
+    const ok = await confirmDialog({
+      title: def ? `حذف «${def.name}» من اللوحة؟` : 'حذف الويدجت من اللوحة؟',
+      description: 'ستُفقد إعدادات هذا الويدجت',
+      confirmText: 'حذف',
+      destructive: true,
+    });
+    if (ok) props.onRemove();
+  }
+
   const actions = props.editing ? (
     <div className="flex shrink-0 items-center gap-0.5">
       {def && (
@@ -63,7 +74,7 @@ export function BoardTile(props: {
       <button
         type="button"
         aria-label="حذف"
-        onClick={props.onRemove}
+        onClick={() => void remove()}
         className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
       >
         <X className="h-3.5 w-3.5" />

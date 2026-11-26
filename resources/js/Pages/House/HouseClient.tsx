@@ -512,15 +512,15 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                 </div>
             )}
 
-            <div className={`bg-card rounded-lg shadow-sm border border-border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div aria-busy={loading} className={`bg-card rounded-lg shadow-sm border border-border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="px-6 py-4 border-b border-border bg-muted/50 flex justify-between items-center">
                     <div>
                         <h3 className="font-bold text-foreground">القائمة الرئيسية</h3>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p role="status" className="text-xs text-muted-foreground mt-1">
                             عرض {sortedData.length} سجل
                         </p>
                     </div>
-                    {loading && <div className="text-sm text-muted-foreground font-medium">جاري التحميل...</div>}
+                    <div role="status" className="text-sm text-muted-foreground font-medium">{loading ? 'جاري التحميل...' : ''}</div>
                 </div>
 
                 {loadError && sortedData.length === 0 && !loading && (

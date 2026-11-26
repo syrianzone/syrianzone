@@ -198,9 +198,9 @@ export default function GovAppsAdminIndex({
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                        {item.links?.android && <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Android</Badge>}
-                                                        {item.links?.apple && <Badge variant="outline" className="text-[10px] bg-slate-500/10 text-slate-700 border-slate-500/20">iOS</Badge>}
-                                                        {item.links?.official && <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/20">Website</Badge>}
+                                                        {item.links?.android && <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">Android</Badge>}
+                                                        {item.links?.apple && <Badge variant="outline" className="text-[10px] bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20">iOS</Badge>}
+                                                        {item.links?.official && <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">Website</Badge>}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>

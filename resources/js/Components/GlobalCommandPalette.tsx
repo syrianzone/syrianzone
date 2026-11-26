@@ -137,7 +137,7 @@ export default function GlobalCommandPalette() {
                     />
 
                     {/* Results List */}
-                    <CommandList className="max-h-[60vh] sm:max-h-[420px] overflow-y-auto p-2">
+                    <CommandList className="max-h-[60dvh] sm:max-h-[420px] overflow-y-auto p-2">
                         <SearchResultsContent
                             data={data}
                             pathname={pathname}

@@ -9,7 +9,7 @@ interface CityGridProps {
 export default function CityGrid({ cities: allCities }: CityGridProps) {
   const cities = allCities.filter((c) => c.status === 'active')
   
-  const sortedCities = [...cities].sort((a, b) => {
+  const sortedCities = cities.toSorted((a, b) => {
     const aReady = a.routeCount > 0
     const bReady = b.routeCount > 0
     if (aReady && !bReady) return -1

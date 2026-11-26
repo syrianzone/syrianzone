@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // signals, so public ranges are deliberately not trusted.
         $middleware->trustProxies(at: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']);
         $middleware->prepend(\App\Http\Middleware\RedirectTrailingSlash::class);
+        $middleware->append(\App\Http\Middleware\NoindexApiResponses::class);
         
         // Order is significant: SecurityHeaders generates the CSP nonce that
         // the Inertia root view stamps onto its script tags, so it has to run

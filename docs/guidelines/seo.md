@@ -247,6 +247,10 @@ Routes under `SeoMeta::NOINDEX_PREFIXES` (`admin`, `superadmin`,
 `mcp` and `guesswho/room`, and none of these routes is in the sitemap. A
 non-indexed page can still have a card: a game room link is meant to be shared.
 
+JSON answered under `/api` carries `X-Robots-Tag: noindex`
+(`App\Http\Middleware\NoindexApiResponses`). robots.txt does not block `/api`:
+a crawler that renders pages has to fetch what the page fetches.
+
 A page that nothing on the site links to does not belong in the sitemap either:
 set `"sitemap": false` on its record (`/party`, removed from the catalogue, and
 `/guesswho`, still "coming soon") and remove it when a page links to it again.

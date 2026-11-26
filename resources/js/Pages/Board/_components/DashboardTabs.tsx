@@ -58,7 +58,7 @@ export function DashboardTabs(props: {
                 onBlur={commit}
                 className="h-8 w-32"
               />
-              <button type="button" aria-label="حفظ" onClick={commit} className="rounded p-1 text-muted-foreground hover:text-foreground">
+              <button type="button" aria-label="حفظ" onClick={commit} className="inline-flex min-h-6 min-w-6 items-center justify-center rounded p-1 text-muted-foreground hover:text-foreground">
                 <Check className="h-3.5 w-3.5" />
               </button>
             </span>
@@ -73,7 +73,12 @@ export function DashboardTabs(props: {
               active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground',
             )}
           >
-            <button type="button" onClick={() => props.onSelect(d.id)} className="max-w-32 truncate">
+            <button
+              type="button"
+              aria-current={active ? 'true' : undefined}
+              onClick={() => props.onSelect(d.id)}
+              className="max-w-32 truncate"
+            >
               {d.name}
             </button>
 
@@ -83,7 +88,7 @@ export function DashboardTabs(props: {
                   type="button"
                   aria-label="إعادة تسمية"
                   onClick={() => { setRenaming(d.id); setDraft(d.name); }}
-                  className="opacity-70 hover:opacity-100"
+                  className="-my-0.5 inline-flex min-h-6 min-w-6 items-center justify-center opacity-70 hover:opacity-100"
                 >
                   <Pencil className="h-3 w-3" />
                 </button>
@@ -93,7 +98,7 @@ export function DashboardTabs(props: {
                     type="button"
                     aria-label="حذف اللوحة"
                     onClick={() => void remove(d.id, d.name)}
-                    className="opacity-70 hover:opacity-100"
+                    className="-my-0.5 inline-flex min-h-6 min-w-6 items-center justify-center opacity-70 hover:opacity-100"
                   >
                     <X className="h-3 w-3" />
                   </button>

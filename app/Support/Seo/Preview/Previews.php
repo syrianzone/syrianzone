@@ -8,6 +8,7 @@ use App\Support\Seo\Preview\Resolvers\CrossingPreview;
 use App\Support\Seo\Preview\Resolvers\GovAppPreview;
 use App\Support\Seo\Preview\Resolvers\GovtOfficialPreview;
 use App\Support\Seo\Preview\Resolvers\GuessWhoRoomPreview;
+use App\Support\Seo\Preview\Resolvers\MinistryPreview;
 use App\Support\Seo\Preview\Resolvers\PlacePreview;
 use App\Support\Seo\Preview\Resolvers\PollPreview;
 use App\Support\Seo\Preview\Resolvers\PrayerCityPreview;
@@ -30,6 +31,7 @@ final class Previews
     public const RESOLVERS = [
         PromisePreview::class,
         GovtOfficialPreview::class,
+        MinistryPreview::class,
         GovAppPreview::class,
         PlacePreview::class,
         PollPreview::class,

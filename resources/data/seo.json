@@ -428,6 +428,15 @@
             "card": "currency",
             "priority": 0.9,
             "changefreq": "monthly"
+        },
+        {
+            "path": "/ministries",
+            "title": "وزارات سوريا — الحكومة السورية الحالية والخط الزمني للوزراء",
+            "description": "دليل وزارات سوريا والهيئات السيادية: التشكيل الوزاري الحالي، الخط الزمني للوزراء عبر أربع مراحل (2024–2026)، مسارات الدمج والفصل، والحسابات الرسمية.",
+            "card": "ministries",
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "weekly"
         }
     ]
 }

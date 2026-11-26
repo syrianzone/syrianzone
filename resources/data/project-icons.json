@@ -67,6 +67,10 @@
    "viewBox": "0 0 32 32",
    "body": "<path d=\"M16 3v24M8 27h16\" class=\"stroke-[#B45309] dark:stroke-[#F59E0B]\" stroke-width=\"2\" stroke-linecap=\"round\"></path><path d=\"M6 9h20\" class=\"stroke-[#F59E0B] dark:stroke-[#FBBF24]\" stroke-width=\"2.5\" stroke-linecap=\"round\"></path><path d=\"M6 9l-3 7a4 4 0 008 0L6 9z\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"1.5\"></path><path d=\"M26 9l-3 7a4 4 0 008 0l-5-7z\" class=\"fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]\" stroke-width=\"1.5\"></path><circle cx=\"16\" cy=\"9\" r=\"2\" fill=\"hsl(var(--primary))\"></circle>"
   },
+  "ministries": {
+   "viewBox": "0 0 32 32",
+   "body": "<path d=\"M16 4L4 10.5v2.5h24v-2.5L16 4z\" class=\"fill-[#10B981]/15 dark:fill-[#34D399]/20 stroke-[#059669] dark:stroke-[#34D399]\" stroke-width=\"2\" stroke-linejoin=\"round\"></path><path d=\"M7 13v11M13 13v11M19 13v11M25 13v11\" class=\"stroke-[#475569] dark:stroke-[#CBD5E1]\" stroke-width=\"2\" stroke-linecap=\"round\"></path><rect x=\"4\" y=\"24\" width=\"24\" height=\"4\" rx=\"1\" class=\"fill-[#3B82F6]/15 dark:fill-[#60A5FA]/25 stroke-[#2563EB] dark:stroke-[#60A5FA]\" stroke-width=\"2\"></rect><circle cx=\"16\" cy=\"8.5\" r=\"1.8\" fill=\"hsl(var(--primary))\"></circle>"
+  },
   "mishwar": {
    "viewBox": "0 0 32 32",
    "body": "<path d=\"M16 3C10.5 3 6 7.5 6 13c0 7.5 10 16 10 16s10-8.5 10-16c0-5.5-4.5-10-10-10z\" class=\"fill-[#EF4444]/20 dark:fill-[#F87171]/30 stroke-[#DC2626] dark:stroke-[#F87171]\" stroke-width=\"2\" stroke-linejoin=\"round\"></path><circle cx=\"16\" cy=\"13\" r=\"3.5\" fill=\"hsl(var(--primary))\" class=\"stroke-[#FFFFFF] dark:stroke-[#0F172A]\" stroke-width=\"1.5\"></circle>"

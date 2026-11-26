@@ -42,7 +42,7 @@ PUBLIC_ROUTES = [
     "/games", "/games/2048", "/games/solitare", "/games/tarneeb", "/games/trix", "/games/fakenews", "/board",
     "/mishwar", "/transit", "/transit/studio", "/currency",
     "/promises", "/promises/suggest",
-    "/govtcvs", "/govtcvs/movements",
+    "/govtcvs", "/govtcvs/movements", "/ministries",
 ]
 ADMIN_ROUTES = [
     "/dashboard", "/admin/govapps", "/admin/phonebook", "/admin/syofficial",

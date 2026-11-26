@@ -112,9 +112,7 @@ Route::get('/priorities', function () {
     return Inertia::render('Priorities/Index');
 });
 Route::get('/roznama', function () {
-    return Inertia::render('Roznama/Index', [
-        'serverYear' => (int) now()->timezone(\App\Support\Facts::syria()['timezone'])->format('Y'),
-    ]);
+    return Inertia::render('Roznama/Index', \App\Support\RoznamaToday::props());
 });
 // Muslim Corner hub: one real route per tool, like the games hub. Each tool is
 // a self-contained Inertia page under Pages/Muslim/. Legacy shared links that
@@ -253,6 +251,7 @@ Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors
 Route::get('/sites', [ExternalDataController::class, 'sites']);
 Route::get('/party', [ExternalDataController::class, 'party']);
 Route::get('/house', [ExternalDataController::class, 'house']);
+Route::get('/house/members/{member_number}', [ExternalDataController::class, 'houseMember'])->where('member_number', '[0-9]+');
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
 Route::get('/govapps', [GovAppController::class, 'index']);
 Route::get('/govapps/{id}', [GovAppController::class, 'show'])->where('id', '[a-z0-9-]+');
@@ -315,12 +314,23 @@ Route::get('/transit/city/{id}', function ($id) {
     // state that fills in after a fetch. All three come from the cached list the
     // API serves, not from a checked-in copy of the cities table.
     $cities = app(\App\Services\Transit\TransitCities::class)->forPage();
+    $latestRouteUpdate = \App\Models\Route::whereIn('city_id', City::mapGroup($id))
+        ->where('status', 'published')
+        ->max('updated_at');
+    $parsedDates = array_map(
+        fn ($ts) => \Illuminate\Support\Carbon::parse($ts),
+        array_filter([$city->updated_at, $latestRouteUpdate]),
+    );
+    $lastUpdated = $parsedDates !== []
+        ? max($parsedDates)->timezone(\App\Support\Facts::syria()['timezone'])->format('Y-m-d')
+        : null;
 
     return Inertia::render('Transit/city/[id]/Index', [
         'id' => $id,
         'cities' => $cities,
         'city' => collect($cities)->firstWhere('id', $id),
         'routes' => app(\App\Services\Transit\PublishedRoutes::class)->forCity($id),
+        'lastUpdated' => $lastUpdated,
     ]);
 })->where('id', '[a-z0-9\-]+');
 

@@ -1,11 +1,15 @@
-import { useId, useMemo, useState, useRef } from "react"
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts"
+import { lazy, Suspense, useId, useMemo, useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Button } from "@/Components/ui/button"
 import { cn } from "@/Lib/utils"
 import { Download } from "lucide-react"
 import { notify } from "@/Lib/notify"
 import type { PngDeclarations } from "@/Lib/exportElementAsPng"
+
+// recharts is the heaviest dependency of the leaderboard and draws nothing on
+// the server (ResponsiveContainer has no size there), so only the drawing is
+// loaded on demand; the fixed-height box around it keeps the layout still.
+const TimeseriesLines = lazy(() => import("./TimeseriesLines"))
 
 /** The card paints its own fixed dark palette so the export never depends on the theme. */
 const CHART_BACKGROUND = '#020817'
@@ -319,34 +323,16 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                 */}
                 <div id={chartId} ref={chartRef} style={{ backgroundColor: CHART_BACKGROUND, color: CHART_FOREGROUND, padding: '16px', borderRadius: '8px' }}>
                     <div className="h-[300px] w-full" dir="ltr">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                                <XAxis
-                                    dataKey="displayDate"
-                                    className="text-xs"
-                                    minTickGap={30}
-                                    tickMargin={10}
-                                />
-                                <YAxis className="text-xs" />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#020817', borderColor: '#1e293b', borderRadius: '8px' }}
-                                    itemStyle={{ color: '#f8fafc' }}
-                                />
-                                <Legend />
-                                {displayCandidates.map((candidate) => (
-                                    <Line
-                                        key={candidate.candidateId}
-                                        type="monotone"
-                                        dataKey={candidate.candidateId}
-                                        name={candidate.name}
-                                        stroke={getCandidateColor(candidate.candidateId)}
-                                        strokeWidth={2}
-                                        dot={false}
-                                    />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
+                        <Suspense fallback={null}>
+                            <TimeseriesLines
+                                data={chartData}
+                                lines={displayCandidates.map((candidate) => ({
+                                    key: candidate.candidateId,
+                                    name: candidate.name,
+                                    color: getCandidateColor(candidate.candidateId),
+                                }))}
+                            />
+                        </Suspense>
                     </div>
 
                     {/* Candidate Selector Pills */}

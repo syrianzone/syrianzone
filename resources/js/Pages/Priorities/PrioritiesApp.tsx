@@ -2,16 +2,11 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { notify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
 import type { PngDeclarations } from '@/Lib/exportElementAsPng';
-import {
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Tooltip as RechartsTooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
+
+// recharts draws nothing on the server (ResponsiveContainer has no size there)
+// and is the page's heaviest dependency, so the radar loads on demand inside
+// its fixed-height box.
+const PrioritiesRadar = React.lazy(() => import('./_components/PrioritiesRadar'));
 import {
   RotateCcw,
   Share2,
@@ -851,54 +846,14 @@ export default function PrioritiesApp() {
               </tbody>
             </table></div>
             <div aria-hidden="true" className="relative w-full h-[260px] flex items-center justify-center bg-muted/20 rounded-xl border border-border p-2 mb-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData} accessibilityLayer={false}>
-                  <PolarGrid stroke="rgba(128, 128, 128, 0.15)" />
-                  <PolarAngleAxis
-                    dataKey="topic"
-                    tick={{
-                      fontSize: 10,
-                      fontWeight: 'bold',
-                      fontFamily: 'IBM Plex Sans Arabic',
-                      fill: labelColor
-                    }}
-                  />
-                  <PolarRadiusAxis
-                    angle={90}
-                    domain={[0, 45]}
-                    tick={false}
-                    axisLine={false}
-                  />
-                  <RechartsTooltip
-                    formatter={(value, name) => {
-                      const label = name === 'current' ? 'نقاط موازنتك الحالية' : COMPARISONS[activeComparisonKey]?.title || '';
-                      return [`%${String(value ?? '')}`, label];
-                    }}
-                  />
-                  <Legend
-                    formatter={(value: string) => value === 'current' ? 'نقاط موازنتك الحالية' : COMPARISONS[activeComparisonKey]?.title || ''}
-                  />
-                  <Radar
-                    name="current"
-                    dataKey="current"
-                    stroke={themeColors.primary}
-                    strokeWidth={2.5}
-                    fill={themeColors.primary}
-                    fillOpacity={0.15}
-                    dot={{ r: 4, fill: themeColors.primary, stroke: '#fff', strokeWidth: 1 }}
-                  />
-                  <Radar
-                    name="comparison"
-                    dataKey="comparison"
-                    stroke="rgba(128, 128, 128, 0.6)"
-                    strokeWidth={1.5}
-                    strokeDasharray="4 4"
-                    fill="rgba(128, 128, 128, 0.05)"
-                    fillOpacity={1}
-                    dot={{ r: 3, fill: 'rgba(128, 128, 128, 0.8)', stroke: '#fff', strokeWidth: 1 }}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
+              <React.Suspense fallback={null}>
+                <PrioritiesRadar
+                  data={chartData}
+                  comparisonTitle={COMPARISONS[activeComparisonKey]?.title || ''}
+                  primary={themeColors.primary}
+                  labelColor={labelColor}
+                />
+              </React.Suspense>
             </div>
 
             <div className="p-4 bg-muted/40 rounded-xl border border-border flex items-start gap-3.5 mb-5">

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
-import HouseClient from './HouseClient';
 import Hero2026 from './Hero2026';
 import ParliamentChart2026, { type Dim } from './ParliamentChart2026';
 import MemberTable2026 from './MemberTable2026';
@@ -10,6 +9,11 @@ import { governorateByAnyName } from '@/Domain/geography/governorates';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/Components/ui/accordion';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+
+// The historical archive (with its charting library) only renders once the
+// visitor opens it, and never on the server (it starts closed), so it loads on
+// demand instead of with the page.
+const HouseClient = React.lazy(() => import('./HouseClient'));
 
 interface Props {
     members2026?: Member2026[];
@@ -152,7 +156,11 @@ export default function HousePage({ members2026 }: Props) {
                                 <AccordionTrigger>البيانات التاريخية (الهيئات الناخبة / المرشحون / الفائزون / الثلث الرئاسي)</AccordionTrigger>
                                 <AccordionContent>
                                     {archiveOpen ? (
-                                        <HouseClient initialData={[]} initialHeaders={[]} initialMode="voters" />
+                                        <React.Suspense
+                                            fallback={<p role="status" className="text-sm text-muted-foreground">جاري التحميل...</p>}
+                                        >
+                                            <HouseClient initialData={[]} initialHeaders={[]} initialMode="voters" />
+                                        </React.Suspense>
                                     ) : (
                                         <p className="text-sm text-muted-foreground">افتح هذا القسم لتحميل البيانات التاريخية عند الطلب فقط.</p>
                                     )}

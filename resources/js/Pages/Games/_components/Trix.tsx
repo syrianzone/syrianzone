@@ -130,7 +130,7 @@ export default function Trix() {
   // Hooks run before the loading return below; the drop handler reaches the
   // current render's `play` through a ref.
   const playRef = useRef<(card: Card) => void>(() => {});
-  const { drag, startDrag, isTouchPick } = useCardDrag<Card>({
+  const { drag, ghostRef, startDrag, isTouchPick } = useCardDrag<Card>({
     onDrop: (element, card) => {
       if (element?.closest('.sz-tbl')) playRef.current(card);
     },
@@ -294,6 +294,7 @@ export default function Trix() {
       {/* The card following the finger while it is dragged out to play. */}
       {drag && (
         <div
+          ref={ghostRef}
           className="sz-tbl__ghost"
           style={
             {

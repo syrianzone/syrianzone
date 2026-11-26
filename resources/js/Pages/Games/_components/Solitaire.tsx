@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Hash, Lightbulb, RefreshCw, Undo2 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { SUIT_LABEL, type Card, type Suit } from '@/Domain/games/cards';
@@ -237,7 +237,7 @@ export default function Solitaire() {
    * still falls through to the click-to-select handler; a drag swallows the
    * click the browser fires on release so it does not also toggle a selection.
    */
-  const { drag, startDrag } = useCardDrag<{ from: Source; run: Card[] }>({
+  const { drag, ghostRef, startDrag } = useCardDrag<{ from: Source; run: Card[] }>({
     onDragStart: ({ from }) => setDragFrom(from),
     onOver: (element) => setOver(element?.closest('[data-drop]')?.getAttribute('data-drop') ?? null),
     onDragEnd: () => {
@@ -279,8 +279,10 @@ export default function Solitaire() {
     if (isWon(next)) setWon(true);
   }, [commit]);
 
-  const stuck = ready && !won && !canDraw(deal) && availableMoves(deal).length === 0;
-  const canFinish = availableMoves(deal).some((m) => m.to.kind === 'foundation');
+  // One scan of the deal per change, not two per render (a drag re-renders).
+  const available = useMemo(() => availableMoves(deal), [deal]);
+  const stuck = ready && !won && !canDraw(deal) && available.length === 0;
+  const canFinish = available.some((m) => m.to.kind === 'foundation');
 
   if (!ready) {
     return <div className="py-16 text-center text-sm text-muted-foreground">جاري التوزيع…</div>;
@@ -516,6 +518,7 @@ export default function Solitaire() {
           carries the board's card length inline so the corner text is sized. */}
       {drag && (
         <div
+          ref={ghostRef}
           className="sz-sol-ghost"
           style={
             {

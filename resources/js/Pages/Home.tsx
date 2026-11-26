@@ -216,7 +216,7 @@ export default function Home() {
                             )}
                             {mounted && (
                                 <span className="whitespace-nowrap font-medium text-foreground">
-                                    {formatGregorianSyrian(new Date())} • {formatHijriDate(new Date())}
+                                    {formatGregorianSyrian(new Date())} <span aria-hidden="true">•</span> {formatHijriDate(new Date())}
                                 </span>
                             )}
                         </div>
@@ -582,17 +582,17 @@ export default function Home() {
                                 <Info className="h-4 w-4" />
                                 <span>عن المنصة</span>
                             </a>
-                            <span>•</span>
+                            <span aria-hidden="true">•</span>
                             <a href="/stats" className="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 <BarChart3 className="h-4 w-4" />
                                 <span>الإحصائيات</span>
                             </a>
-                            <span>•</span>
+                            <span aria-hidden="true">•</span>
                             <a href="/privacy" className="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 <Shield className="h-4 w-4" />
                                 <span>سياسة الخصوصية</span>
                             </a>
-                            <span>•</span>
+                            <span aria-hidden="true">•</span>
                             <a href="/terms" className="flex items-center gap-1.5 hover:text-primary transition-colors">
                                 <FileText className="h-4 w-4" />
                                 <span>الشروط والأحكام</span>

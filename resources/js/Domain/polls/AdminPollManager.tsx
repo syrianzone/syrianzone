@@ -6,6 +6,7 @@ import { useAuth } from "@/Contexts/AuthContext";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
+import FieldError, { fieldA11y } from "@/Components/ui/field-error";
 import { useTabList } from '@/Lib/useTabList';
 import { Plus, Trash2, Edit2, Save, X, MoreVertical, Star as StarIcon, ArrowLeft, ArrowRight, Archive, Undo2, Power, PowerOff } from "lucide-react";
 import { Badge } from "@/Components/ui/badge";
@@ -171,9 +172,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const [cHandle, setCHandle] = useState("");
     const [cImage, setCImage] = useState("");
     const [cGroupId, setCGroupId] = useState<string | null>(null);
+    const [nameError, setNameError] = useState<string | undefined>(undefined);
 
     const openAddCandidate = (groupId: string | null) => {
         setEditingCandidate(null);
+        setNameError(undefined);
         setCName("");
         setCTitle("");
         setCHandle("");
@@ -188,6 +191,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
 
     const openEditCandidate = (c: Candidate) => {
         setEditingCandidate(c);
+        setNameError(undefined);
         setCName(c.name);
         setCTitle(c.title || "");
         setCHandle(c.x_handle || "");
@@ -226,7 +230,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     };
 
     const handleSaveCandidate = async () => {
-        if (!cName.trim()) return;
+        if (!cName.trim()) {
+            setNameError("اكتب اسم المرشح");
+            document.getElementById("c-name")?.focus();
+            return;
+        }
 
         const payload: CandidateInput = {
             name: cName,
@@ -597,10 +605,22 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                     <DialogHeader>
                         <DialogTitle>{editingCandidate ? "Edit Candidate" : "Add Candidate"}</DialogTitle>
                     </DialogHeader>
+                    {/* A form, so Enter in any field saves; validation stays in
+                        handleSaveCandidate (noValidate) to show the Arabic error. */}
+                    <form noValidate className="grid gap-4" onSubmit={(e) => { e.preventDefault(); void handleSaveCandidate(); }}>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="c-name" className="text-right">Name</Label>
-                            <Input id="c-name" value={cName} onChange={e => setCName(e.target.value)} className="col-span-3" />
+                            <div className="col-span-3 space-y-1">
+                                <Input
+                                    id="c-name"
+                                    value={cName}
+                                    required
+                                    onChange={e => { setCName(e.target.value); setNameError(undefined); }}
+                                    {...fieldA11y("c-name-error", nameError)}
+                                />
+                                <FieldError id="c-name-error" message={nameError} />
+                            </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="c-title" className="text-right">Title</Label>
@@ -704,11 +724,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCandidateModalOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveCandidate} disabled={editingCandidate ? !canEdit : !canCreate}>
+                        <Button type="button" variant="outline" onClick={() => setIsCandidateModalOpen(false)}>Cancel</Button>
+                        <Button type="submit" disabled={editingCandidate ? !canEdit : !canCreate}>
                             Save
                         </Button>
                     </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 

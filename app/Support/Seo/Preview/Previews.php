@@ -6,6 +6,7 @@ use App\Support\Seo\Og\CardSource;
 use App\Support\Seo\Preview\Resolvers\CompassSharePreview;
 use App\Support\Seo\Preview\Resolvers\CrossingPreview;
 use App\Support\Seo\Preview\Resolvers\GovAppPreview;
+use App\Support\Seo\Preview\Resolvers\GovernoratePreview;
 use App\Support\Seo\Preview\Resolvers\GovtOfficialPreview;
 use App\Support\Seo\Preview\Resolvers\GuessWhoRoomPreview;
 use App\Support\Seo\Preview\Resolvers\PlacePreview;
@@ -36,6 +37,7 @@ final class Previews
         TransitRoutePreview::class, // before the city: same path, with ?route=
         TransitCityPreview::class,
         CrossingPreview::class,
+        GovernoratePreview::class,
         PrayerCityPreview::class,
         RamadanCityPreview::class,
         GuessWhoRoomPreview::class,

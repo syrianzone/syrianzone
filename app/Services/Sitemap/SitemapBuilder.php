@@ -16,6 +16,7 @@ use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\Route as TransitRoute;
 use App\Services\ExternalData\ExternalSheetCache;
+use App\Support\Facts;
 use App\Support\Seo\Pages;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ class SitemapBuilder
             $this->govtCvUrls(),
             $this->govAppUrls(),
             $this->crossingUrls(),
+            $this->governorateUrls(),
             $this->prayerCityUrls(),
             $this->ramadanCityUrls(),
             $this->transitCityUrls(),
@@ -149,7 +151,7 @@ class SitemapBuilder
      */
     private function crossingUrls(): array
     {
-        $data = \App\Support\Facts::json('crossings');
+        $data = Facts::json('crossings');
         $asOf = ! empty($data['meta']['asOf']) ? Carbon::parse((string) $data['meta']['asOf']) : null;
         $urls = [];
 
@@ -165,6 +167,25 @@ class SitemapBuilder
     }
 
     /**
+     * One landing page per Syrian governorate.
+     *
+     * @return SitemapUrl[]
+     */
+    private function governorateUrls(): array
+    {
+        $urls = [];
+        foreach (Facts::governorates() as $gov) {
+            $id = trim((string) ($gov['id'] ?? ''));
+            if ($id === '') {
+                continue;
+            }
+            $urls[] = new SitemapUrl('/governorates/'.$id, 0.8, 'weekly', null);
+        }
+
+        return $urls;
+    }
+
+    /**
      * One daily-updated prayer-times landing page per Syrian governorate.
      *
      * @return SitemapUrl[]
@@ -172,7 +193,7 @@ class SitemapBuilder
     private function prayerCityUrls(): array
     {
         $urls = [];
-        foreach (\App\Support\Facts::governorates() as $gov) {
+        foreach (Facts::governorates() as $gov) {
             $id = trim((string) ($gov['id'] ?? ''));
             if ($id === '') {
                 continue;
@@ -191,7 +212,7 @@ class SitemapBuilder
     private function ramadanCityUrls(): array
     {
         $urls = [];
-        foreach (\App\Support\Facts::governorates() as $gov) {
+        foreach (Facts::governorates() as $gov) {
             $id = trim((string) ($gov['id'] ?? ''));
             if ($id === '') {
                 continue;

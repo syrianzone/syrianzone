@@ -51,6 +51,10 @@
    "viewBox": "0 0 32 32",
    "body": "<rect x=\"8\" y=\"3\" width=\"16\" height=\"26\" rx=\"3\" class=\"fill-[#475569]/15 dark:fill-[#94A3B8]/20 stroke-[#334155] dark:stroke-[#94A3B8]\" stroke-width=\"2\"></rect><path d=\"M14 6h4\" class=\"stroke-[#64748B] dark:stroke-[#CBD5E1]\" stroke-width=\"2\" stroke-linecap=\"round\"></path><rect x=\"11\" y=\"10\" width=\"4\" height=\"4\" rx=\"1\" class=\"fill-[#3DDC84] dark:fill-[#4ADE80]\"></rect><rect x=\"17\" y=\"10\" width=\"4\" height=\"4\" rx=\"1\" class=\"fill-[#3B82F6] dark:fill-[#60A5FA]\"></rect><rect x=\"11\" y=\"16\" width=\"4\" height=\"4\" rx=\"1\" class=\"fill-[#F59E0B] dark:fill-[#FBBF24]\"></rect><rect x=\"17\" y=\"16\" width=\"4\" height=\"4\" rx=\"1\" fill=\"hsl(var(--primary))\"></rect><circle cx=\"16\" cy=\"24\" r=\"1.5\" class=\"fill-[#64748B] dark:fill-[#94A3B8]\"></circle>"
   },
+  "governorates": {
+   "viewBox": "0 0 32 32",
+   "body": "<path d=\"M4 8l8-3 8 3 8-3v19l-8 3-8-3-8 3V8z\" class=\"fill-[#10B981]/15 dark:fill-[#34D399]/20 stroke-[#059669] dark:stroke-[#34D399]\" stroke-width=\"2\" stroke-linejoin=\"round\"></path><path d=\"M12 5v19M20 8v19\" class=\"stroke-[#2563EB] dark:stroke-[#60A5FA]\" stroke-width=\"1.75\" stroke-linecap=\"round\"></path><circle cx=\"16\" cy=\"15\" r=\"3.2\" fill=\"hsl(var(--primary))\" class=\"stroke-[#FFFFFF] dark:stroke-[#0F172A]\" stroke-width=\"1.5\"></circle>"
+  },
   "govtcvs": {
    "viewBox": "0 0 32 32",
    "body": "<rect x=\"5\" y=\"3\" width=\"22\" height=\"26\" rx=\"3\" class=\"fill-[#3B82F6]/15 dark:fill-[#60A5FA]/25 stroke-[#2563EB] dark:stroke-[#60A5FA]\" stroke-width=\"2\" stroke-linejoin=\"round\"></rect><circle cx=\"16\" cy=\"11\" r=\"3.2\" class=\"fill-[#10B981] dark:fill-[#34D399]\"></circle><path d=\"M11 18.5c0-2.2 2.2-3.5 5-3.5s5 1.3 5 3.5\" class=\"stroke-[#059669] dark:stroke-[#34D399]\" stroke-width=\"2\" stroke-linecap=\"round\"></path><path d=\"M10 22.5h12M10 25.5h8\" class=\"stroke-[#475569] dark:stroke-[#CBD5E1]\" stroke-width=\"2\" stroke-linecap=\"round\"></path>"

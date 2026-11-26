@@ -109,7 +109,6 @@ export default function TierBoard({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [nextSubmitAt, setNextSubmitAt] = useState<number | null>(null);
-    const [now, setNow] = useState<number>(Date.now());
 
     const cooldownKey = `submitCooldown:${pollId}:${voteDay}`;
 
@@ -117,30 +116,41 @@ export default function TierBoard({
         return { S: [], A: [], B: [], C: [], D: [], F: [] };
     }
 
+    // Storage can throw (private mode, disabled storage); the cooldown is a
+    // convenience, so a failure only means it is not remembered.
+    function readCooldown(): string | null {
+        try { return localStorage.getItem(cooldownKey); } catch { return null; }
+    }
+    function writeCooldown(ts: number | null) {
+        try {
+            if (ts === null) localStorage.removeItem(cooldownKey);
+            else localStorage.setItem(cooldownKey, String(ts));
+        } catch {
+            // background storage write: nothing to show the user
+        }
+    }
+
     useEffect(() => {
-        const stored = localStorage.getItem(cooldownKey);
+        const stored = readCooldown();
         if (stored) {
             const ts = parseInt(stored, 10);
             if (!Number.isNaN(ts) && ts > Date.now()) {
                 setNextSubmitAt(ts);
             } else if (!Number.isNaN(ts)) {
-                localStorage.removeItem(cooldownKey);
+                writeCooldown(null);
             }
         }
     }, []);
 
+    // One timer to the end of the cooldown rather than a re-render every second.
     useEffect(() => {
         if (!nextSubmitAt) return;
-        const id = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(id);
-    }, [nextSubmitAt]);
-
-    useEffect(() => {
-        if (nextSubmitAt && now >= nextSubmitAt) {
+        const id = setTimeout(() => {
             setNextSubmitAt(null);
-            localStorage.removeItem(cooldownKey);
-        }
-    }, [now, nextSubmitAt, cooldownKey]);
+            writeCooldown(null);
+        }, Math.max(0, nextSubmitAt - Date.now()));
+        return () => clearTimeout(id);
+    }, [nextSubmitAt, cooldownKey]);
 
     // Only a success fades; an error stays until the next attempt, so it
     // cannot vanish before it has been read.
@@ -318,7 +328,7 @@ export default function TierBoard({
             setSubmitStatus({ ok: true, message: "تم تسجيل التصويت" });
             const ts = Date.now() + 1 * 60 * 1000;
             setNextSubmitAt(ts);
-            localStorage.setItem(cooldownKey, String(ts));
+            writeCooldown(ts);
             setIsSubmitting(false);
         } catch (error) {
             setSubmitStatus({ ok: false, message: apiErrorMessage(error, "حدث خطأ أو تم التصويت اليوم") });

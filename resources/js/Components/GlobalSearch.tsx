@@ -146,6 +146,33 @@ export function ScopePills({
     );
 }
 
+/**
+ * A visually hidden live region for a search field: the results change in
+ * place as the visitor types, so a screen reader is told how many there are
+ * (or that none match) without leaving the field. Silent while nothing is
+ * being searched for.
+ */
+export function SearchStatus({
+    active,
+    loading,
+    count,
+}: {
+    active: boolean;
+    loading: boolean;
+    count: number;
+}) {
+    let message = '';
+    if (active) {
+        if (loading) message = 'جارٍ البحث…';
+        else message = count === 0 ? 'لا توجد نتائج' : `عدد النتائج: ${count}`;
+    }
+    return (
+        <p role="status" className="sr-only">
+            {message}
+        </p>
+    );
+}
+
 export function useGlobalSearchData(query: string, scope: FilterScope, enabled = true) {
     const [remote, setRemote] = useState<RemoteSearchResults>(EMPTY_REMOTE);
     const [loadingRemote, setLoadingRemote] = useState(false);
@@ -992,7 +1019,7 @@ export function MobileMenuSearchSection({
                             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                         />
                         {data.loadingRemote && (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                            <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
                         )}
                         {query && (
                             <button
@@ -1019,7 +1046,12 @@ export function MobileMenuSearchSection({
             </div>
 
             {/* Always-on Searchable Content (Sections Grid + Cities + Muslim + Games + Crossings + Live Results) */}
-            <div className="flex flex-col gap-2">
+            <SearchStatus
+                active={data.trimmedQuery.length > 0}
+                loading={data.loadingRemote}
+                count={data.totalVisibleResults}
+            />
+            <div className="flex flex-col gap-2" aria-busy={data.loadingRemote}>
                 <SearchResultsContent
                     data={data}
                     pathname={pathname}
@@ -1113,7 +1145,7 @@ export function HomeInlineSearchSection({
                         className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
                     />
                     {data.loadingRemote && (
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
                     )}
                     {query ? (
                         <button
@@ -1145,9 +1177,17 @@ export function HomeInlineSearchSection({
                 />
             </div>
 
+            <SearchStatus
+                active={isSearching}
+                loading={data.loadingRemote}
+                count={data.totalVisibleResults}
+            />
             {/* In-Place Replacement: Search Results when active, Default Homepage Grids when idle */}
             {isSearching ? (
-                <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 sm:p-6">
+                <div
+                    className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 sm:p-6"
+                    aria-busy={data.loadingRemote}
+                >
                     <SearchResultsContent
                         data={data}
                         pathname="/"

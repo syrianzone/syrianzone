@@ -25,7 +25,7 @@ import {
 import { useAppShell } from '@/Lib/appShell';
 import { pathnameOf } from '@/Lib/routes';
 import { useIsMac } from '@/Lib/platform';
-import { ScopePills, SearchResultsContent, useGlobalSearchData } from './GlobalSearch';
+import { ScopePills, SearchResultsContent, SearchStatus, useGlobalSearchData } from './GlobalSearch';
 import type { FilterScope } from './GlobalSearch';
 
 export default function GlobalCommandPalette() {
@@ -95,7 +95,7 @@ export default function GlobalCommandPalette() {
                             className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
                         />
                         {data.loadingRemote && (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                            <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
                         )}
                         {query && (
                             <button
@@ -125,6 +125,12 @@ export default function GlobalCommandPalette() {
                         scope={scope}
                         onScopeChange={setScope}
                         className="flex items-center gap-1.5 overflow-x-auto border-b border-border/60 bg-background/60 px-3 py-2 no-scrollbar"
+                    />
+
+                    <SearchStatus
+                        active={data.trimmedQuery.length > 0}
+                        loading={data.loadingRemote}
+                        count={data.totalVisibleResults}
                     />
 
                     {/* Results List */}

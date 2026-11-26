@@ -29,9 +29,19 @@ const getTypeDisplayName = (type: string) => {
 const getFaviconUrl = (url: string) => {
     try {
         const domain = new URL(url).hostname;
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
     } catch {
         return '';
+    }
+};
+
+/** The list comes from an external sheet: only ever link to http(s) URLs. */
+const safeSiteUrl = (url: string): string | null => {
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : null;
+    } catch {
+        return null;
     }
 };
 
@@ -133,12 +143,13 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                     <>
                         {viewMode === 'grid' ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3.5 sm:gap-4">
-                                {directory.visible.map(site => (
-                                    <a
+                                {directory.visible.map(site => {
+                                    const href = safeSiteUrl(site.url);
+                                    const CardShell = href ? 'a' : 'div';
+                                    return (
+                                    <CardShell
                                         key={site.id}
-                                        href={site.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                        {...(href ? { href, target: '_blank', rel: 'noopener noreferrer' } : {})}
                                         className="block h-full group"
                                     >
                                         <Card className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full text-center">
@@ -174,8 +185,9 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                 )}
                                             </CardContent>
                                         </Card>
-                                    </a>
-                                ))}
+                                    </CardShell>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="bg-card rounded-2xl shadow-xs border border-border overflow-hidden">
@@ -189,7 +201,9 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {directory.visible.map(site => (
+                                        {directory.visible.map(site => {
+                                            const href = safeSiteUrl(site.url);
+                                            return (
                                             <TableRow key={site.id} className="hover:bg-muted/50 transition-colors">
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-3">
@@ -217,15 +231,20 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                     {site.description}
                                                 </TableCell>
                                                 <TableCell>
+                                                    {href ? (
                                                     <Button variant="link" asChild className="h-auto p-0 text-primary font-semibold">
-                                                        <a href={site.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                                                        <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
                                                             <span className="text-xs">زيارة</span>
                                                             <ExternalLink size={12} />
                                                         </a>
                                                     </Button>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">-</span>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
-                                        ))}
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>

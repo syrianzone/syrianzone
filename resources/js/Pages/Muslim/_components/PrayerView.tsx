@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from '@inertiajs/react';
 import { AlertCircle, Check, MapPin, Settings } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
@@ -13,6 +13,7 @@ import { PrayerIcon } from '../../../Domain/prayer/PrayerIcon';
 import PrayerSettingsFields from '../../../Domain/prayer/PrayerSettingsFields';
 import ResponsiveSettingsDialog from '../../../Domain/prayer/ResponsiveSettingsDialog';
 import { usePrayerTimes, type PrayerHijri } from '../../../Domain/prayer/times';
+import { useNow } from '../../../Domain/prayer/useNow';
 import { resolvePlaceLabel, useLocationPreference, type LocationPreference } from '../../../Domain/location/preference';
 import { governoratesByPickerOrder } from '../../../Domain/geography/governorates';
 import { usePageDialog } from '@/Lib/appShell';
@@ -31,7 +32,9 @@ interface Props {
 }
 
 export default function PrayerView({ prefs, setPrefs, isLoggedIn, initialCity = null, initialPrayer = null }: Props) {
-  const [now, setNow] = useState(() => new Date());
+  // Null until mounted: the countdown and the active row come from the
+  // visitor's clock, never from the server's render.
+  const now = useNow();
   const storedLocation = useLocationPreference();
   const location: LocationPreference = useMemo(
     () => (initialCity
@@ -51,17 +54,15 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn, initialCity = 
     ? prayerError.message || 'حدث خطأ أثناء الاتصال'
     : null;
 
-  useEffect(() => {
-    const t = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(t);
-  }, []);
-
-  const schedule = useMemo(() => prayerSchedule(timings, now, { timeZone }), [timings, now, timeZone]);
+  const schedule = useMemo(
+    () => (now ? prayerSchedule(timings, now, { timeZone }) : null),
+    [timings, now, timeZone],
+  );
   const apiHijri = hijriDateLabel(hijri);
 
   // Today's completion log (Asia/Damascus day). Guests keep it in
   // localStorage; logged-in users sync it to their account.
-  const dayKey = todayKey(now);
+  const dayKey = todayKey(now ?? undefined);
   const doneToday = prefs.prayerLog[dayKey] ?? {};
   const doneCount = (TRACKED_PRAYERS as readonly string[]).filter((k) => doneToday[k]).length;
 
@@ -110,18 +111,24 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn, initialCity = 
             />
           </ResponsiveSettingsDialog>
 
-          {schedule?.next && (
+          {/* Server-rendered timings get a placeholder box until the clock
+              mounts, so the countdown fills in without moving the list. */}
+          {(schedule?.next || (!now && timings)) && (
             <div className="mb-4 flex items-center justify-between rounded-xl border border-primary/10 bg-primary/5 p-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                  <PrayerIcon prayer={schedule.next.key} className="h-5 w-5" />
+                  {schedule?.next
+                    ? <PrayerIcon prayer={schedule.next.key} className="h-5 w-5" />
+                    : <span className="block h-5 w-5" aria-hidden="true" />}
                 </div>
-                <span className="text-base font-bold text-primary">صلاة {schedule.next.label}</span>
+                <span className="text-base font-bold text-primary">
+                  {schedule?.next ? `صلاة ${schedule.next.label}` : 'الصلاة القادمة'}
+                </span>
               </div>
               <div className="text-left font-mono">
                 <span className="block text-right text-xs font-medium text-foreground/70">المتبقي</span>
                 <span dir="ltr" className="text-xl font-bold tracking-wider text-primary">
-                  {formatDuration(schedule.next.remainingMs)}
+                  {schedule?.next ? formatDuration(schedule.next.remainingMs) : '--:--:--'}
                 </span>
               </div>
             </div>

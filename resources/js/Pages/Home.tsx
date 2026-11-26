@@ -42,6 +42,7 @@ import { WeatherIcon } from '@/Domain/weather/WeatherIcon';
 import { getLastPage } from '@/Lib/visit';
 import { usePageDialog } from '@/Lib/appShell';
 import { formatGregorianSyrian } from '@/Lib/syrian-date';
+import { confirmDialog } from '@/Lib/confirm';
 
 const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/HomeSettingsDialog'));
 const AddLinkDialog = React.lazy(() => import('@/Pages/Home/_components/AddLinkDialog'));
@@ -536,9 +537,10 @@ export default function Home() {
                                                         variant="destructive"
                                                         size="icon"
                                                         className="h-8 w-8 rounded-full shadow-md opacity-100"
-                                                        onClick={(e) => {
+                                                        onClick={async (e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
+                                                            if (!(await confirmDialog({ title: 'حذف هذا الرابط؟', destructive: true, confirmText: 'حذف', cancelText: 'إلغاء' }))) return;
                                                             removeCustomLink(link.id);
                                                         }}
                                                         title="حذف الرابط"

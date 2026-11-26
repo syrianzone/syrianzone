@@ -45,14 +45,15 @@ export default function FigureAvatar({ name, category, image, size = 72 }: Props
     <div
       className="sz-figure-avatar rounded-full overflow-hidden border-2 flex items-center justify-center shrink-0"
       style={style}
-      aria-label={name}
+      // aria-label needs a role on a div; with a photo the <img alt> names it.
+      {...(image ? {} : { role: 'img', 'aria-label': name })}
     >
       {image ? (
         <img src={image} alt={name} className="w-full h-full object-cover" loading="lazy" />
       ) : (
         (() => {
           const Icon = CATEGORY_ICON[category];
-          return <Icon style={{ color }} size={size * 0.45} />;
+          return <Icon aria-hidden="true" style={{ color }} size={size * 0.45} />;
         })()
       )}
     </div>

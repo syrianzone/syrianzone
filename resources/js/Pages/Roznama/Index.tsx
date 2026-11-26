@@ -80,25 +80,7 @@ import {
     GOVERNORATES_BY_ID,
     governorateNameForF3aliaProvince,
 } from '@/Domain/geography/governorates';
-
-const VARIABLE_HOLIDAYS_MAP: Record<number, Record<string, { month: number; day: number }>> = {
-    2026: {
-        'eid-fitr': { month: 3, day: 20 },
-        'eid-adha': { month: 5, day: 27 },
-        'hijri-new-year': { month: 6, day: 16 },
-        'mawlid': { month: 8, day: 26 },
-        'western-easter': { month: 4, day: 5 },
-        'eastern-easter': { month: 4, day: 12 },
-    },
-    2027: {
-        'eid-fitr': { month: 3, day: 10 },
-        'eid-adha': { month: 5, day: 16 },
-        'hijri-new-year': { month: 6, day: 6 },
-        'mawlid': { month: 8, day: 15 },
-        'western-easter': { month: 3, day: 28 },
-        'eastern-easter': { month: 5, day: 2 },
-    }
-};
+import { variableHolidays, type VariableHolidayId } from './_lib/variableHolidays';
 
 /** Upstream event links reach an href: only http(s) passes, else the platform. */
 const F3ALIA_HOME = 'https://app.f3alia.com';
@@ -117,7 +99,16 @@ interface ActiveHoliday {
     isNew?: boolean;
 }
 
-// Fixed national holidays + the variable (lunar/Easter) ones we have dates for.
+const VARIABLE_HOLIDAYS: Array<{ id: VariableHolidayId; nameAr: string; nameEn: string; description: string }> = [
+    { id: 'eid-fitr', nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', description: 'عطلة عيد الفطر السعيد (3 أيام).' },
+    { id: 'eid-adha', nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
+    { id: 'hijri-new-year', nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', description: 'رأس السنة الهجرية الجديدة.' },
+    { id: 'mawlid', nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', description: 'ذكرى المولد النبوي الشريف.' },
+    { id: 'western-easter', nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', description: 'عيد الفصح المجيد (التقويم الغربي).' },
+    { id: 'eastern-easter', nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', description: 'عيد الفصح المجيد (التقويم الشرقي).' },
+];
+
+// Fixed national holidays + the variable (lunar/Easter) ones (reviewed or computed).
 function holidaysForYear(year: number): ActiveHoliday[] {
     const list: ActiveHoliday[] = [
         { nameAr: 'رأس السنة الميلادية', nameEn: "New Year's Day", date: new Date(year, 0, 1), description: 'بداية العام الميلادي الجديد' },
@@ -129,16 +120,17 @@ function holidaysForYear(year: number): ActiveHoliday[] {
         { nameAr: 'عيد الميلاد المجيد', nameEn: 'Christmas Day', date: new Date(year, 11, 25), description: 'ذكرى ميلاد السيد المسيح عليه السلام.' }
     ];
 
-    const vars = VARIABLE_HOLIDAYS_MAP[year];
-    if (vars) {
-        list.push(
-            { nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', date: new Date(year, vars['eid-fitr'].month - 1, vars['eid-fitr'].day), description: 'عطلة عيد الفطر السعيد (3 أيام).' },
-            { nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', date: new Date(year, vars['eid-adha'].month - 1, vars['eid-adha'].day), description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
-            { nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', date: new Date(year, vars['hijri-new-year'].month - 1, vars['hijri-new-year'].day), description: 'رأس السنة الهجرية الجديدة.' },
-            { nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', date: new Date(year, vars['mawlid'].month - 1, vars['mawlid'].day), description: 'ذكرى المولد النبوي الشريف.' },
-            { nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', date: new Date(year, vars['western-easter'].month - 1, vars['western-easter'].day), description: 'عيد الفصح المجيد (التقويم الغربي).' },
-            { nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', date: new Date(year, vars['eastern-easter'].month - 1, vars['eastern-easter'].day), description: 'عيد الفصح المجيد (التقويم الشرقي).' }
-        );
+    // Reviewed dates where the table has the year, computed ones past it.
+    const vars = variableHolidays(year);
+    for (const holiday of VARIABLE_HOLIDAYS) {
+        for (const at of vars[holiday.id] ?? []) {
+            list.push({
+                nameAr: holiday.nameAr,
+                nameEn: holiday.nameEn,
+                date: new Date(year, at.month - 1, at.day),
+                description: holiday.description,
+            });
+        }
     }
 
     return list.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -328,7 +320,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                             </h2>
                             <ul className="divide-y divide-border/50 text-sm">
                                 {holidaysForYear(serverYear ?? 2026).map((h) => (
-                                    <li key={h.nameEn} className="py-2.5">
+                                    <li key={`${h.nameEn}-${h.date.getTime()}`} className="py-2.5">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="font-semibold text-foreground">{h.nameAr}</span>
                                             <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">

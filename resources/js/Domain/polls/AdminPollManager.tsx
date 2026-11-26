@@ -682,7 +682,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                     className="text-left text-xs"
                                     dir="ltr"
                                 />
-                                {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+                                {uploadError && <p role="alert" className="text-xs text-destructive">{uploadError}</p>}
                             </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">

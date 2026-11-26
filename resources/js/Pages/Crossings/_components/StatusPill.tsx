@@ -15,8 +15,15 @@ const DOTS: Record<Status, string> = {
     pending: 'bg-muted-foreground/40',
 };
 
-export function StatusDot({ status, className }: { status: Status; className?: string }) {
-    return <span className={cn('h-2 w-2 shrink-0 rounded-full', DOTS[status], className)} />;
+/** The colour alone carries no meaning for screen readers (or colour-blind
+ *  users), so the dot speaks its status unless a visible label sits beside it. */
+export function StatusDot({ status, className, decorative = false }: { status: Status; className?: string; decorative?: boolean }) {
+    return (
+        <>
+            <span aria-hidden="true" className={cn('h-2 w-2 shrink-0 rounded-full', DOTS[status], className)} />
+            {!decorative && <span className="sr-only">{STATUS_TEXT[status]}، </span>}
+        </>
+    );
 }
 
 export function StatusPill({ status }: { status: Status }) {
@@ -27,7 +34,7 @@ export function StatusPill({ status }: { status: Status }) {
                 STYLES[status]
             )}
         >
-            <StatusDot status={status} />
+            <StatusDot status={status} decorative />
             {STATUS_TEXT[status]}
         </span>
     );

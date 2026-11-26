@@ -74,12 +74,16 @@ export function CrossingDetail({
                             return (
                                 <div key={i} className="flex items-center gap-2 text-muted-foreground">
                                     {crossing.windows.length > 1 ? (
-                                        <span
-                                            className={cn(
-                                                'h-1.5 w-1.5 shrink-0 rounded-full',
-                                                open === null ? 'bg-muted-foreground/40' : open ? 'bg-emerald-500' : 'bg-red-500'
-                                            )}
-                                        />
+                                        <>
+                                            <span
+                                                aria-hidden="true"
+                                                className={cn(
+                                                    'h-1.5 w-1.5 shrink-0 rounded-full',
+                                                    open === null ? 'bg-muted-foreground/40' : open ? 'bg-emerald-500' : 'bg-red-500'
+                                                )}
+                                            />
+                                            {open !== null && <span className="sr-only">{open ? 'مفتوح الآن' : 'مغلق الآن'}، </span>}
+                                        </>
                                     ) : (
                                         <Clock className="h-3.5 w-3.5 shrink-0" />
                                     )}

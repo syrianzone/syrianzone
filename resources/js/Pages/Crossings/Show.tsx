@@ -217,6 +217,7 @@ export default function CrossingShow({ slug }: CrossingShowProps) {
                                                     <div key={idx} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5 text-sm">
                                                         <div className="flex items-center gap-2.5">
                                                             <span
+                                                                aria-hidden="true"
                                                                 className={cn(
                                                                     'h-2 w-2 shrink-0 rounded-full',
                                                                     open === null
@@ -226,6 +227,7 @@ export default function CrossingShow({ slug }: CrossingShowProps) {
                                                                             : 'bg-red-500',
                                                                 )}
                                                             />
+                                                            {open !== null && <span className="sr-only">{open ? 'مفتوح الآن' : 'مغلق الآن'}، </span>}
                                                             <span className="font-semibold text-foreground">
                                                                 {win.label ? `حركة ${win.label}` : 'ساعات العمل اليومية'}
                                                             </span>

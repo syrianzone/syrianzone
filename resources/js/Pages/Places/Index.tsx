@@ -30,6 +30,8 @@ export default function Index() {
   const [listPlaces, setListPlaces] = useState<Paginated<PlaceListItem> | null>(null);
   const [listLoading, setListLoading] = useState(false);
   const [addMode, setAddMode] = useState(false);
+  // bumping it asks the map to pick its current centre (the keyboard path for add mode)
+  const [pickCenterKey, setPickCenterKey] = useState(0);
   const [focus, setFocus] = useState<{ lng: number; lat: number; zoom?: number; key: number } | null>(null);
   const [highlight, setHighlight] = useState<LatLng | null>(null);
   // which q the current listPlaces was fetched for; guards the dropdown against stale results
@@ -273,6 +275,7 @@ export default function Index() {
             onPinClick={(id) => handlePinClick(id, 'place')}
             onHotelPinClick={(id) => handlePinClick(id, 'hotel')}
             onMapClick={handleMapClick}
+            pickCenterKey={pickCenterKey}
             // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
             className="absolute inset-0"
           />
@@ -326,6 +329,14 @@ export default function Index() {
             <div className="flex justify-center">
               <span className="pointer-events-auto flex items-center gap-2 rounded-full border border-border bg-card/95 px-3 py-1 text-xs text-muted-foreground shadow-sm">
                 انقر على الخريطة لتحديد الموقع
+                {/* keyboard and screen-reader path: the map canvas itself takes no clicks from them */}
+                <button
+                  type="button"
+                  onClick={() => setPickCenterKey((k) => k + 1)}
+                  className="rounded-full font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  أو استخدم مركز الخريطة
+                </button>
               </span>
             </div>
           )}

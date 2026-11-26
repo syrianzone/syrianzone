@@ -16,6 +16,7 @@ export function PlacesMap(props: {
   onPinClick: (id: number) => void;
   onHotelPinClick: (id: number) => void;
   onMapClick: (point: LatLng) => void;
+  pickCenterKey?: number;
   className?: string;
 }) {
   return (
@@ -32,7 +33,7 @@ export function PlacesMap(props: {
         selectedId={props.selectedType === 'hotel' ? props.selectedId : null}
         onPinClick={props.onHotelPinClick}
       />
-      <MapInteractions addMode={props.addMode} onMapClick={props.onMapClick} />
+      <MapInteractions addMode={props.addMode} onMapClick={props.onMapClick} pickCenterKey={props.pickCenterKey} />
       <HighlightMarker point={props.highlight} />
       {props.focus && (
         <FlyTo lng={props.focus.lng} lat={props.focus.lat} zoom={props.focus.zoom} trigger={props.focus.key} />

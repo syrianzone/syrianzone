@@ -19,6 +19,9 @@ function presentLayers(map: maplibregl.Map, layers: string[]): string[] {
 export function MapInteractions(props: {
   addMode: boolean;
   onMapClick: (point: { lng: number; lat: number }) => void;
+  /** Bumped by a keyboard-operable "use the map centre" control: picks the
+   * current centre exactly as a map click there would. 0 = never asked. */
+  pickCenterKey?: number;
 }) {
   const map = useMap();
   const addModeRef = useRef(props.addMode);
@@ -67,6 +70,15 @@ export function MapInteractions(props: {
   useEffect(() => {
     map.getCanvas().style.cursor = props.addMode ? 'crosshair' : '';
   }, [props.addMode, map]);
+
+  // remembers the last key served so a remount or a new map instance never replays it
+  const servedKeyRef = useRef(props.pickCenterKey ?? 0);
+  useEffect(() => {
+    if (!props.pickCenterKey || props.pickCenterKey === servedKeyRef.current) return;
+    servedKeyRef.current = props.pickCenterKey;
+    const c = map.getCenter();
+    onMapClickRef.current({ lng: c.lng, lat: c.lat });
+  }, [props.pickCenterKey, map]);
 
   return null;
 }

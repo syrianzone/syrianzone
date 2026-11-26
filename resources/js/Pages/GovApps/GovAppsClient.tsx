@@ -61,7 +61,8 @@ function AppIcon({ app, className }: {
     return (
         <img
             src={iconUrl}
-            alt={app.name}
+            // Decorative: the card title links to the same page and names it.
+            alt=""
             loading="lazy"
             decoding="async"
             className={className}
@@ -215,7 +216,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                     >
                                         <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
                                     </button>
-                                    <Link href={`/govapps/${app.id}`} className="block w-full h-full">
+                                    <Link href={`/govapps/${app.id}`} tabIndex={-1} aria-hidden="true" className="block w-full h-full">
                                         <AppIcon
                                             app={app}
                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"

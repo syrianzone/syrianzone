@@ -372,11 +372,13 @@ export default function TierBoard({
             await exportTierListFromData({
                 tiers: data,
                 basePath: BASE_PATH,
-                fileName: "tier-list.png",
+                fileName: "tier-list.jpg",
                 width: targetWidth,
                 scale: 2,
                 watermarkText: "syrian.zone/tierlist",
             });
+        } catch {
+            notify.error("تعذّر إنشاء صورة القائمة، حاول مرة أخرى");
         } finally {
             setIsSaving(false);
         }

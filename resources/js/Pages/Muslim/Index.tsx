@@ -1,6 +1,6 @@
 import { listBookmarks } from '@/Domain/quran/bookmarksApi';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { Bookmark, ChevronLeft, MoonStar } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { formatDuration } from '../../Lib/format';
@@ -82,14 +82,6 @@ export default function Index() {
 
   return (
     <MainLayout>
-      <Head>
-        
-        
-        
-        
-        <link rel="preload" href="/fonts/quran-hafs.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-      </Head>
-
       <div
         className="min-h-[calc(100svh-var(--sz-navbar-h))] bg-background text-foreground"
         dir="rtl"

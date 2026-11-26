@@ -568,7 +568,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                                     isActive
                                                                         ? 'text-primary-foreground'
                                                                         : ev.key === 'Sunrise'
-                                                                            ? 'text-orange-500'
+                                                                            ? 'text-orange-600 dark:text-orange-400'
                                                                             : 'text-primary'
                                                                 }`} />
                                                                 <span className="font-semibold text-sm">{ev.label}</span>
@@ -779,7 +779,7 @@ export default function Index({ serverYear }: { serverYear?: number }) {
                                                         <Badge 
                                                             className={`${
                                                                 event.isFree 
-                                                                    ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15 border-emerald-500/20' 
+                                                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 border-emerald-500/30' 
                                                                     : 'bg-primary/10 text-primary hover:bg-primary/15 border-primary/20'
                                                             } border text-[10px] font-bold h-5 px-1.5`}
                                                         >

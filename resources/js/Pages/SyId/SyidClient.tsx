@@ -161,6 +161,10 @@ export default function SyidClient() {
                 GOVERNORATE_ICONS.map(async (icon) => {
                     try {
                         const res = await fetch(`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`);
+                        // A 404 page or proxy error is not artwork: fall back to the static <img>.
+                        if (!res.ok || !(res.headers.get('content-type') ?? '').includes('svg')) {
+                            throw new Error(`icon ${icon.file}: ${res.status}`);
+                        }
                         const text = await res.text();
                         loaded[icon.file] = text;
                     } catch {
@@ -845,9 +849,12 @@ export default function SyidClient() {
                                     className="w-full aspect-[312/436] flex items-center justify-center transition-transform hover:scale-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer group p-1.5 rounded-xl border border-border/40 overflow-hidden shadow-2xs"
                                 >
                                     {recoloredSvg ? (
-                                        <div
-                                            className="w-full h-full [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-xs"
-                                            dangerouslySetInnerHTML={{ __html: recoloredSvg }}
+                                        // An image, not inline markup: each SVG keeps its own
+                                        // .st0-.st4 classes and ids instead of sharing the page's.
+                                        <img
+                                            src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(recoloredSvg)}`}
+                                            alt=""
+                                            className="w-full h-full object-contain drop-shadow-xs"
                                         />
                                     ) : (
                                         <img

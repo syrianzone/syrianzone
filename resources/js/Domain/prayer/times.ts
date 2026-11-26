@@ -60,7 +60,7 @@ export function prayerTimesParams(
 
 /**
  * Home's per-day cache key: one entry per point/method/day under `sz_prayers_`
- * in `sessionStorage` (the value is the bare `timings` object).
+ * in `sessionStorage` (the value is a `CachedPrayerTimes` entry).
  */
 export function prayerTimesCacheKey(location: LocationPreference, method: number): string {
   const { lat, lon } = resolveWeatherPoint(location);
@@ -111,20 +111,46 @@ export interface PrayerTimesState {
   reload: () => void;
 }
 
-function readSessionTimings(key: string): Record<string, string> | null {
+/**
+ * One cached day: the timings and the zone the server read them in. The zone
+ * travels with the timings so a cache hit keeps counting down in the
+ * location's zone rather than the device's.
+ */
+export interface CachedPrayerTimes {
+  v: 2;
+  timings: Record<string, string>;
+  timezone: string | null;
+}
+
+/**
+ * Parse a cache entry. Older entries stored the bare `timings` object with no
+ * zone; they read as a miss so the next request refetches and stores both.
+ */
+export function parseCachedPrayerTimes(raw: string | null): CachedPrayerTimes | null {
+  if (!raw) return null;
   try {
-    const raw = window.sessionStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    return parsed && typeof parsed === 'object' ? parsed : null;
+    const parsed = JSON.parse(raw) as Partial<CachedPrayerTimes> | null;
+    if (!parsed || parsed.v !== 2) return null;
+    if (!parsed.timings || typeof parsed.timings !== 'object') return null;
+    const timezone = typeof parsed.timezone === 'string' ? parsed.timezone : null;
+    return { v: 2, timings: parsed.timings, timezone };
   } catch {
     return null;
   }
 }
 
-function writeSessionTimings(key: string, timings: Record<string, string>): void {
+function readSessionTimings(key: string): CachedPrayerTimes | null {
   try {
-    window.sessionStorage.setItem(key, JSON.stringify(timings));
+    return parseCachedPrayerTimes(window.sessionStorage.getItem(key));
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionTimings(key: string, timings: Record<string, string>, timezone: string | null): void {
+  const entry: CachedPrayerTimes = { v: 2, timings, timezone };
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(entry));
   } catch {
     // private mode / quota: the next request simply fetches again
   }
@@ -166,7 +192,8 @@ export function usePrayerTimes(
     if (cacheKey !== null) {
       const cached = readSessionTimings(cacheKey);
       if (cached) {
-        setTimings(cached);
+        setTimings(cached.timings);
+        setServerZone(cached.timezone);
         setLoading(false);
         setError(null);
         return;
@@ -191,7 +218,7 @@ export function usePrayerTimes(
         setTimings(result.timings);
         setHijri(result.hijri);
         setServerZone(result.timezone ?? null);
-        if (cacheKey !== null) writeSessionTimings(cacheKey, result.timings);
+        if (cacheKey !== null) writeSessionTimings(cacheKey, result.timings, result.timezone ?? null);
       })
       .catch((cause: unknown) => {
         if (superseded) return;

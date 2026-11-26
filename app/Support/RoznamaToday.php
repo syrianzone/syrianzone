@@ -64,7 +64,7 @@ final class RoznamaToday
 
         try {
             $formatter = new \IntlDateFormatter(
-                'ar@calendar=islamic-umalqura',
+                'ar@calendar=islamic-umalqura;numbers=latn',
                 \IntlDateFormatter::LONG,
                 \IntlDateFormatter::NONE,
                 $tz,

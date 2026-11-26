@@ -11,6 +11,7 @@ use App\Models\Place;
 use App\Models\Population\PopulationDemographic;
 use App\Support\ArabicSearch;
 use App\Support\Facts;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Assembles server-rendered data for `/governorates` and `/governorates/{id}`
@@ -625,6 +626,46 @@ final class GovernorateDataService
     }
 
     /**
+     * Approved Mishwar places grouped by the governorate polygon they fall in,
+     * most-saved first. The point-in-polygon pass covers every place, so it is
+     * cached rather than repeated on each page view.
+     *
+     * @return array<string, list<array{id: int, name: string, category: string, description: ?string}>>
+     */
+    private function placesByGovernorate(): array
+    {
+        return Cache::remember('governorates:places-by-governorate:v1', now()->addMinutes(30), function (): array {
+            try {
+                $places = Place::query()
+                    ->where('status', 'approved')
+                    ->whereNotNull('lat')
+                    ->whereNotNull('lng')
+                    ->orderByDesc('saves_count')
+                    ->orderBy('id')
+                    ->get(['id', 'name', 'category', 'description', 'lat', 'lng']);
+            } catch (\Throwable) {
+                return [];
+            }
+
+            $grouped = [];
+            foreach ($places as $place) {
+                $governorateId = $this->geometry->governorateIdForPoint((float) $place->lat, (float) $place->lng);
+                if ($governorateId === null) {
+                    continue;
+                }
+                $grouped[$governorateId][] = [
+                    'id' => (int) $place->id,
+                    'name' => (string) $place->name,
+                    'category' => (string) $place->category,
+                    'description' => $place->description !== null ? (string) $place->description : null,
+                ];
+            }
+
+            return $grouped;
+        });
+    }
+
+    /**
      * Approved Mishwar places within this governorate's polygon: counts per category + notable places.
      * Returns null when the governorate has 0 approved places.
      *
@@ -632,25 +673,7 @@ final class GovernorateDataService
      */
     private function placesFor(string $governorateId): ?array
     {
-        try {
-            $places = Place::query()
-                ->where('status', 'approved')
-                ->whereNotNull('lat')
-                ->whereNotNull('lng')
-                ->orderByDesc('saves_count')
-                ->orderBy('id')
-                ->get(['id', 'name', 'category', 'description', 'lat', 'lng', 'saves_count']);
-        } catch (\Throwable) {
-            return null;
-        }
-
-        $inGov = [];
-        foreach ($places as $place) {
-            $pointGov = $this->geometry->governorateIdForPoint((float) $place->lat, (float) $place->lng);
-            if ($pointGov === $governorateId) {
-                $inGov[] = $place;
-            }
-        }
+        $inGov = $this->placesByGovernorate()[$governorateId] ?? [];
 
         if ($inGov === []) {
             return null;
@@ -663,7 +686,7 @@ final class GovernorateDataService
 
         $counts = [];
         foreach ($inGov as $place) {
-            $key = (string) $place->category;
+            $key = (string) $place['category'];
             $counts[$key] = ($counts[$key] ?? 0) + 1;
         }
         arsort($counts);
@@ -677,13 +700,13 @@ final class GovernorateDataService
             ];
         }
 
-        $notable = array_map(fn (Place $p) => [
-            'id' => (int) $p->id,
-            'name' => (string) $p->name,
-            'category' => (string) $p->category,
-            'category_label' => $categoryLabels[(string) $p->category] ?? (string) $p->category,
-            'description' => filled($p->description) ? mb_strimwidth(trim((string) $p->description), 0, 120, '…') : null,
-            'url' => '/mishwar?place='.$p->id,
+        $notable = array_map(fn (array $p) => [
+            'id' => $p['id'],
+            'name' => $p['name'],
+            'category' => $p['category'],
+            'category_label' => $categoryLabels[$p['category']] ?? $p['category'],
+            'description' => filled($p['description']) ? mb_strimwidth(trim((string) $p['description']), 0, 120, '…') : null,
+            'url' => '/mishwar?place='.$p['id'],
         ], array_slice($inGov, 0, 6));
 
         return [

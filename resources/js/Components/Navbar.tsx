@@ -423,7 +423,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   };
 
   // Desktop "المزيد" menu: click-only (no hover intent). Closes on an outside
-  // click, Escape, or any navigation.
+  // click, Escape, focus leaving it, or any navigation.
   const [moreOpen, setMoreOpen] = React.useState(false);
   const moreBtnRef = React.useRef<HTMLButtonElement>(null);
   const morePanelRef = React.useRef<HTMLDivElement>(null);
@@ -440,11 +440,20 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
         moreBtnRef.current?.focus();
       }
     };
+    // Tabbing past the panel's last link (or back before the trigger) closes it,
+    // so an open panel never covers what the keyboard has moved on to.
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target as Node;
+      if (morePanelRef.current?.contains(t) || moreBtnRef.current?.contains(t)) return;
+      setMoreOpen(false);
+    };
     document.addEventListener('pointerdown', onDown);
     document.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       document.removeEventListener('pointerdown', onDown);
       document.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocusIn);
     };
   }, [moreOpen]);
   React.useEffect(() => {

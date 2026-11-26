@@ -13,7 +13,6 @@ import { getDeviceId } from "@/Lib/deviceId";
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import JSZip from "jszip";
 
 export type Candidate = {
     id: string;
@@ -459,6 +458,8 @@ export default function TierBoard({
     async function downloadAllImages(candidates: Candidate[], groupName?: string) {
         setIsDownloadingAll(true);
         try {
+            // Loaded on demand: only this button needs a zip writer.
+            const { default: JSZip } = await import("jszip");
             const zip = new JSZip();
             for (const c of candidates) {
                 const url = originalImageUrl(c);

@@ -89,27 +89,28 @@ export default function PopulationClient() {
     }, []);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setIsLoading(true);
-                setError(null);
+        let active = true;
 
-                const masterData = await client.get<{ groups: PopulationGroups; rainfall_data: RainfallData }>(
-                    `${API_ROOT}/population/master`
-                );
+        // The climate report only feeds the environmental layer: fetch it in
+        // parallel and let the atlas render as soon as the master data lands.
+        client.get(`${API_ROOT}/population/env-report`)
+            .then(data => { if (active) setEnvironmentalData(data); })
+            .catch(err => { if (active) notify.error(apiErrorMessage(err, 'تعذّر تحميل البيانات البيئية')); });
 
+        client.get<{ groups: PopulationGroups; rainfall_data: RainfallData }>(`${API_ROOT}/population/master`)
+            .then(masterData => {
+                if (!active) return;
                 setLivePopulationData(masterData.groups);
                 setRainfallData(masterData.rainfall_data);
+            })
+            .catch(err => {
+                if (active) setError(apiErrorMessage(err, 'تعذّر تحميل بيانات الأطلس السكاني، حاول مجدداً لاحقاً.'));
+            })
+            .finally(() => {
+                if (active) setIsLoading(false);
+            });
 
-                setEnvironmentalData(await client.get(`${API_ROOT}/population/env-report`));
-            } catch (err) {
-                setError(apiErrorMessage(err, 'تعذّر تحميل بيانات الأطلس السكاني، حاول مجدداً لاحقاً.'));
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchData();
+        return () => { active = false; };
     }, []);
 
     // Rainfall is a single layer with no source rows, so it has no selected source.

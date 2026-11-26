@@ -192,7 +192,7 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                     <button
                         type="button"
                         onClick={dealRandomGame}
-                        aria-label="اسحب لعبة عشوائية"
+                        aria-label={`اسحب لعبة عشوائية — ${pickedGame.title}`}
                         className="w-[var(--sz-card-w)] -translate-y-1.5 cursor-pointer transition-transform hover:-translate-y-2.5 sz-card sz-card--face sz-card--picked"
                     >
                         <span dir="rtl" className="contents">
@@ -445,9 +445,13 @@ function GeneralNotFound({ path, onBack }: { path: string; onBack: () => void })
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="ابحث في أدوات المساحة السورية..."
+                        aria-label="ابحث في أدوات المساحة السورية"
                         className="ps-9"
                     />
                 </div>
+                <p role="status" className={displayedTools.length === 0 ? 'mb-6 text-center text-sm text-muted-foreground' : 'sr-only'}>
+                    {query.trim() === '' ? '' : displayedTools.length === 0 ? 'لا توجد أدوات مطابقة' : `${displayedTools.length} نتيجة`}
+                </p>
 
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
                     {displayedTools.map((tool) => {

@@ -248,7 +248,7 @@ export function visibleOfficials(
     );
 
     if (value.sort === 'newest') {
-        return [...list].sort((a, b) => {
+        return list.toSorted((a, b) => {
             const dateA =
                 a.current_tenure?.started_at ??
                 a.latest_tenure?.started_at ??
@@ -264,7 +264,7 @@ export function visibleOfficials(
     }
 
     if (value.sort === 'tenures') {
-        return [...list].sort((a, b) => {
+        return list.toSorted((a, b) => {
             if (b.tenures_count !== a.tenures_count) {
                 return b.tenures_count - a.tenures_count;
             }
@@ -276,7 +276,7 @@ export function visibleOfficials(
     }
 
     if (value.sort === 'alpha') {
-        return [...list].sort((a, b) =>
+        return list.toSorted((a, b) =>
             (a.display_name_ar || a.full_name_ar).localeCompare(
                 b.display_name_ar || b.full_name_ar,
                 'ar',

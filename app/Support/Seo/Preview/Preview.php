@@ -12,6 +12,7 @@ final readonly class Preview
      * @param  string  $canonicalPath  path for <link rel="canonical">
      * @param  string  $image  site-relative URL of the share card
      * @param  array{0:string,1:string}|null  $parent  breadcrumb parent as [path, label]
+     * @param  list<array{0:string,1:string}>  $parents  multi-level breadcrumb ancestors as [[path, label], ...]; overrides $parent when non-empty
      * @param  string|null  $sharePath  path and query for og:url when the shared
      *                                  link is narrower than the canonical page
      *                                  (a record opened through a query string)
@@ -41,5 +42,7 @@ final readonly class Preview
         /** @var list<array<string, mixed>> */
         public array $extraGraph = [],
         public ?string $breadcrumbLabel = null,
+        /** @var list<array{0:string,1:string}> */
+        public array $parents = [],
     ) {}
 }

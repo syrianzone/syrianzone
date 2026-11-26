@@ -5,9 +5,11 @@ namespace App\Services\Sitemap;
 use App\Models\GovApp;
 use App\Models\GovtOfficial;
 use App\Models\OfficialEntity;
+use App\Models\Place;
 use App\Models\Promise;
 use App\Services\Governorates\GovernorateDataService;
 use App\Services\Ministries\MinistryDirectoryService;
+use App\Services\Places\PlaceIndexability;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Support\Facts;
 use Illuminate\Database\Eloquent\Collection;
@@ -64,6 +66,7 @@ class ImageSitemapBuilder
             $this->currencyImages(),
             $this->governorateIconImages(),
             $this->syidImages(),
+            $this->placeImages(),
         ];
     }
 
@@ -403,6 +406,50 @@ class ImageSitemapBuilder
         }
 
         return $images;
+    }
+
+    /**
+     * Indexable approved Mishwar place pages with their display-size photo URLs.
+     *
+     * @return list<ImageSitemapUrl>
+     */
+    private function placeImages(): array
+    {
+        $entries = [];
+        $base = rtrim((string) config('seo.base_url'), '/');
+
+        $places = Place::query()
+            ->where('status', 'approved')
+            ->with('photos')
+            ->orderBy('id')
+            ->get(['id', 'name', 'description', 'status']);
+
+        foreach ($places as $place) {
+            if (! PlaceIndexability::isIndexable($place)) {
+                continue;
+            }
+
+            $rawImages = [];
+            foreach ($place->photos as $photo) {
+                $url = $this->normalizeImage($photo->display_url, allowBareEntityFilename: false);
+                if ($url === null) {
+                    continue;
+                }
+                if (str_starts_with($url, '/')) {
+                    $url = $base.$url;
+                }
+                $rawImages[] = $url;
+            }
+
+            $images = array_values(array_unique($rawImages));
+            if ($images === []) {
+                continue;
+            }
+
+            $entries[] = new ImageSitemapUrl($place->publicPath(), $images);
+        }
+
+        return $entries;
     }
 
     /**

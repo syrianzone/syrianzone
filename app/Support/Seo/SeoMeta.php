@@ -276,13 +276,22 @@ class SeoMeta
         if ($about->mainEntity !== null) {
             $entity = $about->mainEntity;
             if (! isset($entity['@id'])) {
-                $id = $canonical.'#'.strtolower((string) ($entity['@type'] ?? 'entity'));
+                $rawType = $entity['@type'] ?? 'entity';
+                $typeFragment = is_array($rawType) ? (string) ($rawType[0] ?? 'entity') : (string) $rawType;
+                $id = $canonical.'#'.strtolower($typeFragment);
                 $entity = isset($entity['@type'])
                     ? ['@type' => $entity['@type'], '@id' => $id] + $entity
                     : ['@id' => $id] + $entity;
             }
-            if (isset($entity['image']) && is_string($entity['image']) && $entity['image'] !== '') {
-                $entity['image'] = self::absolute($entity['image'], $base);
+            if (isset($entity['image'])) {
+                if (is_string($entity['image']) && $entity['image'] !== '') {
+                    $entity['image'] = self::absolute($entity['image'], $base);
+                } elseif (is_array($entity['image'])) {
+                    $entity['image'] = array_values(array_map(
+                        static fn (string $img): string => self::absolute($img, $base),
+                        array_filter($entity['image'], static fn (mixed $img): bool => is_string($img) && $img !== ''),
+                    ));
+                }
             }
             $page['mainEntity'] = $entity;
         }
@@ -295,9 +304,17 @@ class SeoMeta
                 ['@type' => 'ListItem', 'position' => 1, 'name' => 'الرئيسية', 'item' => $base.'/'],
             ];
 
-            if ($about->parent !== null) {
-                [$parentPath, $parentLabel] = $about->parent;
-                $items[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $parentLabel, 'item' => $base.$parentPath];
+            $parents = $about->parents !== []
+                ? $about->parents
+                : ($about->parent !== null ? [$about->parent] : []);
+
+            foreach ($parents as [$parentPath, $parentLabel]) {
+                $items[] = [
+                    '@type' => 'ListItem',
+                    'position' => count($items) + 1,
+                    'name' => $parentLabel,
+                    'item' => $base.$parentPath,
+                ];
             }
 
             $items[] = [

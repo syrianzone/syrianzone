@@ -257,7 +257,10 @@ class IndexNow
 
     private function encodePath(string $path): string
     {
-        return implode('/', array_map('rawurlencode', explode('/', $path)));
+        return implode('/', array_map(
+            static fn (string $segment): string => rawurlencode(rawurldecode($segment)),
+            explode('/', $path),
+        ));
     }
 
     /**

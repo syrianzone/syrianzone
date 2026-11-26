@@ -95,7 +95,14 @@ class ImageSitemapWriter
             return $this->baseUrl.'/';
         }
 
-        return $this->baseUrl.$this->encodePath($path);
+        $query = '';
+        $qPos = strpos($path, '?');
+        if ($qPos !== false) {
+            $query = substr($path, $qPos);
+            $path = substr($path, 0, $qPos);
+        }
+
+        return $this->baseUrl.$this->encodePath($path).$query;
     }
 
     private function encodePath(string $path): string

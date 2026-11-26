@@ -8,6 +8,7 @@ use App\Models\GovtOfficial;
 use App\Models\GovtTenure;
 use App\Models\HouseMember2026;
 use App\Models\Place;
+use App\Models\PlacePhoto;
 use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\PromiseSector;
@@ -19,6 +20,7 @@ use App\Observers\IndexNow\GovAppObserver;
 use App\Observers\IndexNow\GovtOfficialObserver;
 use App\Observers\IndexNow\GovtTenureObserver;
 use App\Observers\IndexNow\PlaceObserver;
+use App\Observers\IndexNow\PlacePhotoObserver;
 use App\Observers\IndexNow\PollObserver;
 use App\Observers\IndexNow\PromiseObserver;
 use App\Observers\IndexNow\TransitRouteObserver;
@@ -85,6 +87,7 @@ class AppServiceProvider extends ServiceProvider
         City::observe(CityObserver::class);
         TransitRoute::observe(TransitRouteObserver::class);
         Place::observe(PlaceObserver::class);
+        PlacePhoto::observe(PlacePhotoObserver::class);
 
         if (config('app.env') === 'production') {
             URL::forceScheme('https');

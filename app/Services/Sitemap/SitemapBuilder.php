@@ -16,6 +16,7 @@ use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\Route as TransitRoute;
 use App\Services\ExternalData\ExternalSheetCache;
+use App\Services\Places\PlaceIndexability;
 use App\Support\Facts;
 use App\Support\HouseMembers;
 use App\Support\Seo\Pages;
@@ -46,6 +47,7 @@ class SitemapBuilder
             $this->ramadanCityUrls(),
             $this->transitCityUrls(),
             $this->houseMemberUrls(),
+            $this->placeUrls(),
         );
 
         // A path reaching both a static entry and a dynamic source would split
@@ -378,6 +380,43 @@ class SitemapBuilder
             fn (array $member) => new SitemapUrl('/house/members/'.$member['member_number'], 0.6, 'monthly', null),
             HouseMembers::all(),
         );
+    }
+
+    /**
+     * One entry per indexable approved Mishwar place. Thin places (fewer than
+     * 15 words AND at most 1 photo) carry `noindex` and stay out of the sitemap.
+     *
+     * @return SitemapUrl[]
+     */
+    private function placeUrls(): array
+    {
+        $photoStats = DB::table('place_photos')
+            ->selectRaw('place_id, COUNT(*) as photos_count, MAX(updated_at) as last_photo_updated_at')
+            ->groupBy('place_id')
+            ->get()
+            ->keyBy('place_id');
+
+        return Place::query()
+            ->where('status', 'approved')
+            ->orderBy('id')
+            ->get(['id', 'name', 'description', 'status', 'updated_at'])
+            ->filter(function (Place $place) use ($photoStats): bool {
+                $photoCount = (int) ($photoStats[$place->id]->photos_count ?? 0);
+
+                return PlaceIndexability::isIndexable($place, $photoCount);
+            })
+            ->map(function (Place $place) use ($photoStats): SitemapUrl {
+                $lastPhoto = $photoStats[$place->id]->last_photo_updated_at ?? null;
+
+                return new SitemapUrl(
+                    $place->publicPath(),
+                    0.6,
+                    'monthly',
+                    $this->latestOf([$place->updated_at, $lastPhoto]),
+                );
+            })
+            ->values()
+            ->all();
     }
 
     /**

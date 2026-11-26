@@ -95,6 +95,10 @@ export default function TierBoard({
     const [bank, setBank] = useState<Candidate[]>([]);
 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    // What the last move did, said by a persistent polite region, and the
+    // card that should take focus once the tier buttons that moved it unmount.
+    const [moveAnnouncement, setMoveAnnouncement] = useState("");
+    const [pendingFocus, setPendingFocus] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const tiersRef = useRef<HTMLDivElement>(null);
     const [submitStatus, setSubmitStatus] = useState<{
@@ -167,6 +171,25 @@ export default function TierBoard({
         setBank(filtered);
     }, [selectedGroupId, shuffledInitial, groups]);
 
+    function announceMove(moved: Candidate[], target: TierKey | "bank") {
+        if (moved.length === 0) return;
+        const who = moved.length === 1 ? moved[0].name : `${moved.length} مرشحين`;
+        const where = target === "bank" ? "قائمة المرشحين" : `المستوى ${target} (${TIERS[target].arabic})`;
+        setMoveAnnouncement(`نُقل ${who} إلى ${where}`);
+    }
+
+    useEffect(() => {
+        if (!pendingFocus) return;
+        setPendingFocus(null);
+        // Only rescue focus that was lost; never steal it from a control.
+        const active = document.activeElement;
+        if (active && active !== document.body) return;
+        const card = containerRef.current?.querySelector<HTMLElement>(
+            `[data-candidate-id="${CSS.escape(pendingFocus)}"]`,
+        );
+        card?.focus();
+    }, [pendingFocus]);
+
     function moveCandidateTo(candidateId: string, target: TierKey | "bank") {
         const fromTierKey = TIER_KEYS.find((k) =>
             tiers[k].some((c) => c.id === candidateId)
@@ -192,6 +215,7 @@ export default function TierBoard({
         } else {
             setTiers((t) => ({ ...t, [target]: [...t[target], candidate!] }));
         }
+        announceMove([candidate], target);
     }
 
     function moveCandidatesTo(candidateIds: string[], target: TierKey | "bank") {
@@ -215,6 +239,8 @@ export default function TierBoard({
             return target === "bank" ? [...filtered, ...found] : filtered;
         });
         setSelectedIds(new Set());
+        announceMove(found, target);
+        if (found.length > 0) setPendingFocus(found[0].id);
     }
 
     function toggleSelected(id: string) {
@@ -517,6 +543,7 @@ export default function TierBoard({
                                     }
                                 }}
                                 role="button"
+                                data-candidate-id={c.id}
                                 aria-pressed={selected}
                                 tabIndex={0}
                                 className={`relative flex flex-col items-center gap-1 outline h-auto p-2 pt-3 cursor-pointer select-none rounded-md transition-all active:scale-95 ${selected
@@ -701,6 +728,7 @@ export default function TierBoard({
                                             }
                                         }}
                                         role="button"
+                                        data-candidate-id={c.id}
                                         aria-pressed={selected}
                                         tabIndex={0}
                                         className={`relative flex flex-col items-center gap-1 ms-2 mb-2 outline h-auto p-2 pt-3 cursor-pointer select-none rounded-md transition-all active:scale-95 ${selected
@@ -812,6 +840,7 @@ export default function TierBoard({
                     مسح الاختيارات
                 </Button>
             </div>
+            <div role="status" className="sr-only">{moveAnnouncement}</div>
             {submitStatus && (
                 <div className="px-4 pb-2">
                     <Alert variant={submitStatus.ok ? "default" : "destructive"}>

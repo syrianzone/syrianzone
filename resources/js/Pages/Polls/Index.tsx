@@ -46,7 +46,7 @@ export default function Index({ polls = [] }: PollsPageProps) {
                                         {poll.title}
                                     </h2>
                                     <div className="flex items-center text-sm text-muted-foreground">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${poll.is_active ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${poll.is_active ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
                                             {poll.is_active ? 'نشط' : 'مغلق'}
                                         </span>
                                     </div>

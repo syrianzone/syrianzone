@@ -58,6 +58,7 @@ export default function NotesView({ config, onConfigChange }: WidgetProps<NotesC
         value={text}
         maxLength={MAX_LENGTH}
         onChange={(e) => handleChange(e.target.value)}
+        aria-label="ملاحظات"
         placeholder="اكتب ملاحظاتك هنا"
         className="h-full w-full resize-none bg-transparent p-3 text-sm text-foreground outline-none placeholder:text-muted-foreground"
       />

@@ -50,6 +50,7 @@ import {
   Topic,
   SubFile
 } from './data';
+import { decodeShareState, encodeShareState, shareStateUrl } from './shareState';
 
 const TOPIC_ICONS: Record<string, React.ComponentType<any>> = {
   economy: Briefcase,
@@ -221,31 +222,16 @@ export default function PrioritiesApp() {
       setShowBanner(false);
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const stateParam = params.get('state');
-    if (stateParam) {
-      try {
-        const decoded = decodeURIComponent(escape(atob(stateParam)));
-        const [pointsStr, subsStr] = decoded.split('|');
-        if (pointsStr) {
-          const pointsMap = pointsStr.split(',').reduce((acc, item) => {
-            const [id, val] = item.split(':');
-            if (id && val) acc[id] = parseInt(val, 10);
-            return acc;
-          }, {} as Record<string, number>);
-
-          setTopics(prev => prev.map(t => ({
-            ...t,
-            points: pointsMap[t.id] !== undefined ? pointsMap[t.id] : t.points
-          })));
-        }
-        if (subsStr) {
-          const subsArray = subsStr.split(',').filter(Boolean);
-          setSelectedSubFiles(new Set(subsArray));
-        }
-      } catch (e) {
-        console.error('Failed to parse URL state', e);
-      }
+    const stateParam = new URLSearchParams(window.location.search).get('state');
+    const shared = stateParam ? decodeShareState(stateParam, {
+      topics: INITIAL_TOPICS.map(t => t.id),
+      subFiles: INITIAL_TOPICS.flatMap(t => t.subFiles.map(s => s.id)),
+      budget: BUDGET_LIMIT,
+      maxSubFiles: MAX_SUBFILES_CHECKED,
+    }) : null;
+    if (shared) {
+      setTopics(prev => prev.map(t => ({ ...t, points: shared.points[t.id] ?? t.points })));
+      setSelectedSubFiles(new Set(shared.subFiles));
     }
   }, []);
 
@@ -542,10 +528,8 @@ export default function PrioritiesApp() {
       return;
     }
 
-    const statePoints = topics.map(t => `${t.id}:${t.points}`).join(',');
-    const stateSubs = Array.from(selectedSubFiles).join(',');
-    const encoded = btoa(unescape(encodeURIComponent(`${statePoints}|${stateSubs}`)));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?state=${encoded}`;
+    const encoded = encodeShareState(Object.fromEntries(topics.map(t => [t.id, t.points])), [...selectedSubFiles]);
+    const shareUrl = shareStateUrl(window.location, encoded);
 
     void copyText(shareUrl, {
       successMessage: "🔗 تم نسخ رابط بروفايلك الخاص المشفّر بنجاح! يمكن لزوار الرابط تصفح ومقارنة اختياراتك بدقة.",

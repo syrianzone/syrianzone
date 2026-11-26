@@ -142,8 +142,10 @@ export default function TierBoard({
         }
     }, [now, nextSubmitAt, cooldownKey]);
 
+    // Only a success fades; an error stays until the next attempt, so it
+    // cannot vanish before it has been read.
     useEffect(() => {
-        if (!submitStatus) return;
+        if (!submitStatus?.ok) return;
         const id = setTimeout(() => setSubmitStatus(null), 5000);
         return () => clearTimeout(id);
     }, [submitStatus]);

@@ -247,7 +247,9 @@ export default function Home() {
                 </header>
 
                 <div className="container mx-auto px-4 pt-6 pb-12 max-w-6xl">
-                    <div className="flex flex-col items-center gap-1 mb-6 lg:hidden">
+                    {/* Both rows fill in after mount (device clock, stored location):
+                        their heights are reserved so the page below does not jump. */}
+                    <div className="flex flex-col items-center gap-1 mb-6 min-h-12 lg:hidden">
                         {mounted && (
                             <>
                                 <span className="text-base font-bold text-foreground">{formatGregorianSyrian(new Date())}</span>
@@ -256,7 +258,7 @@ export default function Home() {
                         )}
                     </div>
 
-                    <div className="flex items-center justify-center gap-4 mb-6 text-sm lg:hidden">
+                    <div className={`flex items-center justify-center gap-4 mb-6 text-sm lg:hidden ${showWeather || showPrayerTimes ? 'min-h-5' : ''}`}>
                         {showWeather && weather && (
                             <span className="flex items-center gap-1.5 text-muted-foreground">
                                 <span className="[&>svg]:w-5 [&>svg]:h-5"><WeatherIcon code={weather.icon} /></span>

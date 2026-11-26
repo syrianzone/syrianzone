@@ -96,17 +96,18 @@ export function PhotoGrid(props: {
       <div className={'mx-auto max-w-5xl px-3 pb-8 ' + (bannerActive ? 'pt-28' : 'pt-16')}>
         {photos.length > 0 && (
           <div style={{ columnCount: columns, columnGap: '0.75rem' }}>
-            {photos.map((p) => (
+            {photos.map((p, i) => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => onPhotoClick(p)}
-                className="group relative mb-3 block w-full overflow-hidden rounded-xl text-right [break-inside:avoid]"
+                className="group relative mb-3 block w-full overflow-hidden rounded-xl text-start [break-inside:avoid]"
               >
                 <img
                   src={p.thumb_url}
                   alt={p.place.name}
-                  loading="lazy"
+                  // the first tiles are above the fold: lazy-loading them only delays first paint
+                  loading={i < 4 ? 'eager' : 'lazy'}
                   decoding="async"
                   className="w-full"
                 />

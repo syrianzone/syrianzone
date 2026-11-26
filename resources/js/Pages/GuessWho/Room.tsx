@@ -454,7 +454,7 @@ export default function GameRoom({ game }: GameProps) {
               <div className="p-4 bg-primary/10 rounded-full border border-primary/20 animate-pulse">
                 <Gamepad2 className="h-10 w-10 text-primary animate-spin" style={{ animationDuration: '3s' }} />
               </div>
-              <h2 className="text-2xl font-black text-foreground">جاري التحقق من الغرفة...</h2>
+              <h1 className="text-2xl font-black text-foreground">جاري التحقق من الغرفة...</h1>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 نقوم بالاتصال بخوادم اللعبة والتأكد من توفر مقعد شاغر لك. يرجى الانتظار لحظة.
               </p>
@@ -470,6 +470,7 @@ export default function GameRoom({ game }: GameProps) {
       <div className="min-h-screen bg-background text-foreground p-6 font-sans" dir="rtl">
         
         <div className="max-w-6xl mx-auto">
+          <h1 className="sr-only">غرفة لعبة من هو؟ — {game.category.name_ar}</h1>
           <style>{`
             .perspective-1000 {
               perspective: 1000px;

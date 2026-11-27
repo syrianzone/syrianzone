@@ -1,12 +1,15 @@
 import MainLayout from '@/Layouts/MainLayout';
-import PopulationClient from './PopulationClient';
+import PopulationClient, { type PopulationAtlasInitialSummary } from './PopulationClient';
 
-export default function PopulationPage() {
+export interface PopulationPageProps {
+    initialSummary?: PopulationAtlasInitialSummary | null;
+}
+
+export default function PopulationPage({ initialSummary = null }: PopulationPageProps) {
     return (
         <MainLayout>
-            
             <div className="h-[calc(100vh-var(--sz-navbar-h))] overflow-hidden flex flex-col bg-background">
-                <PopulationClient />
+                <PopulationClient initialSummary={initialSummary} />
             </div>
         </MainLayout>
     );

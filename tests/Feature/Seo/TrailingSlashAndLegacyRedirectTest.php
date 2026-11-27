@@ -129,6 +129,19 @@ test('unknown syofficial governorate image redirects 301 to /syofficial', functi
         ->assertRedirect('/syofficial');
 })->with(['placeholder', 'unknown-governorate']);
 
+test('legacy syofficial image paths outside governorates redirect 301 to /syofficial while governorate icons keep exact targets', function (string $path) {
+    $this->get($path)
+        ->assertMovedPermanently()
+        ->assertRedirect('/syofficial');
+
+    $this->get('/syofficial/images/governorates/gov-lattakia.webp')
+        ->assertMovedPermanently()
+        ->assertRedirect('/syid-assets/icons/governorates/with-frame/latakia-triumph-arch.svg');
+})->with([
+    'embassy webp' => ['/syofficial/images/embassies/emb-ecsc.webp'],
+    'ministry webp' => ['/syofficial/images/ministries/min-interior.webp'],
+]);
+
 test('legacy page routes redirect 301 to live 200 targets', function (string $from, string $target) {
     if ($target === '/tierlist/leaderboard') {
         Poll::factory()->create(['slug' => 'best-ministers', 'is_active' => true]);
@@ -142,6 +155,19 @@ test('legacy page routes redirect 301 to live 200 targets', function (string $fr
 })->with([
     'leaderboard' => ['/leaderboard', '/tierlist/leaderboard'],
     'bingo' => ['/bingo', '/games'],
+    'solitaire spelling' => ['/games/solitaire', '/games/solitare'],
     'syid fallback' => ['/syid/materials/nonexistent.png', '/syid'],
     'syofficial fallback' => ['/syofficial/images/governorates/unknown.webp', '/syofficial'],
+    'syofficial embassy fallback' => ['/syofficial/images/embassies/emb-ecsc.webp', '/syofficial'],
 ]);
+
+test('static flag-replacer privacy policy is marked noindex without a conflicting canonical and remains crawlable', function () {
+    $html = file_get_contents(public_path('flag-replacer/privacy-policy.html'));
+    $robots = file_get_contents(public_path('robots.txt'));
+
+    expect($html)->toBeString()
+        ->and($html)->toContain('<meta name="robots" content="noindex, nofollow"')
+        ->and($html)->not->toContain('rel="canonical"')
+        ->and($robots)->toBeString()
+        ->and($robots)->not->toContain('Disallow: /flag-replacer');
+});

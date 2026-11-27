@@ -6,7 +6,7 @@ use Illuminate\Http\RedirectResponse;
 
 /**
  * 301 redirects for legacy asset and directory URLs that search engines still
- * index under `/syid/materials/*` and `/syofficial/images/governorates/*.webp`.
+ * index under `/syid/materials/*` and `/syofficial/images/*`.
  */
 class LegacyRedirectController extends Controller
 {
@@ -110,6 +110,11 @@ class LegacyRedirectController extends Controller
             return redirect(self::GOVERNORATE_ICONS_DIR.$icon, 301);
         }
 
+        return redirect('/syofficial', 301);
+    }
+
+    public function syofficialImage(): RedirectResponse
+    {
         return redirect('/syofficial', 301);
     }
 

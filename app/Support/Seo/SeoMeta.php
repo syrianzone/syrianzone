@@ -41,6 +41,17 @@ class SeoMeta
     ];
 
     /**
+     * Declared page schemas that are Schema.org entity types rather than
+     * `WebPage` subtypes. Emitting them as `#webpage`'s `mainEntity` keeps
+     * `WebPage.breadcrumb` valid and supplies required Rich Results fields.
+     */
+    private const ENTITY_SCHEMAS = [
+        'Dataset',
+        'VideoGame',
+        'Quiz',
+    ];
+
+    /**
      * Every fixed page's path, in the order resources/data/seo.json lists them.
      *
      * @return list<string>
@@ -247,8 +258,11 @@ class SeoMeta
             ]),
         ];
 
+        $isEntitySchema = in_array($about->schema, self::ENTITY_SCHEMAS, true);
+        $pageType = $isEntitySchema ? 'WebPage' : $about->schema;
+
         $page = [
-            '@type' => $about->schema,
+            '@type' => $pageType,
             '@id' => $canonical.'#webpage',
             'url' => $canonical,
             'name' => $about->title,
@@ -257,7 +271,7 @@ class SeoMeta
             'isPartOf' => ['@id' => $websiteId],
         ];
 
-        if ($about->schema === 'Article') {
+        if ($pageType === 'Article') {
             $page['headline'] = $name;
             $page['image'] = self::absolute($about->image, $base);
             // The site's editors write and maintain these pages; no single
@@ -273,8 +287,19 @@ class SeoMeta
             $page['dateModified'] = $about->modified->format(DATE_ATOM);
         }
 
-        if ($about->mainEntity !== null) {
-            $entity = $about->mainEntity;
+        $mainEntity = $about->mainEntity;
+        if ($mainEntity === null && $isEntitySchema) {
+            $mainEntity = self::defaultMainEntity(
+                schema: $about->schema,
+                canonical: $canonical,
+                name: $name,
+                description: $about->description,
+                organizationId: $organizationId,
+            );
+        }
+
+        if ($mainEntity !== null) {
+            $entity = $mainEntity;
             if (! isset($entity['@id'])) {
                 $rawType = $entity['@type'] ?? 'entity';
                 $typeFragment = is_array($rawType) ? (string) ($rawType[0] ?? 'entity') : (string) $rawType;
@@ -297,7 +322,9 @@ class SeoMeta
         }
 
         if ($path !== '/') {
-            $page['breadcrumb'] = ['@id' => $breadcrumbId];
+            if ($page['@type'] !== 'Article') {
+                $page['breadcrumb'] = ['@id' => $breadcrumbId];
+            }
             $graph[] = $page;
 
             $items = [
@@ -346,5 +373,60 @@ class SeoMeta
             ['@context' => 'https://schema.org', '@graph' => $graph],
             JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP,
         );
+    }
+
+    /**
+     * Build a valid Schema.org `mainEntity` node for pages whose declared
+     * schema is an entity type (`Dataset`, `VideoGame`, `Quiz`).
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function defaultMainEntity(
+        string $schema,
+        string $canonical,
+        string $name,
+        string $description,
+        string $organizationId,
+    ): ?array {
+        return match ($schema) {
+            'Dataset' => [
+                '@type' => 'Dataset',
+                '@id' => $canonical.'#dataset',
+                'name' => $name,
+                'description' => $description,
+                'url' => $canonical,
+                'inLanguage' => 'ar',
+                'isAccessibleForFree' => true,
+                'license' => 'https://creativecommons.org/licenses/by/4.0/',
+                'creator' => ['@id' => $organizationId],
+            ],
+            'VideoGame' => [
+                '@type' => 'VideoGame',
+                '@id' => $canonical.'#videogame',
+                'name' => $name,
+                'description' => $description,
+                'url' => $canonical,
+                'inLanguage' => 'ar',
+                'applicationCategory' => 'Game',
+                'gamePlatform' => 'Web Browser',
+                'operatingSystem' => 'Any',
+                'offers' => [
+                    '@type' => 'Offer',
+                    'price' => '0',
+                    'priceCurrency' => 'SYP',
+                ],
+            ],
+            'Quiz' => [
+                '@type' => 'Quiz',
+                '@id' => $canonical.'#quiz',
+                'name' => $name,
+                'description' => $description,
+                'url' => $canonical,
+                'inLanguage' => 'ar',
+                'isAccessibleForFree' => true,
+                'author' => ['@id' => $organizationId],
+            ],
+            default => null,
+        };
     }
 }

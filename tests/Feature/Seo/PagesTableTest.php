@@ -72,16 +72,118 @@ test('the card artwork no longer repeats the page paths', function () {
 });
 
 test('structured data has the type the page table declares', function () {
+    $entitySchemas = ['Dataset', 'VideoGame', 'Quiz'];
+
     foreach (Pages::paths() as $path) {
         $meta = SeoMeta::resolve(Request::create($path, 'GET'));
         $graph = json_decode($meta['json_ld'], true, flags: JSON_THROW_ON_ERROR)['@graph'];
         $canonical = rtrim((string) config('seo.base_url'), '/').($path === '/' ? '/' : $path);
         $node = collect($graph)->firstWhere('@id', $canonical.'#webpage');
+        $declared = Pages::schema($path);
 
         expect($node, $path)->not->toBeNull()
-            ->and($node['@type'])->toBe(Pages::schema($path))
             ->and($meta['type'])->toBe(Pages::type($path))
             ->and($meta['canonical'])->toBe($canonical);
+
+        if (in_array($declared, $entitySchemas, true)) {
+            expect($node['@type'], $path)->toBe('WebPage')
+                ->and($node['mainEntity']['@type'] ?? null, $path)->toBe($declared);
+
+            if ($declared === 'VideoGame') {
+                expect($node['mainEntity'], $path)
+                    ->toHaveKey('applicationCategory', 'Game')
+                    ->toHaveKey('operatingSystem', 'Any')
+                    ->toHaveKey('offers');
+            }
+
+            if ($declared === 'Dataset') {
+                expect($node['mainEntity'], $path)
+                    ->toHaveKey('license')
+                    ->toHaveKey('creator');
+            }
+        } else {
+            expect($node['@type'], $path)->toBe($declared);
+        }
+
+        if ($node['@type'] === 'Article') {
+            expect($node, $path)->not->toHaveKey('breadcrumb');
+        }
+
+        if ($path !== '/') {
+            $breadcrumb = collect($graph)->firstWhere('@type', 'BreadcrumbList');
+            expect($breadcrumb, $path)->not->toBeNull();
+        }
+    }
+});
+
+test('/currency emits FAQPage JSON-LD while preserving its fixed page metadata', function () {
+    $base = rtrim((string) config('seo.base_url'), '/');
+    $fixed = SeoMeta::fixedPage('/currency');
+    $meta = SeoMeta::resolve(Request::create('/currency', 'GET'));
+    $graph = json_decode($meta['json_ld'], true, flags: JSON_THROW_ON_ERROR)['@graph'];
+    $faq = collect($graph)->firstWhere('@type', 'FAQPage');
+
+    expect($fixed)->not->toBeNull()
+        ->and($meta['canonical'])->toBe($base.'/currency')
+        ->and($meta['title'])->toBe($fixed->title)
+        ->and($meta['description'])->toBe($fixed->description)
+        ->and($meta['image'])->toBe($base.$fixed->image)
+        ->and($faq)->not->toBeNull()
+        ->and($faq['@id'])->toBe($base.'/currency#faq')
+        ->and($faq['mainEntity'])->toHaveCount(7);
+
+    foreach ($faq['mainEntity'] as $question) {
+        expect($question['@type'])->toBe('Question')
+            ->and($question['name'])->not->toBeEmpty()
+            ->and($question['acceptedAnswer']['@type'])->toBe('Answer')
+            ->and($question['acceptedAnswer']['text'])->not->toBeEmpty();
+    }
+});
+
+test('/muslim/prayer and /muslim/prayer/{city} emit FAQPage JSON-LD while preserving metadata and cards', function () {
+    $base = rtrim((string) config('seo.base_url'), '/');
+
+    $fixed = SeoMeta::fixedPage('/muslim/prayer');
+    $hubMeta = SeoMeta::resolve(Request::create('/muslim/prayer', 'GET'));
+    $hubGraph = json_decode($hubMeta['json_ld'], true, flags: JSON_THROW_ON_ERROR)['@graph'];
+    $hubFaq = collect($hubGraph)->firstWhere('@type', 'FAQPage');
+
+    expect($fixed)->not->toBeNull()
+        ->and($hubMeta['canonical'])->toBe($base.'/muslim/prayer')
+        ->and($hubMeta['title'])->toBe($fixed->title)
+        ->and($hubMeta['description'])->toBe($fixed->description)
+        ->and($hubMeta['image'])->toBe($base.$fixed->image)
+        ->and($hubFaq)->not->toBeNull()
+        ->and($hubFaq['@id'])->toBe($base.'/muslim/prayer#faq')
+        ->and($hubFaq['mainEntity'])->toHaveCount(5);
+
+    foreach ($hubFaq['mainEntity'] as $question) {
+        expect($question['@type'])->toBe('Question')
+            ->and($question['name'])->not->toBeEmpty()
+            ->and($question['acceptedAnswer']['@type'])->toBe('Answer')
+            ->and($question['acceptedAnswer']['text'])->not->toBeEmpty();
+    }
+
+    $cityMeta = SeoMeta::resolve(Request::create('/muslim/prayer/aleppo', 'GET'));
+    $cityGraph = json_decode($cityMeta['json_ld'], true, flags: JSON_THROW_ON_ERROR)['@graph'];
+    $cityFaq = collect($cityGraph)->firstWhere('@type', 'FAQPage');
+    $cityCard = Previews::cardSource('prayer-city')->card('aleppo');
+
+    expect($cityCard)->not->toBeNull()
+        ->and($cityMeta['canonical'])->toBe($base.'/muslim/prayer/aleppo')
+        ->and($cityMeta['title'])->toContain('مواقيت الصلاة في حلب اليوم')
+        ->and($cityMeta['description'])->toContain('حلب')
+        ->and($cityMeta['image'])->toBe($base.$cityCard->url())
+        ->and($cityFaq)->not->toBeNull()
+        ->and($cityFaq['@id'])->toBe($base.'/muslim/prayer/aleppo#faq')
+        ->and($cityFaq['mainEntity'])->toHaveCount(5)
+        ->and($cityFaq['mainEntity'][4]['acceptedAnswer']['text'])->toContain('في حلب');
+
+    foreach ($cityFaq['mainEntity'] as $question) {
+        expect($question['@type'])->toBe('Question')
+            ->and($question['name'])->not->toBeEmpty()
+            ->and($question['acceptedAnswer']['@type'])->toBe('Answer')
+            ->and($question['acceptedAnswer']['text'])->not->toBeEmpty();
     }
 });
 

@@ -210,6 +210,7 @@ Route::get('/games/2048', function () {
 Route::get('/games/solitare', function () {
     return Inertia::render('Games/Solitare/Index');
 });
+Route::redirect('/games/solitaire', '/games/solitare', 301);
 Route::get('/games/tarneeb', function () {
     return Inertia::render('Games/Tarneeb/Index');
 });
@@ -276,6 +277,8 @@ Route::get('/syid/materials/{file}', [LegacyRedirectController::class, 'syidMate
     ->where('file', '.*');
 Route::get('/syofficial/images/governorates/{file}.webp', [LegacyRedirectController::class, 'syofficialGovernorate'])
     ->where('file', '[^/]+');
+Route::get('/syofficial/images/{path}', [LegacyRedirectController::class, 'syofficialImage'])
+    ->where('path', '.*');
 Route::redirect('/leaderboard', '/tierlist/leaderboard', 301);
 Route::redirect('/bingo', '/games', 301);
 Route::get('/syid/logo', [ExternalDataController::class, 'syidLogo']);

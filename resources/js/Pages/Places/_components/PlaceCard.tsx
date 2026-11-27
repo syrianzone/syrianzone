@@ -33,11 +33,17 @@ export function PlaceCard(props: { place: PlaceListItem; onClick: (id: number, l
   const Icon = CATEGORY_ICONS[place.category];
 
   return (
-    <button
-      type="button"
+    <a
+      href={place.url}
       data-place-id={place.id}
-      onClick={() => onClick(place.id, place.lat, place.lng)}
-      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-accent/50"
+      onClick={(e) => {
+        // Keep modifier-click / middle-click opening the dedicated place page,
+        // while plain click selects and flies to the place on the map.
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        e.preventDefault();
+        onClick(place.id, place.lat, place.lng);
+      }}
+      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {place.thumb_url && !broken ? (
         <img
@@ -62,6 +68,6 @@ export function PlaceCard(props: { place: PlaceListItem; onClick: (id: number, l
           </span>
         </p>
       </div>
-    </button>
+    </a>
   );
 }

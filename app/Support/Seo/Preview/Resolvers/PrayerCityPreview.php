@@ -8,9 +8,10 @@ use App\Support\Seo\Og\RecordCard;
 use App\Support\Seo\Preview\DescribesCards;
 use App\Support\Seo\Preview\Preview;
 use App\Support\Seo\Preview\PreviewResolver;
+use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 
-/** /muslim/prayer/{city}: daily prayer times for one Syrian governorate. */
+/** /muslim/prayer and /muslim/prayer/{city}: daily prayer times for Syria and each governorate. */
 final class PrayerCityPreview implements CardSource, PreviewResolver
 {
     use DescribesCards;
@@ -42,6 +43,34 @@ final class PrayerCityPreview implements CardSource, PreviewResolver
 
     public function resolve(Request $request, string $path): ?Preview
     {
+        $base = rtrim((string) config('seo.base_url'), '/');
+
+        if ($path === '/muslim/prayer') {
+            $fixed = SeoMeta::fixedPage('/muslim/prayer');
+            if ($fixed === null) {
+                return null;
+            }
+
+            return new Preview(
+                title: $fixed->title,
+                description: $fixed->description,
+                canonicalPath: $fixed->canonicalPath,
+                image: $fixed->image,
+                type: $fixed->type,
+                noindex: $fixed->noindex,
+                schema: $fixed->schema,
+                parent: $fixed->parent,
+                sharePath: $fixed->sharePath,
+                shareTitle: $fixed->shareTitle,
+                published: $fixed->published,
+                modified: $fixed->modified,
+                mainEntity: $fixed->mainEntity,
+                extraGraph: [$this->faqEntity($base.'/muslim/prayer', null)],
+                breadcrumbLabel: $fixed->breadcrumbLabel,
+                parents: $fixed->parents,
+            );
+        }
+
         if (! preg_match('#^/muslim/prayer/([a-z0-9-]+)$#', $path, $m)) {
             return null;
         }
@@ -63,7 +92,62 @@ final class PrayerCityPreview implements CardSource, PreviewResolver
             canonicalPath: '/muslim/prayer/'.$gov['id'],
             image: $this->describe($gov)->url(),
             parent: ['/muslim/prayer', 'مواقيت الصلاة'],
+            extraGraph: [$this->faqEntity($base.'/muslim/prayer/'.$gov['id'], $cityName)],
         );
+    }
+
+    /**
+     * Build a Schema.org `FAQPage` node matching the verified Arabic FAQ block
+     * rendered on `/muslim/prayer` and `/muslim/prayer/{city}`.
+     *
+     * @return array<string, mixed>
+     */
+    private function faqEntity(string $canonicalUrl, ?string $cityNameAr): array
+    {
+        $ramadanTitle = $cityNameAr !== null && $cityNameAr !== ''
+            ? 'إمساكية رمضان 1448 هـ / 2027 م في '.$cityNameAr
+            : 'إمساكية رمضان 1448 هـ / 2027 م في سوريا';
+
+        $items = [
+            [
+                'q' => 'ما طريقة الحساب المعتمدة لمواقيت الصلاة في سوريا ولماذا؟',
+                'a' => 'نعتمد افتراضياً طريقة رابطة العالم الإسلامي (زاوية الفجر 18° وزاوية العشاء 17°)، لأنها المعيار الفلكي المتوافق مع التوقيت الرسمي المعتمد في المساجد السورية. ويمكنك تغيير طريقة الحساب من زر الإعدادات أعلاه إذا كنت تتبع مذهباً أو تقويماً آخر.',
+            ],
+            [
+                'q' => 'لماذا قد يختلف الوقت المعروض عن أذان المسجد القريب بدقيقة أو دقيقتين؟',
+                'a' => 'تُحسب المواقيت لإحداثيات مركز المحافظة، بينما تعتمد بعض المساجد والمواقيت الورقية هوامش احتياط (دقيقة إلى دقيقتين) أو تختلف قليلاً بحسب الموقع الجغرافي داخل المحافظة والارتفاع عن سطح البحر وتقريب الثواني.',
+            ],
+            [
+                'q' => 'ما علاقة وقت الإمساك بوقت صلاة الفجر؟',
+                'a' => 'وقت الإمساك هو تنبيه احتياطي يسبق أذان الفجر بنحو عشر دقائق للتنبيه إلى قرب انتهاء وقت السحور، أما بداية الصيام شرعياً فتكون عند طلوع الفجر الصادق (وقت صلاة الفجر).',
+            ],
+            [
+                'q' => 'كيف يُحسب اتجاه القبلة للمحافظة؟',
+                'a' => 'يُحسب اتجاه القبلة هندسياً عبر مسار الدائرة العظمى من إحداثيات مركز المحافظة إلى الكعبة المشرفة في مكة المكرمة (21.4225° N, 39.8262° E)، وتُقاس الزاوية بالدرجات من الشمال الحقيقي باتجاه عقارب الساعة.',
+            ],
+            [
+                'q' => 'أين أجد إمساكية شهر رمضان المبارك كاملةً؟',
+                'a' => 'يمكنك تصفح جدول الشهر الكريم كاملاً مع مواعيد الإمساك والإفطار ونسخة مخصصة للطباعة في صفحة '.$ramadanTitle.'.',
+            ],
+        ];
+
+        $questions = array_map(
+            static fn (array $item): array => [
+                '@type' => 'Question',
+                'name' => $item['q'],
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => $item['a'],
+                ],
+            ],
+            $items,
+        );
+
+        return [
+            '@type' => 'FAQPage',
+            '@id' => $canonicalUrl.'#faq',
+            'mainEntity' => $questions,
+        ];
     }
 
     public function card(string $key): ?RecordCard

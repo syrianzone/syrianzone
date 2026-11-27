@@ -8,6 +8,7 @@ use App\Services\Governorates\GovernorateGeometry;
 use App\Services\GuideLevelService;
 use App\Services\PlaceImageService;
 use App\Services\Places\PlaceGovernorates;
+use App\Services\Places\PlaceHubService;
 use App\Services\Places\PlaceIndexability;
 use App\Services\Places\PlaceModerationService;
 use App\Services\Places\PlacePresenter;
@@ -36,8 +37,13 @@ class PlaceController extends Controller
       ->whereRaw('place_photos.sort = (select min(cover.sort) from place_photos as cover where cover.place_id = place_photos.place_id)')];
   }
 
-  public function renderIndex(Request $request, GovernorateGeometry $geometry)
-  {
+  public function renderIndex(
+    Request $request,
+    GovernorateGeometry $geometry,
+    PlacePresenter $presenter,
+    PlaceGovernorates $governorates,
+    PlaceHubService $hubs,
+  ) {
     $placeParam = $request->query('place');
     if (is_string($placeParam) && ctype_digit($placeParam)) {
       $shared = Place::find((int) $placeParam);
@@ -58,9 +64,62 @@ class PlaceController extends Controller
       $initialBounds = $geometry->latLngBounds($govId);
     }
 
-    return Inertia::render('Places/Index', $initialBounds !== null ? [
-      'initialBounds' => $initialBounds,
-    ] : []);
+    $paginator = Place::where('status', 'approved')
+      ->with(self::thumbPhotos())
+      ->latest()
+      ->paginate(20)
+      ->through(fn ($p) => $presenter->publicListItem($p));
+
+    $props = [
+      'initialPlaces' => [
+        'data' => $paginator->items(),
+        'current_page' => $paginator->currentPage(),
+        'last_page' => $paginator->lastPage(),
+        'total' => $paginator->total(),
+      ],
+      'governorateHubs' => $this->indexableGovernorateHubs($governorates, $hubs),
+    ];
+
+    if ($initialBounds !== null) {
+      $props['initialBounds'] = $initialBounds;
+    }
+
+    return Inertia::render('Places/Index', $props);
+  }
+
+  /**
+   * Indexable Mishwar governorate hubs ordered by governorate sort_order.
+   *
+   * @return list<array{id: string, name_ar: string, count: int, url: string}>
+   */
+  private function indexableGovernorateHubs(PlaceGovernorates $governorates, PlaceHubService $hubs): array
+  {
+    $counts = array_count_values($governorates->map());
+    if ($counts === []) {
+      return [];
+    }
+
+    $minGov = $hubs->minGovernoratePlaces();
+    $ordered = Facts::governorates();
+    usort($ordered, fn (array $a, array $b) => ((int) $a['sort_order']) <=> ((int) $b['sort_order']));
+
+    $result = [];
+    foreach ($ordered as $gov) {
+      $id = (string) $gov['id'];
+      $count = $counts[$id] ?? 0;
+      if ($count < $minGov) {
+        continue;
+      }
+
+      $result[] = [
+        'id' => $id,
+        'name_ar' => (string) $gov['name_ar'],
+        'count' => $count,
+        'url' => '/mishwar/'.$id,
+      ];
+    }
+
+    return $result;
   }
 
   public function renderShow(

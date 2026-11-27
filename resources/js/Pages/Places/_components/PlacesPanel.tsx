@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link } from '@inertiajs/react';
 import { Loader2, Pencil, Plus, X } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Badge } from '@/Components/ui/badge';
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { cn } from '@/Lib/utils';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';
-import type { HotelListItem, MyPlace, Paginated, PlaceListItem, PlaceStatus } from '@/Domain/places/types';
+import type { HotelListItem, MyPlace, Paginated, PlaceHubOtherLink, PlaceListItem, PlaceStatus } from '@/Domain/places/types';
 import { GuidesTab } from './GuidesTab';
 import { HotelCard } from './HotelCard';
 import { HotelDetailView } from './HotelDetailView';
@@ -92,9 +93,10 @@ function ListShell(props: {
   onLoadMore: () => void;
   failed?: boolean;
   onRetry?: () => void;
+  footer?: ReactNode;
   children: ReactNode;
 }) {
-  const { loading, empty, hasMore, onLoadMore, failed = false, onRetry, children } = props;
+  const { loading, empty, hasMore, onLoadMore, failed = false, onRetry, footer, children } = props;
   return (
     <ScrollArea className="min-h-0 flex-1">
       <div className="space-y-1 px-2 py-2">
@@ -122,6 +124,7 @@ function ListShell(props: {
             عرض المزيد
           </Button>
         )}
+        {footer}
       </div>
     </ScrollArea>
   );
@@ -220,6 +223,7 @@ function HotelsTab(props: { onSelectHotel: (id: number, lat: number, lng: number
 export function PlacesPanel(props: {
   places: PlaceListItem[];
   loading: boolean;
+  governorateHubs?: PlaceHubOtherLink[];
   selectedId: number | null;
   selectedType: 'place' | 'hotel' | null;
   onSelect: (id: number, lat: number, lng: number) => void;
@@ -233,7 +237,7 @@ export function PlacesPanel(props: {
   className?: string;
 }) {
   const {
-    places, loading, selectedId, selectedType, onSelect, onClose, onSelectHotel,
+    places, loading, governorateHubs = [], selectedId, selectedType, onSelect, onClose, onSelectHotel,
     hasMore, onLoadMore, onSelectGuide, addMode, onAddToggle, className,
   } = props;
   // controlled so picking a guide drops the user on the filtered places list
@@ -280,8 +284,35 @@ export function PlacesPanel(props: {
 
   const tabCount = user ? 5 : 3;
 
+  const governorateHubsFooter = governorateHubs.length > 0 ? (
+    <nav aria-label="أماكن حسب المحافظة" className="mt-3 border-t border-border pt-3 px-1 pb-2 space-y-2">
+      <h2 className="text-xs font-semibold text-muted-foreground">تصفح حسب المحافظة</h2>
+      <ul className="flex flex-wrap gap-1.5">
+        {governorateHubs.map((hub) => (
+          <li key={hub.id}>
+            <Link
+              href={hub.url}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span>{hub.name_ar}</span>
+              <span dir="ltr" className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                ({hub.count})
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  ) : null;
+
   const mainList = (
-    <ListShell loading={loading} empty={places.length === 0} hasMore={hasMore} onLoadMore={onLoadMore}>
+    <ListShell
+      loading={loading}
+      empty={places.length === 0}
+      hasMore={hasMore}
+      onLoadMore={onLoadMore}
+      footer={governorateHubsFooter}
+    >
       {places.map((p) => (
         <PlaceCard key={p.id} place={p} onClick={onSelect} />
       ))}

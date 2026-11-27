@@ -5,6 +5,7 @@ namespace App\Support\Seo\Preview;
 use App\Support\Seo\Og\CardSource;
 use App\Support\Seo\Preview\Resolvers\CompassSharePreview;
 use App\Support\Seo\Preview\Resolvers\CrossingPreview;
+use App\Support\Seo\Preview\Resolvers\CurrencyPreview;
 use App\Support\Seo\Preview\Resolvers\GovAppPreview;
 use App\Support\Seo\Preview\Resolvers\GovernoratePreview;
 use App\Support\Seo\Preview\Resolvers\GovtOfficialPreview;
@@ -55,6 +56,7 @@ final class Previews
         CompassSharePreview::class,
         PrioritiesSharePreview::class,
         SyIdPreview::class,
+        CurrencyPreview::class,
     ];
 
     /**

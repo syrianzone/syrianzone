@@ -11,7 +11,7 @@ import { useIsMobile } from '@/Lib/useIsMobile';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
-import type { GeoSuggestion, GridPhoto, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from '@/Domain/places/types';
+import type { GeoSuggestion, GridPhoto, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceHubOtherLink, PlaceListItem } from '@/Domain/places/types';
 import { inSyriaBox } from '@/Domain/geography/syria';
 
 const PlacesMap = lazy(() => import('./_components/PlacesMap').then(m => ({ default: m.PlacesMap })));
@@ -20,9 +20,15 @@ const EMPTY_HOTEL_GEOJSON: HotelFeatureCollection = { type: 'FeatureCollection',
 
 export interface PlacesIndexProps {
   initialBounds?: [[number, number], [number, number]] | null;
+  initialPlaces?: Paginated<PlaceListItem> | null;
+  governorateHubs?: PlaceHubOtherLink[];
 }
 
-export default function Index({ initialBounds = null }: PlacesIndexProps) {
+export default function Index({
+  initialBounds = null,
+  initialPlaces = null,
+  governorateHubs = [],
+}: PlacesIndexProps) {
   const [features, setFeatures] = useState<PlaceFeatureCollection | null>(null);
   const [hotelFeatures, setHotelFeatures] = useState<HotelFeatureCollection>(EMPTY_HOTEL_GEOJSON);
   const [category, setCategory] = useState<PlaceCategory | null>(null);
@@ -32,8 +38,8 @@ export default function Index({ initialBounds = null }: PlacesIndexProps) {
   const [selectedType, setSelectedType] = useState<'place' | 'hotel' | null>(null);
   const [submitPoint, setSubmitPoint] = useState<LatLng | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
-  const [listPlaces, setListPlaces] = useState<Paginated<PlaceListItem> | null>(null);
-  const [listLoading, setListLoading] = useState(false);
+  const [listPlaces, setListPlaces] = useState<Paginated<PlaceListItem> | null>(() => initialPlaces ?? null);
+  const [listLoading, setListLoading] = useState<boolean>(() => initialPlaces == null);
   const [addMode, setAddMode] = useState(false);
   // bumping it asks the map to pick its current centre (the keyboard path for add mode)
   const [pickCenterKey, setPickCenterKey] = useState(0);
@@ -145,7 +151,14 @@ export default function Index({ initialBounds = null }: PlacesIndexProps) {
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
   }, []);
 
+  const skipInitialFetchRef = useRef(
+    initialPlaces != null && category === null && query === '' && guide === null,
+  );
   useEffect(() => {
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false;
+      return;
+    }
     const timer = setTimeout(() => fetchList(1), 300);
     return () => clearTimeout(timer);
   }, [category, query, guide]);
@@ -275,6 +288,7 @@ export default function Index({ initialBounds = null }: PlacesIndexProps) {
     <PlacesPanel
       places={listPlaces?.data ?? []}
       loading={listLoading}
+      governorateHubs={governorateHubs}
       selectedId={selectedId}
       selectedType={selectedType}
       onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
@@ -294,24 +308,28 @@ export default function Index({ initialBounds = null }: PlacesIndexProps) {
       
       <h1 className="sr-only">مشوار — أماكن وفنادق</h1>
       <div dir="rtl" className="relative h-[calc(100dvh-var(--sz-navbar-h))] overflow-hidden">
-        <Suspense fallback={<div className="absolute inset-0 bg-background flex items-center justify-center text-muted-foreground">جاري تحميل الخريطة...</div>}>
-          <PlacesMap
-            features={filteredFeatures}
-            hotelFeatures={filteredHotelFeatures}
-            selectedId={selectedId}
-            selectedType={selectedType}
-            addMode={addMode}
-            initialBounds={initialBounds}
-            focus={focus}
-            highlight={highlight}
-            onPinClick={(id) => handlePinClick(id, 'place')}
-            onHotelPinClick={(id) => handlePinClick(id, 'hotel')}
-            onMapClick={handleMapClick}
-            pickCenterKey={pickCenterKey}
-            // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
-            className="absolute inset-0"
-          />
-        </Suspense>
+        {mounted ? (
+          <Suspense fallback={<div className="absolute inset-0 bg-background flex items-center justify-center text-muted-foreground">جاري تحميل الخريطة...</div>}>
+            <PlacesMap
+              features={filteredFeatures}
+              hotelFeatures={filteredHotelFeatures}
+              selectedId={selectedId}
+              selectedType={selectedType}
+              addMode={addMode}
+              initialBounds={initialBounds}
+              focus={focus}
+              highlight={highlight}
+              onPinClick={(id) => handlePinClick(id, 'place')}
+              onHotelPinClick={(id) => handlePinClick(id, 'hotel')}
+              onMapClick={handleMapClick}
+              pickCenterKey={pickCenterKey}
+              // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
+              className="absolute inset-0"
+            />
+          </Suspense>
+        ) : (
+          <div className="absolute inset-0 bg-background flex items-center justify-center text-muted-foreground">جاري تحميل الخريطة...</div>
+        )}
 
         {/* stays mounted across view switches so fetched pages survive; renders null on the map view */}
         <PhotoGrid

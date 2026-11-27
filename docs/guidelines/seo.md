@@ -301,7 +301,9 @@ Every fixed page has its own card at `/og/<slug>.png`; the slug is in
 | `/polls/{slug}`, `/polls/{slug}/leaderboard` | `PollPreview` | `/og/r/poll/{slug}.png` (the tier list poll uses its page cards) | active polls |
 | `/transit/city/{id}` | `TransitCityPreview` | `/og/r/city/{id}.png` | published cities |
 | `/transit/city/{id}?route={routeId}` | `TransitRoutePreview` (accepts routes of any city on the same map, see `City::mapGroup()`) | `/og/r/route/{routeId}.png` | no (canonical is the city) |
-| `/mishwar?place={id}` | `PlacePreview` | `/og/r/place/{id}.jpg` | no (canonical is `/mishwar`) |
+| `/mishwar/{place}` | `PlacePreview` | `/og/r/place/{id}.jpg` (or `.png` without a photo) | approved indexable places (self-canonical) |
+| `/mishwar/{governorate}`, `/mishwar/{governorate}/{category}` | `PlaceHubPreview` | `/og/mishwar.png` | indexable hubs (`PlaceHubService::sitemapHubs()`, self-canonical) |
+| `/mishwar?place={id}` | `PlacePreview` | `/og/r/place/{id}.jpg` | no (canonicalizes to `/mishwar/{place}`) |
 | `/crossings?c={n}` | `CrossingPreview` | `/og/r/crossing/{n}.png` | no (canonical is `/crossings`) |
 | `/priorities?state=…` | `PrioritiesSharePreview` | `priorities-share` | no |
 | `/guesswho/room/{code}` | `GuessWhoRoomPreview` | `guesswho-invite` | no (noindex) |

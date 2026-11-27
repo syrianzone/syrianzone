@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import { Link } from '@inertiajs/react';
 import { api as client, apiErrorMessage, API_ROOT } from '@/Lib/api';
 import { PopulationGroups, DATA_TYPES, DATA_TYPE_CONFIG, RainfallData, DataSource } from './types';
 import {
@@ -54,12 +55,54 @@ function GovernoratePicker({ governorates, onSelect }: { governorates: Governora
 
 const GOVERNORATES_BY_SORT_ORDER = GOVERNORATES.toSorted((a, b) => a.sortOrder - b.sortOrder);
 
-export default function PopulationClient() {
+export interface PopulationSummaryGovernorate {
+    id: string;
+    name_ar: string;
+    dataset_name_en: string;
+    value: number;
+    url: string;
+}
+
+export interface PopulationAtlasInitialSummary {
+    source_id: number;
+    note: string | null;
+    date: string | null;
+    source_url: string | null;
+    total: number;
+    governorates: PopulationSummaryGovernorate[];
+}
+
+function buildInitialDataSource(summary: PopulationAtlasInitialSummary | null): DataSource | null {
+    if (!summary || summary.governorates.length === 0) return null;
+
+    const cities: Record<string, number> = {};
+    for (const gov of summary.governorates) {
+        cities[gov.name_ar] = gov.value;
+    }
+
+    return {
+        source_id: summary.source_id,
+        source_url: summary.source_url ?? '',
+        date: summary.date ?? '',
+        note: summary.note ?? 'سكان المحافظات',
+        cities,
+    };
+}
+
+export default function PopulationClient({
+    initialSummary = null,
+}: {
+    initialSummary?: PopulationAtlasInitialSummary | null;
+}) {
+    const initialSource = useMemo(() => buildInitialDataSource(initialSummary), [initialSummary]);
     const isMobile = useIsMobile();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
     const [geoJsonData, setGeoJsonData] = useState<unknown>(null);
     const [currentDataType, setCurrentDataType] = useState<DataType>(DATA_TYPES.POPULATION);
-    const [currentSourceId, setCurrentSourceId] = useState<number | null>(null);
-    const [isPanelOpen, setIsPanelOpen] = useState(false);
+    const [currentSourceId, setCurrentSourceId] = useState<number | null>(() => initialSource?.source_id ?? null);
+    const [isPanelOpen, setIsPanelOpen] = useState<boolean>(() => !isMobile);
 
     const [selectedProvinces, setSelectedProvinces] = useState<string[]>([]);
 
@@ -69,14 +112,14 @@ export default function PopulationClient() {
     const [rainfallData, setRainfallData] = useState<RainfallData>({});
     const [environmentalData, setEnvironmentalData] = useState<any>(null);
 
-    const [livePopulationData, setLivePopulationData] = useState<PopulationGroups>({
-        population: [],
+    const [livePopulationData, setLivePopulationData] = useState<PopulationGroups>(() => ({
+        population: initialSource ? [initialSource] : [],
         idp: [],
         idp_returnees: [],
         rainfall: [],
         environmental: []
-    });
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    }));
+    const [isLoading, setIsLoading] = useState<boolean>(() => initialSource === null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -114,24 +157,34 @@ export default function PopulationClient() {
                 setRainfallData(masterData.rainfall_data);
             })
             .catch(err => {
-                if (active) setError(apiErrorMessage(err, 'تعذّر تحميل بيانات الأطلس السكاني، حاول مجدداً لاحقاً.'));
+                if (!active) return;
+                const message = apiErrorMessage(err, 'تعذّر تحميل بيانات الأطلس السكاني، حاول مجدداً لاحقاً.');
+                if (initialSource !== null) {
+                    notify.error(message);
+                } else {
+                    setError(message);
+                }
             })
             .finally(() => {
                 if (active) setIsLoading(false);
             });
 
         return () => { active = false; };
-    }, []);
+    }, [initialSource]);
 
     // Rainfall is a single layer with no source rows, so it has no selected source.
     useEffect(() => {
         const sources = currentDataType === DATA_TYPES.RAINFALL ? null : livePopulationData[currentDataType];
-        setCurrentSourceId(sources && sources.length > 0 ? sources[0].source_id : null);
+        setCurrentSourceId((prev) => {
+            if (!sources || sources.length === 0) return null;
+            if (prev !== null && sources.some((s) => s.source_id === prev)) return prev;
+            return sources[0].source_id;
+        });
     }, [currentDataType, livePopulationData]);
 
     useEffect(() => {
         // The panel is open by default where it fits beside the map.
-        if (!isMobile) setIsPanelOpen(true);
+        setIsPanelOpen(!isMobile);
     }, [isMobile]);
 
     const currentSource = useMemo(() => {
@@ -328,54 +381,58 @@ export default function PopulationClient() {
             </div>
 
             <div className="flex-grow relative z-0">
-                <Suspense fallback={<div className="h-full w-full flex items-center justify-center bg-card text-muted-foreground">جاري تحميل الخريطة...</div>}>
-                    <MapClient
-                        geoJsonData={geoJsonData}
-                        populationData={populationData}
-                        rainfallData={rainfallData}
-                        environmentalData={environmentalData}
-                        currentDataType={currentDataType}
-                        currentSourceId={currentSourceId}
-                        customThresholds={dynamicThresholds}
-                        onFeatureClick={(feature) => {
-                            const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
-                            const nameAr = getCanonicalGovernorateName(name);
+                {mounted ? (
+                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center bg-card text-muted-foreground">جاري تحميل الخريطة...</div>}>
+                        <MapClient
+                            geoJsonData={geoJsonData}
+                            populationData={populationData}
+                            rainfallData={rainfallData}
+                            environmentalData={environmentalData}
+                            currentDataType={currentDataType}
+                            currentSourceId={currentSourceId}
+                            customThresholds={dynamicThresholds}
+                            onFeatureClick={(feature) => {
+                                const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
+                                const nameAr = getCanonicalGovernorateName(name);
 
-                            if (currentDataType === DATA_TYPES.RAINFALL) {
-                                const props = feature.properties;
-                                const codeKeys = ['ADM1_PCODE', 'ADM2_PCODE', 'admin1Pcode', 'admin2Pcode', 'code', 'id', 'PCODE'];
-                                let rData = null;
+                                if (currentDataType === DATA_TYPES.RAINFALL) {
+                                    const props = feature.properties;
+                                    const codeKeys = ['ADM1_PCODE', 'ADM2_PCODE', 'admin1Pcode', 'admin2Pcode', 'code', 'id', 'PCODE'];
+                                    let rData = null;
 
-                                for (const key of codeKeys) {
-                                    if (props[key] && rainfallData[props[key]]) {
-                                        rData = rainfallData[props[key]];
-                                        break;
+                                    for (const key of codeKeys) {
+                                        if (props[key] && rainfallData[props[key]]) {
+                                            rData = rainfallData[props[key]];
+                                            break;
+                                        }
                                     }
-                                }
 
-                                if (!rData) {
-                                    const nameKeys = ['province_name', 'ADM1_EN', 'ADM1_AR', 'name', 'Name', 'NAME', 'admin1Name_en'];
-                                    for (const key of nameKeys) {
-                                        if (props[key]) {
-                                            const mappedCode = getGovernoratePcode(props[key]);
-                                            if (mappedCode && rainfallData[mappedCode]) {
-                                                rData = rainfallData[mappedCode];
-                                                break;
+                                    if (!rData) {
+                                        const nameKeys = ['province_name', 'ADM1_EN', 'ADM1_AR', 'name', 'Name', 'NAME', 'admin1Name_en'];
+                                        for (const key of nameKeys) {
+                                            if (props[key]) {
+                                                const mappedCode = getGovernoratePcode(props[key]);
+                                                if (mappedCode && rainfallData[mappedCode]) {
+                                                    rData = rainfallData[mappedCode];
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
+
+                                    if (rData) showRainfallProvince(nameAr, rData);
                                 }
 
-                                if (rData) showRainfallProvince(nameAr, rData);
-                            }
-
-                            else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
-                                const data = envCityData(nameAr, name);
-                                if (data) showEnvProvince(nameAr, data);
-                            }
-                        }}
-                    />
-                </Suspense>
+                                else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
+                                    const data = envCityData(nameAr, name);
+                                    if (data) showEnvProvince(nameAr, data);
+                                }
+                            }}
+                        />
+                    </Suspense>
+                ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-card text-muted-foreground">جاري تحميل الخريطة...</div>
+                )}
 
                 <div className="absolute bottom-6 end-20 z-[400] bg-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-border text-sm min-w-[150px]">
                     <h2 className="font-bold mb-2 text-foreground flex items-center gap-2">
@@ -893,104 +950,141 @@ export default function PopulationClient() {
                             )}
                         </div>
                     ) : (
-                        livePopulationData[currentDataType]?.map((source: DataSource) => {
-                            const isExpanded = currentSourceId === source.source_id;
-
-                            return (
-                                <div key={source.source_id} className={`rounded-lg border transition-all duration-200 ${isExpanded ? 'border-primary bg-card shadow-md' : 'border-border bg-card/50 hover:bg-muted/50'}`}>
-                                    <button
-                                        type="button"
-                                        aria-expanded={isExpanded}
-                                        className="w-full text-start p-3 flex flex-col gap-3 cursor-pointer select-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                        onClick={() => setCurrentSourceId(source.source_id)}
-                                    >
-                                        <span className="flex flex-col gap-0.5">
-                                            <span className="font-bold text-sm">
-                                                {source.note || DATA_TYPE_CONFIG[currentDataType as keyof typeof DATA_TYPE_CONFIG].labelAr}
+                        <>
+                            {currentDataType === DATA_TYPES.POPULATION && initialSummary && initialSummary.total > 0 && (
+                                <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-xs font-medium text-muted-foreground">إجمالي سكان المحافظات</span>
+                                        {initialSummary.date && (
+                                            <span className="text-[11px] text-muted-foreground font-mono tabular-nums" dir="ltr">
+                                                {initialSummary.date}
                                             </span>
-                                            {source.date && (
-                                                <span className="text-xs text-muted-foreground">{source.date}</span>
-                                            )}
-                                        </span>
-                                    </button>
-                                    {isExpanded && (
-                                        <div className="px-3 pb-3 pt-0 animate-in slide-in-from-top-2 duration-200">
-                                            <div className="mb-2 flex justify-between items-center px-1">
-                                                <h2 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">قائمة المحافظات</h2>
-                                                {selectedProvinces.length > 0 && (
-                                                    <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
-                                                        تم اختيار {selectedProvinces.length}/2
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {source.source_url && (
-                                                <a
-                                                    href={source.source_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 transition-colors mb-2 px-1"
-                                                >
-                                                    <ExternalLink size={12} />
-                                                    <span>المصدر</span>
-                                                </a>
-                                            )}
-
-                                            <div className="overflow-hidden rounded-md border border-border/50">
-                                                <table className="w-full text-xs text-right">
-                                                    <thead className="bg-muted/50 text-muted-foreground">
-                                                        <tr>
-                                                            <th className="py-2 px-2 text-center w-8"><span className="sr-only">تحديد للمقارنة</span></th>
-                                                            <th className="py-2 px-2 font-medium">المحافظة</th>
-                                                            <th className="py-2 px-2 text-left font-medium">العدد</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-border/50 bg-card">
-                                                        {sortCitiesByOrder(Object.entries(source.cities)).map(([city, pop]) => {
-                                                            const isSelected = selectedProvinces.includes(city);
-                                                            return (
-                                                                <tr
-                                                                    key={city}
-                                                                    className={`hover:bg-muted/50 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}
-                                                                >
-                                                                    <td className="py-1.5 px-2 text-center">
-                                                                        <button
-                                                                            type="button"
-                                                                            role="checkbox"
-                                                                            aria-checked={isSelected}
-                                                                            aria-label={`تحديد ${getCanonicalGovernorateName(city)} للمقارنة`}
-                                                                            onClick={() => toggleProvinceSelection(city)}
-                                                                            className="flex w-full justify-center rounded p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                                        >
-                                                                            {isSelected ?
-                                                                                <CheckSquare size={14} className="text-primary fill-primary/10" /> :
-                                                                                <Square size={14} className="text-muted-foreground" />
-                                                                            }
-                                                                        </button>
-                                                                    </td>
-                                                                    <td className="py-1.5 px-2 font-medium">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => toggleProvinceSelection(city)}
-                                                                            className="w-full text-right"
-                                                                        >
-                                                                            {getCanonicalGovernorateName(city)}
-                                                                        </button>
-                                                                    </td>
-                                                                    <td className="py-1.5 px-2 text-left font-mono text-muted-foreground">
-                                                                        {pop.toLocaleString('en-US')}
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
+                                        )}
+                                    </div>
+                                    <p className="text-lg font-bold font-mono tabular-nums text-foreground text-start" dir="ltr">
+                                        {initialSummary.total.toLocaleString('en-US')}
+                                    </p>
+                                    {initialSummary.note && (
+                                        <p className="text-[11px] text-muted-foreground">{initialSummary.note}</p>
                                     )}
                                 </div>
-                            );
-                        })
+                            )}
+
+                            {livePopulationData[currentDataType]?.map((source: DataSource) => {
+                                const isExpanded = currentSourceId === source.source_id;
+
+                                return (
+                                    <div key={source.source_id} className={`rounded-lg border transition-all duration-200 ${isExpanded ? 'border-primary bg-card shadow-md' : 'border-border bg-card/50 hover:bg-muted/50'}`}>
+                                        <button
+                                            type="button"
+                                            aria-expanded={isExpanded}
+                                            className="w-full text-start p-3 flex flex-col gap-3 cursor-pointer select-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            onClick={() => setCurrentSourceId(source.source_id)}
+                                        >
+                                            <span className="flex flex-col gap-0.5">
+                                                <span className="font-bold text-sm">
+                                                    {source.note || DATA_TYPE_CONFIG[currentDataType as keyof typeof DATA_TYPE_CONFIG].labelAr}
+                                                </span>
+                                                {source.date && (
+                                                    <span className="text-xs text-muted-foreground">{source.date}</span>
+                                                )}
+                                            </span>
+                                        </button>
+                                        {isExpanded && (
+                                            <div className="px-3 pb-3 pt-0 animate-in slide-in-from-top-2 duration-200">
+                                                <div className="mb-2 flex justify-between items-center px-1">
+                                                    <h2 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">قائمة المحافظات</h2>
+                                                    {selectedProvinces.length > 0 && (
+                                                        <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                                                            تم اختيار {selectedProvinces.length}/2
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {source.source_url && (
+                                                    <a
+                                                        href={source.source_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 transition-colors mb-2 px-1"
+                                                    >
+                                                        <ExternalLink size={12} />
+                                                        <span>المصدر</span>
+                                                    </a>
+                                                )}
+
+                                                <div className="overflow-hidden rounded-md border border-border/50">
+                                                    <table className="w-full text-xs text-start">
+                                                        <thead className="bg-muted/50 text-muted-foreground">
+                                                            <tr>
+                                                                <th className="py-2 px-2 text-center w-8"><span className="sr-only">تحديد للمقارنة</span></th>
+                                                                <th className="py-2 px-2 text-start font-medium">المحافظة</th>
+                                                                <th className="py-2 px-2 text-end font-medium">العدد</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-border/50 bg-card">
+                                                            {sortCitiesByOrder(Object.entries(source.cities)).map(([city, pop]) => {
+                                                                const isSelected = selectedProvinces.includes(city);
+                                                                return (
+                                                                    <tr
+                                                                        key={city}
+                                                                        className={`hover:bg-muted/50 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}
+                                                                    >
+                                                                        <td className="py-1.5 px-2 text-center">
+                                                                            <button
+                                                                                type="button"
+                                                                                role="checkbox"
+                                                                                aria-checked={isSelected}
+                                                                                aria-label={`تحديد ${getCanonicalGovernorateName(city)} للمقارنة`}
+                                                                                onClick={() => toggleProvinceSelection(city)}
+                                                                                className="flex w-full justify-center rounded p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                                            >
+                                                                                {isSelected ?
+                                                                                    <CheckSquare size={14} className="text-primary fill-primary/10" /> :
+                                                                                    <Square size={14} className="text-muted-foreground" />
+                                                                                }
+                                                                            </button>
+                                                                        </td>
+                                                                        <td className="py-1.5 px-2 font-medium">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => toggleProvinceSelection(city)}
+                                                                                className="w-full text-start"
+                                                                            >
+                                                                                {getCanonicalGovernorateName(city)}
+                                                                            </button>
+                                                                        </td>
+                                                                        <td className="py-1.5 px-2 text-end font-mono tabular-nums text-muted-foreground">
+                                                                            {pop.toLocaleString('en-US')}
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+
+                            <nav aria-label="أدلة المحافظات السورية" className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                                <h3 className="text-xs font-bold text-foreground">أدلة المحافظات السورية</h3>
+                                <ul className="flex flex-wrap gap-1.5">
+                                    {GOVERNORATES_BY_SORT_ORDER.map((gov) => (
+                                        <li key={gov.id}>
+                                            <Link
+                                                href={`/governorates/${gov.id}`}
+                                                className="inline-flex items-center rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            >
+                                                {gov.nameAr}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </nav>
+                        </>
                     )}
                 </div>
 

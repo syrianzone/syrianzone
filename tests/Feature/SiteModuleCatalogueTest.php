@@ -48,7 +48,7 @@ test('public navigation api exposes groups, item group metadata, and dark logos 
     $groups = $response->json('groups');
     $items = collect($response->json('items'));
 
-    expect(array_column($groups, 'id'))->toBe(['politics', 'utility', 'maps', 'community', 'external'])
+    expect(array_column($groups, 'id'))->toBe(['daily', 'maps', 'politics', 'directories', 'community', 'external'])
         ->and($items->firstWhere('id', 'party'))->toBeNull()
         ->and($items->firstWhere('id', 'compass')['group'])->toBe('politics')
         ->and($items->firstWhere('id', 'atlas')['group'])->toBe('maps')

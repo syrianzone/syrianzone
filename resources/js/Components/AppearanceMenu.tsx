@@ -37,8 +37,9 @@ export default function AppearanceMenu({ className }: { className?: string }) {
         saveSetting({ fontFamily: font });
     };
 
-    const circleThemes = THEME_REGISTRY.filter((t) => t.group !== 'heritage');
+    const madarThemes = THEME_REGISTRY.filter((t) => t.group === 'madar');
     const heritageThemes = THEME_REGISTRY.filter((t) => t.group === 'heritage');
+    const circleThemes = THEME_REGISTRY.filter((t) => t.group !== 'madar' && t.group !== 'heritage');
     const activeTheme = THEME_REGISTRY.find((t) => t.id === currentTheme);
 
     return (
@@ -64,10 +65,39 @@ export default function AppearanceMenu({ className }: { className?: string }) {
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-56 p-1" align="end">
+            <PopoverContent className="w-64 p-1" align="end">
                 <div className="px-2 py-1.5" dir="rtl">
                     <p id="sz-appearance-theme-label" className="text-xs text-muted-foreground mb-2">المظهر</p>
                     <div role="group" aria-labelledby="sz-appearance-theme-label">
+                        {madarThemes.length > 0 && (
+                            <div className="grid grid-cols-2 gap-1.5 mb-2.5">
+                                {madarThemes.map((t) => {
+                                    const isActive = currentTheme === t.id;
+                                    const swatch = (
+                                        <span
+                                            aria-hidden="true"
+                                            className="w-4 h-4 rounded-full shrink-0 overflow-hidden shadow-sm"
+                                            style={{ background: t.bg, border: `2px solid ${t.primary}` }}
+                                        >
+                                            <span className="block" style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
+                                        </span>
+                                    );
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            aria-pressed={isActive}
+                                            onClick={() => handleThemeChange(t.id)}
+                                            className={`flex items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${isActive ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-foreground hover:border-primary'}`}
+                                        >
+                                            {swatch}
+                                            <span className="truncate">{t.shortNameAr ?? t.nameAr}</span>
+                                            {isActive && <Check aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                         {heritageThemes.length > 0 && (
                             <div className="flex items-center gap-2 mb-3">
                                 {heritageThemes.map((t) => {

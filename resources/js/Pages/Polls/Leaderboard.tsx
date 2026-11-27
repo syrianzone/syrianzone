@@ -189,7 +189,7 @@ function Top3Podium({ rows, title }: { rows: LeaderboardEntry[]; title: string }
     const [first, second, third] = rows;
     return (
         <div className="max-w-screen-md mx-auto mb-8">
-            <h2 className="font-semibold mb-4 text-center text-gray-500">{title}</h2>
+            <h2 className="font-semibold mb-4 text-center text-muted-foreground">{title}</h2>
             <div className="grid grid-cols-3 items-end justify-items-center gap-4">
                 <div className="flex flex-col items-center">
                     <div className="relative">

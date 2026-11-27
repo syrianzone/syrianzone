@@ -85,6 +85,27 @@
     line-gap-override: 0%;
 }
 
+@font-face {
+    font-family: 'Beiruti';
+    src: url('/fonts/beiruti/Beiruti-VariableFont_wght.woff2') format('woff2');
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+.sz-display {
+    font-family: var(--site-display-font, 'Beiruti', var(--site-font));
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1.15;
+}
+
+/* Logo colour hooks: the logo SVG uses these, so it follows the active theme. */
+.sz-logo-ink   { fill: hsl(var(--foreground)); }
+.sz-logo-orbit { fill: hsl(var(--sz-orbit)); }
+.sz-logo-bowl  { fill: hsl(var(--sz-bowl)); }
+.sz-logo-node  { fill: hsl(var(--sz-node)); }
+
 /* Quran Hafs (KFGQPC Uthmanic, vendored in public/fonts for offline use).
    Single Quran font for the whole Muslim section. Family name matches the
    skill's registered OpenType name (skill §8.2) to avoid silent fallback. */
@@ -254,10 +275,10 @@
 .sz-card--back::after {
     content: '';
     position: absolute;
-    inset: 2%;
+    inset: 18%;
     background-color: hsl(var(--primary-foreground));
-    -webkit-mask: url('/assets/favicon.png') center / contain no-repeat;
-    mask: url('/assets/favicon.png') center / contain no-repeat;
+    -webkit-mask: url('/assets/mark.svg') center / contain no-repeat;
+    mask: url('/assets/mark.svg') center / contain no-repeat;
 }
 
 .sz-card__count {
@@ -343,6 +364,7 @@ html {
 
 @theme {
     --font-sans: var(--site-font, 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif);
+    --font-display: var(--site-display-font, 'Beiruti', var(--site-font, 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif));
 
     --color-background: hsl(var(--background));
     --color-foreground: hsl(var(--foreground));
@@ -363,6 +385,28 @@ html {
     --color-border: hsl(var(--border));
     --color-input: hsl(var(--input));
     --color-ring: hsl(var(--ring));
+    --color-sz-orbit: hsl(var(--sz-orbit));
+    --color-sz-bowl: hsl(var(--sz-bowl));
+    --color-sz-node: hsl(var(--sz-node));
+    --color-sz-node-soft: hsl(var(--sz-node-soft));
+    --color-sz-node-ink: hsl(var(--sz-node-ink));
+    --color-sz-node-foreground: hsl(var(--sz-node-foreground));
+    --color-sz-politics: hsl(var(--sz-politics));
+    --color-sz-utility: hsl(var(--sz-utility));
+    --color-sz-maps: hsl(var(--sz-maps));
+    --color-sz-community: hsl(var(--sz-community));
+    --color-sz-external: hsl(var(--sz-external));
+    --color-success: hsl(var(--success));
+    --color-success-foreground: hsl(var(--success-foreground));
+    --color-warning: hsl(var(--warning));
+    --color-warning-foreground: hsl(var(--warning-foreground));
+    --color-info: hsl(var(--info));
+    --color-info-foreground: hsl(var(--info-foreground));
+    --color-chart-1: hsl(var(--chart-1));
+    --color-chart-2: hsl(var(--chart-2));
+    --color-chart-3: hsl(var(--chart-3));
+    --color-chart-4: hsl(var(--chart-4));
+    --color-chart-5: hsl(var(--chart-5));
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
@@ -374,6 +418,7 @@ html {
        isDark flag in resources/js/Lib/theme.ts. */
     color-scheme: light;
     --site-font: 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif;
+    --site-display-font: 'Beiruti', 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -396,6 +441,13 @@ html {
     --input: 0 0% 89.8%;
     --ring: 105 15.2% 36.1%;
     --radius: 0.5rem;
+    /* Fallback brand mark tokens for legacy light themes. */
+    --sz-orbit: 232 51.6% 42.2%;
+    --sz-bowl: 232 54.2% 64.9%;
+    --sz-node: 40 91.0% 43.5%;
+    --sz-node-soft: 43 77.8% 91.2%;
+    --sz-node-ink: 40 91.0% 30.6%;
+    --sz-node-foreground: 232 33.3% 13.5%;
     /* The sticky navbar's total height: the `h-16` row in
        Components/Navbar.tsx plus its 1px bottom border. Full-viewport pages
        subtract it instead of restating the arithmetic. */
@@ -453,6 +505,13 @@ html {
     --border: 0 0% 100% / 10%;
     --input: 0 0% 100% / 10%;
     --ring: 105 15.2% 36.1%;
+    /* Fallback brand mark tokens for legacy dark themes. */
+    --sz-orbit: 233 100.0% 78.8%;
+    --sz-bowl: 232 52.6% 55.3%;
+    --sz-node: 40 87.6% 58.8%;
+    --sz-node-soft: 36 33.3% 15.9%;
+    --sz-node-ink: 40 87.6% 58.8%;
+    --sz-node-foreground: 233 49.1% 10.8%;
 }
 
 
@@ -589,6 +648,373 @@ html {
 
 }
 
+/* ── Syrian Zone «المدار» brand palettes ── */
+/* نيلي وزعفران · Indigo & saffron (default) */
+[data-theme="nili"] {
+    color-scheme: light;
+    --background: 50 27.3% 95.7%;
+    --foreground: 232 33.3% 13.5%;
+    --card: 0 0.0% 100.0%;
+    --card-foreground: 232 33.3% 13.5%;
+    --popover: 0 0.0% 100.0%;
+    --popover-foreground: 232 33.3% 13.5%;
+    --primary: 232 51.6% 42.2%;
+    --primary-foreground: 50 27.3% 95.7%;
+    --secondary: 229 63.0% 94.7%;
+    --secondary-foreground: 232 33.3% 13.5%;
+    --muted: 49 22.4% 90.4%;
+    --muted-foreground: 231 19.6% 40.0%;
+    --accent: 230 53.5% 91.6%;
+    --accent-foreground: 232 33.3% 13.5%;
+    --destructive: 3 71.3% 41.0%;
+    --destructive-foreground: 0 0.0% 100.0%;
+    --border: 49 14.7% 85.3%;
+    --input: 51 13.4% 81.0%;
+    --ring: 232 51.6% 42.2%;
+    --sz-orbit: 232 51.6% 42.2%;
+    --sz-bowl: 232 54.2% 64.9%;
+    --sz-node: 40 91.0% 43.5%;
+    --sz-node-soft: 43 77.8% 91.2%;
+    --sz-node-ink: 40 91.0% 30.6%;
+    --sz-node-foreground: 232 33.3% 13.5%;
+    --sz-politics: 355 39.4% 50.2%;
+    --sz-politics-1: 356 62.3% 62.5%;
+    --sz-politics-2: 21 53.0% 54.1%;
+    --sz-politics-3: 323 34.7% 51.4%;
+    --sz-utility: 38 100.0% 30.8%;
+    --sz-utility-1: 38 100.0% 37.5%;
+    --sz-utility-2: 51 47.9% 41.4%;
+    --sz-utility-3: 13 44.4% 49.4%;
+    --sz-maps: 179 100.0% 24.3%;
+    --sz-maps-1: 178 100.0% 30.2%;
+    --sz-maps-2: 195 44.9% 48.4%;
+    --sz-maps-3: 148 37.9% 39.8%;
+    --sz-community: 286 25.6% 49.0%;
+    --sz-community-1: 286 37.3% 60.0%;
+    --sz-community-2: 329 35.4% 61.2%;
+    --sz-community-3: 242 34.3% 58.2%;
+    --sz-external: 226 9.1% 45.3%;
+    --sz-external-1: 223 11.1% 55.9%;
+    --sz-external-2: 260 14.6% 59.6%;
+    --sz-external-3: 203 22.3% 47.5%;
+    --success: 156 85.3% 26.7%;
+    --success-foreground: 0 0.0% 100.0%;
+    --warning: 37 100.0% 30.8%;
+    --warning-foreground: 0 0.0% 100.0%;
+    --info: 205 67.5% 41.0%;
+    --info-foreground: 0 0.0% 100.0%;
+    --chart-1: 232 51.6% 42.2%;
+    --chart-2: 40 91.0% 43.5%;
+    --chart-3: 179 100.0% 24.3%;
+    --chart-4: 286 25.6% 49.0%;
+    --chart-5: 226 9.1% 45.3%;
+    --radius: 0.75rem;
+}
+
+[data-theme="nili-night"] {
+    --background: 233 49.1% 10.8%;
+    --foreground: 233 100.0% 96.7%;
+    --card: 233 47.4% 14.9%;
+    --card-foreground: 233 100.0% 96.7%;
+    --popover: 233 46.7% 17.6%;
+    --popover-foreground: 233 100.0% 96.7%;
+    --primary: 233 100.0% 78.8%;
+    --primary-foreground: 233 49.1% 10.8%;
+    --secondary: 232 45.3% 20.8%;
+    --secondary-foreground: 233 100.0% 96.7%;
+    --muted: 233 46.7% 17.6%;
+    --muted-foreground: 232 44.2% 74.7%;
+    --accent: 232 41.9% 24.3%;
+    --accent-foreground: 233 100.0% 96.7%;
+    --destructive: 4 84.0% 68.2%;
+    --destructive-foreground: 0 50.0% 7.8%;
+    --border: 232 42.4% 25.9%;
+    --input: 232 40.8% 29.8%;
+    --ring: 233 100.0% 78.8%;
+    --sz-orbit: 233 100.0% 78.8%;
+    --sz-bowl: 232 52.6% 55.3%;
+    --sz-node: 40 87.6% 58.8%;
+    --sz-node-soft: 36 33.3% 15.9%;
+    --sz-node-ink: 40 87.6% 58.8%;
+    --sz-node-foreground: 233 49.1% 10.8%;
+    --sz-politics: 357 88.4% 76.3%;
+    --sz-politics-1: 357 88.4% 76.3%;
+    --sz-politics-2: 23 100.0% 77.6%;
+    --sz-politics-3: 324 48.1% 63.7%;
+    --sz-utility: 33 70.9% 61.0%;
+    --sz-utility-1: 33 70.9% 61.0%;
+    --sz-utility-2: 52 62.5% 68.6%;
+    --sz-utility-3: 13 59.2% 61.6%;
+    --sz-maps: 178 48.4% 55.9%;
+    --sz-maps-1: 178 48.4% 55.9%;
+    --sz-maps-2: 195 93.3% 76.7%;
+    --sz-maps-3: 147 31.4% 52.0%;
+    --sz-community: 285 51.5% 74.1%;
+    --sz-community-1: 285 51.5% 74.1%;
+    --sz-community-2: 329 100.0% 85.9%;
+    --sz-community-3: 241 50.3% 70.8%;
+    --sz-external: 224 15.9% 71.6%;
+    --sz-external-1: 224 15.9% 71.6%;
+    --sz-external-2: 259 44.4% 85.9%;
+    --sz-external-3: 202 26.9% 59.2%;
+    --success: 148 46.6% 59.6%;
+    --success-foreground: 233 49.1% 10.8%;
+    --warning: 34 74.2% 59.0%;
+    --warning-foreground: 233 49.1% 10.8%;
+    --info: 207 91.0% 69.6%;
+    --info-foreground: 233 49.1% 10.8%;
+    --chart-1: 233 100.0% 78.8%;
+    --chart-2: 40 87.6% 58.8%;
+    --chart-3: 178 48.4% 55.9%;
+    --chart-4: 285 51.5% 74.1%;
+    --chart-5: 224 15.9% 71.6%;
+    --radius: 0.75rem;
+}
+
+/* قاشاني · Qashani tile */
+[data-theme="qashani"] {
+    color-scheme: light;
+    --background: 168 26.3% 96.3%;
+    --foreground: 176 28.0% 9.8%;
+    --card: 0 0.0% 100.0%;
+    --card-foreground: 176 28.0% 9.8%;
+    --popover: 0 0.0% 100.0%;
+    --popover-foreground: 176 28.0% 9.8%;
+    --primary: 182 82.0% 23.9%;
+    --primary-foreground: 0 0.0% 100.0%;
+    --secondary: 165 26.1% 91.0%;
+    --secondary-foreground: 176 28.0% 9.8%;
+    --muted: 167 24.3% 92.7%;
+    --muted-foreground: 175 13.0% 34.7%;
+    --accent: 173 25.4% 86.9%;
+    --accent-foreground: 176 28.0% 9.8%;
+    --destructive: 3 71.3% 41.0%;
+    --destructive-foreground: 0 0.0% 100.0%;
+    --border: 165 20.5% 84.7%;
+    --input: 164 18.8% 80.2%;
+    --ring: 182 82.0% 23.9%;
+    --sz-orbit: 182 82.0% 23.9%;
+    --sz-bowl: 178 29.6% 51.6%;
+    --sz-node: 22 64.6% 50.2%;
+    --sz-node-soft: 24 80.5% 92.0%;
+    --sz-node-ink: 22 64.8% 41.2%;
+    --sz-node-foreground: 176 28.0% 9.8%;
+    --sz-politics: 356 40.0% 51.0%;
+    --sz-politics-1: 356 62.3% 62.5%;
+    --sz-politics-2: 21 55.1% 55.5%;
+    --sz-politics-3: 323 34.7% 51.4%;
+    --sz-utility: 38 100.0% 30.8%;
+    --sz-utility-1: 38 96.9% 38.2%;
+    --sz-utility-2: 51 46.5% 42.5%;
+    --sz-utility-3: 13 44.4% 49.4%;
+    --sz-maps: 179 100.0% 24.5%;
+    --sz-maps-1: 178 100.0% 30.2%;
+    --sz-maps-2: 195 44.9% 48.4%;
+    --sz-maps-3: 148 37.9% 39.8%;
+    --sz-community: 286 25.6% 49.0%;
+    --sz-community-1: 286 37.3% 60.0%;
+    --sz-community-2: 329 35.4% 61.2%;
+    --sz-community-3: 242 34.3% 58.2%;
+    --sz-external: 223 9.0% 45.7%;
+    --sz-external-1: 226 11.3% 56.7%;
+    --sz-external-2: 260 14.6% 59.6%;
+    --sz-external-3: 203 22.3% 47.5%;
+    --success: 155 80.3% 27.8%;
+    --success-foreground: 0 0.0% 100.0%;
+    --warning: 37 100.0% 31.2%;
+    --warning-foreground: 0 0.0% 100.0%;
+    --info: 205 67.5% 41.0%;
+    --info-foreground: 0 0.0% 100.0%;
+    --chart-1: 182 82.0% 23.9%;
+    --chart-2: 22 64.6% 50.2%;
+    --chart-3: 179 100.0% 24.5%;
+    --chart-4: 286 25.6% 49.0%;
+    --chart-5: 223 9.0% 45.7%;
+    --radius: 0.75rem;
+}
+
+[data-theme="qashani-night"] {
+    --background: 184 45.9% 7.3%;
+    --foreground: 170 35.3% 93.3%;
+    --card: 183 40.7% 10.6%;
+    --card-foreground: 170 35.3% 93.3%;
+    --popover: 182 39.7% 12.4%;
+    --popover-foreground: 170 35.3% 93.3%;
+    --primary: 177 50.4% 54.9%;
+    --primary-foreground: 184 70.0% 7.8%;
+    --secondary: 182 39.7% 14.3%;
+    --secondary-foreground: 170 35.3% 93.3%;
+    --muted: 182 41.0% 12.0%;
+    --muted-foreground: 173 18.5% 62.9%;
+    --accent: 182 39.5% 16.9%;
+    --accent-foreground: 170 35.3% 93.3%;
+    --destructive: 4 84.0% 68.2%;
+    --destructive-foreground: 0 50.0% 7.8%;
+    --border: 182 32.6% 18.0%;
+    --input: 182 31.0% 22.2%;
+    --ring: 177 50.4% 54.9%;
+    --sz-orbit: 177 50.4% 54.9%;
+    --sz-bowl: 178 50.8% 35.9%;
+    --sz-node: 18 82.8% 65.9%;
+    --sz-node-soft: 20 39.8% 16.3%;
+    --sz-node-ink: 18 82.8% 65.9%;
+    --sz-node-foreground: 184 45.9% 7.3%;
+    --sz-politics: 357 88.4% 76.3%;
+    --sz-politics-1: 357 88.4% 76.3%;
+    --sz-politics-2: 23 100.0% 77.6%;
+    --sz-politics-3: 324 48.1% 63.7%;
+    --sz-utility: 33 70.9% 61.0%;
+    --sz-utility-1: 33 70.9% 61.0%;
+    --sz-utility-2: 52 62.5% 68.6%;
+    --sz-utility-3: 13 59.2% 61.6%;
+    --sz-maps: 178 48.4% 55.9%;
+    --sz-maps-1: 178 48.4% 55.9%;
+    --sz-maps-2: 195 93.3% 76.7%;
+    --sz-maps-3: 147 31.4% 52.0%;
+    --sz-community: 285 51.5% 74.1%;
+    --sz-community-1: 285 51.5% 74.1%;
+    --sz-community-2: 329 100.0% 85.9%;
+    --sz-community-3: 241 50.3% 70.8%;
+    --sz-external: 224 15.9% 71.6%;
+    --sz-external-1: 224 15.9% 71.6%;
+    --sz-external-2: 259 44.4% 85.9%;
+    --sz-external-3: 202 26.9% 59.2%;
+    --success: 148 46.6% 59.6%;
+    --success-foreground: 184 45.9% 7.3%;
+    --warning: 34 74.2% 59.0%;
+    --warning-foreground: 184 45.9% 7.3%;
+    --info: 207 91.0% 69.6%;
+    --info-foreground: 184 45.9% 7.3%;
+    --chart-1: 177 50.4% 54.9%;
+    --chart-2: 18 82.8% 65.9%;
+    --chart-3: 178 48.4% 55.9%;
+    --chart-4: 285 51.5% 74.1%;
+    --chart-5: 224 15.9% 71.6%;
+    --radius: 0.75rem;
+}
+
+/* بازلت ونحاس · Basalt & copper */
+[data-theme="limestone"] {
+    color-scheme: light;
+    --background: 40 31.0% 94.3%;
+    --foreground: 210 10.0% 11.8%;
+    --card: 0 0.0% 100.0%;
+    --card-foreground: 210 10.0% 11.8%;
+    --popover: 0 0.0% 100.0%;
+    --popover-foreground: 210 10.0% 11.8%;
+    --primary: 207 11.4% 15.5%;
+    --primary-foreground: 40 31.0% 94.3%;
+    --secondary: 39 25.0% 89.0%;
+    --secondary-foreground: 210 10.0% 11.8%;
+    --muted: 38 25.6% 91.6%;
+    --muted-foreground: 210 4.2% 37.3%;
+    --accent: 42 16.5% 84.5%;
+    --accent-foreground: 210 10.0% 11.8%;
+    --destructive: 3 71.3% 41.0%;
+    --destructive-foreground: 0 0.0% 100.0%;
+    --border: 38 20.9% 82.2%;
+    --input: 38 18.6% 76.9%;
+    --ring: 207 11.4% 15.5%;
+    --sz-orbit: 207 11.3% 19.0%;
+    --sz-bowl: 208 6.8% 57.1%;
+    --sz-node: 18 60.9% 44.1%;
+    --sz-node-soft: 21 60.9% 91.0%;
+    --sz-node-ink: 18 60.9% 42.2%;
+    --sz-node-foreground: 0 0.0% 100.0%;
+    --sz-politics: 356 39.1% 49.6%;
+    --sz-politics-1: 356 59.6% 61.2%;
+    --sz-politics-2: 21 53.0% 54.1%;
+    --sz-politics-3: 323 34.7% 51.4%;
+    --sz-utility: 37 100.0% 30.2%;
+    --sz-utility-1: 38 100.0% 37.1%;
+    --sz-utility-2: 52 49.8% 39.8%;
+    --sz-utility-3: 13 44.4% 49.4%;
+    --sz-maps: 179 100.0% 23.9%;
+    --sz-maps-1: 178 100.0% 29.6%;
+    --sz-maps-2: 195 46.1% 47.3%;
+    --sz-maps-3: 148 37.9% 39.8%;
+    --sz-community: 286 26.0% 48.2%;
+    --sz-community-1: 286 36.2% 58.8%;
+    --sz-community-2: 329 34.3% 60.0%;
+    --sz-community-3: 242 34.3% 58.2%;
+    --sz-external: 223 9.3% 44.5%;
+    --sz-external-1: 226 11.0% 55.5%;
+    --sz-external-2: 260 14.2% 58.4%;
+    --sz-external-3: 203 22.3% 47.5%;
+    --success: 156 90.8% 25.7%;
+    --success-foreground: 0 0.0% 100.0%;
+    --warning: 37 100.0% 30.6%;
+    --warning-foreground: 0 0.0% 100.0%;
+    --info: 205 70.3% 39.6%;
+    --info-foreground: 0 0.0% 100.0%;
+    --chart-1: 207 11.4% 15.5%;
+    --chart-2: 18 60.9% 44.1%;
+    --chart-3: 179 100.0% 23.9%;
+    --chart-4: 286 26.0% 48.2%;
+    --chart-5: 223 9.3% 44.5%;
+    --radius: 0.75rem;
+}
+
+[data-theme="basalt"] {
+    --background: 204 11.6% 8.4%;
+    --foreground: 38 24.4% 91.2%;
+    --card: 206 11.9% 11.6%;
+    --card-foreground: 38 24.4% 91.2%;
+    --popover: 207 13.0% 13.5%;
+    --popover-foreground: 38 24.4% 91.2%;
+    --primary: 39 27.9% 88.0%;
+    --primary-foreground: 204 11.6% 8.4%;
+    --secondary: 204 12.5% 15.7%;
+    --secondary-foreground: 38 24.4% 91.2%;
+    --muted: 202 12.5% 12.5%;
+    --muted-foreground: 207 6.0% 64.1%;
+    --accent: 203 7.8% 20.0%;
+    --accent-foreground: 38 24.4% 91.2%;
+    --destructive: 4 84.0% 68.2%;
+    --destructive-foreground: 0 50.0% 7.8%;
+    --border: 202 10.7% 20.2%;
+    --input: 205 9.7% 24.3%;
+    --ring: 39 27.9% 88.0%;
+    --sz-orbit: 38 22.4% 80.8%;
+    --sz-bowl: 206 6.8% 46.3%;
+    --sz-node: 19 68.4% 65.3%;
+    --sz-node-soft: 19 36.5% 16.7%;
+    --sz-node-ink: 19 68.4% 65.3%;
+    --sz-node-foreground: 204 11.6% 8.4%;
+    --sz-politics: 357 88.4% 76.3%;
+    --sz-politics-1: 357 88.4% 76.3%;
+    --sz-politics-2: 23 100.0% 77.6%;
+    --sz-politics-3: 324 48.1% 63.7%;
+    --sz-utility: 33 70.9% 61.0%;
+    --sz-utility-1: 33 70.9% 61.0%;
+    --sz-utility-2: 52 62.5% 68.6%;
+    --sz-utility-3: 13 59.2% 61.6%;
+    --sz-maps: 178 48.4% 55.9%;
+    --sz-maps-1: 178 48.4% 55.9%;
+    --sz-maps-2: 195 93.3% 76.7%;
+    --sz-maps-3: 147 31.4% 52.0%;
+    --sz-community: 285 51.5% 74.1%;
+    --sz-community-1: 285 51.5% 74.1%;
+    --sz-community-2: 329 100.0% 85.9%;
+    --sz-community-3: 241 50.3% 70.8%;
+    --sz-external: 224 15.9% 71.6%;
+    --sz-external-1: 224 15.9% 71.6%;
+    --sz-external-2: 259 44.4% 85.9%;
+    --sz-external-3: 202 26.9% 59.2%;
+    --success: 148 46.6% 59.6%;
+    --success-foreground: 204 11.6% 8.4%;
+    --warning: 34 74.2% 59.0%;
+    --warning-foreground: 204 11.6% 8.4%;
+    --info: 207 91.0% 69.6%;
+    --info-foreground: 204 11.6% 8.4%;
+    --chart-1: 39 27.9% 88.0%;
+    --chart-2: 19 68.4% 65.3%;
+    --chart-3: 178 48.4% 55.9%;
+    --chart-4: 285 51.5% 74.1%;
+    --chart-5: 224 15.9% 71.6%;
+    --radius: 0.75rem;
+}
+
 /* Mobile menu reveal: the full-screen sheet opens as a circle growing from the
    trigger button (its centre is passed in as --sz-menu-x/--sz-menu-y). Unlayered
    so it wins over the sheet's default slide-in/out utilities. */
@@ -665,6 +1091,10 @@ html {
         font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif;
     }
 
+    h1, h2, h3 {
+        font-family: var(--site-display-font, 'Beiruti', var(--site-font));
+    }
+
     button, 
     [role="button"],
     .button {
@@ -725,12 +1155,14 @@ html {
 html[data-font="system"],
 html[data-font="system"] body {
     --site-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --site-display-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 html[data-font="ibm-plex"],
 html[data-font="ibm-plex"] body {
     --site-font: 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif;
+    --site-display-font: 'Beiruti', 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif;
     font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif !important;
 }
 

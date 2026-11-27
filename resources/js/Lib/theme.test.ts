@@ -169,7 +169,7 @@ describe('applyTheme', () => {
     });
   });
 
-  it('resolves the system preference to jasmine in light mode and damascus-rose in dark mode', () => {
+  it('resolves the system preference to nili in light mode and nili-night in dark mode', () => {
     const previousWindow = (globalThis as { window?: unknown }).window;
     const withDarkScheme = (matches: boolean, run: () => void) => {
       (globalThis as { window?: unknown }).window = {
@@ -183,11 +183,11 @@ describe('applyTheme', () => {
     };
 
     withDarkScheme(false, () => {
-      expect(resolveTheme(SYSTEM_THEME)).toBe('jasmine');
+      expect(resolveTheme(SYSTEM_THEME)).toBe('nili');
       withDocument(true, (attributes) => {
         applyTheme(SYSTEM_THEME);
         expect(attributes).toEqual({
-          'html.data-theme': 'jasmine',
+          'html.data-theme': 'nili',
           'html.data-scheme': 'light',
           'meta.content': 'light',
         });
@@ -195,11 +195,11 @@ describe('applyTheme', () => {
     });
 
     withDarkScheme(true, () => {
-      expect(resolveTheme(SYSTEM_THEME)).toBe('damascus-rose');
+      expect(resolveTheme(SYSTEM_THEME)).toBe('nili-night');
       withDocument(true, (attributes) => {
         applyTheme(SYSTEM_THEME);
         expect(attributes).toEqual({
-          'html.data-theme': 'damascus-rose',
+          'html.data-theme': 'nili-night',
           'html.data-scheme': 'dark',
           'meta.content': 'dark',
         });

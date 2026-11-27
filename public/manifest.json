@@ -5,8 +5,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#09090b",
+  "background_color": "#0e1129",
+  "theme_color": "#3442a3",
   "shortcuts": [
     {
       "name": "مواقيت الصلاة",

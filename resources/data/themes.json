@@ -3,8 +3,8 @@
     "key": "sz-theme",
     "system": "system",
     "defaults": {
-      "light": "jasmine",
-      "dark": "damascus-rose"
+      "light": "nili",
+      "dark": "nili-night"
     }
   },
   "font": {
@@ -23,9 +23,129 @@
       "emoji": "🌓",
       "icon": "monitor",
       "isDark": false,
-      "bg": "linear-gradient(90deg, #fcfaf3 50%, #1a0f12 50%)",
-      "primary": "#9e5e0a",
+      "bg": "linear-gradient(90deg, #f7f6f1 50%, #0e1129 50%)",
+      "primary": "#3443a3",
       "group": "system"
+    },
+    {
+      "id": "nili",
+      "nameAr": "نيلي",
+      "nameEn": "Indigo & saffron — light",
+      "shortNameAr": "نيلي",
+      "emoji": "◆",
+      "icon": "palette",
+      "isDark": false,
+      "bg": "#f7f6f1",
+      "primary": "#3443a3",
+      "group": "madar",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #F7F6F1 0%, #C6C9DE 50%, #F7F6F1 100%)",
+        "accentBg": "bg-indigo-500/20 border-indigo-500/30",
+        "accentText": "text-indigo-700",
+        "badgeBg": "bg-indigo-500/10 border-indigo-500/20 text-indigo-800",
+        "headerSubtitle": "#52587a",
+        "urlText": "#3442a3"
+      }
+    },
+    {
+      "id": "nili-night",
+      "nameAr": "ليل نيلي",
+      "nameEn": "Indigo & saffron — dark",
+      "shortNameAr": "ليل نيلي",
+      "emoji": "◆",
+      "icon": "palette",
+      "isDark": true,
+      "bg": "#0e1129",
+      "primary": "#939fff",
+      "group": "madar",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #0E1129 0%, #2F355E 50%, #0E1129 100%)",
+        "accentBg": "bg-indigo-500/20 border-indigo-500/30",
+        "accentText": "text-indigo-400",
+        "badgeBg": "bg-indigo-500/10 border-indigo-500/20 text-indigo-300",
+        "headerSubtitle": "#a2aadb",
+        "urlText": "#93a0ff"
+      }
+    },
+    {
+      "id": "qashani",
+      "nameAr": "قاشاني",
+      "nameEn": "Qashani tile — light",
+      "shortNameAr": "قاشاني",
+      "emoji": "◆",
+      "icon": "palette",
+      "isDark": false,
+      "bg": "#f3f8f7",
+      "primary": "#0b6c6f",
+      "group": "madar",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #F3F8F7 0%, #B9D5D5 50%, #F3F8F7 100%)",
+        "accentBg": "bg-teal-500/20 border-teal-500/30",
+        "accentText": "text-teal-700",
+        "badgeBg": "bg-teal-500/10 border-teal-500/20 text-teal-800",
+        "headerSubtitle": "#4d6462",
+        "urlText": "#0b6b6f"
+      }
+    },
+    {
+      "id": "qashani-night",
+      "nameAr": "قاشاني ليلي",
+      "nameEn": "Qashani tile — dark",
+      "shortNameAr": "قاشاني ليلي",
+      "emoji": "◆",
+      "icon": "palette",
+      "isDark": true,
+      "bg": "#0a1a1b",
+      "primary": "#52c6c0",
+      "group": "madar",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #0A1A1B 0%, #1C4544 50%, #0A1A1B 100%)",
+        "accentBg": "bg-teal-500/20 border-teal-500/30",
+        "accentText": "text-teal-400",
+        "badgeBg": "bg-teal-500/10 border-teal-500/20 text-teal-300",
+        "headerSubtitle": "#8fb2ae",
+        "urlText": "#52c6c1"
+      }
+    },
+    {
+      "id": "limestone",
+      "nameAr": "حجر كلسي",
+      "nameEn": "Basalt & copper — light",
+      "shortNameAr": "حجر كلسي",
+      "emoji": "◆",
+      "icon": "palette",
+      "isDark": false,
+      "bg": "#f5f2ec",
+      "primary": "#23282c",
+      "group": "madar",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #F5F2EC 0%, #C2C2BE 50%, #F5F2EC 100%)",
+        "accentBg": "bg-stone-500/20 border-stone-500/30",
+        "accentText": "text-stone-700",
+        "badgeBg": "bg-stone-500/10 border-stone-500/20 text-stone-800",
+        "headerSubtitle": "#5b5f63",
+        "urlText": "#23282c"
+      }
+    },
+    {
+      "id": "basalt",
+      "nameAr": "بازلت",
+      "nameEn": "Basalt & copper — dark",
+      "shortNameAr": "بازلت",
+      "emoji": "◆",
+      "icon": "palette",
+      "isDark": true,
+      "bg": "#131618",
+      "primary": "#e9e3d8",
+      "group": "madar",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #131618 0%, #444543 50%, #131618 100%)",
+        "accentBg": "bg-stone-500/20 border-stone-500/30",
+        "accentText": "text-stone-400",
+        "badgeBg": "bg-stone-500/10 border-stone-500/20 text-stone-300",
+        "headerSubtitle": "#9ea4a9",
+        "urlText": "#e9e3d8"
+      }
     },
     {
       "id": "light",

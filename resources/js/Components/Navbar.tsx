@@ -12,6 +12,12 @@ import {
   Info,
   BarChart3,
   FileText,
+  Gamepad2,
+  MoonStar,
+  Clock,
+  BookOpen,
+  Radio,
+  Calendar,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -31,6 +37,7 @@ import { Separator } from '@/Components/ui/separator';
 import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
 import { DesktopSearchTrigger } from './DesktopSearchTrigger';
+import { Logo } from '@/Components/brand/Logo';
 import { groupSiteLinks, useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { isActive, pathnameOf, routeFamily, routeSegment } from '@/Lib/routes';
 import { siteModule, type SiteModuleGroup } from '@/Lib/siteModules';
@@ -66,7 +73,7 @@ const FOOTER_LINKS = [
  * button.
  */
 const NAV_TRIGGER_CLASS =
-  'group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 data-[state=open]:text-accent-foreground data-[state=open]:bg-accent/50 data-[state=open]:hover:bg-accent data-[state=open]:focus:bg-accent';
+  'group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-2.5 xl:px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 data-[state=open]:text-accent-foreground data-[state=open]:bg-accent/50 data-[state=open]:hover:bg-accent data-[state=open]:focus:bg-accent';
 
 
 /**
@@ -211,9 +218,9 @@ function TileGrid({
 }
 
 /**
- * The "more" panel, shared by the desktop menu and the transit variant so the
- * two cannot drift apart. Grouped into the same canonical categories as the
- * homepage so tools are quick to scan without scrolling.
+ * The "more" panel, shared by the contextual hub navbars (Transit, Muslim
+ * Corner, Games) so every hub gets the exact same 6-group bento as the
+ * homepage.
  */
 function MorePanel({
   links,
@@ -231,53 +238,63 @@ function MorePanel({
   showAboutLinks: boolean;
 }) {
   const grouped = groupSiteLinks(links, groups);
-  const wideGroups = grouped.filter((g) => g.links.length >= 5);
-  const compactGroups = grouped.filter((g) => g.links.length < 5);
+  const byId = new Map(grouped.map((g) => [g.id, g]));
+  const bentoSlots: Array<{ id: string; span: string; cols: string }> = [
+    { id: 'daily', span: 'lg:col-span-5', cols: 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-2' },
+    { id: 'maps', span: 'lg:col-span-7', cols: 'grid-cols-3' },
+    { id: 'politics', span: 'lg:col-span-7', cols: 'grid-cols-2 sm:grid-cols-4' },
+    { id: 'directories', span: 'lg:col-span-5', cols: 'grid-cols-3' },
+    { id: 'community', span: 'lg:col-span-7', cols: 'grid-cols-3 sm:grid-cols-6' },
+    { id: 'external', span: 'lg:col-span-5', cols: 'grid-cols-2 sm:grid-cols-4' },
+  ];
+  const knownIds = new Set(bentoSlots.map((s) => s.id));
+  const others = grouped.filter((g) => !knownIds.has(g.id));
 
   return (
     <div
       id="sz-more-panel"
       role="region"
-      aria-label="المزيد من أقسام الموقع"
-      className="w-[min(1152px,92vw)] max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-xl border bg-popover text-popover-foreground shadow-lg"
+      aria-label="أقسام الموقع"
+      className="w-[min(1100px,92vw)] max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-xl border bg-popover text-popover-foreground shadow-lg"
     >
       {header}
-      <div className="p-4 space-y-4">
-        {wideGroups.map((group, idx) => (
-          <div key={group.id} className={idx > 0 ? 'border-t border-border/60 pt-3' : ''}>
-            <p className="mb-2 px-1 text-xs font-bold text-muted-foreground">{group.title}</p>
-            <TileGrid
-              links={group.links}
-              pathname={pathname}
-              onNavigate={onNavigate}
-              compact
-              className={MEGA_GRID}
-            />
-          </div>
-        ))}
-
-        {compactGroups.length > 0 && (
-          <div
-            className={cn(
-              'grid grid-cols-1 gap-4 sm:grid-cols-2',
-              compactGroups.length >= 3 && 'lg:grid-cols-3',
-              wideGroups.length > 0 && 'border-t border-border/60 pt-3',
-            )}
-          >
-            {compactGroups.map((group) => (
-              <div key={group.id} className="rounded-lg bg-muted/35 p-2.5">
-                <p className="mb-2 px-1 text-xs font-bold text-muted-foreground">{group.title}</p>
+      <div className="p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+          {bentoSlots.map(({ id, span, cols }) => {
+            const group = byId.get(id);
+            if (!group) return null;
+            return (
+              <div key={group.id} className={cn('rounded-xl border border-border/60 bg-muted/25 p-3', span)}>
+                <p className="mb-2 flex items-center gap-1.5 px-1 text-xs font-extrabold text-foreground">
+                  <span aria-hidden="true" className="inline-block size-1.5 shrink-0 rounded-[2px] bg-sz-node" />
+                  {group.title}
+                </p>
                 <TileGrid
                   links={group.links}
                   pathname={pathname}
                   onNavigate={onNavigate}
                   compact
-                  className={group.links.length >= 4 ? 'grid-cols-4 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-3'}
+                  className={cols}
                 />
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
+          {others.map((group) => (
+            <div key={group.id} className="lg:col-span-12 rounded-xl border border-border/60 bg-muted/25 p-3">
+              <p className="mb-2 flex items-center gap-1.5 px-1 text-xs font-extrabold text-foreground">
+                <span aria-hidden="true" className="inline-block size-1.5 shrink-0 rounded-[2px] bg-sz-node" />
+                {group.title}
+              </p>
+              <TileGrid
+                links={group.links}
+                pathname={pathname}
+                onNavigate={onNavigate}
+                compact
+                className={MEGA_GRID}
+              />
+            </div>
+          ))}
+        </div>
 
         <Separator className="my-3" />
         <div className="flex flex-wrap justify-center gap-4 py-1 text-xs text-muted-foreground">
@@ -285,7 +302,7 @@ function MorePanel({
             (link, index) => (
               <React.Fragment key={link.href}>
                 {index > 0 && <span>•</span>}
-                <Link href={link.href} className="flex items-center gap-1 transition-colors hover:text-primary">
+                <Link href={link.href} onClick={onNavigate} className="flex items-center gap-1 transition-colors hover:text-primary">
                   <link.icon className="h-3.5 w-3.5" />
                   {link.label}
                 </Link>
@@ -299,32 +316,109 @@ function MorePanel({
 }
 
 /**
- * The wordmark in both schemes. CSS picks the visible one from `data-scheme`
- * (set before first paint), so the server markup is already right for a dark
- * theme instead of swapping images after hydration; the intrinsic size from
- * the SVG viewBox reserves the space before it loads.
+ * Focused dropdown panel for a single domain group on standard pages:
+ * 2-column rich list (icon + title + 1-line subtitle) so every module is easy
+ * to scan without opening a giant 34-item wall.
+ */
+function DomainPanel({
+  id,
+  title,
+  links,
+  pathname,
+  onNavigate,
+  footer,
+}: {
+  id: string;
+  title: string;
+  links: SiteLink[];
+  pathname: string;
+  onNavigate: () => void;
+  footer?: React.ReactNode;
+}) {
+  return (
+    <div
+      id={`sz-nav-panel-${id}`}
+      role="region"
+      aria-label={title}
+      className="w-[min(640px,92vw)] max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-xl border bg-popover p-4 text-popover-foreground shadow-lg"
+      dir="rtl"
+    >
+      <p className="mb-3 flex items-center gap-2 px-1 text-xs font-extrabold text-muted-foreground">
+        <span aria-hidden="true" className="inline-block size-1.5 shrink-0 rounded-[2px] bg-sz-node" />
+        {title}
+      </p>
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+        {links.map((link) => {
+          const Icon = link.icon;
+          const active = isActive(link.href, pathname);
+          const itemClass = cn(
+            'group flex items-start gap-3 rounded-lg p-2.5 text-start transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            active && 'bg-accent/70 text-primary',
+          );
+          const body = (
+            <>
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+                {link.image && link.imageDark ? (
+                  <>
+                    <img src={link.image} alt="" loading="lazy" decoding="async" className="h-6 w-6 object-contain dark:hidden" />
+                    <img src={link.imageDark} alt="" loading="lazy" decoding="async" className="hidden h-6 w-6 object-contain dark:block" />
+                  </>
+                ) : link.image ? (
+                  <img src={link.image} alt="" loading="lazy" decoding="async" className="h-6 w-6 object-contain" />
+                ) : Icon ? (
+                  <Icon className="h-6 w-6 shrink-0" />
+                ) : null}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className={cn('block text-sm font-semibold leading-snug', active ? 'text-primary' : 'text-foreground group-hover:text-primary')}>
+                  {link.text}
+                </span>
+                {link.subtitle && (
+                  <span className="mt-0.5 block line-clamp-1 text-xs text-muted-foreground">
+                    {link.subtitle}
+                  </span>
+                )}
+              </span>
+            </>
+          );
+          return (
+            <li key={link.id || link.href}>
+              {link.external ? (
+                <a
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-current={active ? 'page' : undefined}
+                  className={itemClass}
+                >
+                  {body}
+                </a>
+              ) : (
+                <Link
+                  href={link.href}
+                  onClick={onNavigate}
+                  aria-current={active ? 'page' : undefined}
+                  className={itemClass}
+                >
+                  {body}
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {footer}
+    </div>
+  );
+}
+
+/**
+ * The «المدار» brand lockup, coloured from the active theme's CSS tokens
+ * (--foreground, --sz-orbit, --sz-bowl, --sz-node) so it adapts to every
+ * light and dark palette without swapping images after hydration.
  */
 function SiteLogo({ className }: { className: string }) {
-  return (
-    <>
-      <img
-        src="/assets/logo-lightmode.svg"
-        width={571}
-        height={298}
-        decoding="async"
-        className={cn(className, 'w-auto dark:hidden')}
-        alt="Syrian Zone"
-      />
-      <img
-        src="/assets/logo-darkmode.svg"
-        width={571}
-        height={298}
-        decoding="async"
-        className={cn(className, 'hidden w-auto dark:block')}
-        alt="Syrian Zone"
-      />
-    </>
-  );
+  return <Logo className={cn(className, 'w-auto')} title="المساحة السورية" />;
 }
 
 /** A desktop top-level nav link: inline icon + label, sharing the trigger look. */
@@ -382,32 +476,49 @@ function NavTopLink({
 }
 
 /**
- * The click-only menu trigger (no hover intent): grid icon, label, and a chevron
- * spaced with a logical inline-start margin so it sits right in RTL.
+ * The click-only menu trigger (no hover intent): optional grid icon, label, and
+ * a chevron spaced with a logical inline-start margin so it sits right in RTL.
  */
 const MoreTrigger = React.forwardRef<
   HTMLButtonElement,
-  { label: string; open: boolean; onToggle: () => void }
->(function MoreTrigger({ label, open, onToggle }, ref) {
+  { label: string; open: boolean; active?: boolean; showGridIcon?: boolean; controlsId?: string; onToggle: () => void }
+>(function MoreTrigger({ label, open, active, showGridIcon = true, controlsId = 'sz-more-panel', onToggle }, ref) {
   return (
     <button
       ref={ref}
       type="button"
       onClick={onToggle}
       aria-expanded={open}
-      aria-controls="sz-more-panel"
+      aria-controls={controlsId}
       className={cn(
         NAV_TRIGGER_CLASS,
-        'bg-transparent hover:bg-accent/50',
-        open && 'text-accent-foreground bg-accent/50',
+        'bg-transparent px-3 hover:bg-accent/50',
+        (open || active) && 'text-primary bg-accent/50',
       )}
     >
-      <Grip className="h-4 w-4 me-2" />
+      {showGridIcon && <Grip className="h-4 w-4 me-1.5" />}
       {label}
       <ChevronDown className={cn('h-3 w-3 ms-1 transition-transform duration-200', open && 'rotate-180')} />
     </button>
   );
 });
+
+const MUSLIM_HUB_LINKS = [
+  { href: '/muslim', label: 'الركن الإسلامي', icon: MoonStar, exact: true },
+  { href: '/muslim/prayer', label: 'المواقيت', icon: Clock },
+  { href: '/muslim/quran', label: 'القرآن', icon: BookOpen },
+  { href: '/muslim/ramadan', label: 'رمضان', icon: Calendar },
+  { href: '/muslim/radio', label: 'الإذاعة', icon: Radio },
+] as const;
+
+const GAMES_HUB_LINKS = [
+  { href: '/games', label: 'كل الألعاب', icon: Gamepad2, exact: true },
+  { href: '/games/tarneeb', label: 'طرنيب' },
+  { href: '/games/trix', label: 'تركس' },
+  { href: '/guesswho', label: 'من هو؟' },
+  { href: '/games/solitare', label: 'سوليتير' },
+  { href: '/games/2048', label: '2048' },
+] as const;
 
 /**
  * Memoized: every page renders its own MainLayout, so any page state change
@@ -418,7 +529,12 @@ const MoreTrigger = React.forwardRef<
 const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean }) {
   const { url } = usePage();
   const pathname = pathnameOf(url);
-  const isTransitPage = routeFamily(pathname) === 'transit';
+  const family = routeFamily(pathname);
+  const isTransitPage = family === 'transit';
+  const isMuslimPage = family === 'muslim';
+  const isGamesPage = family === 'games' || pathname === '/guesswho';
+  const isHubPage = isTransitPage || isMuslimPage || isGamesPage;
+
   // The transit section keeps its own two links in the top bar; their paths are
   // the catalogue's, so renaming the route is one edit.
   const transitModule = siteModule('transit');
@@ -428,7 +544,23 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
   const studioHref = transitCityId ? `${studioPath}?city=${transitCityId}` : studioPath;
   const [isOpen, setIsOpen] = React.useState(false);
   const { user } = useAuth();
-  const { navbarLinks, navbarTopLinks, navbarMoreLinks, groups } = useSiteNavigation();
+  const { navbarLinks, groups } = useSiteNavigation();
+
+  // Group all navbar links by the 6 canonical domains so standard pages show
+  // 5 focused internal domain dropdowns + a compact "شقيقة / المزيد" dropdown.
+  const allGrouped = React.useMemo(() => groupSiteLinks(navbarLinks, groups), [navbarLinks, groups]);
+  const domainGroups = React.useMemo(() => allGrouped.filter((g) => g.id !== 'external'), [allGrouped]);
+  const externalGroup = React.useMemo(() => allGrouped.find((g) => g.id === 'external'), [allGrouped]);
+
+  const groupIsActive = React.useCallback(
+    (links: SiteLink[]) =>
+      links.some(
+        (l) =>
+          isActive(l.href, pathname) ||
+          (l.subCategories?.some((sub) => isActive(sub.href, pathname)) ?? false),
+      ),
+    [pathname],
+  );
 
   // Where the mobile menu reveals from: the trigger's centre, in viewport
   // coordinates (the sheet is fixed to the viewport, so these line up).
@@ -440,30 +572,28 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
     if (r) setMenuOrigin({ x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) });
   };
 
-  // Desktop "المزيد" menu: click-only (no hover intent). Closes on an outside
-  // click, Escape, focus leaving it, or any navigation.
-  const [moreOpen, setMoreOpen] = React.useState(false);
-  const moreBtnRef = React.useRef<HTMLButtonElement>(null);
-  const morePanelRef = React.useRef<HTMLDivElement>(null);
+  // Desktop click-only menus (domain dropdowns on standard pages, or full
+  // bento "أقسام الموقع" on hub pages). Closes on outside click, Escape, focus
+  // leaving the nav + panel, or any navigation.
+  const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
+  const navRef = React.useRef<HTMLElement>(null);
+  const panelHostRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
-    if (!moreOpen) return;
+    if (!openMenuId) return;
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node;
-      if (morePanelRef.current?.contains(t) || moreBtnRef.current?.contains(t)) return;
-      setMoreOpen(false);
+      if (panelHostRef.current?.contains(t) || navRef.current?.contains(t)) return;
+      setOpenMenuId(null);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setMoreOpen(false);
-        moreBtnRef.current?.focus();
+        setOpenMenuId(null);
       }
     };
-    // Tabbing past the panel's last link (or back before the trigger) closes it,
-    // so an open panel never covers what the keyboard has moved on to.
     const onFocusIn = (e: FocusEvent) => {
       const t = e.target as Node;
-      if (morePanelRef.current?.contains(t) || moreBtnRef.current?.contains(t)) return;
-      setMoreOpen(false);
+      if (panelHostRef.current?.contains(t) || navRef.current?.contains(t)) return;
+      setOpenMenuId(null);
     };
     document.addEventListener('pointerdown', onDown);
     document.addEventListener('keydown', onKey);
@@ -473,10 +603,12 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('focusin', onFocusIn);
     };
-  }, [moreOpen]);
+  }, [openMenuId]);
   React.useEffect(() => {
-    setMoreOpen(false);
+    setOpenMenuId(null);
   }, [pathname]);
+
+  const toggleMenu = (id: string) => setOpenMenuId((cur) => (cur === id ? null : id));
 
   // Navbar hidden on homepage (Startpage) on desktop; on mobile it stays fixed at the top
   const isHomepage = pathname === '/';
@@ -600,6 +732,50 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                     </div>
                   )}
 
+                  {isMuslimPage && (
+                    <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+                      {MUSLIM_HUB_LINKS.map((item) => {
+                        const active = 'exact' in item && item.exact ? pathname === item.href : isActive(item.href, pathname);
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setIsOpen(false)}
+                            className={cn(
+                              'flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-primary',
+                              active ? 'text-primary' : 'text-muted-foreground',
+                            )}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {isGamesPage && (
+                    <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+                      {GAMES_HUB_LINKS.map((item) => {
+                        const active = 'exact' in item && item.exact ? pathname === item.href : isActive(item.href, pathname);
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setIsOpen(false)}
+                            className={cn(
+                              'flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-primary',
+                              active ? 'text-primary' : 'text-muted-foreground',
+                            )}
+                          >
+                            {'icon' in item && item.icon && <item.icon className="h-4 w-4" />}
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   {/* Always-on Mobile Search Bar + Searchable Panel */}
                   <React.Suspense fallback={null}>
                     <MobileMenuSearchSection
@@ -633,88 +809,138 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
         </div>
 
         {/* Logo */}
-        <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex shrink-0 lg:me-3 xl:me-10">
+        <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex shrink-0 lg:me-3 xl:me-6">
           <Link href="/" className="flex items-center gap-2">
             <SiteLogo className="h-8 sm:h-10" />
           </Link>
         </div>
 
-        {/* Desktop Navigation — click-only menu (no hover intent). */}
-        <nav aria-label="التنقل الرئيسي" className="hidden lg:flex items-center gap-1" dir="rtl">
+        {/* Desktop Navigation — click-only domain dropdowns on standard pages,
+            and focused sibling links + full bento "أقسام الموقع" on hub families
+            (Transit, Muslim Corner, Games). */}
+        <nav ref={navRef} aria-label="التنقل الرئيسي" className="hidden lg:flex items-center gap-0.5" dir="rtl">
           {isTransitPage ? (
             <>
-              <NavTopLink href={transitHref} icon={Bus} label="الرئيسية" active={isActive(transitHref, pathname)} />
+              <NavTopLink href={transitHref} icon={Bus} label="الرئيسية" active={pathname === transitHref} />
               <NavTopLink href={studioHref} icon={Sparkles} label="إضافة خط / الاستوديو" active={isActive(studioPath, pathname)} />
-              <MoreTrigger ref={moreBtnRef} label="أقسام الموقع" open={moreOpen} onToggle={() => setMoreOpen((o) => !o)} />
+              <MoreTrigger label="أقسام الموقع" open={openMenuId === 'hub-more'} onToggle={() => toggleMenu('hub-more')} />
+            </>
+          ) : isMuslimPage ? (
+            <>
+              {MUSLIM_HUB_LINKS.map((item) => (
+                <NavTopLink
+                  key={item.href}
+                  href={item.href}
+                  icon={item.icon}
+                  label={item.label}
+                  active={'exact' in item && item.exact ? pathname === item.href : isActive(item.href, pathname)}
+                />
+              ))}
+              <MoreTrigger label="أقسام الموقع" open={openMenuId === 'hub-more'} onToggle={() => toggleMenu('hub-more')} />
+            </>
+          ) : isGamesPage ? (
+            <>
+              {GAMES_HUB_LINKS.map((item) => (
+                <NavTopLink
+                  key={item.href}
+                  href={item.href}
+                  icon={'icon' in item ? item.icon : undefined}
+                  label={item.label}
+                  active={'exact' in item && item.exact ? pathname === item.href : isActive(item.href, pathname)}
+                />
+              ))}
+              <MoreTrigger label="أقسام الموقع" open={openMenuId === 'hub-more'} onToggle={() => toggleMenu('hub-more')} />
             </>
           ) : (
             <>
-              {navbarTopLinks.map(({ id, href, text, icon: Icon, image, imageDark, external }) => (
-                <NavTopLink
-                  key={id || href}
-                  href={href}
-                  icon={Icon ?? undefined}
-                  image={image}
-                  imageDark={imageDark}
-                  external={external}
-                  label={text}
-                  active={isActive(href, pathname)}
+              {domainGroups.map((group) => (
+                <MoreTrigger
+                  key={group.id}
+                  label={group.title}
+                  showGridIcon={false}
+                  controlsId={`sz-nav-panel-${group.id}`}
+                  open={openMenuId === group.id}
+                  active={groupIsActive(group.links)}
+                  onToggle={() => toggleMenu(group.id)}
                 />
               ))}
-              {navbarMoreLinks.length > 0 && (
-                <MoreTrigger ref={moreBtnRef} label="المزيد" open={moreOpen} onToggle={() => setMoreOpen((o) => !o)} />
-              )}
+              <MoreTrigger
+                label="المزيد"
+                controlsId="sz-nav-panel-more"
+                open={openMenuId === 'more'}
+                onToggle={() => toggleMenu('more')}
+              />
             </>
           )}
         </nav>
 
-        {/* Always in the document, hidden until opened: the panel holds the
+        {/* Always in the document, hidden until opened: the panels hold the
             only links to most sections, and a crawler follows links it finds
             in the HTML, not ones a click would add. */}
-        <div
-          ref={morePanelRef}
-          className={cn('fixed inset-x-0 top-16 z-50 justify-center', moreOpen ? 'flex' : 'hidden')}
-        >
-          <div className="sz-menu-pop">
-            {isTransitPage ? (
-              <MorePanel
-                links={navbarLinks}
-                groups={groups}
-                pathname={pathname}
-                showAboutLinks={false}
-                onNavigate={() => setMoreOpen(false)}
-                header={
-                  <div className="space-y-1 border-b border-border p-3">
-                    <Link
-                      href={transitHref}
-                      onClick={() => setMoreOpen(false)}
-                      className={cn(
-                        'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
-                        isActive(transitHref, pathname) ? 'text-primary' : 'text-muted-foreground'
-                      )}
-                    >
-                      <Bus className="h-4 w-4" />
-                      الرئيسية
-                    </Link>
-                    <Link
-                      href={studioHref}
-                      onClick={() => setMoreOpen(false)}
-                      className={cn(
-                        'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
-                        isActive(studioPath, pathname) ? 'text-primary' : 'text-muted-foreground'
-                      )}
-                    >
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      إضافة خط / الاستوديو
-                    </Link>
-                    <p className="px-3 pt-1 text-xs font-bold text-muted-foreground/60">أقسام الموقع الأخرى</p>
+        <div ref={panelHostRef}>
+          {isHubPage ? (
+            <div className={cn('fixed inset-x-0 top-16 z-50 justify-center', openMenuId === 'hub-more' ? 'flex' : 'hidden')}>
+              <div className="sz-menu-pop">
+                <MorePanel
+                  links={navbarLinks}
+                  groups={groups}
+                  pathname={pathname}
+                  showAboutLinks={!isTransitPage}
+                  onNavigate={() => setOpenMenuId(null)}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              {domainGroups.map((group) => (
+                <div
+                  key={group.id}
+                  className={cn('fixed inset-x-0 top-16 z-50 justify-center', openMenuId === group.id ? 'flex' : 'hidden')}
+                >
+                  <div className="sz-menu-pop">
+                    <DomainPanel
+                      id={group.id}
+                      title={group.title}
+                      links={group.links}
+                      pathname={pathname}
+                      onNavigate={() => setOpenMenuId(null)}
+                    />
                   </div>
-                }
-              />
-            ) : (
-              <MorePanel links={navbarMoreLinks} groups={groups} pathname={pathname} showAboutLinks onNavigate={() => setMoreOpen(false)} />
-            )}
-          </div>
+                </div>
+              ))}
+              <div className={cn('fixed inset-x-0 top-16 z-50 justify-center', openMenuId === 'more' ? 'flex' : 'hidden')}>
+                <div className="sz-menu-pop">
+                  <DomainPanel
+                    id="more"
+                    title={externalGroup?.title ?? 'مشاريع شقيقة'}
+                    links={externalGroup?.links ?? []}
+                    pathname={pathname}
+                    onNavigate={() => setOpenMenuId(null)}
+                    footer={
+                      <>
+                        <Separator className="my-3" />
+                        <div className="flex flex-wrap justify-center gap-4 py-1 text-xs text-muted-foreground">
+                          {FOOTER_LINKS.map((link, index) => (
+                            <React.Fragment key={link.href}>
+                              {index > 0 && <span>•</span>}
+                              <Link
+                                href={link.href}
+                                onClick={() => setOpenMenuId(null)}
+                                className="flex items-center gap-1 transition-colors hover:text-primary"
+                              >
+                                <link.icon className="h-3.5 w-3.5" />
+                                {link.label}
+                              </Link>
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </>
+                    }
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Controls: search (desktop), appearance, page-scoped settings, separator, account/login */}

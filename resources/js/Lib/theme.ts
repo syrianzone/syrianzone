@@ -29,7 +29,7 @@ export interface ThemeConfig {
   bg: string;
   /** Swatch accent for the theme picker: the theme's --primary. */
   primary: string;
-  group: 'system' | 'standard' | 'heritage';
+  group: 'system' | 'standard' | 'heritage' | 'madar';
   priorities?: PrioritiesPalette;
 }
 
@@ -47,7 +47,7 @@ const THEME_ICONS: Record<string, LucideIcon> = {
 type ThemeEntry = (typeof themeData.themes)[number];
 
 function isThemeGroup(value: string): value is ThemeConfig['group'] {
-  return value === 'system' || value === 'standard' || value === 'heritage';
+  return value === 'system' || value === 'standard' || value === 'heritage' || value === 'madar';
 }
 
 function toThemeConfig(entry: ThemeEntry): ThemeConfig {
@@ -94,7 +94,7 @@ export interface ShareCardPalette {
  * instead of keeping a copy each.
  */
 export function shareCardPalette(themeId: string): ShareCardPalette {
-  const isLight = themeId === 'light';
+  const isLight = themeId === 'light' || themeId === 'nili' || themeId === 'qashani' || themeId === 'limestone';
   return isLight
     ? {
         isLight,

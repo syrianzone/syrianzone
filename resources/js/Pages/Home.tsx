@@ -13,6 +13,7 @@ import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
 import AppearanceMenu from '@/Components/AppearanceMenu';
 import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
+import { Logo } from '@/Components/brand/Logo';
 import F3aliaEvents from '@/Pages/Home/_components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_lib/links';
 import { readCustomLinks, saveCustomLinks } from '@/Pages/Home/_lib/links';
@@ -181,18 +182,7 @@ export default function Home() {
                     <div className="mx-auto max-w-6xl px-3 pt-1.5 pb-3 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-5">
                         <a href="/" className="flex items-center shrink-0">
-                            {/* Both logos ship in the HTML; CSS picks one, so the server
-                                render already shows the right one (no swap on hydration). */}
-                            <img
-                                src="/assets/logo-lightmode.svg"
-                                alt="المساحة السورية"
-                                className="h-10 w-auto dark:hidden"
-                            />
-                            <img
-                                src="/assets/logo-darkmode.svg"
-                                alt="المساحة السورية"
-                                className="hidden h-10 w-auto dark:block"
-                            />
+                            <Logo className="h-10 w-auto" title="المساحة السورية" />
                         </a>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             {prayerMini && (
@@ -286,13 +276,14 @@ export default function Home() {
                             const externalLinks = homeLinks.filter((l) => !l.isInternal);
                             const internalGroups = groupSiteLinks(internalLinks, groups);
                             const byId = new Map(internalGroups.map((g) => [g.id, g]));
-                            const politics = byId.get('politics');
-                            const utility = byId.get('utility');
+                            const daily = byId.get('daily');
                             const maps = byId.get('maps');
+                            const politics = byId.get('politics');
+                            const directories = byId.get('directories');
                             const community = byId.get('community');
-                            const others = internalGroups.filter(
-                                (g) => !['politics', 'utility', 'maps', 'community'].includes(g.id),
-                            );
+                            const externalGroupMeta = groups.find((g) => g.id === 'external');
+                            const knownIds = new Set(['daily', 'maps', 'politics', 'directories', 'community']);
+                            const others = internalGroups.filter((g) => !knownIds.has(g.id));
 
                             const renderTile = (link: SiteLink) => {
                                 const Icon = link.icon;
@@ -325,72 +316,67 @@ export default function Home() {
                                 );
                             };
 
-                            return (
-                                <div className="mb-10 grid grid-cols-1 lg:grid-cols-10 gap-4">
-                                    {politics && (
-                                        <section
-                                            aria-labelledby="home-group-politics"
-                                            className="lg:col-span-5 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
-                                        >
-                                            <h2 id="home-group-politics" className="mb-4 text-sm font-bold text-foreground">
-                                                {politics.title}
-                                            </h2>
-                                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-2 gap-y-4">
-                                                {politics.links.map(renderTile)}
-                                            </div>
-                                        </section>
-                                    )}
+                            const bentoCard = 'rounded-[calc(var(--radius)+4px)] border border-border/70 bg-card/80 p-4 sm:p-5';
+                            const renderHeading = (id: string, title: string) => (
+                                <h2 id={id} className="mb-4 flex items-center gap-2 text-base font-extrabold text-foreground">
+                                    <span aria-hidden="true" className="inline-block size-1.5 shrink-0 rounded-[2px] bg-sz-node" />
+                                    {title}
+                                </h2>
+                            );
 
-                                    {utility && (
-                                        <section
-                                            aria-labelledby="home-group-utility"
-                                            className="lg:col-span-5 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
-                                        >
-                                            <h2 id="home-group-utility" className="mb-4 text-sm font-bold text-foreground">
-                                                {utility.title}
-                                            </h2>
-                                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-2 gap-y-4">
-                                                {utility.links.map(renderTile)}
+                            return (
+                                <div className="mb-10 grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                    {/* Row 1 (5 + 7 = 12): Daily tools (2x2) + Maps & Syria (3x2) */}
+                                    {daily && (
+                                        <section aria-labelledby="home-group-daily" className={`lg:col-span-5 ${bentoCard}`}>
+                                            {renderHeading('home-group-daily', daily.title)}
+                                            <div className="grid grid-cols-2 gap-x-2 gap-y-4">
+                                                {daily.links.map(renderTile)}
                                             </div>
                                         </section>
                                     )}
 
                                     {maps && (
-                                        <section
-                                            aria-labelledby="home-group-maps"
-                                            className="lg:col-span-4 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
-                                        >
-                                            <h2 id="home-group-maps" className="mb-4 text-sm font-bold text-foreground">
-                                                {maps.title}
-                                            </h2>
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-4">
+                                        <section aria-labelledby="home-group-maps" className={`lg:col-span-7 ${bentoCard}`}>
+                                            {renderHeading('home-group-maps', maps.title)}
+                                            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
                                                 {maps.links.map(renderTile)}
                                             </div>
                                         </section>
                                     )}
 
+                                    {/* Row 2 (7 + 5 = 12): State & Civic (4x2) + Directories & Identity (3x2) */}
+                                    {politics && (
+                                        <section aria-labelledby="home-group-politics" className={`lg:col-span-7 ${bentoCard}`}>
+                                            {renderHeading('home-group-politics', politics.title)}
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-4">
+                                                {politics.links.map(renderTile)}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {directories && (
+                                        <section aria-labelledby="home-group-directories" className={`lg:col-span-5 ${bentoCard}`}>
+                                            {renderHeading('home-group-directories', directories.title)}
+                                            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+                                                {directories.links.map(renderTile)}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {/* Row 3 (7 + 5 = 12): Community & Culture (6x1) + Sister projects (4x1) */}
                                     {community && (
-                                        <section
-                                            aria-labelledby="home-group-community"
-                                            className="lg:col-span-2 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
-                                        >
-                                            <h2 id="home-group-community" className="mb-4 text-sm font-bold text-foreground">
-                                                {community.title}
-                                            </h2>
-                                            <div className="grid grid-cols-2 gap-x-2 gap-y-4">
+                                        <section aria-labelledby="home-group-community" className={`lg:col-span-7 ${bentoCard}`}>
+                                            {renderHeading('home-group-community', community.title)}
+                                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-2 gap-y-4">
                                                 {community.links.map(renderTile)}
                                             </div>
                                         </section>
                                     )}
 
                                     {externalLinks.length > 0 && (
-                                        <section
-                                            aria-labelledby="home-group-external"
-                                            className="lg:col-span-4 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
-                                        >
-                                            <h2 id="home-group-external" className="mb-4 text-sm font-bold text-foreground">
-                                                روابط خارجية وشقيقة
-                                            </h2>
+                                        <section aria-labelledby="home-group-external" className={`lg:col-span-5 ${bentoCard}`}>
+                                            {renderHeading('home-group-external', externalGroupMeta?.title ?? 'مشاريع شقيقة')}
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-4">
                                                 {externalLinks.map(renderTile)}
                                             </div>
@@ -398,15 +384,9 @@ export default function Home() {
                                     )}
 
                                     {others.map((group) => (
-                                        <section
-                                            key={group.id}
-                                            aria-labelledby={`home-group-${group.id}`}
-                                            className="lg:col-span-10 rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5"
-                                        >
-                                            <h2 id={`home-group-${group.id}`} className="mb-4 text-sm font-bold text-foreground">
-                                                {group.title}
-                                            </h2>
-                                            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+                                        <section key={group.id} aria-labelledby={`home-group-${group.id}`} className={`lg:col-span-12 ${bentoCard}`}>
+                                            {renderHeading(`home-group-${group.id}`, group.title)}
+                                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                                                 {group.links.map(renderTile)}
                                             </div>
                                         </section>

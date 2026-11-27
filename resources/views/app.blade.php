@@ -87,11 +87,13 @@
          still fetches this one file. --}}
     @unless ($isSyrianIp)
     <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/ibm-plex-sans-arabic/ibm-plex-sans-arabic-regular.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/beiruti/Beiruti-VariableFont_wght.woff2">
     @endunless
 
     <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
     <link rel="icon" type="image/png" href="/assets/favicon.png" />
-    <link rel="apple-touch-icon" href="/assets/favicon.png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
 
     <!-- Theme & Font Flash Prevention: the minimum that must settle before the
          first paint. Ids, storage keys and defaults come from

@@ -136,8 +136,9 @@ class SiteSetting extends Model
             $iconUrlDark = (string) $base['imageDark'];
         }
 
+        $validGroupIds = array_column(static::navigationGroups(), 'id');
         $group = null;
-        if (array_key_exists('group', $raw) && is_string($raw['group']) && trim($raw['group']) !== '') {
+        if (array_key_exists('group', $raw) && is_string($raw['group']) && trim($raw['group']) !== '' && in_array(trim($raw['group']), $validGroupIds, true)) {
             $group = trim($raw['group']);
         } elseif (! empty($base['group']) && is_string($base['group'])) {
             $group = trim($base['group']);

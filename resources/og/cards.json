@@ -20,6 +20,7 @@
     { "slug": "transit", "title": "ترانزيت سوريا", "subtitle": "خرائط وخطوط النقل العام في المدن السورية", "icon": "transit" },
     { "slug": "transit-studio", "title": "استوديو ترانزيت", "subtitle": "ارسم خطوط المواصلات والمواقف وشاركها", "icon": "transit" },
     { "slug": "crossings", "title": "المنافذ الحدودية", "subtitle": "حالة المعابر والمطارات والمرافئ وساعات عملها", "icon": "crossings" },
+    { "slug": "wild", "title": "الحياة البرية في سوريا", "subtitle": "ثدييات وطيور وزواحف سوريا بمصادرها العلمية", "icon": "wild" },
     { "slug": "atlas", "title": "أطلس سوريا", "subtitle": "بيانات سكانية وخرائط للمحافظات والمدن", "icon": "atlas" },
 
     { "slug": "syofficial", "title": "الحسابات الرسمية", "subtitle": "دليل الحسابات الموثّقة للوزارات والمؤسسات السورية", "icon": "syofficial" },

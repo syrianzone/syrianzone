@@ -1137,4 +1137,46 @@ describe('pages render their content on the server', () => {
         expect(cleanCat).toContain('href="/mishwar/hama"');
         expect(cleanCat).toContain('href="/mishwar/1-place"');
     });
+
+    it('renders the wildlife guide and a species page with headings, crawlable links, citations and sources', async () => {
+        // The props WildlifeData builds on the server; full records satisfy the card type.
+        const wildlife = JSON.parse(readFileSync(resolve(process.cwd(), 'resources/data/wildlife.json'), 'utf8')) as {
+            meta: { sources: Array<{ title: string; url: string }> };
+            species: Array<{ slug: string; iucn: { category: string } }>;
+        };
+        const all = wildlife.species;
+        const hub = await renderOnServer(
+            'Wild/Index',
+            {
+                species: all,
+                stats: {
+                    total: all.length,
+                    threatened: all.filter((s) => ['CR', 'EN', 'VU'].includes(s.iucn.category)).length,
+                    sources: 1,
+                },
+                sources: wildlife.meta.sources,
+            },
+            '/wild',
+        );
+        expect(hub.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(hub.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(hub).toContain('الحياة البرية في سوريا');
+        expect(hub).toContain('href="/wild/golden-hamster"');
+        expect(hub).toContain('href="/wild/northern-bald-ibis"');
+
+        const ibis = all.find((s) => s.slug === 'northern-bald-ibis');
+        const page = await renderOnServer(
+            'Wild/Show',
+            { species: ibis, related: all.filter((s) => s.slug !== 'northern-bald-ibis').slice(0, 3) },
+            '/wild/northern-bald-ibis',
+        );
+        expect(page.match(/<h1[\s>]/g)).toHaveLength(1);
+        expect(page.match(/<main[\s>]/g)).toHaveLength(1);
+        expect(page).toContain('أبو منجل الأصلع الشمالي');
+        expect(page).toContain('href="#src-1"');
+        expect(page).toContain('id="src-1"');
+        expect(page).toContain('https://doi.org/10.1017/S003060530400016X');
+        expect(page).toContain('href="/governorates/homs"');
+        expect(page).toContain('Charles J. Sharp');
+    });
 });

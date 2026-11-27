@@ -1,3 +1,5 @@
+import type { GovernorateSpecies } from '@/Domain/wildlife/wildlife';
+
 export interface PopulationInfo {
     value: number;
     year: string | null;
@@ -175,6 +177,8 @@ export interface GovernorateShowProps {
     transit: GovernorateTransitData | null;
     crossings: GovernorateCrossingItem[];
     places: GovernoratePlacesData | null;
+    /** Species of the wildlife guide with a documented record here. */
+    wildlife?: GovernorateSpecies[];
     phonebook: GovernoratePhonebookItem[];
     otherGovernorates: OtherGovernorateLink[];
     iconCredit: IconCredit;

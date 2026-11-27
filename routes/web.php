@@ -251,6 +251,8 @@ Route::get('/crossings/{slug}', function (string $slug) {
         'governorate' => $governorate,
     ]);
 })->where('slug', '[a-z0-9-]+');
+Route::get('/wild', [\App\Http\Controllers\WildlifeController::class, 'index']);
+Route::get('/wild/{slug}', [\App\Http\Controllers\WildlifeController::class, 'show'])->where('slug', '[a-z0-9-]+');
 Route::get('/governorates', [\App\Http\Controllers\GovernorateController::class, 'index']);
 Route::get('/governorates/{id}', [\App\Http\Controllers\GovernorateController::class, 'show'])->where('id', '[a-z0-9-]+');
 Route::get('/about', [AboutController::class, 'index']);

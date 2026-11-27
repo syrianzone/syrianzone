@@ -43,6 +43,7 @@ class SitemapBuilder
             $this->ministryUrls(),
             $this->govAppUrls(),
             $this->crossingUrls(),
+            $this->wildlifeUrls(),
             $this->governorateUrls(),
             $this->prayerCityUrls(),
             $this->ramadanCityUrls(),
@@ -172,6 +173,26 @@ class SitemapBuilder
                 continue;
             }
             $urls[] = new SitemapUrl('/crossings/'.$slug, 0.7, 'weekly', $asOf);
+        }
+
+        return $urls;
+    }
+
+    /**
+     * One page per species in the wildlife guide, dated by its last review.
+     *
+     * @return SitemapUrl[]
+     */
+    private function wildlifeUrls(): array
+    {
+        $urls = [];
+        foreach (Facts::json('wildlife')['species'] ?? [] as $species) {
+            $slug = trim((string) ($species['slug'] ?? ''));
+            if ($slug === '') {
+                continue;
+            }
+            $reviewed = ! empty($species['lastReviewed']) ? Carbon::parse((string) $species['lastReviewed']) : null;
+            $urls[] = new SitemapUrl('/wild/'.$slug, 0.6, 'monthly', $reviewed);
         }
 
         return $urls;

@@ -11,6 +11,7 @@ import {
     Landmark,
     MapPin,
     MoonStar,
+    PawPrint,
     Phone,
     Ship,
     UserCheck,
@@ -20,6 +21,7 @@ import MainLayout from '@/Layouts/MainLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/Components/ui/card';
 import { PRAYER_KEYS, PRAYER_LABELS } from '@/Domain/prayer/methods';
+import { GROUP_LABEL_ONE, STATUS_LABELS } from '@/Domain/wildlife/wildlife';
 import type { GovernorateShowProps } from './_types';
 
 function formatNumber(n: number): string {
@@ -44,6 +46,7 @@ export default function GovernorateShow({
     transit,
     crossings,
     places,
+    wildlife = [],
     phonebook,
     otherGovernorates,
     iconCredit,
@@ -59,6 +62,7 @@ export default function GovernorateShow({
         ...(transit ? [{ id: 'transit', label: 'المواصلات' }] : []),
         ...(hasCrossings ? [{ id: 'crossings', label: 'المعابر والمرافئ' }] : []),
         ...(places ? [{ id: 'places', label: 'الأماكن' }] : []),
+        ...(wildlife.length > 0 ? [{ id: 'wildlife', label: 'الحياة البرية' }] : []),
         ...(hasPhonebook ? [{ id: 'phonebook', label: 'أرقام مهمة' }] : []),
     ];
 
@@ -612,7 +616,47 @@ export default function GovernorateShow({
                     </section>
                 )}
 
-                {/* 7. Important Phone Numbers */}
+                {/* 7. Wildlife recorded here */}
+                {wildlife.length > 0 && (
+                    <section id="wildlife" aria-labelledby="wildlife-heading">
+                        <Card className="border-border bg-card/70">
+                            <CardHeader className="pb-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <h2 id="wildlife-heading" className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground">
+                                        <PawPrint className="h-5 w-5 text-primary" aria-hidden="true" />
+                                        <span>الحياة البرية المسجّلة في محافظة {governorate.name_ar}</span>
+                                    </h2>
+                                    <Link href="/wild" className="text-sm text-primary hover:underline">
+                                        دليل الحياة البرية
+                                    </Link>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                    {wildlife.map((s) => (
+                                        <li key={s.slug}>
+                                            <Link
+                                                href={s.url}
+                                                className="flex items-start justify-between gap-3 rounded-xl border border-border/70 bg-background/60 p-3.5 transition-colors hover:border-primary/40"
+                                            >
+                                                <div className="min-w-0 space-y-1">
+                                                    <span className="font-bold text-foreground">{s.nameAr}</span>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {GROUP_LABEL_ONE[s.group]} · {STATUS_LABELS[s.syriaStatus]}
+                                                        {s.historical ? ' · سجل سابق' : ''}
+                                                    </p>
+                                                </div>
+                                                <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    </section>
+                )}
+
+                {/* 8. Important Phone Numbers */}
                 {hasPhonebook && (
                     <section id="phonebook" aria-labelledby="phonebook-heading">
                         <Card className="border-border bg-card/70">

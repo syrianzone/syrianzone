@@ -2,28 +2,50 @@
 
 namespace App\Services\Wildlife;
 
+use App\Models\WildlifeSpecies;
 use App\Support\Facts;
+use Illuminate\Support\Facades\Cache;
 
 /**
- * Builds the props of `/wild` and `/wild/{slug}` from
- * `resources/data/wildlife.json`, so each page receives only what it renders
- * instead of the whole guide shipping in the JavaScript bundle.
+ * The published species of the wildlife guide (the `wildlife_species` table),
+ * and the props of `/wild` and `/wild/{slug}` built from them, so each page
+ * receives only what it renders instead of the whole guide shipping in the
+ * JavaScript bundle. Drafts and hidden species never reach this class's
+ * callers: the pages, share cards, sitemaps and governorate pages.
  */
 final class WildlifeData
 {
     /** How many other species a species page links to. */
     private const RELATED = 3;
 
-    /** The Red List's "threatened" categories. */
-    private const THREATENED = ['CR', 'EN', 'VU'];
+    private const THREATENED = WildlifeRules::THREATENED;
 
-    /** Statuses for which a governorate's records are historical. */
-    private const GONE = ['possibly-extinct', 'extinct-in-syria'];
+    private const GONE = WildlifeRules::GONE;
 
-    /** @return list<array<string, mixed>> */
+    /** Dropped by WildlifeEditor on every write. */
+    private const CACHE_KEY = 'wildlife:published:v1';
+
+    /**
+     * Every public species record, in the guide's order.
+     *
+     * @return list<array<string, mixed>>
+     */
     public function all(): array
     {
-        return array_values(Facts::json('wildlife')['species'] ?? []);
+        return Cache::rememberForever(self::CACHE_KEY, fn (): array => WildlifeSpecies::query()
+            ->whereNotNull('record')
+            ->where('is_hidden', false)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get(['record'])
+            ->map(fn (WildlifeSpecies $species): array => $species->record)
+            ->values()
+            ->all());
+    }
+
+    public function forget(): void
+    {
+        Cache::forget(self::CACHE_KEY);
     }
 
     /** @return array<string, mixed>|null */

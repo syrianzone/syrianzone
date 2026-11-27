@@ -11,6 +11,7 @@ use App\Services\Governorates\GovernorateDataService;
 use App\Services\Ministries\MinistryDirectoryService;
 use App\Services\Places\PlaceIndexability;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
+use App\Services\Wildlife\WildlifeData;
 use App\Support\Facts;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -81,7 +82,7 @@ class ImageSitemapBuilder
     private function wildlifeImages(): array
     {
         $entries = [];
-        foreach (Facts::json('wildlife')['species'] ?? [] as $species) {
+        foreach (app(WildlifeData::class)->all() as $species) {
             $key = $species['image']['r2Key'] ?? null;
             if (! is_string($key) || $key === '') {
                 continue;

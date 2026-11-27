@@ -121,3 +121,9 @@ Full contract: [specs/promises.md](../specs/promises.md).
 - **promise_reports** — visitor progress/error reports with review status.
 - **promise_votes** — "will it be kept?": voter_key + ip_hash are HMACs (app key); unique (promise_id, voter_key); only aggregates are ever read publicly.
 
+
+## Wildlife guide (الحياة البرية)
+
+Full contract: [modules/wildlife.md](../modules/wildlife.md).
+
+- **wildlife_species** — slug unique (the public URL `/wild/{slug}`), position (the guide's order), `record` JSON (the published species, in the shape of a species in `resources/data/wildlife.json`; null until first published), `draft` JSON (an edit awaiting `wildlife.publish`), is_hidden (unpublished but kept), `version` (bumped by every write; optimistic locking for agents), draft_updated_by/at, published_by/at → users. Seeded once from `resources/data/wildlife.json` by `2026_11_27_120100_import_wildlife_species`.

@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\WildlifeSpecies;
+use App\Services\Wildlife\WildlifeEditor;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -17,27 +19,25 @@ use Illuminate\Support\Facades\Storage;
  * new key: the next run mirrors the new photo instead of keeping the old one
  * under the new credits, and no cache keeps serving the old copy.
  *
- * With --write it records each `image.r2Key` in resources/data/wildlife.json;
- * the page and the card switch to the R2 copy from then on. Author and license
- * stay in the data file and keep being shown under the photo.
+ * With --write it records each `image.r2Key` on the species in the database
+ * (WildlifeEditor::recordMirroredPhoto), in its published record and in a
+ * draft that shows the same photo; the page and the card switch to the R2 copy
+ * from then on. Author and license stay in the record and keep being shown
+ * under the photo. `php artisan wildlife:export` then refreshes the seed file.
  */
 class MirrorWildlifeImages extends Command
 {
     protected $signature = 'wildlife:mirror-images
-        {--write : Record the R2 key of each mirrored photo in resources/data/wildlife.json}
+        {--write : Record the R2 key of each mirrored photo on its species}
         {--dry-run : Only list what would be uploaded}';
 
     protected $description = 'Mirror the wildlife guide photos from Wikimedia Commons to R2';
-
-    private const DATA = 'data/wildlife.json';
 
     /** Mirrors IMAGE_WIDTHS in `Domain/wildlife/wildlife.ts`; the last is the full-size copy. */
     private const WIDTHS = [500, 960, 1280];
 
     public function handle(): int
     {
-        $path = resource_path(self::DATA);
-        $data = json_decode((string) file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
         $dryRun = (bool) $this->option('dry-run');
         $full = self::WIDTHS[count(self::WIDTHS) - 1];
 
@@ -48,19 +48,19 @@ class MirrorWildlifeImages extends Command
         }
 
         $disk = $dryRun ? null : Storage::disk('r2');
-        $changed = false;
+        $mirroredNow = [];
         $failed = 0;
 
-        foreach ($data['species'] as $i => $species) {
-            $file = (string) $species['image']['commonsFile'];
-            $base = 'wildlife/'.$species['slug'].'-'.substr(sha1($file), 0, 8);
+        foreach ($this->photos() as ['slug' => $slug, 'image' => $image]) {
+            $file = (string) $image['commonsFile'];
+            $base = 'wildlife/'.$slug.'-'.substr(sha1($file), 0, 8);
             $key = $base.'.jpg';
             $variants = [];
             foreach (self::WIDTHS as $width) {
                 $variants[$width] = $width === $full ? $key : $base.'-'.$width.'.jpg';
             }
 
-            $mirrored = ($species['image']['r2Key'] ?? null) === $key
+            $mirrored = ($image['r2Key'] ?? null) === $key
                 && ($dryRun || collect($variants)->every(fn (string $k): bool => $disk->exists($k)));
             if ($mirrored) {
                 $this->line(" Already mirrored: {$key}");
@@ -99,17 +99,42 @@ class MirrorWildlifeImages extends Command
                 $this->line(" Uploaded: {$file} ({$width}px) -> R2: {$variantKey}");
             }
 
-            $data['species'][$i]['image']['r2Key'] = $key;
-            $changed = true;
+            $mirroredNow[] = [$slug, $file, $key];
         }
 
-        if ($changed && $this->option('write')) {
-            file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n");
-            $this->info('Recorded the R2 keys in resources/'.self::DATA.'.');
-        } elseif ($changed) {
-            $this->info('Photos uploaded. Run again with --write to record their R2 keys in the data file.');
+        if ($mirroredNow !== [] && $this->option('write')) {
+            foreach ($mirroredNow as [$slug, $file, $key]) {
+                app(WildlifeEditor::class)->recordMirroredPhoto($slug, $file, $key);
+            }
+            $this->info('Recorded the R2 keys on the species. Run wildlife:export to refresh the seed file.');
+        } elseif ($mirroredNow !== []) {
+            $this->info('Photos uploaded. Run again with --write to record their R2 keys on the species.');
         }
 
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * Each distinct photo of each species: the published record's, and a
+     * draft's when it shows a different file.
+     *
+     * @return list<array{slug: string, image: array<string, mixed>}>
+     */
+    private function photos(): array
+    {
+        $photos = [];
+        foreach (WildlifeSpecies::query()->orderBy('position')->get() as $species) {
+            $seen = [];
+            foreach ([$species->record, $species->draft] as $record) {
+                $file = $record['image']['commonsFile'] ?? null;
+                if (! is_string($file) || isset($seen[$file])) {
+                    continue;
+                }
+                $seen[$file] = true;
+                $photos[] = ['slug' => $species->slug, 'image' => $record['image']];
+            }
+        }
+
+        return $photos;
     }
 }

@@ -18,7 +18,7 @@ human clicking through the dashboard.
 - It is **off by default**. `MCP_ENABLED=false` registers no route at all, so
   the endpoint 404s.
 
-Currently covers six modules:
+Currently covers seven modules:
 
 | Module | Read tools | Write tools | Scoped |
 |---|---:|---:|---|
@@ -28,6 +28,7 @@ Currently covers six modules:
 | Transit | 4 | 6 | **yes**, by governorate |
 | Users | 0 | 1 | no |
 | Promises | 7 | 23 | no |
+| Wildlife guide | 3 | 7 | no |
 
 Other modules are added by dropping tools into
 `app/Mcp/Servers/AdminServer.php`; nothing outside that file is reachable by an
@@ -388,6 +389,33 @@ the agent surface adds:
   take web (http/https) or `/storage/` URLs over MCP; uploads need a
   multipart request.
 
+### Wildlife guide
+
+The guide's species live in the `wildlife_species` table (seeded from
+`resources/data/wildlife.json`); see [wildlife.md](wildlife.md) for the
+sourcing rules. The domain layer is `Services/Wildlife/WildlifeRules` (what a
+record must satisfy), `WildlifeEditor` (every change) and
+`Exceptions/Wildlife/WildlifeActionException`.
+
+| Capability | Tools |
+|---|---|
+| any `wildlife.*` | `list-wildlife-species`, `get-wildlife-species`, `get-wildlife-options` |
+| `wildlife.edit` | `create-wildlife-species`, `update-wildlife-draft`, `discard-wildlife-draft`, `move-wildlife-species` |
+| `wildlife.publish` | `publish-wildlife-species`, `unpublish-wildlife-species` |
+| `wildlife.delete` | `delete-wildlife-species` |
+
+- **Drafts, then publish.** Creating or editing only writes `draft`; the
+  public pages read the published `record` alone (`WildlifeData`). The guide
+  requires a second reviewer, so drafting and publishing are separate
+  capabilities, and `publish-wildlife-species` reports
+  `reviewed_by_draft_author` when one person did both.
+- **Whole records.** `update-wildlife-draft` replaces the draft with a full
+  record, like `update-promise`, and needs the `version` read; every write
+  bumps it under a row lock. The slug is the public URL and cannot change.
+- **The rules are checked twice.** `WildlifeRules` runs on each draft and
+  again on publish, and lists every broken rule in one refusal so an agent can
+  fix them in one pass.
+
 ---
 
 ## 6. Audit trail
@@ -547,6 +575,7 @@ serve a stale compile for up to three minutes. Restart it if in doubt.
 | `PromisesToolsTest.php` | Read gates, drafting, edits to published promises, the stale-read refusal, change-log rules |
 | `PromisesManagementToolsTest.php` | Publishing, verdicts and undo, deletion, the review queue, people and sectors, and the token ceiling on postponing a restated original |
 | `PromisesDiscoveryTest.php` | Real JSON-RPC surface: `tools/list` and `search_tools` gating per capability, and `execute_tools` round trips of `create-promise` and `set-promise-status` |
+| `WildlifeToolsTest.php` | Drafts stay off the public pages until published, capability isolation between drafting, publishing and deleting, stale versions, rule refusals, unpublish/show again, order, and the JSON-RPC surface |
 
 `tests/Feature/`, alongside the module's own:
 

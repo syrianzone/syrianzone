@@ -18,6 +18,7 @@ use App\Models\Route as TransitRoute;
 use App\Services\ExternalData\ExternalSheetCache;
 use App\Services\Places\PlaceHubService;
 use App\Services\Places\PlaceIndexability;
+use App\Services\Wildlife\WildlifeData;
 use App\Support\Facts;
 use App\Support\HouseMembers;
 use App\Support\Seo\Pages;
@@ -186,7 +187,7 @@ class SitemapBuilder
     private function wildlifeUrls(): array
     {
         $urls = [];
-        foreach (Facts::json('wildlife')['species'] ?? [] as $species) {
+        foreach (app(WildlifeData::class)->all() as $species) {
             $slug = trim((string) ($species['slug'] ?? ''));
             if ($slug === '') {
                 continue;

@@ -1,105 +1,111 @@
 <?php
 
+use App\Models\WildlifeSpecies;
+use App\Services\Wildlife\WildlifeData;
+use App\Services\Wildlife\WildlifeImporter;
+use App\Services\Wildlife\WildlifeRules;
 use App\Support\Facts;
-use App\Support\Seo\Preview\Resolvers\WildSpeciesPreview;
 
 /**
- * Holds resources/data/wildlife.json to the sourcing rules in
- * docs/modules/wildlife.md: every statement points at a source the species
- * lists, every vocabulary value is a known one, and every photo is freely
- * licensed and credited.
+ * Holds the wildlife guide to the sourcing rules in docs/modules/wildlife.md.
+ * The rules themselves live in WildlifeRules, which the editor also applies
+ * to every draft and every publish; these tests run them on the seed file and
+ * pin down what each rule refuses.
  */
-function wildlifeSpecies(): array
+function seedSpecies(): array
 {
     return Facts::json('wildlife')['species'] ?? [];
 }
 
-const WILDLIFE_GROUPS = ['mammal', 'bird', 'reptile', 'amphibian', 'fish', 'invertebrate'];
-const WILDLIFE_HABITATS = ['steppe', 'mountains', 'farmland', 'wetlands', 'coast'];
-/** CC0, public domain, and CC BY / BY-SA in any version or national port ("CC BY-SA 3.0 de"). */
-const WILDLIFE_LICENSE = '/^(CC0 1\.0|Public domain|CC BY(-SA)? \d\.\d( [a-z]{2})?)$/';
+/** A valid record to break one rule at a time. */
+function validWildlifeRecord(): array
+{
+    return collect(seedSpecies())->firstWhere('slug', 'golden-hamster');
+}
 
-test('the guide has species and their slugs are unique and url-safe', function () {
-    $slugs = array_column(wildlifeSpecies(), 'slug');
+test('the seed file has species and every one passes the sourcing rules', function () {
+    $rules = app(WildlifeRules::class);
 
-    expect($slugs)->not->toBeEmpty();
+    expect(seedSpecies())->not->toBeEmpty();
+    foreach (seedSpecies() as $record) {
+        expect($rules->errors($record))->toBe([], $record['slug'] ?? '?');
+    }
+});
+
+test('slugs in the seed file are unique', function () {
+    $slugs = array_column(seedSpecies(), 'slug');
+
     expect(array_unique($slugs))->toHaveCount(count($slugs));
-    foreach ($slugs as $slug) {
-        expect($slug)->toMatch('/^[a-z0-9-]+$/');
-    }
 });
 
-test('every species uses only the known groups, categories, statuses and habitats', function () {
-    $categories = array_keys(WildSpeciesPreview::iucnLabels());
-    $statuses = array_keys(WildSpeciesPreview::statusLabels());
-
-    foreach (wildlifeSpecies() as $s) {
-        expect(WILDLIFE_GROUPS)->toContain($s['group']);
-        expect($categories)->toContain($s['iucn']['category']);
-        expect($statuses)->toContain($s['syriaStatus']);
-        expect($s['habitats'])->not->toBeEmpty();
-        foreach ($s['habitats'] as $habitat) {
-            expect(WILDLIFE_HABITATS)->toContain($habitat);
-        }
-    }
+test('the migration imports the seed file as published species, in order', function () {
+    expect(WildlifeSpecies::query()->orderBy('position')->pluck('slug')->all())
+        ->toBe(array_column(seedSpecies(), 'slug'));
+    expect(app(WildlifeData::class)->all())->toBe(array_values(seedSpecies()));
 });
 
-test('every species names at least two https sources and links its IUCN assessment', function () {
-    foreach (wildlifeSpecies() as $s) {
-        expect(count($s['sources']))->toBeGreaterThanOrEqual(2, $s['slug']);
-        foreach ($s['sources'] as $source) {
-            expect($source['title'])->not->toBe('');
-            expect($source['url'])->toStartWith('https://');
-        }
-        expect($s['iucn']['url'])->toMatch('#^https://www\.iucnredlist\.org/species/\d+/\d+$#');
-    }
+test('exporting the published species reproduces the seed file byte for byte', function () {
+    expect(app(WildlifeImporter::class)->exportJson())
+        ->toBe(file_get_contents(resource_path('data/wildlife.json')));
 });
 
-test('every summary, fact and threat cites a source the species lists', function () {
-    foreach (wildlifeSpecies() as $s) {
-        $count = count($s['sources']);
-        $statements = [['sources' => $s['summarySources'], 'text' => $s['summaryAr']], ...$s['factsAr'], ...$s['threatsAr']];
+test('the rules refuse an uncited statement and a citation to a source that does not exist', function () {
+    $record = validWildlifeRecord();
+    $record['factsAr'][0]['sources'] = [];
+    $record['threatsAr'][0]['sources'] = [99];
 
-        expect($s['factsAr'])->not->toBeEmpty();
-        foreach ($statements as $statement) {
-            expect(trim($statement['text']))->not->toBe('');
-            expect($statement['sources'])->not->toBeEmpty("{$s['slug']}: an uncited statement");
-            foreach ($statement['sources'] as $index) {
-                expect($index)->toBeInt()->toBeGreaterThanOrEqual(0)->toBeLessThan($count, "{$s['slug']}: source {$index} does not exist");
-            }
-        }
-    }
+    $errors = implode("\n", app(WildlifeRules::class)->errors($record));
+
+    expect($errors)->toContain('factsAr[0]: every statement must cite')
+        ->toContain('threatsAr[0]: source index 99 does not exist');
 });
 
-test('every governorate a species names exists', function () {
-    $ids = array_column(Facts::governorates(), 'id');
+test('the rules refuse fewer than two sources and a non-https source', function () {
+    $record = validWildlifeRecord();
+    $record['sources'] = [['title' => 'A blog', 'url' => 'http://example.com']];
+    $record['summarySources'] = [0];
+    $record['factsAr'] = [['text' => 'نص', 'sources' => [0]]];
+    $record['threatsAr'] = [];
 
-    foreach (wildlifeSpecies() as $s) {
-        foreach ($s['governorates'] as $id) {
-            expect($ids)->toContain($id);
-        }
-    }
+    $errors = implode("\n", app(WildlifeRules::class)->errors($record));
+
+    expect($errors)->toContain('at least two sources')->toContain('sources[0] needs');
 });
 
-test('every photo is freely licensed, credited and captioned', function () {
-    foreach (wildlifeSpecies() as $s) {
-        $image = $s['image'];
-        expect($image['license'])->toMatch(WILDLIFE_LICENSE);
-        expect(trim($image['author']))->not->toBe('');
-        expect(trim($image['captionAr']))->not->toBe('');
-        expect($image['commonsFile'])->not->toStartWith('File:');
-        if ($image['license'] === 'Public domain') {
-            expect($image['licenseUrl'])->toBeNull();
-        } else {
-            expect($image['licenseUrl'])->toStartWith('https://');
-        }
-    }
+test('the rules refuse unknown vocabulary, governorates and IUCN links', function () {
+    $record = validWildlifeRecord();
+    $record['group'] = 'dragon';
+    $record['syriaStatus'] = 'common';
+    $record['habitats'] = ['desert'];
+    $record['governorates'] = ['atlantis'];
+    $record['iucn'] = ['category' => 'XX', 'url' => 'https://www.iucnredlist.org/species/123'];
+
+    $errors = implode("\n", app(WildlifeRules::class)->errors($record));
+
+    expect($errors)->toContain('group must be one of')
+        ->toContain('syriaStatus must be one of')
+        ->toContain('habitats may only hold')
+        ->toContain('"atlantis" is not a governorate id')
+        ->toContain('iucn.category must be one of')
+        ->toContain('iucn.url must link the exact assessment');
 });
 
-test('every species records when it was last reviewed', function () {
-    foreach (wildlifeSpecies() as $s) {
-        $date = DateTimeImmutable::createFromFormat('!Y-m-d', $s['lastReviewed']);
-        expect($date)->not->toBeFalse($s['slug']);
-        expect($date->format('Y-m-d'))->toBe($s['lastReviewed']);
-    }
+test('the rules refuse a non-free photo license and a missing credit', function () {
+    $record = validWildlifeRecord();
+    $record['image']['license'] = 'CC BY-NC 4.0';
+    $record['image']['author'] = '';
+
+    $errors = implode("\n", app(WildlifeRules::class)->errors($record));
+
+    expect($errors)->toContain('image.license must be')->toContain('image.author is required');
+});
+
+test('the rules refuse a review date that is malformed or in the future', function () {
+    $record = validWildlifeRecord();
+
+    $record['lastReviewed'] = '2026-13-01';
+    expect(implode(' ', app(WildlifeRules::class)->errors($record)))->toContain('YYYY-MM-DD');
+
+    $record['lastReviewed'] = now()->addYear()->toDateString();
+    expect(implode(' ', app(WildlifeRules::class)->errors($record)))->toContain('cannot be in the future');
 });

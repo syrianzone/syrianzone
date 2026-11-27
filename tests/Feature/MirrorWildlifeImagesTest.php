@@ -54,3 +54,21 @@ test('with --write the key is recorded on the published record and on a draft sh
         ->and($row->draft['image']['r2Key'])->toBe($key)
         ->and(collect(app(WildlifeData::class)->all())->firstWhere('slug', 'golden-hamster')['image']['r2Key'])->toBe($key);
 });
+
+test('a draft written before the mirror ran gets the key, and a repeat run changes nothing', function () {
+    Storage::fake('r2');
+    $this->artisan('wildlife:mirror-images --write')->assertSuccessful();
+    $row = WildlifeSpecies::where('slug', 'golden-hamster')->first();
+    $draft = $row->record;
+    $draft['image']['r2Key'] = null;
+    $row->update(['draft' => $draft]);
+    $version = $row->fresh()->version;
+
+    $this->artisan('wildlife:mirror-images --write')->assertSuccessful();
+    $row->refresh();
+    expect($row->draft['image']['r2Key'])->toBe($row->record['image']['r2Key'])
+        ->and($row->version)->toBe($version + 1);
+
+    $this->artisan('wildlife:mirror-images --write')->assertSuccessful();
+    expect($row->fresh()->version)->toBe($version + 1);
+});

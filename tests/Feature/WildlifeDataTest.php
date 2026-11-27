@@ -5,6 +5,7 @@ use App\Services\Wildlife\WildlifeData;
 use App\Services\Wildlife\WildlifeImporter;
 use App\Services\Wildlife\WildlifeRules;
 use App\Support\Facts;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Holds the wildlife guide to the sourcing rules in docs/modules/wildlife.md.
@@ -108,4 +109,43 @@ test('the rules refuse a review date that is malformed or in the future', functi
 
     $record['lastReviewed'] = now()->addYear()->toDateString();
     expect(implode(' ', app(WildlifeRules::class)->errors($record)))->toContain('cannot be in the future');
+});
+
+test('the rules refuse citation lists sent as objects, which the pages cannot render', function () {
+    $record = validWildlifeRecord();
+    $record['summarySources'] = ['primary' => 0];
+    $record['factsAr'][0]['sources'] = ['a' => 0, 'b' => 1];
+    $record['sources'] = ['first' => $record['sources'][0], 'second' => $record['sources'][1]];
+
+    $errors = implode("\n", app(WildlifeRules::class)->errors($record));
+
+    expect($errors)->toContain('summarySources: the cited sources must be a list')
+        ->toContain('factsAr[0]: the cited sources must be a list')
+        ->toContain('sources must be a list');
+});
+
+test('the rules refuse Wikipedia as a source, over https and in any language', function () {
+    $record = validWildlifeRecord();
+    $record['sources'][] = ['title' => 'Golden hamster', 'url' => 'https://en.wikipedia.org/wiki/Golden_hamster'];
+    $record['sources'][] = ['title' => 'هامستر', 'url' => 'https://ar.m.wikipedia.org/wiki/x'];
+
+    $errors = implode("\n", app(WildlifeRules::class)->errors($record));
+    $count = count($record['sources']);
+
+    expect($errors)->toContain('sources['.($count - 2).'] is Wikipedia')
+        ->toContain('sources['.($count - 1).'] is Wikipedia');
+});
+
+test('a reader that fills the cache with rows from before a write cannot hide the write', function () {
+    $data = app(WildlifeData::class);
+    $stale = $data->all();
+    $generation = Cache::get('wildlife:published:generation');
+
+    WildlifeSpecies::where('slug', 'striped-hyena')->update(['is_hidden' => true]);
+    $data->forget();
+    // The slow reader, which queried before the write, now stores its rows
+    // under the generation it started with.
+    Cache::put('wildlife:published:'.$generation, $stale, 3600);
+
+    expect(array_column($data->all(), 'slug'))->not->toContain('striped-hyena');
 });

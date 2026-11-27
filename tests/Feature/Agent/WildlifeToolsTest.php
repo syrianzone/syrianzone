@@ -240,3 +240,22 @@ test('creating a species round-trips over the real jsonrpc surface', function ()
 
     expect(WildlifeSpecies::where('slug', 'test-gazelle')->value('draft')['nameAr'])->toBe('غزال تجريبي');
 });
+
+it('keeps a mirrored photo when a draft of the same file arrives without its key', function () {
+    $row = WildlifeSpecies::where('slug', 'striped-hyena')->first();
+    $record = $row->record;
+    $record['image']['r2Key'] = 'wildlife/striped-hyena-abc.jpg';
+    $row->update(['record' => $record]);
+
+    agentToken($this->editor, [PermissionCatalogue::WILDLIFE_EDIT]);
+    $draft = $record;
+    $draft['image']['r2Key'] = null;
+    $saved = toolPayload(callTool(UpdateWildlifeDraftTool::class, [
+        'slug' => 'striped-hyena', 'expected_version' => $row->fresh()->version, 'record' => $draft,
+    ]));
+    expect($saved['species']['draft']['image']['r2Key'])->toBe('wildlife/striped-hyena-abc.jpg');
+
+    agentToken($this->reviewer, [PermissionCatalogue::WILDLIFE_PUBLISH]);
+    callTool(PublishWildlifeSpeciesTool::class, ['slug' => 'striped-hyena', 'expected_version' => $saved['species']['version']]);
+    expect(WildlifeSpecies::where('slug', 'striped-hyena')->first()->record['image']['r2Key'])->toBe('wildlife/striped-hyena-abc.jpg');
+});

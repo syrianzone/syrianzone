@@ -5,6 +5,7 @@ namespace App\Services\Wildlife;
 use App\Models\WildlifeSpecies;
 use App\Support\Facts;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 /**
  * The published species of the wildlife guide (the `wildlife_species` table),
@@ -22,8 +23,16 @@ final class WildlifeData
 
     private const GONE = WildlifeRules::GONE;
 
-    /** Dropped by WildlifeEditor on every write. */
-    private const CACHE_KEY = 'wildlife:published:v1';
+    /**
+     * The cached list lives under a key that names a generation, and every
+     * write starts a new generation after it commits (forget()). A reader that
+     * queried the old rows just before a write cannot overwrite the new list:
+     * it fills the old generation's key, which no one reads any more. The
+     * lifetime only bounds how long such a dead entry lingers.
+     */
+    private const GENERATION_KEY = 'wildlife:published:generation';
+
+    private const CACHE_TTL = 86400;
 
     /**
      * Every public species record, in the guide's order.
@@ -32,7 +41,9 @@ final class WildlifeData
      */
     public function all(): array
     {
-        return Cache::rememberForever(self::CACHE_KEY, fn (): array => WildlifeSpecies::query()
+        $generation = Cache::rememberForever(self::GENERATION_KEY, fn (): string => (string) Str::uuid());
+
+        return Cache::remember('wildlife:published:'.$generation, self::CACHE_TTL, fn (): array => WildlifeSpecies::query()
             ->whereNotNull('record')
             ->where('is_hidden', false)
             ->orderBy('position')
@@ -43,9 +54,10 @@ final class WildlifeData
             ->all());
     }
 
+    /** Called after a write commits: later reads use a fresh generation. */
     public function forget(): void
     {
-        Cache::forget(self::CACHE_KEY);
+        Cache::forever(self::GENERATION_KEY, (string) Str::uuid());
     }
 
     /** @return array<string, mixed>|null */

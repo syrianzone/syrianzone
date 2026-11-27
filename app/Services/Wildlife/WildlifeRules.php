@@ -79,12 +79,18 @@ final class WildlifeRules
         $errors = [...$errors, ...$this->listErrors($record), ...$this->iucnErrors($record), ...$this->imageErrors($record)];
 
         $sources = is_array($record['sources'] ?? null) ? $record['sources'] : [];
+        if (! array_is_list($sources)) {
+            $errors[] = 'sources must be a list (a JSON array), not an object.';
+            $sources = [];
+        }
         if (count($sources) < 2) {
             $errors[] = 'sources must list at least two sources (the Red List assessment and at least one other).';
         }
         foreach ($sources as $i => $source) {
             if (! is_array($source) || trim((string) ($source['title'] ?? '')) === '' || ! str_starts_with((string) ($source['url'] ?? ''), 'https://')) {
                 $errors[] = "sources[{$i}] needs a non-empty title and an https:// url.";
+            } elseif ($this->isWikipedia((string) $source['url'])) {
+                $errors[] = "sources[{$i}] is Wikipedia, which is never cited: cite the primary source it points to.";
             }
         }
 
@@ -196,6 +202,14 @@ final class WildlifeRules
         return $errors;
     }
 
+    /** Any Wikipedia language edition, including its mobile site. */
+    private function isWikipedia(string $url): bool
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return $host === 'wikipedia.org' || str_ends_with($host, '.wikipedia.org');
+    }
+
     /**
      * Every statement cites at least one of the species' own sources.
      *
@@ -227,6 +241,11 @@ final class WildlifeRules
                     continue;
                 }
                 $cited = $item['sources'] ?? null;
+                if (is_array($cited) && ! array_is_list($cited)) {
+                    $errors[] = "{$where}: the cited sources must be a list of indexes (a JSON array), not an object.";
+
+                    continue;
+                }
                 if (! is_array($cited) || $cited === []) {
                     $errors[] = "{$where}: every statement must cite at least one source by its index.";
 

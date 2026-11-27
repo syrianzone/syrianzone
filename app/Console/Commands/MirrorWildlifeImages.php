@@ -48,7 +48,8 @@ class MirrorWildlifeImages extends Command
         }
 
         $disk = $dryRun ? null : Storage::disk('r2');
-        $mirroredNow = [];
+        $uploaded = 0;
+        $toRecord = [];
         $failed = 0;
 
         foreach ($this->photos() as ['slug' => $slug, 'image' => $image]) {
@@ -64,6 +65,9 @@ class MirrorWildlifeImages extends Command
                 && ($dryRun || collect($variants)->every(fn (string $k): bool => $disk->exists($k)));
             if ($mirrored) {
                 $this->line(" Already mirrored: {$key}");
+                // A draft showing the same file may still lack the key (it was
+                // written before the mirror ran); --write records it there too.
+                $toRecord[] = [$slug, $file, $key];
 
                 continue;
             }
@@ -99,15 +103,19 @@ class MirrorWildlifeImages extends Command
                 $this->line(" Uploaded: {$file} ({$width}px) -> R2: {$variantKey}");
             }
 
-            $mirroredNow[] = [$slug, $file, $key];
+            $uploaded++;
+            $toRecord[] = [$slug, $file, $key];
         }
 
-        if ($mirroredNow !== [] && $this->option('write')) {
-            foreach ($mirroredNow as [$slug, $file, $key]) {
-                app(WildlifeEditor::class)->recordMirroredPhoto($slug, $file, $key);
+        if ($toRecord !== [] && $this->option('write')) {
+            $changed = 0;
+            foreach ($toRecord as [$slug, $file, $key]) {
+                $changed += app(WildlifeEditor::class)->recordMirroredPhoto($slug, $file, $key) ? 1 : 0;
             }
-            $this->info('Recorded the R2 keys on the species. Run wildlife:export to refresh the seed file.');
-        } elseif ($mirroredNow !== []) {
+            if ($changed > 0) {
+                $this->info("Recorded the R2 keys on {$changed} species. Run wildlife:export to refresh the seed file.");
+            }
+        } elseif ($uploaded > 0) {
             $this->info('Photos uploaded. Run again with --write to record their R2 keys on the species.');
         }
 

@@ -75,10 +75,34 @@ final class WildlifeEditor
         $this->assertValid($record);
 
         return $this->write($slug, $expectedVersion, function (WildlifeSpecies $species) use ($record, $by) {
-            $species->draft = $record;
+            $species->draft = $this->withMirroredPhoto($record, $species->record);
             $species->draft_updated_by = $by?->id;
             $species->draft_updated_at = now();
         });
+    }
+
+    /**
+     * An agent writes a record from what it read, so a draft of an already
+     * mirrored photo often arrives with `r2Key: null` (it read the record
+     * before the mirror ran, or did not copy the key). The key belongs to the
+     * file, not to the edit: carry it over whenever the draft shows the same
+     * Commons file as the published record, so publishing never drops a
+     * working mirror.
+     *
+     * @param  array<string, mixed>  $draft
+     * @param  array<string, mixed>|null  $published
+     * @return array<string, mixed>
+     */
+    private function withMirroredPhoto(array $draft, ?array $published): array
+    {
+        $key = $published['image']['r2Key'] ?? null;
+        if (is_string($key) && $key !== ''
+            && ($draft['image']['r2Key'] ?? null) === null
+            && ($draft['image']['commonsFile'] ?? null) === ($published['image']['commonsFile'] ?? null)) {
+            $draft['image']['r2Key'] = $key;
+        }
+
+        return $draft;
     }
 
     /** Drop the pending draft; the published record, if any, is untouched. */
@@ -108,7 +132,7 @@ final class WildlifeEditor
 
             if ($species->draft !== null) {
                 $this->assertValid($species->draft);
-                $species->record = $species->draft;
+                $species->record = $this->withMirroredPhoto($species->draft, $species->record);
                 $species->draft = null;
                 $species->draft_updated_by = null;
                 $species->draft_updated_at = null;
@@ -173,26 +197,40 @@ final class WildlifeEditor
      * Record that the species' photo now lives on R2 (`wildlife:mirror-images`).
      * Written into the published record and into a draft showing the same
      * file, so publishing the draft does not drop the key. A housekeeping write
-     * by the system, so it needs no version and no review.
+     * by the system, so it needs no version and no review. Returns whether
+     * anything changed.
      */
-    public function recordMirroredPhoto(string $slug, string $commonsFile, string $r2Key): void
+    public function recordMirroredPhoto(string $slug, string $commonsFile, string $r2Key): bool
     {
-        DB::transaction(function () use ($slug, $commonsFile, $r2Key) {
+        $changed = DB::transaction(function () use ($slug, $commonsFile, $r2Key) {
             $species = WildlifeSpecies::where('slug', $slug)->lockForUpdate()->first();
             if ($species === null) {
                 throw WildlifeActionException::notFound($slug);
             }
+            $changed = false;
             foreach (['record', 'draft'] as $column) {
                 $value = $species->{$column};
-                if (is_array($value) && ($value['image']['commonsFile'] ?? null) === $commonsFile) {
+                if (is_array($value) && ($value['image']['commonsFile'] ?? null) === $commonsFile
+                    && ($value['image']['r2Key'] ?? null) !== $r2Key) {
                     $value['image']['r2Key'] = $r2Key;
                     $species->{$column} = $value;
+                    $changed = true;
                 }
             }
-            $species->version++;
-            $species->save();
+            // Only a real change bumps the version, so a repeated run does not
+            // make every agent's last read stale.
+            if ($changed) {
+                $species->version++;
+                $species->save();
+            }
+
+            return $changed;
         });
-        $this->data->forget();
+        if ($changed) {
+            $this->data->forget();
+        }
+
+        return $changed;
     }
 
     /**

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Cross-check resources/data/wildlife.json against public biodiversity databases.
 
+The species live in the database; run `php artisan wildlife:export` first so the
+file holds what is published.
+
 Read-only: it never writes the data file. For every species it checks that
 
   * the scientific name resolves to an accepted GBIF taxon (exact match),

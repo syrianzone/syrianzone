@@ -2,28 +2,62 @@
 
 namespace App\Services\Wildlife;
 
+use App\Models\WildlifeSpecies;
 use App\Support\Facts;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 /**
- * Builds the props of `/wild` and `/wild/{slug}` from
- * `resources/data/wildlife.json`, so each page receives only what it renders
- * instead of the whole guide shipping in the JavaScript bundle.
+ * The published species of the wildlife guide (the `wildlife_species` table),
+ * and the props of `/wild` and `/wild/{slug}` built from them, so each page
+ * receives only what it renders instead of the whole guide shipping in the
+ * JavaScript bundle. Drafts and hidden species never reach this class's
+ * callers: the pages, share cards, sitemaps and governorate pages.
  */
 final class WildlifeData
 {
     /** How many other species a species page links to. */
     private const RELATED = 3;
 
-    /** The Red List's "threatened" categories. */
-    private const THREATENED = ['CR', 'EN', 'VU'];
+    private const THREATENED = WildlifeRules::THREATENED;
 
-    /** Statuses for which a governorate's records are historical. */
-    private const GONE = ['possibly-extinct', 'extinct-in-syria'];
+    private const GONE = WildlifeRules::GONE;
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * The cached list lives under a key that names a generation, and every
+     * write starts a new generation after it commits (forget()). A reader that
+     * queried the old rows just before a write cannot overwrite the new list:
+     * it fills the old generation's key, which no one reads any more. The
+     * lifetime only bounds how long such a dead entry lingers.
+     */
+    private const GENERATION_KEY = 'wildlife:published:generation';
+
+    private const CACHE_TTL = 86400;
+
+    /**
+     * Every public species record, in the guide's order.
+     *
+     * @return list<array<string, mixed>>
+     */
     public function all(): array
     {
-        return array_values(Facts::json('wildlife')['species'] ?? []);
+        $generation = Cache::rememberForever(self::GENERATION_KEY, fn (): string => (string) Str::uuid());
+
+        return Cache::remember('wildlife:published:'.$generation, self::CACHE_TTL, fn (): array => WildlifeSpecies::query()
+            ->whereNotNull('record')
+            ->where('is_hidden', false)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get(['record'])
+            ->map(fn (WildlifeSpecies $species): array => $species->record)
+            ->values()
+            ->all());
+    }
+
+    /** Called after a write commits: later reads use a fresh generation. */
+    public function forget(): void
+    {
+        Cache::forever(self::GENERATION_KEY, (string) Str::uuid());
     }
 
     /** @return array<string, mixed>|null */

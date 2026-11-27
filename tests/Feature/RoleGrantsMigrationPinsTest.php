@@ -80,6 +80,9 @@ it('pins the migration catalogue to the capabilities that existed when it ran', 
         PermissionCatalogue::GOVTCVS_PUBLISH,
         PermissionCatalogue::GOVTCVS_SLOTS,
         PermissionCatalogue::GOVTCVS_DELETE,
+        PermissionCatalogue::WILDLIFE_EDIT,
+        PermissionCatalogue::WILDLIFE_PUBLISH,
+        PermissionCatalogue::WILDLIFE_DELETE,
     ];
 
     expect(roleGrantsMigrationCatalogue())

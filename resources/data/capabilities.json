@@ -46,5 +46,8 @@
     "transit.edit_routes": true,
     "transit.reject": true,
     "transit.review_drafts": true,
-    "users.ban": true
+    "users.ban": true,
+    "wildlife.delete": true,
+    "wildlife.edit": true,
+    "wildlife.publish": true
 }

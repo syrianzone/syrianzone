@@ -9,7 +9,11 @@ in Syria, and its global IUCN Red List category. The guide's value is that it is
 
 | Piece | Path |
 |---|---|
-| The data (one record per species) | `resources/data/wildlife.json` |
+| The species (one row per species: the published `record`, a pending `draft`, `is_hidden`, `version`) | table `wildlife_species`, model `App\Models\WildlifeSpecies` |
+| The seed a fresh database starts from, and the reviewable snapshot of what is published | `resources/data/wildlife.json` (`php artisan wildlife:export` rewrites it) |
+| The machine-checkable sourcing rules, applied to every draft, every publish and the seed | `app/Services/Wildlife/WildlifeRules.php` |
+| Every change: create, draft, publish, unpublish, move, delete | `app/Services/Wildlife/WildlifeEditor.php` |
+| Agent tools (`list-wildlife-species`, `create-wildlife-species`, `publish-wildlife-species`, …) | `app/Mcp/Tools/Wildlife/`, see [agent-mcp.md](agent-mcp.md) |
 | Page props (a card per species for the hub, one record plus three related cards for a species page, the species of a governorate) | `app/Services/Wildlife/WildlifeData.php` |
 | Types, labels, helpers (the JSON is not bundled) | `resources/js/Domain/wildlife/wildlife.ts` |
 | Hub and species pages | `resources/js/Pages/Wild/Index.tsx`, `Show.tsx`, `_components/` |
@@ -17,7 +21,7 @@ in Syria, and its global IUCN Red List category. The guide's value is that it is
 | Share preview, JSON-LD (`Taxon`, the hub's `ItemList`) and record card | `app/Support/Seo/Preview/Resolvers/WildSpeciesPreview.php` |
 | Sitemap and image-sitemap entries | `SitemapBuilder::wildlifeUrls()`, `ImageSitemapBuilder::wildlifeImages()` |
 | "Wildlife recorded here" on each governorate page | `GovernorateDataService` (`wildlife` prop) |
-| Data rules, as tests | `tests/Feature/WildlifeDataTest.php`, `tests/Feature/WildlifeRoutesTest.php` |
+| Data rules, as tests | `tests/Feature/WildlifeDataTest.php`, `tests/Feature/WildlifeRoutesTest.php`, `tests/Feature/Agent/WildlifeToolsTest.php` |
 | Cross-check against GBIF, the Red List and Commons | `scripts/wildlife/verify.py` |
 | Copy the photos to R2 | `php artisan wildlife:mirror-images` |
 
@@ -76,18 +80,45 @@ in Syria, and its global IUCN Red List category. The guide's value is that it is
 
 ## Adding or correcting a species
 
-1. Collect the sources, read them, and write the record in
-   `resources/data/wildlife.json`. Arabic copy follows the site's Arabic guide.
-2. `python3 -I scripts/wildlife/verify.py --only <slug>` must report no
-   mismatch. Paste its output into the pull request.
-3. `vendor/bin/pest tests/Feature/WildlifeDataTest.php tests/Feature/WildlifeRoutesTest.php`.
-4. A second person reviews each new or changed record against its sources
-   before merge.
-5. Before launch and after each merge that adds a photo,
-   `php artisan wildlife:mirror-images --write` copies it to R2 at 500, 960
-   and 1280 px (`IMAGE_WIDTHS`) and records its `r2Key`. Until then the pages
-   load the photo from Commons, the share card is drawn with the guide's icon
-   instead of the photo, and the photo is left out of the image sitemap.
+The species live in the database, so a species is added or corrected without a
+pull request, through the agent tools on `/mcp/admin` (a dashboard page can
+call the same `WildlifeEditor` later). Three capabilities split the work:
+
+| Capability | May |
+|---|---|
+| `wildlife.edit` | create a species, write and discard drafts, change the order |
+| `wildlife.publish` | publish a draft (the review step), unpublish and show again |
+| `wildlife.delete` | delete a species for good |
+
+1. Collect the sources and read them. Arabic copy follows the site's Arabic
+   guide.
+2. `get-wildlife-options` returns the allowed values and a template.
+   `create-wildlife-species` adds a new species; `get-wildlife-species` then
+   `update-wildlife-draft` corrects one (a full record, with the `version`
+   read). Either way only a **draft** is written: the public page does not
+   change. `WildlifeRules` refuses a draft that breaks a rule a machine can
+   check, and names every broken rule.
+3. **A second person reviews the draft** against its sources and publishes it
+   with `publish-wildlife-species`. The response reports
+   `reviewed_by_draft_author: true` when the publisher also wrote the draft,
+   which breaks this rule; separate tokens for drafting and publishing keep it.
+   `unpublish-wildlife-species` takes a species off the site reversibly.
+4. Every write bumps `version`; a write naming an older version is refused, so
+   two editors never overwrite each other.
+5. Now and then, `php artisan wildlife:export` rewrites
+   `resources/data/wildlife.json` with what is published, and
+   `python3 -I scripts/wildlife/verify.py` cross-checks it against GBIF, the
+   Red List and Commons. Commit the file: its diff is the record of what
+   changed, and a fresh database is seeded from it.
+6. `php artisan wildlife:mirror-images --write` copies new photos to R2 at
+   500, 960 and 1280 px (`IMAGE_WIDTHS`) and records each `r2Key` on its
+   species (in the published record and in a draft showing the same photo).
+   Until then the pages load the photo from Commons, the share card is drawn
+   with the guide's icon instead of the photo, and the photo is left out of the
+   image sitemap.
+
+Changing the guide's code, or the seed file directly, still goes through a pull
+request: the seed only matters to a database that has no species yet.
 
 Readers report errors through the "أبلغ عن خطأ" link on each species page,
 which opens a prefilled GitHub issue naming the species and its review date.

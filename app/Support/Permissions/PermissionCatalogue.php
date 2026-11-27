@@ -116,6 +116,12 @@ final class PermissionCatalogue
 
     public const GOVTCVS_DELETE = 'govtcvs.delete';
 
+    public const WILDLIFE_EDIT = 'wildlife.edit';
+
+    public const WILDLIFE_PUBLISH = 'wildlife.publish';
+
+    public const WILDLIFE_DELETE = 'wildlife.delete';
+
     public const USERS_BAN = 'users.ban';
 
     public const GUESSWHO_MANAGE = 'guesswho.manage';
@@ -195,6 +201,11 @@ final class PermissionCatalogue
                 self::GOVTCVS_SLOTS => 'إدارة المناصب والشواغر الحكومية',
                 self::GOVTCVS_DELETE => 'حذف ملفات المسؤولين',
             ],
+            'wildlife' => [
+                self::WILDLIFE_EDIT => 'إضافة الأنواع إلى دليل الحياة البرية وكتابة مسودّات تعديلها',
+                self::WILDLIFE_PUBLISH => 'مراجعة مسودّات الحياة البرية ونشرها أو إخفاؤها',
+                self::WILDLIFE_DELETE => 'حذف الأنواع من دليل الحياة البرية',
+            ],
             'users' => [
                 self::USERS_BAN => 'حظر المستخدمين ومنعهم من تقديم مسارات',
             ],
@@ -228,6 +239,7 @@ final class PermissionCatalogue
             'compass' => ['label' => 'بوصلة سوريا', 'icon' => 'compass'],
             'promises' => ['label' => 'عداد الوعود', 'icon' => 'promises'],
             'govtcvs' => ['label' => 'السير الذاتية للمسؤولين', 'icon' => 'govtcvs'],
+            'wildlife' => ['label' => 'الحياة البرية', 'icon' => 'wild'],
             'users' => ['label' => 'المستخدمون', 'icon' => 'users'],
             'guesswho' => ['label' => 'لعبة مَنْ هُوَ؟', 'icon' => 'games'],
             'assets' => ['label' => 'ملفات الاستضافة', 'icon' => 'assets'],

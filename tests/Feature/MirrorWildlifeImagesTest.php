@@ -1,14 +1,14 @@
 <?php
 
-use App\Support\Facts;
+use App\Models\WildlifeSpecies;
+use App\Services\Wildlife\WildlifeData;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * `wildlife:mirror-images` copies the Commons photos to R2. These runs never
- * pass --write, so resources/data/wildlife.json is left alone; whether the
- * command would record the keys shows in its closing line.
+ * `wildlife:mirror-images` copies the Commons photos to R2, and with --write
+ * records each key on its species in the database.
  */
 beforeEach(function () {
     config(['filesystems.disks.r2.bucket' => 'test-bucket']);
@@ -17,7 +17,7 @@ beforeEach(function () {
 
 test('each photo is stored under a key naming its Commons file', function () {
     Storage::fake('r2');
-    $species = Facts::json('wildlife')['species'][0];
+    $species = app(WildlifeData::class)->all()[0];
     $base = 'wildlife/'.$species['slug'].'-'.substr(sha1($species['image']['commonsFile']), 0, 8);
 
     $this->artisan('wildlife:mirror-images')
@@ -39,4 +39,36 @@ test('a rejected upload fails the run and records no key', function () {
         ->expectsOutputToContain('Could not upload')
         ->doesntExpectOutputToContain('Run again with --write')
         ->assertFailed();
+});
+
+test('with --write the key is recorded on the published record and on a draft showing the same photo', function () {
+    Storage::fake('r2');
+    $row = WildlifeSpecies::where('slug', 'golden-hamster')->first();
+    $row->update(['draft' => $row->record]);
+    $key = 'wildlife/golden-hamster-'.substr(sha1($row->record['image']['commonsFile']), 0, 8).'.jpg';
+
+    $this->artisan('wildlife:mirror-images --write')->assertSuccessful();
+
+    $row->refresh();
+    expect($row->record['image']['r2Key'])->toBe($key)
+        ->and($row->draft['image']['r2Key'])->toBe($key)
+        ->and(collect(app(WildlifeData::class)->all())->firstWhere('slug', 'golden-hamster')['image']['r2Key'])->toBe($key);
+});
+
+test('a draft written before the mirror ran gets the key, and a repeat run changes nothing', function () {
+    Storage::fake('r2');
+    $this->artisan('wildlife:mirror-images --write')->assertSuccessful();
+    $row = WildlifeSpecies::where('slug', 'golden-hamster')->first();
+    $draft = $row->record;
+    $draft['image']['r2Key'] = null;
+    $row->update(['draft' => $draft]);
+    $version = $row->fresh()->version;
+
+    $this->artisan('wildlife:mirror-images --write')->assertSuccessful();
+    $row->refresh();
+    expect($row->draft['image']['r2Key'])->toBe($row->record['image']['r2Key'])
+        ->and($row->version)->toBe($version + 1);
+
+    $this->artisan('wildlife:mirror-images --write')->assertSuccessful();
+    expect($row->fresh()->version)->toBe($version + 1);
 });

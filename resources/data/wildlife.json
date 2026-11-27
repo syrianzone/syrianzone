@@ -7,6 +7,10 @@
                 "url": "https://doi.org/10.11646/zootaxa.5580.1.1"
             },
             {
+                "title": "Masseti, M. (2009). Carnivores of Syria. ZooKeys 31: 229–252.",
+                "url": "https://doi.org/10.3897/zookeys.31.170"
+            },
+            {
                 "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48 (OSME).",
                 "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
             },
@@ -1307,6 +1311,376 @@
             "lastReviewed": "2026-11-26"
         },
         {
+            "slug": "asiatic-lion",
+            "nameAr": "الأسد الآسيوي",
+            "altNamesAr": [
+                "الأسد",
+                "الليث"
+            ],
+            "nameEn": "Asiatic lion",
+            "scientific": "Panthera leo",
+            "subspecies": "Panthera leo persica",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/15951/280792135"
+            },
+            "iucnNoteAr": "التصنيف للنوع ككل (الأسد) على المستوى العالمي، لا للجمهرة التي عاشت في سوريا وانقرضت.",
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "انقرض من سوريا في العصور التاريخية، ولم يُسجَّل على امتداد الفرات بعد القرن الثاني عشر بحسب موتيرد (1966).",
+            "habitats": [
+                "wetlands"
+            ],
+            "governorates": [],
+            "summaryAr": "من اللواحم الكبيرة التي انقرضت من سوريا في العصور التاريخية، وكان يُسجَّل على امتداد نهر الفرات حتى القرن الثاني عشر، ولم يبقَ من نُويعه الآسيوي اليوم إلا جمهرة غابة غير في الهند.",
+            "summarySources": [
+                0,
+                1
+            ],
+            "factsAr": [
+                {
+                    "text": "يذكره ماسيتي (2009) بين اللواحم الكبيرة التي انقرضت من سوريا في العصور التاريخية، إلى جانب الفهد الآسيوي.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "بحسب موتيرد (1966)، لم يُسجَّل الأسد على امتداد الفرات إلا حتى القرن الثاني عشر.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "امتدّ نطاق الأسد سابقاً من شمال أفريقيا عبر جنوب غرب آسيا، حيث اختفى من معظم بلدانه خلال المئة والخمسين عاماً الأخيرة، وشرقاً حتى الهند.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "كان النُّويع الآسيوي ينتشر في القرن التاسع عشر من العراق إلى وسط الهند، وهو اليوم محصور في غابة غير في الهند.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "ارتفع عدد أسود غابة غير من أقل من 20 أسداً نحو عام 1900 إلى نحو 300 عام 1995.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "الأسود الآسيوية أصغر حجماً عموماً، وتتميّز بثنية جلدية طولية على البطن نادراً ما تُرى في الأسود الأفريقية، ولبدة الذكر على قمة رأسه معتدلة فتبقى أذناه ظاهرتين دائماً.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Asiatic lion 03.jpg",
+                "author": "Bernard Gagnon",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "أسد آسيوي في منتزه غابة غير الوطني في الهند",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Masseti, M. (2009). Carnivores of Syria. ZooKeys 31: 229–252.",
+                    "url": "https://doi.org/10.3897/zookeys.31.170"
+                },
+                {
+                    "title": "Wilson, D.E. & Mittermeier, R.A. (eds.) (2009). Handbook of the Mammals of the World, Vol. 1: Carnivores — Lion, p. 137.",
+                    "url": "https://treatment.plazi.org/id/5923B274466BC80FE2E8C920FABE9D2A"
+                },
+                {
+                    "title": "IUCN Red List — Panthera leo",
+                    "url": "https://www.iucnredlist.org/species/15951/280792135"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "leopard",
+            "nameAr": "النمر",
+            "altNamesAr": [
+                "نمر الأناضول",
+                "النمر الأناضولي"
+            ],
+            "nameEn": "Leopard",
+            "scientific": "Panthera pardus",
+            "subspecies": "Panthera pardus tulliana",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/15954/286153337"
+            },
+            "iucnNoteAr": "التصنيف للنوع ككل على المستوى العالمي، لا لجمهرته في سوريا التي انقرضت.",
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "يُقال إن آخر نمر في سوريا قُتل عام 1963 قرب صلنفة في الجبال الساحلية، وتعدّه مجموعة اختصاصيي السنّوريات في الاتحاد الدولي لصون الطبيعة منقرضاً إقليمياً في سوريا.",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "latakia"
+            ],
+            "summaryAr": "سنّور كبير عاش في الجبال الساحلية السورية، ويُقال إن آخر أفراده في سوريا قُتل عام 1963 قرب صلنفة، ويُعدّ اليوم منقرضاً إقليمياً فيها.",
+            "summarySources": [
+                0,
+                1
+            ],
+            "factsAr": [
+                {
+                    "text": "فحص ماسيتي (2009) جلد ذكر بالغ قُتل عام 1959 في النبي يونس قرب صلنفة شمال غرب سوريا، وجمع معلومات مباشرة عن اختفاء آخر أفراده من المنطقة نفسها.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "يُقال إن آخر نمر سوري قُتل عام 1963 قرب قرية باب جنّة في منطقة صلنفة، على بعد نحو 20 كم من الحدود التركية، على يد حارس غابات في غابة من شوح كيليكيا.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "النُّويع الموثّق في شمال سوريا، حيث سُجّل النوع آخر مرة، هو نمر آسيا الصغرى (نمر الأناضول)، ولا يُستبعد أن يكون النمر العربي قد عاش أيضاً في صحارى جنوب سوريا.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لم يكن النمر بين أنواع اللواحم الخمسة عشر التي جمع ماسيتي معلومات عن انتشارها الحالي في سوريا، في دراسة قامت أساساً على مسوح ميدانية بين عامَي 1989 و1995.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تراجع النوع في أجزاء واسعة من الشرق الأوسط، ويُعدّ منقرضاً إقليمياً في سوريا ولبنان والأردن وفلسطين.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "انقرض النوع إقليمياً في بلدان عدة بسبب فقدان الموائل وتجزئتها وتناقص الفرائس والصيد الجائر لتجارة الحياة البرية غير المشروعة.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Panthera pardus saxicolor, Zoo Hannover, Mai 2006.jpg",
+                "author": "Johannes D.",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "نمر فارسي في حديقة حيوان هانوفر في ألمانيا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Masseti, M. (2009). Carnivores of Syria. ZooKeys 31: 229–252.",
+                    "url": "https://doi.org/10.3897/zookeys.31.170"
+                },
+                {
+                    "title": "IUCN SSC Cat Specialist Group. Living species — Leopard (Panthera pardus).",
+                    "url": "https://www.catsg.org/living-species-leopard"
+                },
+                {
+                    "title": "IUCN Red List — Panthera pardus",
+                    "url": "https://www.iucnredlist.org/species/15954/286153337"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "asiatic-cheetah",
+            "nameAr": "الفهد الآسيوي",
+            "altNamesAr": [
+                "الفهد",
+                "الفهد الصياد"
+            ],
+            "nameEn": "Asiatic cheetah",
+            "scientific": "Acinonyx jubatus",
+            "subspecies": "Acinonyx jubatus venaticus",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/219/259025524"
+            },
+            "iucnNoteAr": "التصنيف للنوع ككل على المستوى العالمي؛ أما النُّويع الآسيوي فمصنّف «مهدداً بشدة بالانقراض».",
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "تعود آخر التقارير المعروفة عنه في المنطقة إلى الصحراء الجنوبية الشرقية في 1956–1957، وربما قُتل آخر فرد باقٍ منه أواخر الخمسينيات.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [],
+            "summaryAr": "سنّور صحراوي انقرض من سوريا، وتعود آخر التقارير المعروفة عنه في المنطقة إلى الصحراء الجنوبية الشرقية في خمسينيات القرن العشرين، ولم تبقَ من نُويعه الآسيوي إلا جمهرة صغيرة في إيران.",
+            "summarySources": [
+                0,
+                1
+            ],
+            "factsAr": [
+                {
+                    "text": "يذكره ماسيتي (2009) بين اللواحم الكبيرة التي انقرضت من سوريا في العصور التاريخية.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تعود آخر التقارير المعروفة عن الفهد في المنطقة إلى الصحراء الجنوبية الشرقية في 1956–1957، وربما قُتل آخر فرد باقٍ منه أواخر الخمسينيات في منطقة جنوبية بين الحدود الأردنية والعراقية.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "امتدّ نطاقه التاريخي من شمال أفريقيا إلى شبه الجزيرة العربية وفلسطين وسوريا، وشرقاً عبر العراق وإيران وأفغانستان وباكستان حتى وسط الهند، واختفى من كل نطاقه التاريخي في آسيا تقريباً.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "يُعدّ منقرضاً إقليمياً في سوريا والعراق والأردن والسعودية والكويت، وإيران هي البلد الوحيد الذي بقيت فيه جمهرة صغيرة من الفهد الآسيوي.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "بحسب دليل ثدييات العالم (2009)، ربما لم يبقَ من النُّويع الآسيوي إلا أقل من 50 فرداً في شمال وسط إيران.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "اقتنى النبلاء الفهود ودرّبوها على الصيد منذ 5000 عام، أي منذ عهد السومريين.",
+                    "sources": [
+                        2
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "الأسباب الرئيسية لتراجع الفهد الآسيوي وانقراضه هي صيده غير المشروع، واستنزاف فرائسه، وتحويل موائله، وإنشاء البنى التحتية كالطرق السريعة.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Acinonyx jubatus venaticus 350833026.jpg",
+                "author": "موسی مزینانیان",
+                "license": "CC BY 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+                "captionAr": "فهد آسيوي في إيران",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Masseti, M. (2009). Carnivores of Syria. ZooKeys 31: 229–252.",
+                    "url": "https://doi.org/10.3897/zookeys.31.170"
+                },
+                {
+                    "title": "IUCN SSC Cat Specialist Group. Living species — Cheetah (Acinonyx jubatus).",
+                    "url": "https://www.catsg.org/living-species-cheetah"
+                },
+                {
+                    "title": "Wilson, D.E. & Mittermeier, R.A. (eds.) (2009). Handbook of the Mammals of the World, Vol. 1: Carnivores — Cheetah, p. 155.",
+                    "url": "https://treatment.plazi.org/id/5923B274467DC81DE2E8C98DFA8F9C07"
+                },
+                {
+                    "title": "IUCN Red List — Acinonyx jubatus",
+                    "url": "https://www.iucnredlist.org/species/219/259025524"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "syrian-wild-ass",
+            "nameAr": "حمار الوحش السوري",
+            "altNamesAr": [
+                "فرأ الشام",
+                "حمار الوحش الشامي"
+            ],
+            "nameEn": "Syrian wild ass",
+            "scientific": "Equus hemionus",
+            "subspecies": "Equus hemionus hemippus",
+            "group": "mammal",
+            "iucn": {
+                "category": "NT",
+                "url": "https://www.iucnredlist.org/species/7951/238881740"
+            },
+            "iucnNoteAr": "التصنيف للنوع ككل (الحمار البري الآسيوي) على المستوى العالمي؛ أما النُّويع السوري فمنقرض. وكان النوع مصنّفاً «مهدداً بالانقراض» حين صدر دليل ثدييات العالم عام 2011.",
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "انقرض النُّويع كلياً في أوائل القرن العشرين. يحدّد دليل ثدييات العالم (2011) انقراضه بعام 1927، بينما يذكر بينيت وزملاؤه (2022) أن آخر فرد معروف منه عاش في حديقة حيوان شونبرون في فيينا حتى نفوقه عام 1929.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "aleppo"
+            ],
+            "summaryAr": "نُويع من الحمار البري الآسيوي كان موطنه سوريا وشبه الجزيرة العربية، وكان أصغر الخيليات الحديثة، وانقرض في أوائل القرن العشرين.",
+            "summarySources": [
+                0,
+                1
+            ],
+            "factsAr": [
+                {
+                    "text": "كان موطن هذا النُّويع سوريا وشبه الجزيرة العربية، وهو اليوم منقرض.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "وُصف بأنه حيوان خفيف سريع، وكان أصغر الخيليات الحديثة حتى انقراضه في أوائل القرن العشرين.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "آخر فرد معروف منه أُسر في الصحارى شمال حلب عام 1911، وعاش في حديقة حيوان شونبرون في فيينا حتى نفوقه عام 1929.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "أظهر تحليل جينومي نُشر عام 2022 أن «الكونغا»، وهي خيليات عالية القيمة استُخدمت في الدبلوماسية والمراسم والحروب في سوريا وشمال بلاد الرافدين في الألف الثالث قبل الميلاد، كانت هجائن من الجيل الأول بين إناث الحمير المستأنسة وذكور حمار الوحش السوري.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "دُفنت هذه الهجائن في مجمّع مدافن للنخبة من العصر البرونزي المبكر في تل أم المرّة، على بعد 55 كم شرق حلب.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Syrian wild ass in Vienna Zoo.jpg",
+                "author": "Kaiser",
+                "license": "Public domain",
+                "licenseUrl": null,
+                "captionAr": "حمار وحش سوري في الأسر في حديقة حيوان شونبرون في فيينا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Wilson, D.E. & Mittermeier, R.A. (eds.) (2011). Handbook of the Mammals of the World, Vol. 2: Hoofed Mammals — Asiatic Wild Ass, p. 139.",
+                    "url": "https://treatment.plazi.org/id/03B0E520E8125866FABEACFDEF26F67F"
+                },
+                {
+                    "title": "Bennett, E.A. et al. (2022). The genetic identity of the earliest human-made hybrid animals, the kungas of Syro-Mesopotamia. Science Advances 8(2): eabm0218.",
+                    "url": "https://doi.org/10.1126/sciadv.abm0218"
+                },
+                {
+                    "title": "IUCN Red List — Equus hemionus",
+                    "url": "https://www.iucnredlist.org/species/7951/238881740"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
             "slug": "sand-gazelle",
             "nameAr": "غزال الريم",
             "altNamesAr": [
@@ -2184,6 +2558,76 @@
             "lastReviewed": "2026-11-26"
         },
         {
+            "slug": "syrian-ostrich",
+            "nameAr": "النعامة السورية",
+            "altNamesAr": [
+                "النعامة العربية"
+            ],
+            "nameEn": "Syrian ostrich",
+            "scientific": "Struthio camelus",
+            "subspecies": "Struthio camelus syriacus",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/45020636/280828427"
+            },
+            "iucnNoteAr": "التصنيف للنوع ككل (النعامة الشائعة) على المستوى العالمي؛ أما النُّويع السوري فتعدّه قائمة 2025 منقرضاً عالمياً.",
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "بحسب قائمة 2025: منقرضة عالمياً، ولا توجد معلومات مؤكدة عن تاريخ انقراضها من سوريا. وكانت قائمة 2008 قد أدرجتها بين الطيور التي كانت تتكاثر في سوريا وانقرضت منها.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [],
+            "summaryAr": "نُويع من النعام كان منتشراً في البادية السورية والجزيرة وصولاً إلى شبه الجزيرة العربية، وأُعلن انقراضه عالمياً نحو عام 1966.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "كانت منتشرة سابقاً في البادية السورية والجزيرة وصولاً إلى شبه الجزيرة العربية.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لا توجد معلومات مؤكدة عن تاريخ انقراضها من سوريا، وأُعلن انقراض هذا النُّويع عالمياً نحو عام 1966.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أدرجتها قائمة 2008 بين الطيور التي كانت تتكاثر في سوريا وانقرضت منها.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "Ostrich. Orthostat, basalt relief. From the West Palace in Tell Halaf, Syria, 9th century BCE. Pergamon Museum, Berlin, Germany.jpg",
+                "author": "Osama Shukir Muhammed Amin FRCP(Glasg)",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "نعامة على نقش بازلتي من القصر الغربي في تل حلف بسوريا، من القرن التاسع قبل الميلاد، في متحف بيرغامون في برلين",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                },
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Struthio camelus",
+                    "url": "https://www.iucnredlist.org/species/45020636/280828427"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
             "slug": "northern-bald-ibis",
             "nameAr": "أبو منجل الأصلع الشمالي",
             "altNamesAr": [
@@ -2574,6 +3018,275 @@
                 {
                     "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
                     "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "griffon-vulture",
+            "nameAr": "النسر الأسمر",
+            "altNamesAr": [
+                "نسر غريفون",
+                "نسر الفتخاء"
+            ],
+            "nameEn": "Griffon vulture",
+            "scientific": "Gyps fulvus",
+            "group": "bird",
+            "iucn": {
+                "category": "LC",
+                "url": "https://www.iucnredlist.org/species/22695219/157719127"
+            },
+            "iucnNoteAr": "التصنيف للنوع ككل على المستوى العالمي؛ أما في سوريا فوصفته قائمة 2008 بأنه «في خطر الانقراض».",
+            "syriaStatus": "resident",
+            "statusNoteAr": "بحسب قائمة 2025: مقيم متكاثر نادر، وعابر في الهجرة بأعداد قليلة. انقرضت معظم مستعمراته، وربما بقيت منها مستعمرتان حتى عام 2013.",
+            "habitats": [
+                "steppe",
+                "mountains"
+            ],
+            "governorates": [
+                "rural-damascus",
+                "homs",
+                "deir-ez-zor",
+                "hasakah",
+                "daraa"
+            ],
+            "summaryAr": "نسر كبير كان مقيماً شائعاً واسع الانتشار في سوريا، ثم انقرضت معظم مستعمراته، وصار بحسب قائمة 2025 مقيماً متكاثراً نادراً.",
+            "summarySources": [
+                0,
+                1
+            ],
+            "factsAr": [
+                {
+                    "text": "كانت مستعمرات تكاثره منتشرة سابقاً بين بلودان وحلبون، وفي البادية قرب القريتين وتدمر، وحول دير الزور والحسكة، لكن هذه المستعمرات انقرضت.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "قدّر باومغارت وزملاؤه جمهرته بنحو 100–200 زوج، وأشاروا إلى تراجع هائل في أعداده طوال القرن العشرين، وقد استمر هذا التراجع بعد ذلك.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "بحسب قائمة 2008، كانت المستعمرة الوحيدة المعروفة الباقية على جروف دوارة قرب تدمر، وقُدّرت بنحو 8–15 زوجاً، ودلّ سرب من ثمانية طيور في وادي اليرموك في 9 أيار 2006 على بقاء مستعمرة ثانية في أقصى الجنوب الغربي.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "تقع دوارة على بعد نحو 15 كم من تدمر: شمال شرقها بحسب قائمة 2025، وشمال غربها بحسب قائمة 2008.",
+                    "sources": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "text": "نُصبت منصة حفر نفطية على بعد أقل من كيلومتر من مستعمرة دوارة، لكن الطيور كانت تعشّش فيها في أيار 2007.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "ربما بقيت مستعمرتان حتى عام 2013: في دوارة وفي وادي اليرموك.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "اقترح مهتمون بالحفاظ على الطبيعة في تدمر إنشاء «مطعم للنسور» قرب مستعمرة دوارة مع مصدر آمن لمياه الشرب، لعلّ ذلك ينقذ آخر مستعمرة للنسر الأسمر في سوريا.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "تراجعت كل أنواع النسور في سوريا خلال الخمسين عاماً السابقة لقائمة 2008، ويعود ذلك أساساً إلى الصيد والتسميم.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Gyps fulvus 1 Luc Viatour.jpg",
+                "author": "Luc Viatour",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "نسر أسمر في جبال البرانس في فرنسا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                },
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Gyps fulvus",
+                    "url": "https://www.iucnredlist.org/species/22695219/157719127"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "bearded-vulture",
+            "nameAr": "العقاب الملتحي",
+            "altNamesAr": [
+                "كاسر العظام",
+                "النسر الملتحي"
+            ],
+            "nameEn": "Bearded vulture",
+            "scientific": "Gypaetus barbatus",
+            "group": "bird",
+            "iucn": {
+                "category": "NT",
+                "url": "https://www.iucnredlist.org/species/22695174/154813652"
+            },
+            "iucnNoteAr": "تذكر قائمة 2025 أن جمهرته في منطقة البحر المتوسط مصنّفة «مهددة بالانقراض».",
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "بحسب قائمة 2025: منقرض، وكانت قائمة 2008 قد عدّته منقرضاً في سوريا أيضاً. وآخر سجل له طائر يافع رُصد في الجولان بين تشرين الثاني 2016 وكانون الثاني 2017.",
+            "habitats": [
+                "mountains"
+            ],
+            "governorates": [
+                "rural-damascus",
+                "quneitra"
+            ],
+            "summaryAr": "نسر جبلي لم تخلّف سجلاته القديمة في سوريا إلا بيانات شحيحة يُرجَّح أنها تدلّ على طيور هائمة فوق جبل الشيخ وسلسلة جبال لبنان الشرقية، وتعدّه قائمتا 2008 و2025 منقرضاً في سوريا.",
+            "summarySources": [
+                0,
+                1
+            ],
+            "factsAr": [
+                {
+                    "text": "يُرجَّح أن البيانات القديمة الشحيحة عنه، السابقة لعام 1900، تدلّ على طيور هائمة فوق جبل الشيخ وسلسلة جبال لبنان الشرقية، ويبدو أنه انقرض اليوم في هذه المناطق.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "آخر سجل له طائر يافع رُصد في الجولان بين تشرين الثاني 2016 وكانون الثاني 2017.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أدرجته قائمة 2008 بين الأنواع المنقرضة في سوريا.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "threatsAr": [],
+            "image": {
+                "commonsFile": "011 Wild Bearded Vulture in flight at Pfyn-Finges (Switzerland) Photo by Giles Laurent.jpg",
+                "author": "Giles Laurent",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "عقاب ملتحٍ بري في جبال الألب في سويسرا",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                },
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Gypaetus barbatus",
+                    "url": "https://www.iucnredlist.org/species/22695174/154813652"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
+            "slug": "cinereous-vulture",
+            "nameAr": "النسر الأسود الأوراسي",
+            "altNamesAr": [
+                "النسر الأسود",
+                "النسر الراهب"
+            ],
+            "nameEn": "Cinereous vulture",
+            "scientific": "Aegypius monachus",
+            "group": "bird",
+            "iucn": {
+                "category": "NT",
+                "url": "https://www.iucnredlist.org/species/22695231/154915043"
+            },
+            "syriaStatus": "passage-migrant",
+            "statusNoteAr": "بحسب قائمة 2025: عابر قليل في الهجرة، وكان يتكاثر في الشمال قرب الحدود التركية. أما قائمة 2008 فلم تجد سجلات تكاثر موثّقة بوضوح، ووصفته بأنه زائر متقطع فقط.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "raqqa",
+                "homs"
+            ],
+            "summaryAr": "نسر كبير كان زائراً شتوياً منتظماً في البادية والجزيرة حتى خمسينيات القرن العشرين، وصار بحسب قائمة 2025 عابراً قليلاً في الهجرة، وقد قُتل أكثر من عشرة طيور منه في خريف 2022.",
+            "summarySources": [
+                0
+            ],
+            "factsAr": [
+                {
+                    "text": "بحسب قائمة 2025، كان يتكاثر في الشمال قرب الحدود التركية، وكان زائراً شتوياً منتظماً في البادية والجزيرة حتى خمسينيات القرن العشرين.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "لم يعرف كوميرلوفه (1967) أي مشاهدة له، وذكر باومغارت وزملاؤه عدة مشاهدات آخرها في 26 آذار 1982، وعدّوه زائراً شتوياً بلا سجلات تكاثر موثّقة بوضوح.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "سجلّاه الحديثان الوحيدان حتى قائمة 2008: طائر قُتل قرب القريتين في خريف 2002، وآخر حلّق فوق سد وادي أبيض قرب تدمر في أيلول 2004.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "قُتل أكثر من عشرة طيور منه في خريف 2022، وصُوّر أحدها بعد صيده شمال الرقة في 11 تشرين الثاني 2022.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "تراجعت كل أنواع النسور في سوريا خلال الخمسين عاماً السابقة لقائمة 2008، ويعود ذلك أساساً إلى الصيد والتسميم.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Cinereous vulture - Al- Al-Liyah reserve 3.jpg",
+                "author": "Ghasem bavi",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "نسر أسود أوراسي في محمية اللياح في الكويت",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                },
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Aegypius monachus",
+                    "url": "https://www.iucnredlist.org/species/22695231/154915043"
                 }
             ],
             "lastReviewed": "2026-11-27"
@@ -2970,6 +3683,94 @@
             ],
             "lastReviewed": "2026-11-27",
             "iucnNoteAr": "كان مصنّفاً «معرّضاً للانقراض» حين صدرت قائمة طيور سوريا عام 2008."
+        },
+        {
+            "slug": "asian-houbara",
+            "nameAr": "الحبارى الآسيوية",
+            "altNamesAr": [],
+            "nameEn": "Asian houbara",
+            "scientific": "Chlamydotis macqueenii",
+            "group": "bird",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/22733562/205364424"
+            },
+            "syriaStatus": "winter-visitor",
+            "statusNoteAr": "بحسب قائمة 2025: زائر شتوي نادر إلى المراعي المفتوحة في البادية والجزيرة، وقد انقرض طائراً متكاثراً بعد أن ظلّ يتكاثر حتى خمسينيات القرن العشرين. ووصفته قائمة 2008 بأنه «منقرض فعلياً» بسبب الصيد، وفي أحسن الأحوال زائر عرضي.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "homs"
+            ],
+            "summaryAr": "طائر من طيور البادية كان يتكاثر في سوريا حتى خمسينيات القرن العشرين، ثم انهارت أعداده بفعل الصيد، وصار بحسب قائمة 2025 زائراً شتوياً نادراً.",
+            "summarySources": [
+                0,
+                1
+            ],
+            "factsAr": [
+                {
+                    "text": "كان شائعاً بين حلب وتدمر في نيسان وأيار 1943، ووصفه كوميرلوفه (1967) بأنه «متكاثر واسع الانتشار وشائع إلى حد ما… لكنه في تراجع عام».",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "لم يُشاهَد إلا مرة واحدة في ثلاث سنوات في السبعينيات، ومرة واحدة بين عامَي 2000 و2004.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "طوردت حبارى ظهرت في منطقة تدمر قبل بضعة مواسم شتاء من صدور قائمة 2008 حتى قُتلت.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "كانت صحراء الحماد شرق تدمر موئلاً له وللصقر الحر، وكلاهما «منقرض فعلياً» في سوريا بسبب الإفراط في الصيد بحسب قائمة 2008.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "تتقلّب أعداده من عام إلى آخر تبعاً لكمية الأمطار، ولا سيما في الجزيرة.",
+                    "sources": [
+                        0
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "تعرّض لتراجع «كارثي» يُعزى مباشرة إلى الصيد، كما تعرّض معظم داخل سوريا لرعي جائر شديد، وإن بقيت بعض المناطق في حالة جيدة.",
+                    "sources": [
+                        1
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Asian Houbara (Chlamydotis macqueenii) male courtship, Kazakhstan.jpg",
+                "author": "Kudaibergen Amirekul",
+                "license": "CC BY-SA 4.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+                "captionAr": "ذكر حبارى آسيوية في استعراض التودد في كازاخستان",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Aidek, A.E., Murdoch, D., Khoury, F. & Haraldsson, T.A. (2025). An annotated checklist of the birds of Syria: species diversity, subspecies, distribution, and conservation status. Jordan Journal of Natural History 12(1): 12–97.",
+                    "url": "https://www.rscn.org.jo/uploaded_files/journal/6987078a1acb61770456970.pdf"
+                },
+                {
+                    "title": "Murdoch, D.A. & Betton, K.F. (2008). A checklist of the birds of Syria. Sandgrouse Supplement 2: 1–48. Ornithological Society of the Middle East (OSME).",
+                    "url": "https://osme.org/wp-content/uploads/2019/10/Syria-checklist-Sandgrouse-Suppl2_48pp_2008.pdf"
+                },
+                {
+                    "title": "IUCN Red List — Chlamydotis macqueenii",
+                    "url": "https://www.iucnredlist.org/species/22733562/205364424"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
         },
         {
             "slug": "greater-flamingo",

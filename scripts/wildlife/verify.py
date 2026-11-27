@@ -117,6 +117,11 @@ def main() -> int:
 
     species = json.loads(DATA.read_text(encoding="utf-8"))["species"]
     if args.only:
+        # A mistyped slug must fail, not pass as "0/0 species verified".
+        unknown = sorted(set(args.only) - {s["slug"] for s in species})
+        if unknown:
+            print(f"Unknown species slug(s): {', '.join(unknown)}", file=sys.stderr)
+            return 2
         species = [s for s in species if s["slug"] in set(args.only)]
 
     failed = 0

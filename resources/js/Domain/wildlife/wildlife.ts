@@ -169,8 +169,8 @@ export const HABITAT_LABELS: Record<Habitat, string> = {
 /**
  * Widths the photo is available in, from Wikimedia's standard thumbnail sizes.
  * `wildlife:mirror-images` stores the R2 copy at each of them: the largest at
- * the recorded `r2Key` (`wildlife/{slug}.jpg`), the others beside it
- * (`wildlife/{slug}-500.jpg`, `-960.jpg`). Keep the two lists in step.
+ * the recorded `r2Key` (`wildlife/{slug}-{source}.jpg`), the others beside it
+ * (`wildlife/{slug}-{source}-500.jpg`, `-960.jpg`). Keep the two lists in step.
  */
 export const IMAGE_WIDTHS = [500, 960, 1280] as const;
 

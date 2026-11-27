@@ -11,8 +11,11 @@ use Illuminate\Support\Facades\Storage;
  * store, so pages stop hotlinking Commons and share cards can draw them
  * (Commons is not an allowed card-image host). Each photo is stored at every
  * width the pages request (IMAGE_WIDTHS in `Domain/wildlife/wildlife.ts`): the
- * largest at `wildlife/{slug}.jpg`, the key the data records, and the others
- * beside it as `wildlife/{slug}-{width}.jpg`.
+ * largest at `wildlife/{slug}-{source}.jpg`, the key the data records, and the
+ * others beside it as `wildlife/{slug}-{source}-{width}.jpg`. `{source}` is a
+ * short hash of the Commons file name, so replacing a species' photo gives it a
+ * new key: the next run mirrors the new photo instead of keeping the old one
+ * under the new credits, and no cache keeps serving the old copy.
  *
  * With --write it records each `image.r2Key` in resources/data/wildlife.json;
  * the page and the card switch to the R2 copy from then on. Author and license
@@ -50,10 +53,11 @@ class MirrorWildlifeImages extends Command
 
         foreach ($data['species'] as $i => $species) {
             $file = (string) $species['image']['commonsFile'];
-            $key = 'wildlife/'.$species['slug'].'.jpg';
+            $base = 'wildlife/'.$species['slug'].'-'.substr(sha1($file), 0, 8);
+            $key = $base.'.jpg';
             $variants = [];
             foreach (self::WIDTHS as $width) {
-                $variants[$width] = $width === $full ? $key : 'wildlife/'.$species['slug'].'-'.$width.'.jpg';
+                $variants[$width] = $width === $full ? $key : $base.'-'.$width.'.jpg';
             }
 
             $mirrored = ($species['image']['r2Key'] ?? null) === $key
@@ -84,7 +88,14 @@ class MirrorWildlifeImages extends Command
                     continue 2;
                 }
 
-                $disk->put($variantKey, $response->body(), ['visibility' => 'public', 'ContentType' => 'image/jpeg']);
+                // The r2 disk does not throw, so a rejected write only shows as `false`.
+                // The key is recorded only once every width is stored.
+                if (! $disk->put($variantKey, $response->body(), ['visibility' => 'public', 'ContentType' => 'image/jpeg'])) {
+                    $this->warn(" Could not upload {$file} at {$width}px to R2: {$variantKey}; skipped.");
+                    $failed++;
+
+                    continue 2;
+                }
                 $this->line(" Uploaded: {$file} ({$width}px) -> R2: {$variantKey}");
             }
 

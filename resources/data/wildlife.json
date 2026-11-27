@@ -1592,6 +1592,130 @@
             "lastReviewed": "2026-11-27"
         },
         {
+            "slug": "arabian-oryx",
+            "nameAr": "المها العربي",
+            "altNamesAr": [
+                "المهاة العربية",
+                "الوضيحي"
+            ],
+            "nameEn": "Arabian oryx",
+            "scientific": "Oryx leucoryx",
+            "group": "mammal",
+            "iucn": {
+                "category": "VU",
+                "url": "https://www.iucnredlist.org/species/15569/50191626"
+            },
+            "syriaStatus": "extinct-in-syria",
+            "statusNoteAr": "انقرضت جمهرته البرية الأصلية من سوريا. أُعيد إدخال قطيع منه إلى محمية التليلة المسيّجة قرب تدمر عام 1996، وبلغ عدده في سوريا 155 رأساً في أيلول 2010، ولا تذكر المصادر المتاحة ما حلّ بالقطيع بعد عام 2015.",
+            "habitats": [
+                "steppe"
+            ],
+            "governorates": [
+                "homs",
+                "aleppo",
+                "raqqa",
+                "rural-damascus"
+            ],
+            "summaryAr": "حيوان صحراوي من فصيلة البقريات كان نطاقه القديم يشمل سوريا، وانقرض من البرية في كل مكان بحلول عام 1972، ثم أُدخل قطيع منه عام 1996 إلى محمية التليلة المسيّجة قرب تدمر.",
+            "summarySources": [
+                0,
+                1
+            ],
+            "factsAr": [
+                {
+                    "text": "كان نطاقه القديم يشمل شبه الجزيرة العربية، ويمتد شمالاً إلى الأردن والكويت والعراق وسوريا وسيناء.",
+                    "sources": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "text": "تقلّص نطاقه منذ أوائل القرن العشرين، واختفت جمهرته الشمالية المتمركزة في صحراء النفود في خمسينيات القرن العشرين.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "انقرض من البرية عام 1972 حين قُتلت آخر حيواناته البرية في جدة الحراسيس في عُمان، ثم أُعيد توطينه في المنطقة انطلاقاً من قطعان رُبّيت في الأسر.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "أُنشئت محمية التليلة على بعد 30 كم جنوب شرق تدمر عام 1991 لإعادة المها العربي وغزال الريم إلى البادية وإحياء مراعيها، وتبلغ مساحتها نحو 220 كم².",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "في كانون الأول 1996 نُقلت إليها ثمانية رؤوس من المها (أربعة ذكور وأربع إناث) من محمية الشومري في الأردن، وأُبقيت شهراً في حظيرة للتأقلم قبل إطلاقها في سياج مساحته 10 كم².",
+                    "sources": [
+                        1,
+                        2
+                    ]
+                },
+                {
+                    "text": "تكاثر القطيع بنجاح وبلغ 116 رأساً بحسب الاستراتيجية الإقليمية لعام 2010، مع نفوق مرتفع نسبياً يعود جزئياً إلى الاقتتال بين الذكور، ونُقلت تسعة منها إلى محمية أخرى في محافظة حلب.",
+                    "sources": [
+                        1
+                    ]
+                },
+                {
+                    "text": "بلغ عدد المها في سوريا 155 رأساً في أيلول 2010، وأُطلقت أزواج قليلة منه في العام نفسه في محميتي طوال العبا في منطقة الرقة ومرج السلطان في ريف دمشق.",
+                    "sources": [
+                        2
+                    ]
+                },
+                {
+                    "text": "في أيار 2015 نشر تنظيم الدولة صوراً لمها عربية وغزلان ريم في تدمر بعد سيطرته عليها، ويبدو أن القائمين على محمية التليلة كانوا قد نقلوا أزواجاً قليلة منها إلى حظيرة مسيّجة في المدينة قبل سقوطها.",
+                    "sources": [
+                        2
+                    ]
+                }
+            ],
+            "threatsAr": [
+                {
+                    "text": "الصيد غير المشروع والإفراط في الصيد هما ما أدى إلى انقراضه من البرية.",
+                    "sources": [
+                        0
+                    ]
+                },
+                {
+                    "text": "بحلول عام 2015 صارت محميتا طوال العبا ومرج السلطان، اللتان أُطلق فيهما، في مناطق قتال.",
+                    "sources": [
+                        2
+                    ]
+                }
+            ],
+            "image": {
+                "commonsFile": "Arabian oryx (oryx leucoryx).jpg",
+                "author": "Charles J. Sharp",
+                "license": "CC BY-SA 3.0",
+                "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+                "captionAr": "مها عربي في محمية دبي الصحراوية في الإمارات",
+                "r2Key": null
+            },
+            "sources": [
+                {
+                    "title": "Wilson, D.E. & Mittermeier, R.A. (eds.) (2011). Handbook of the Mammals of the World, Vol. 2: Hoofed Mammals — Arabian Oryx, p. 647.",
+                    "url": "https://treatment.plazi.org/id/03F507139907FFBD064FF57EF85BF6F8"
+                },
+                {
+                    "title": "Environment Agency – Abu Dhabi (2010). Arabian Oryx Regional Conservation Strategy and Action Plan. Coordinating Committee for the Conservation of the Arabian Oryx.",
+                    "url": "https://www.arabianoryx.org/wp-content/uploads/2022/09/Arabian-oryx-strategy.pdf"
+                },
+                {
+                    "title": "Al-Bia Wal-Tanmia (Environment & Development) (1 June 2015). IS seizes Syria's rarest animals: Arabian oryx and sand gazelle in 'Palmyra Zoo'.",
+                    "url": "https://afedmag.com/english/NewsDetails.aspx?id=2881"
+                },
+                {
+                    "title": "IUCN Red List — Oryx leucoryx",
+                    "url": "https://www.iucnredlist.org/species/15569/50191626"
+                }
+            ],
+            "lastReviewed": "2026-11-27"
+        },
+        {
             "slug": "nubian-ibex",
             "nameAr": "الوعل النوبي",
             "altNamesAr": [

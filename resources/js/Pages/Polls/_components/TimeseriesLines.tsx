@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts"
 
 /** One drawn series: the data key, its legend label and its stroke colour. */
@@ -11,8 +12,14 @@ export interface TimeseriesLine {
  * The recharts drawing behind `TimeseriesChart`. It is its own module so the
  * charting library loads after the leaderboard instead of with it: the card,
  * its controls and the text table render (and server-render) without it.
+ * `onReady` fires once the drawing has mounted, so the card can hold its PNG
+ * download until there is a chart to capture.
  */
-export default function TimeseriesLines({ data, lines }: { data: object[]; lines: readonly TimeseriesLine[] }) {
+export default function TimeseriesLines({ data, lines, onReady }: { data: object[]; lines: readonly TimeseriesLine[]; onReady?: () => void }) {
+    useEffect(() => {
+        onReady?.()
+    }, [onReady])
+
     return (
         <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>

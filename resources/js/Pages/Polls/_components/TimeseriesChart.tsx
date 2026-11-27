@@ -1,4 +1,4 @@
-import { lazy, Suspense, useId, useMemo, useState, useRef } from "react"
+import { lazy, Suspense, useCallback, useId, useMemo, useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Button } from "@/Components/ui/button"
 import { cn } from "@/Lib/utils"
@@ -265,10 +265,14 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
     // The exporter keeps only the captured node when it has an id, which is how
     // the controls below stay out of the image.
     const chartId = useId()
+    // The drawing loads on demand; until it has mounted, a download would
+    // capture the empty placeholder.
+    const [chartReady, setChartReady] = useState(false)
+    const markChartReady = useCallback(() => setChartReady(true), [])
 
     const handleDownload = async () => {
         const chart = chartRef.current
-        if (!chart) return
+        if (!chart || !chartReady) return
 
         try {
             // Loaded on demand: html2canvas is heavy and only this button needs it.
@@ -331,6 +335,7 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                                     name: candidate.name,
                                     color: getCandidateColor(candidate.candidateId),
                                 }))}
+                                onReady={markChartReady}
                             />
                         </Suspense>
                     </div>
@@ -393,7 +398,7 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                 </table></div>
 
                 <div className="mt-4 flex justify-end">
-                    <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
+                    <Button variant="outline" size="sm" onClick={handleDownload} disabled={!chartReady} className="gap-2">
                         <Download className="w-4 h-4" />
                         تحميل الصورة
                     </Button>

@@ -83,9 +83,32 @@ class _MishwarSearchBarState extends State<MishwarSearchBar> {
     }
   }
 
+  void _closeSearch() {
+    _searchController.clear();
+    _searchFocusNode.unfocus();
+    setState(() {
+      _isExpanded = false;
+      _showSearchResults = false;
+    });
+    context.read<MishwarCubit>().clearPlacesSearch();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<MishwarCubit, MishwarState>(
+    final isSearchOpen = _isExpanded ||
+        _searchFocusNode.hasFocus ||
+        _showSearchResults ||
+        _searchController.text.isNotEmpty;
+
+    return PopScope(
+      canPop: !isSearchOpen,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (isSearchOpen) {
+          _closeSearch();
+        }
+      },
+      child: BlocBuilder<MishwarCubit, MishwarState>(
       buildWhen: (prev, curr) =>
           prev.isSearching != curr.isSearching ||
           prev.searchResults != curr.searchResults ||
@@ -212,6 +235,7 @@ class _MishwarSearchBarState extends State<MishwarSearchBar> {
           ),
         );
       },
+    ),
     );
   }
 

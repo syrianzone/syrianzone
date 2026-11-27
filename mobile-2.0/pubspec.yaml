@@ -61,13 +61,14 @@ dependencies:
   # Fonts
   google_fonts: ^6.2.1
   flutter_svg: ^2.3.0
-  flutter_osm_plugin: ^2.1.0
   url_launcher: ^6.3.3
   geolocator: ^14.1.1
   intl: any
   image_picker: ^1.2.4
   flutter_localizations: 
     sdk: flutter
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
 
 
 

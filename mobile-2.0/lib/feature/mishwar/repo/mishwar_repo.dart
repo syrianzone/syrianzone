@@ -5,6 +5,7 @@ import 'package:syrianzone/core/network/api_service.dart';
 import 'package:syrianzone/core/network/response/guides_response.dart';
 import 'package:syrianzone/core/network/response/hotel_detail_response.dart';
 import 'package:syrianzone/core/network/response/hotel_response.dart';
+import 'package:syrianzone/core/network/response/hotels_map_response.dart';
 import 'package:syrianzone/core/network/response/place_detail_response.dart';
 import 'package:syrianzone/core/network/response/place_photos_response.dart';
 import 'package:syrianzone/core/network/response/places_map_response.dart';
@@ -95,7 +96,7 @@ class MishwarRepo {
     }
   }
 
-  Future<ApiResult<PlacesMapResponse>> getHotelsMap() async {
+  Future<ApiResult<HotelsMapResponse>> getHotelsMap() async {
     try {
       final response = await _apiService.getHotelsMap();
       return ApiResult.success(response);

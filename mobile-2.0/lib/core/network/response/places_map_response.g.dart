@@ -54,7 +54,6 @@ PlaceMapProperties _$PlaceMapPropertiesFromJson(Map<String, dynamic> json) =>
       category: json['category'] as String?,
       thumbUrl: json['thumb_url'] as String?,
       userId: (json['user_id'] as num?)?.toInt(),
-      type: json['type'] as String?,
     );
 
 Map<String, dynamic> _$PlaceMapPropertiesToJson(PlaceMapProperties instance) =>
@@ -64,5 +63,4 @@ Map<String, dynamic> _$PlaceMapPropertiesToJson(PlaceMapProperties instance) =>
       'category': instance.category,
       'thumb_url': instance.thumbUrl,
       'user_id': instance.userId,
-      'type': instance.type,
     };

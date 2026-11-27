@@ -38,7 +38,7 @@ const INGREDIENTS = [
   'scripts/answers-card/fonts/IBMPlexSansArabic-Bold.ttf',
   'public/assets/logo-darkmode.svg',
   'public/assets/logo-lightmode.svg',
-  'public/assets/favicon.png',
+  'public/assets/favicon.svg',
 ]
 
 function recipe() {

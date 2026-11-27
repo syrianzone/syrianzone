@@ -10,8 +10,8 @@ const read = (path) => readFileSync(join(ROOT, path))
 const tokens = JSON.parse(read('resources/og/tokens.json'))
 const iconSet = JSON.parse(read('resources/og/icons.json'))
 
-/** The colours of one colourway ("dark" or "light"), plus the brand extras. */
-export function theme(name = 'dark') {
+/** The colours of one colourway ("light" = نيلي or "dark" = ليل نيلي), plus the brand extras. */
+export function theme(name = 'light') {
   if (!tokens[name]) throw new Error(`unknown card theme: ${name}`)
   return { name, ...tokens[name], gold: tokens.brand.gold }
 }
@@ -70,7 +70,7 @@ export function asset(path, mime) {
   return uri
 }
 
-const WORDMARK_RATIO = 570.55 / 298.43
+const WORDMARK_RATIO = 499.90 / 181.23
 
 /** The SYRIAN.ZONE wordmark, positioned by its top-right corner (the RTL start corner). */
 export function wordmark(t, { right, top, height, onPhoto = false }) {

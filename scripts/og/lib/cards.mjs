@@ -46,7 +46,7 @@ export function inspectCard(model) {
 
 /** Draws a card model to a complete SVG document. */
 export function drawCard(model) {
-  const t = theme(model.theme ?? 'dark')
+  const t = theme(model.theme ?? 'light')
   switch (model.kind) {
     case 'brand':
       return brandCard(model, t)
@@ -68,11 +68,13 @@ export function drawCard(model) {
  * size several times over, and previews are fetched on slow connections.
  */
 function ground(t) {
-  const [from, to] = t.name === 'dark' ? ['#232B2D', t.background] : ['#FFFFFF', '#F1F3EF']
+  const [from, to] = t.name === 'dark' ? [t.card, t.background] : ['#FCFBF8', t.background]
+  const barX = WIDTH - ACCENT
   return (
     `<defs><linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs>` +
     `<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#ground)"/>` +
-    `<rect x="${WIDTH - ACCENT}" width="${ACCENT}" height="${HEIGHT}" ${paint('fill', t.primary)}/>`
+    `<rect x="${barX}" width="${ACCENT}" height="${HEIGHT}" ${paint('fill', t.primary)}/>` +
+    `<rect x="${barX}" y="${HEADER_TOP + 18}" width="${ACCENT}" height="36" ${paint('fill', t.node ?? t.gold)}/>`
   )
 }
 
@@ -115,11 +117,10 @@ function footer(t, { url, meta }) {
 function artwork(t, art, centreY) {
   const x = PAD
   const y = Math.round(centreY - TILE / 2)
-  // The emblem is dark green, so its tile is light in both colourways.
-  const surface = art.type === 'emblem' ? '#F1F3EF' : t.name === 'dark' ? t.card : '#FFFFFF'
+  const surface = t.card
   const frame =
     `<rect x="${x}" y="${y}" width="${TILE}" height="${TILE}" rx="52" ${paint('fill', surface)}/>` +
-    `<rect x="${x + 1}" y="${y + 1}" width="${TILE - 2}" height="${TILE - 2}" rx="51" fill="none" ${paint('stroke', alpha(t.foreground, 0.12))} stroke-width="2"/>`
+    `<rect x="${x + 1}" y="${y + 1}" width="${TILE - 2}" height="${TILE - 2}" rx="51" fill="none" ${paint('stroke', t.border)} stroke-width="2"/>`
   const centre = x + TILE / 2
 
   if (art.type === 'icon') {
@@ -128,8 +129,8 @@ function artwork(t, art, centreY) {
   }
 
   if (art.type === 'emblem') {
-    const size = 150
-    return frame + `<image x="${centre - size / 2}" y="${y + (TILE - size) / 2}" width="${size}" height="${size}" href="${asset('public/assets/favicon.png', 'image/png')}"/>`
+    const size = 156
+    return frame + `<image x="${centre - size / 2}" y="${y + (TILE - size) / 2}" width="${size}" height="${size}" href="${asset('public/assets/favicon.svg', 'image/svg+xml')}"/>`
   }
 
   if (art.type === 'figure') {
@@ -276,20 +277,20 @@ function splitCard(m, t) {
   )
 }
 
-const WORDMARK_RATIO = 570.55 / 298.43
+const WORDMARK_RATIO = 499.90 / 181.23
 
 function brandCard(m, t) {
-  const markHeight = 196
+  const markHeight = 160
   const centre = (WIDTH - ACCENT) / 2
   const title = noteCut(fitText(m.title ?? SITE_NAME, { maxWidth: WIDTH - PAD * 4, maxLines: 1, maxSize: 76, minSize: 48, weight: 700 }), 'title')
   const tagline = noteCut(fitText(m.subtitle ?? 'منصة سورية مفتوحة المصدر', { maxWidth: WIDTH - PAD * 4, maxLines: 1, maxSize: 40, minSize: 30 }), 'subtitle')
   return (
     svgOpen +
     ground(t) +
-    wordmark(t, { right: centre + (markHeight * WORDMARK_RATIO) / 2, top: 84, height: markHeight }) +
-    line(title.lines[0], { x: centre, y: 392, size: title.size, weight: 700, colour: t.foreground, anchor: 'middle' }) +
-    line(tagline.lines[0], { x: centre, y: 456, size: tagline.size, colour: t.mutedForeground, anchor: 'middle' }) +
-    `<rect x="${PAD}" y="${FOOTER_RULE}" width="${RIGHT - PAD}" height="2" ${paint('fill', alpha(t.foreground, 0.1))}/>` +
+    wordmark(t, { right: centre + (markHeight * WORDMARK_RATIO) / 2, top: 96, height: markHeight }) +
+    line(title.lines[0], { x: centre, y: 382, size: title.size, weight: 700, colour: t.foreground, anchor: 'middle' }) +
+    line(tagline.lines[0], { x: centre, y: 448, size: tagline.size, colour: t.mutedForeground, anchor: 'middle' }) +
+    `<rect x="${PAD}" y="${FOOTER_RULE}" width="${RIGHT - PAD}" height="2" ${paint('fill', t.border)}/>` +
     line(m.url ?? 'syrian.zone', { x: centre, y: FOOTER_BASELINE, size: 28, weight: 700, colour: t.primary, dir: 'ltr', anchor: 'middle' }) +
     '</svg>'
   )
@@ -307,15 +308,16 @@ function photoCard(m, t) {
 
   return (
     svgOpen +
-    `<rect width="${WIDTH}" height="${HEIGHT}" fill="#0D1315"/>` +
+    `<rect width="${WIDTH}" height="${HEIGHT}" fill="${theme('dark').background}"/>` +
     `<image width="${WIDTH}" height="${HEIGHT}" preserveAspectRatio="xMidYMid slice" href="${m.photo}"/>` +
     // Darkens the top for the wordmark and the bottom for the name, and leaves
     // the middle of the photograph almost untouched.
     `<defs><linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">` +
-    `<stop offset="0" stop-color="#000" stop-opacity="0.66"/><stop offset="0.28" stop-color="#000" stop-opacity="0.1"/>` +
-    `<stop offset="0.48" stop-color="#000" stop-opacity="0.26"/><stop offset="1" stop-color="#000" stop-opacity="0.94"/></linearGradient></defs>` +
+    `<stop offset="0" stop-color="#0E1129" stop-opacity="0.7"/><stop offset="0.28" stop-color="#0E1129" stop-opacity="0.1"/>` +
+    `<stop offset="0.48" stop-color="#0E1129" stop-opacity="0.26"/><stop offset="1" stop-color="#0E1129" stop-opacity="0.94"/></linearGradient></defs>` +
     `<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#scrim)"/>` +
-    `<rect x="${WIDTH - ACCENT}" width="${ACCENT}" height="${HEIGHT}" ${paint('fill', theme('dark').primary)}/>` +
+    `<rect x="${WIDTH - ACCENT}" width="${ACCENT}" height="${HEIGHT}" ${paint('fill', theme('light').primary)}/>` +
+    `<rect x="${WIDTH - ACCENT}" y="${HEADER_TOP + 18}" width="${ACCENT}" height="36" ${paint('fill', theme('dark').node ?? theme('dark').gold)}/>` +
     header(t, { kicker: m.kicker, onPhoto: true }) +
     title.lines.map((text, i) => line(text, { x: RIGHT, y: titleTop + title.size * 0.86 + i * leading, size: title.size, weight: 700, colour: '#FFFFFF' })).join('') +
     (pills.length ? flow(pills, { right: RIGHT, top: rowTop }) : '') +

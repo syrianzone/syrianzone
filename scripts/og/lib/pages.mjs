@@ -22,8 +22,8 @@ export function cardPaths(slug) {
   return readPages().filter((page) => page.card === slug).map((page) => page.path)
 }
 
-/** The card model for one cards.json entry. */
-export function pageModel(entry, theme = 'dark') {
+/** The card model for one cards.json entry. Defaults to the نيلي (light) brand palette. */
+export function pageModel(entry, theme = 'light') {
   const [path] = cardPaths(entry.slug)
   const url = entry.url ?? (path && path !== '/' ? HOST + path : HOST)
   if (entry.kind === 'brand') {

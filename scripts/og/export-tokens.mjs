@@ -28,11 +28,12 @@ const WANTED = {
   '--primary-foreground': 'primaryForeground',
   '--destructive': 'destructive',
   '--destructive-foreground': 'destructiveForeground',
+  '--sz-node': 'node',
 }
 
 /** Colours that live in the logo artwork rather than in a theme token. */
 const BRAND = {
-  gold: '#988561', // public/syid-assets/materials/logo.ai.svg and pattern.svg
+  gold: '#D4920A',
 }
 
 function hslToHex(h, s, l) {
@@ -71,9 +72,10 @@ function declarations(css, selectors) {
 }
 
 export function readTokens(css = readFileSync(CSS, 'utf8')) {
-  const light = declarations(css, [':root'])
+  const root = declarations(css, [':root'])
+  const niliLight = declarations(css, ['[data-theme="nili"]'])
   const darkShared = declarations(css, ['[data-scheme="dark"]'])
-  const darkOnly = declarations(css, ['[data-theme="dark"]'])
+  const niliDark = declarations(css, ['[data-theme="nili-night"]'])
 
   const pick = (source) => {
     const theme = {}
@@ -85,7 +87,11 @@ export function readTokens(css = readFileSync(CSS, 'utf8')) {
     return theme
   }
 
-  return { light: pick(light), dark: pick({ ...light, ...darkShared, ...darkOnly }), brand: BRAND }
+  return {
+    light: pick({ ...root, ...niliLight }),
+    dark: pick({ ...root, ...darkShared, ...niliDark }),
+    brand: BRAND,
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

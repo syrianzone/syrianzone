@@ -2,8 +2,8 @@
 
 namespace App\Mcp\Tools\Public;
 
+use App\Models\Crossing;
 use App\Support\ArabicSearch;
-use App\Support\Facts;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
@@ -52,7 +52,7 @@ class ListCrossingsTool extends Tool
             return Response::error(implode(' ', collect($e->errors())->flatten()->all()));
         }
 
-        $data = Facts::json('crossings');
+        $data = Crossing::publicDataset();
         $crossings = is_array($data['crossings'] ?? null) ? $data['crossings'] : [];
 
         $query = trim((string) ($validated['q'] ?? ''));

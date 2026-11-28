@@ -38,7 +38,7 @@ class PromisesPublicApiController extends Controller
         if ($state !== '') {
             $filtered = array_values(array_filter(
                 $filtered,
-                fn (array $p): bool => (string) ($p['displayState'] ?? $p['status'] ?? '') === $state
+                fn (array $p): bool => (string) ($p['state'] ?? $p['status'] ?? '') === $state
                     || (string) ($p['status'] ?? '') === $state,
             ));
         }
@@ -153,7 +153,7 @@ class PromisesPublicApiController extends Controller
     public function show(int $number): JsonResponse
     {
         $promise = Promise::published()
-            ->with([...PromisePresenter::PUBLIC_WITH, 'updates' => fn ($q) => $q->orderBy('occurred_on')->orderBy('id')])
+            ->with([...PromisePresenter::PUBLIC_WITH, 'updates' => fn ($q) => $q->orderBy('happened_on')->orderBy('id')])
             ->where('number', $number)
             ->firstOrFail();
 

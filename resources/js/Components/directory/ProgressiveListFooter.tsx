@@ -5,7 +5,7 @@ interface ProgressiveListFooterProps {
     hasMore: boolean;
     remaining: number;
     onShowMore: () => void;
-    sentinelRef: React.RefObject<HTMLDivElement | null>;
+    sentinelRef: React.Ref<HTMLDivElement>;
 }
 
 export function ProgressiveListFooter({

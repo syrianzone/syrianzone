@@ -6,14 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Crossing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class CrossingApiController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $payload = $this->loadDataset();
+        $payload = Crossing::publicDataset();
         $items = $payload['crossings'];
 
         $type = trim((string) $request->query('type', ''));
@@ -63,7 +61,7 @@ class CrossingApiController extends Controller
 
     public function show(Request $request, string $slug): JsonResponse
     {
-        $payload = $this->loadDataset();
+        $payload = Crossing::publicDataset();
 
         foreach ($payload['crossings'] as $item) {
             if (($item['slug'] ?? null) === $slug) {
@@ -75,36 +73,6 @@ class CrossingApiController extends Controller
         }
 
         abort(404);
-    }
-
-    /**
-     * @return array{meta: array<string, mixed>, crossings: list<array<string, mixed>>}
-     */
-    private function loadDataset(): array
-    {
-        $cached = Cache::get(Crossing::CACHE_KEY);
-        if (is_array($cached) && isset($cached['crossings'])) {
-            return $cached;
-        }
-
-        $fallbackMeta = Crossing::fromJsonFallback()['meta'];
-
-        try {
-            if (Crossing::query()->exists()) {
-                $rows = Crossing::active()->ordered()->get();
-                $dataset = [
-                    'meta' => $fallbackMeta,
-                    'crossings' => $rows->map(fn (Crossing $c) => $c->toPublicPayload())->values()->all(),
-                ];
-                Cache::put(Crossing::CACHE_KEY, $dataset, 300);
-
-                return $dataset;
-            }
-        } catch (\Throwable $e) {
-            Log::warning('crossings DB read failed, falling back to JSON', ['error' => $e->getMessage()]);
-        }
-
-        return Crossing::fromJsonFallback();
     }
 
     /**

@@ -30,10 +30,10 @@ class CivicModulesCatalogResource extends Resource
             return [
                 'id' => $module['id'] ?? null,
                 'href' => $module['href'] ?? null,
-                'label_ar' => $module['label'] ?? $module['label_ar'] ?? null,
+                'label_ar' => $module['title'] ?? $module['label'] ?? $module['label_ar'] ?? null,
                 'label_en' => $module['label_en'] ?? null,
                 'description_ar' => $module['description'] ?? $module['description_ar'] ?? null,
-                'category' => $module['category'] ?? null,
+                'category' => $module['group'] ?? $module['category'] ?? null,
             ];
         }, $siteModules['modules'] ?? []));
 

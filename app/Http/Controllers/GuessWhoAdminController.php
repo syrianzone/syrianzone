@@ -97,7 +97,7 @@ class GuessWhoAdminController extends Controller
             'category_id' => 'required|exists:guess_who_categories,id',
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
-            'image_file' => 'required|image|max:5120|dimensions:max_width=6000,max_height=6000',
+            'image_file' => 'required|image|max:5120|dimensions:max_width=4800,max_height=4800',
             'attributes' => 'nullable|array',
             'is_active' => 'boolean',
         ]);
@@ -122,7 +122,7 @@ class GuessWhoAdminController extends Controller
             'category_id' => 'required|exists:guess_who_categories,id',
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
-            'image_file' => 'nullable|image|max:5120|dimensions:max_width=6000,max_height=6000',
+            'image_file' => 'nullable|image|max:5120|dimensions:max_width=4800,max_height=4800',
             'attributes' => 'nullable|array',
             'is_active' => 'boolean',
         ]);

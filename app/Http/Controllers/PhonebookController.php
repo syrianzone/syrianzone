@@ -2,54 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PhonebookCategory;
-use App\Models\PhonebookEntry;
 use App\Services\Phonebook\PhonebookCache;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class PhonebookController extends Controller
 {
     public function index()
     {
-        $categories = Cache::remember(PhonebookCache::CATEGORIES_KEY, 600, function () {
-            // Seed an empty directory on first use. Checked here, inside the
-            // cached read, so a warm page does not count the table on every hit.
-            if (PhonebookCategory::count() === 0) {
-                try {
-                    (new \Database\Seeders\PhonebookSeeder())->run();
-                } catch (\Exception $e) {
-                }
-            }
-
-            return PhonebookCategory::where('is_active', true)
-                ->orderBy('order_column')
-                ->get();
-        });
-
-        $entries = Cache::remember(PhonebookCache::ENTRIES_KEY, 600, function () {
-            return PhonebookEntry::with('category')
-                ->where('is_active', true)
-                ->whereHas('category', function ($q) {
-                    $q->where('is_active', true);
-                })
-                ->orderBy('order_column')
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'id' => $item->id,
-                        'category_id' => $item->category_id,
-                        'category_ar' => $item->category?->label_ar ?? '',
-                        'category_en' => $item->category?->label_en ?? '',
-                        'name_ar' => $item->name_ar,
-                        'name_en' => $item->name_en ?? '',
-                        'number' => $item->number,
-                        'is_whatsapp' => (bool)$item->is_whatsapp,
-                        'source_url' => $item->source_url ?? '',
-                    ];
-                })
-                ->toArray();
-        });
+        $categories = PhonebookCache::categories();
+        $entries = PhonebookCache::entries();
 
         return Inertia::render('Phonebook/Index', [
             'initialData' => $entries,

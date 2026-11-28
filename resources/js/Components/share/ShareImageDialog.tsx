@@ -191,10 +191,11 @@ export default function ShareImageDialog({
     };
   }, [open, renderCard, themeId, format, previewMaxWidth]);
 
-  const produceFile = async (): Promise<File | null> => {
+  const produceFile = async (expectedGeneration: number): Promise<File | null> => {
     if (preparedFile) return preparedFile;
     if (renderImage) {
       const file = await renderImage({ themeId, format });
+      if (generation.current !== expectedGeneration) return null;
       setPreparedFile(file);
       return file;
     }
@@ -202,6 +203,7 @@ export default function ShareImageDialog({
     if (!card) return null;
     const { renderElementAsPngFile } = await import('@/Lib/exportElementAsPng');
     const file = await renderElementAsPngFile(card, filename, exportOptions);
+    if (generation.current !== expectedGeneration) return null;
     setPreparedFile(file);
     return file;
   };
@@ -213,7 +215,7 @@ export default function ShareImageDialog({
     const isCurrent = () => current === generation.current;
     setBusy(action);
     try {
-      const file = await produceFile();
+      const file = await produceFile(current);
       if (!file || !isCurrent()) return;
 
       if (action === 'download') {

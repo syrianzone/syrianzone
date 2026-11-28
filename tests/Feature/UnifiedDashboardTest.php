@@ -92,5 +92,5 @@ test('account update rejects an email another account already uses in arabic', f
             'email' => 'taken@example.com',
         ])
         ->assertStatus(422)
-        ->assertJsonPath('errors.email.0', 'هذا البريد الإلكتروني مستخدم');
+        ->assertJsonPath('errors.email.0', 'لا يمكن تغيير البريد الإلكتروني المرتبط بحساب Google');
 });

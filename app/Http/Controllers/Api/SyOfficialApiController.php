@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\OfficialCategory;
-use App\Models\OfficialEntity;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Services\SyOfficial\SyOfficialPresenter;
 use App\Support\ArabicSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Public read-only JSON API for the SyOfficial directory of official accounts.
@@ -26,21 +23,8 @@ class SyOfficialApiController extends Controller
         $categoryId = trim((string) $request->query('category_id', ''));
         $query = mb_substr(trim((string) $request->query('q', '')), 0, 120);
 
-        $categories = Cache::remember(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY, 600, function () {
-            return OfficialCategory::where('is_active', true)
-                ->orderBy('order_column')
-                ->get();
-        });
-
-        $entities = Cache::remember(SyOfficialDirectoryService::ENTITIES_CACHE_KEY, 600, function () {
-            return $this->presenter->publicEntities(
-                OfficialEntity::with('category')
-                    ->where('is_active', true)
-                    ->whereHas('category', fn ($q) => $q->where('is_active', true))
-                    ->orderBy('order_column')
-                    ->get()
-            );
-        });
+        $categories = SyOfficialDirectoryService::publicCategories();
+        $entities = SyOfficialDirectoryService::publicEntities($this->presenter);
 
         $filtered = $entities;
 

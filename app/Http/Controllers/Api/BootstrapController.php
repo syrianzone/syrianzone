@@ -14,6 +14,8 @@ use App\Models\OfficialEntity;
 use App\Models\PhonebookCategory;
 use App\Models\PhonebookEntry;
 use App\Models\Promise;
+use App\Models\PromiseSector;
+use App\Models\PromiseSpeaker;
 use App\Models\SiteSetting;
 use App\Models\SyrianSite;
 use App\Models\WildlifeSpecies;
@@ -124,7 +126,10 @@ class BootstrapController extends Controller
                 ]),
                 'promises' => $this->hashParts([
                     $this->tableStamp((new Promise)->getTable()),
+                    $this->tableStamp((new PromiseSector)->getTable()),
+                    $this->tableStamp((new PromiseSpeaker)->getTable()),
                     $this->fileStamp(resource_path('data/promises.json')),
+                    now()->toDateString(),
                 ]),
                 'govtcvs' => $this->hashParts([
                     $this->tableStamp((new GovtOfficial)->getTable()),

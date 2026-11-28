@@ -4,6 +4,7 @@ namespace App\Services\Directories;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
@@ -46,12 +47,16 @@ class SquareWebpImageService
         $contents = @file_get_contents($file->getRealPath());
 
         if ($contents === false || $contents === '') {
-            throw new RuntimeException('Unable to read uploaded image.');
+            throw ValidationException::withMessages([
+                'image' => ['تعذر قراءة الصورة المرفوعة.'],
+            ]);
         }
 
         $stored = $this->storeSquareWebpFromBytes($contents, $directory, $basename);
         if ($stored === null) {
-            throw new RuntimeException('The uploaded image could not be decoded or exceeds the maximum pixel dimensions.');
+            throw ValidationException::withMessages([
+                'image' => ['تعذر فك ترميز الصورة المرفوعة أو أنها تتجاوز الحد الأقصى للأبعاد.'],
+            ]);
         }
 
         return $stored;

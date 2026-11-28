@@ -77,7 +77,7 @@ class ListPromisesTool extends Tool
         if ($state !== '') {
             $filtered = array_values(array_filter(
                 $filtered,
-                fn (array $p): bool => (string) ($p['displayState'] ?? $p['status'] ?? '') === $state
+                fn (array $p): bool => (string) ($p['state'] ?? $p['status'] ?? '') === $state
                     || (string) ($p['status'] ?? '') === $state,
             ));
         }

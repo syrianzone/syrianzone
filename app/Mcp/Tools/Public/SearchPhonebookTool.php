@@ -2,12 +2,9 @@
 
 namespace App\Mcp\Tools\Public;
 
-use App\Models\PhonebookCategory;
-use App\Models\PhonebookEntry;
 use App\Services\Phonebook\PhonebookCache;
 use App\Support\ArabicSearch;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -58,31 +55,8 @@ class SearchPhonebookTool extends Tool
             return Response::error(implode(' ', collect($e->errors())->flatten()->all()));
         }
 
-        $categories = Cache::remember(PhonebookCache::CATEGORIES_KEY, 600, function () {
-            return PhonebookCategory::where('is_active', true)
-                ->orderBy('order_column')
-                ->get();
-        });
-
-        $entries = Cache::remember(PhonebookCache::ENTRIES_KEY, 600, function () {
-            return PhonebookEntry::with('category')
-                ->where('is_active', true)
-                ->whereHas('category', fn ($q) => $q->where('is_active', true))
-                ->orderBy('order_column')
-                ->get()
-                ->map(fn (PhonebookEntry $item) => [
-                    'id' => $item->id,
-                    'category_id' => $item->category_id,
-                    'category_ar' => $item->category?->label_ar ?? '',
-                    'category_en' => $item->category?->label_en ?? '',
-                    'name_ar' => $item->name_ar,
-                    'name_en' => $item->name_en ?? '',
-                    'number' => $item->number,
-                    'is_whatsapp' => (bool) $item->is_whatsapp,
-                    'source_url' => $item->source_url ?? '',
-                ])
-                ->all();
-        });
+        $categories = PhonebookCache::categories();
+        $entries = PhonebookCache::entries();
 
         $categoryId = trim((string) ($validated['category_id'] ?? ''));
         $query = trim((string) ($validated['q'] ?? ''));

@@ -1,15 +1,13 @@
 import React, { Suspense, useEffect, useState } from 'react';
-import { usePage } from '@inertiajs/react';
 import { AuthProvider, useAuth } from '@/Contexts/AuthContext';
 import ConditionalLayout from '@/Components/ConditionalLayout';
 import RouteAnnouncer from '@/Components/RouteAnnouncer';
 import AnalyticsConsentBanner from '@/Components/AnalyticsConsentBanner';
 import SeoHead from '@/Components/SeoHead';
 import { Toaster } from '@/Components/ui/sonner';
-import { useUsageTracker } from '@/Domain/quran/usageStore';
+import { useIsRadioActive, useUsageTracker } from '@/Domain/quran/usageStore';
 import { focusInlineSearch, useAppShell } from '@/Lib/appShell';
 import { onConfirmRequested } from '@/Lib/confirm';
-import { isUnderPath, pathnameOf } from '@/Lib/routes';
 
 const loadCommandPalette = () => import('@/Components/GlobalCommandPalette');
 const GlobalCommandPalette = React.lazy(loadCommandPalette);
@@ -53,20 +51,16 @@ function AuthOnlySettingsSync() {
 }
 
 /**
- * Mounts RadioMiniPlayer lazily only once the visitor has entered /muslim
- * (the only section that can start Quran radio), then keeps it mounted across
- * subsequent Inertia navigations so playback persists everywhere.
+ * Mounts RadioMiniPlayer lazily only once continuous Quran radio is active
+ * (whether started on /muslim/radio or via the Board widget). Because the
+ * player store lives outside React, it survives Inertia page transitions so
+ * floating controls stay mounted on every route while preserving SSR parity
+ * and idle first-load bundle splitting.
  */
 function DeferredRadioMiniPlayer() {
-    const { url } = usePage();
-    const inMuslim = isUnderPath(pathnameOf(url), '/muslim');
-    const [activated, setActivated] = useState(inMuslim);
+    const radioActive = useIsRadioActive();
 
-    useEffect(() => {
-        if (inMuslim && !activated) setActivated(true);
-    }, [inMuslim, activated]);
-
-    if (!activated) return null;
+    if (!radioActive) return null;
 
     return (
         <Suspense fallback={null}>

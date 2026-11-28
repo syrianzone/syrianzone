@@ -50,7 +50,7 @@ class CrossingAdminController extends Controller
 
         $slug = trim((string) ($data['slug'] ?? ''));
         if ($slug === '') {
-            $slug = Str::slug((string) ($data['name_en'] ?: $data['name_ar'])) ?: 'crossing-'.Str::lower(Str::random(6));
+            $slug = Str::slug((string) (($data['name_en'] ?? null) ?: $data['name_ar'])) ?: 'crossing-'.Str::lower(Str::random(6));
         }
 
         $crossing = Crossing::create([

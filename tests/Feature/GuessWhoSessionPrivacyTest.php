@@ -46,26 +46,22 @@ test('presence members are identified by slot, not session id', function () {
 });
 
 test('the custom broadcasting auth signs a slot, not the session id', function () {
-    // The controller reads the Reverb secret with env(); unset in tests.
-    putenv('REVERB_APP_SECRET=test-secret');
-    putenv('REVERB_APP_KEY=test-key');
+    config([
+        'broadcasting.connections.reverb.secret' => 'test-secret',
+        'broadcasting.connections.reverb.key' => 'test-key',
+    ]);
 
-    try {
-        $room = privacyRoom();
+    $room = privacyRoom();
 
-        $response = $this->withHeader('X-Guess-Who-Session-ID', 'secret-session-a')
-            ->postJson('/guesswho/broadcasting/auth', [
-                'socket_id' => '1.1',
-                'channel_name' => "presence-guesswho.{$room->room_code}",
-            ])
-            ->assertOk();
+    $response = $this->withHeader('X-Guess-Who-Session-ID', 'secret-session-a')
+        ->postJson('/guesswho/broadcasting/auth', [
+            'socket_id' => '1.1',
+            'channel_name' => "presence-guesswho.{$room->room_code}",
+        ])
+        ->assertOk();
 
-        expect($response->json('channel_data'))->not->toContain('secret-session-a')
-            ->and(json_decode($response->json('channel_data'), true)['user_id'])->toBe('player_1');
-    } finally {
-        putenv('REVERB_APP_SECRET');
-        putenv('REVERB_APP_KEY');
-    }
+    expect($response->json('channel_data'))->not->toContain('secret-session-a')
+        ->and(json_decode($response->json('channel_data'), true)['user_id'])->toBe('player_1');
 });
 
 test('state broadcasts carry slots, never session ids', function () {

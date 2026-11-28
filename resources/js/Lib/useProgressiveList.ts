@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface ProgressiveListOptions {
     /** Number of items rendered initially (SSR + first paint). */
@@ -20,7 +20,7 @@ export function useProgressiveList<T>(
     { initial = 30, step = 30, resetKey = '' }: ProgressiveListOptions = {},
 ) {
     const [limit, setLimit] = useState(initial);
-    const sentinelRef = useRef<HTMLDivElement | null>(null);
+    const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
 
     useEffect(() => {
         setLimit(initial);
@@ -39,9 +39,7 @@ export function useProgressiveList<T>(
     }, [items.length, step]);
 
     useEffect(() => {
-        if (!hasMore) return;
-        const el = sentinelRef.current;
-        if (!el || typeof IntersectionObserver === 'undefined') return;
+        if (!hasMore || !sentinel || typeof IntersectionObserver === 'undefined') return;
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries.some((entry) => entry.isIntersecting)) {
@@ -50,9 +48,9 @@ export function useProgressiveList<T>(
             },
             { rootMargin: '600px 0px' },
         );
-        observer.observe(el);
+        observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [hasMore, items.length, step]);
+    }, [hasMore, sentinel, items.length, step]);
 
-    return { visibleItems, hasMore, remaining, showMore, sentinelRef };
+    return { visibleItems, hasMore, remaining, showMore, sentinelRef: setSentinel };
 }

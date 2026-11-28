@@ -2,13 +2,10 @@
 
 namespace App\Mcp\Tools\Public;
 
-use App\Models\OfficialCategory;
-use App\Models\OfficialEntity;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Services\SyOfficial\SyOfficialPresenter;
 use App\Support\ArabicSearch;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -59,22 +56,8 @@ class SearchOfficialAccountsTool extends Tool
             return Response::error(implode(' ', collect($e->errors())->flatten()->all()));
         }
 
-        $categories = Cache::remember(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY, 600, function () {
-            return OfficialCategory::where('is_active', true)
-                ->orderBy('order_column')
-                ->get();
-        });
-
-        $presenter = app(SyOfficialPresenter::class);
-        $entities = Cache::remember(SyOfficialDirectoryService::ENTITIES_CACHE_KEY, 600, function () use ($presenter) {
-            return $presenter->publicEntities(
-                OfficialEntity::with('category')
-                    ->where('is_active', true)
-                    ->whereHas('category', fn ($q) => $q->where('is_active', true))
-                    ->orderBy('order_column')
-                    ->get()
-            );
-        });
+        $categories = SyOfficialDirectoryService::publicCategories();
+        $entities = SyOfficialDirectoryService::publicEntities(app(SyOfficialPresenter::class));
 
         $categoryId = trim((string) ($validated['category_id'] ?? ''));
         $query = trim((string) ($validated['q'] ?? ''));

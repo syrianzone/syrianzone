@@ -85,17 +85,6 @@ it('redirects phased-out /party route to homepage', function () {
     $this->get('/party')->assertMovedPermanently()->assertRedirect('/');
 });
 
-it('renders the party page with no data when upstream is unreachable', function () {
-    Http::fake(['*' => Http::response('', 500)]);
-
-    $this->get('/party')->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('Party/Index')
-            ->where('initialOrganizations', [])
-            ->where('fetchedAt', null)
-        );
-});
-
 //
 // A second sheet with a different header convention: Arabic column names, and
 // both name and url are required for a row to be usable.

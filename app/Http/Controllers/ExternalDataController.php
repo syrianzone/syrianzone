@@ -231,8 +231,8 @@ class ExternalDataController extends Controller
     public function sites()
     {
         try {
-            $dbSites = SyrianSite::active()->ordered()->get();
-            if ($dbSites->isNotEmpty()) {
+            if (SyrianSite::query()->exists()) {
+                $dbSites = SyrianSite::active()->ordered()->get();
                 $latest = $dbSites->max('updated_at');
 
                 return Inertia::render('Sites/Index', [

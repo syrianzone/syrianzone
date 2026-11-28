@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class Crossing extends Model
 {
@@ -49,6 +51,40 @@ class Crossing extends Model
     public static function forgetPublicCache(): void
     {
         Cache::forget(self::CACHE_KEY);
+    }
+
+    /**
+     * Canonical DB-first reader shared by Web, JSON API, and MCP tools.
+     * Uses active DB rows once the crossings table exists and has been seeded,
+     * falling back to resources/data/crossings.json otherwise.
+     *
+     * @return array{meta: array<string, mixed>, crossings: list<array<string, mixed>>}
+     */
+    public static function publicDataset(): array
+    {
+        $cached = Cache::get(self::CACHE_KEY);
+        if (is_array($cached) && isset($cached['crossings'])) {
+            return $cached;
+        }
+
+        $fallback = self::fromJsonFallback();
+
+        try {
+            if (Schema::hasTable('crossings') && self::query()->exists()) {
+                $rows = self::active()->ordered()->get();
+                $dataset = [
+                    'meta' => $fallback['meta'],
+                    'crossings' => $rows->map(fn (self $c) => $c->toPublicPayload())->values()->all(),
+                ];
+                Cache::put(self::CACHE_KEY, $dataset, 300);
+
+                return $dataset;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('crossings DB read failed, falling back to JSON', ['error' => $e->getMessage()]);
+        }
+
+        return $fallback;
     }
 
     /**

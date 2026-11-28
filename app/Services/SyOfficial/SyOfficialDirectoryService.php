@@ -44,6 +44,54 @@ class SyOfficialDirectoryService
     ) {}
 
     /**
+     * Public cached active categories, seeding on first use when the table is
+     * empty so Web, JSON API, and MCP never poison the shared cache keys.
+     *
+     * @return Collection<int, OfficialCategory>
+     */
+    public static function publicCategories(): Collection
+    {
+        return Cache::remember(self::CATEGORIES_CACHE_KEY, 600, function () {
+            self::ensureSeeded();
+
+            return OfficialCategory::where('is_active', true)
+                ->orderBy('order_column')
+                ->get();
+        });
+    }
+
+    /**
+     * Public cached active entities shaped by SyOfficialPresenter, seeding on
+     * first use when the table is empty.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function publicEntities(SyOfficialPresenter $presenter): array
+    {
+        return Cache::remember(self::ENTITIES_CACHE_KEY, 600, function () use ($presenter) {
+            self::ensureSeeded();
+
+            return $presenter->publicEntities(
+                OfficialEntity::with('category')
+                    ->where('is_active', true)
+                    ->whereHas('category', fn ($q) => $q->where('is_active', true))
+                    ->orderBy('order_column')
+                    ->get()
+            );
+        });
+    }
+
+    private static function ensureSeeded(): void
+    {
+        if (OfficialCategory::count() === 0) {
+            try {
+                (new \Database\Seeders\SyOfficialSeeder)->run();
+            } catch (\Throwable) {
+            }
+        }
+    }
+
+    /**
      * @return Collection<int, OfficialCategory>
      */
     public function categories()

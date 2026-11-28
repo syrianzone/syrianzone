@@ -226,10 +226,15 @@ Route::get('/justice', function () {
 // Working hours ship with the page and the open/closed status is computed in the
 // browser against Syria time, so there is nothing to query server-side here.
 Route::get('/crossings', function () {
-    return Inertia::render('Crossings/Index');
+    $data = \App\Models\Crossing::publicDataset();
+
+    return Inertia::render('Crossings/Index', [
+        'initialCrossings' => $data['crossings'],
+        'crossingsMeta' => $data['meta'],
+    ]);
 });
 Route::get('/crossings/{slug}', function (string $slug) {
-    $data = \App\Support\Facts::json('crossings');
+    $data = \App\Models\Crossing::publicDataset();
     $found = collect($data['crossings'] ?? [])->firstWhere('slug', $slug);
     abort_if($found === null, 404);
 
@@ -248,6 +253,7 @@ Route::get('/crossings/{slug}', function (string $slug) {
 
     return Inertia::render('Crossings/Show', [
         'slug' => $slug,
+        'crossing' => $found,
         'governorate' => $governorate,
     ]);
 })->where('slug', '[a-z0-9-]+');

@@ -178,25 +178,19 @@ export default function Home() {
 
     const renderTile = (link: SiteLink) => {
         const Icon = link.icon;
+        const hasCustomImage =
+            Boolean(link.image) && !link.image!.includes('/assets/icons/modules/');
+        const showInlineIcon = Boolean(Icon) && !hasCustomImage;
         const tileClass =
             'group relative flex min-h-[44px] h-full flex-col items-center justify-start gap-1.5 rounded-xl px-1.5 py-2 text-center transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
         const body = (
             <>
-                {Icon && (
+                {showInlineIcon && Icon ? (
                     <Icon
                         className="h-8 w-8 shrink-0 text-foreground transition-transform group-hover:scale-105 group-hover:text-primary"
                         aria-hidden="true"
                     />
-                )}
-                {lastPage === link.href && (
-                    <span
-                        title="آخر صفحة زرتها"
-                        className="absolute top-1 end-1 rounded-full border border-border bg-background p-0.5 text-primary shadow-2xs"
-                    >
-                        <History className="h-3 w-3" aria-hidden="true" />
-                    </span>
-                )}
-                {link.image && link.imageDark ? (
+                ) : link.image && link.imageDark ? (
                     <>
                         <img
                             src={link.image}
@@ -228,6 +222,14 @@ export default function Home() {
                         className="h-8 w-8 shrink-0 object-contain transition-transform group-hover:scale-105"
                     />
                 ) : null}
+                {lastPage === link.href && (
+                    <span
+                        title="آخر صفحة زرتها"
+                        className="absolute top-1 end-1 rounded-full border border-border bg-background p-0.5 text-primary shadow-2xs"
+                    >
+                        <History className="h-3 w-3" aria-hidden="true" />
+                    </span>
+                )}
                 <span className="line-clamp-2 text-[11.5px] sm:text-xs font-medium leading-tight text-foreground transition-colors group-hover:text-primary">
                     {link.text}
                 </span>

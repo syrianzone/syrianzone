@@ -3,13 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\PhonebookCategory;
-use App\Models\PhonebookEntry;
 use App\Services\Phonebook\PhonebookCache;
 use App\Support\ArabicSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Public read-only JSON API for the Syrian phonebook directory.
@@ -21,31 +18,8 @@ class PhonebookApiController extends Controller
         $categoryId = trim((string) $request->query('category_id', ''));
         $query = mb_substr(trim((string) $request->query('q', '')), 0, 120);
 
-        $categories = Cache::remember(PhonebookCache::CATEGORIES_KEY, 600, function () {
-            return PhonebookCategory::where('is_active', true)
-                ->orderBy('order_column')
-                ->get();
-        });
-
-        $entries = Cache::remember(PhonebookCache::ENTRIES_KEY, 600, function () {
-            return PhonebookEntry::with('category')
-                ->where('is_active', true)
-                ->whereHas('category', fn ($q) => $q->where('is_active', true))
-                ->orderBy('order_column')
-                ->get()
-                ->map(fn (PhonebookEntry $item) => [
-                    'id' => $item->id,
-                    'category_id' => $item->category_id,
-                    'category_ar' => $item->category?->label_ar ?? '',
-                    'category_en' => $item->category?->label_en ?? '',
-                    'name_ar' => $item->name_ar,
-                    'name_en' => $item->name_en ?? '',
-                    'number' => $item->number,
-                    'is_whatsapp' => (bool) $item->is_whatsapp,
-                    'source_url' => $item->source_url ?? '',
-                ])
-                ->all();
-        });
+        $categories = PhonebookCache::categories();
+        $entries = PhonebookCache::entries();
 
         $filtered = $entries;
 

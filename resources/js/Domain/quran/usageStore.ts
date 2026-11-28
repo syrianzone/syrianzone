@@ -50,6 +50,11 @@ export async function clearAllUsage(): Promise<void> {
   }
 }
 
+/** True while continuous Quran radio owns the shared player (survives Inertia navigations). */
+export function useIsRadioActive(): boolean {
+  return useQuranPlayer((s) => s.source === 'continuous' && (s.current !== null || s.playing || s.loading));
+}
+
 /** Mounted once per layout: banks listening time while the player runs. */
 export function useUsageTracker(): void {
   const { props } = usePage<{ auth?: { user?: { id?: number; settings?: Record<string, unknown> | null } | null } }>();

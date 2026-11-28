@@ -3,7 +3,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Loader2, Pause, Play, Radio, Square, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/Components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/Components/ui/sheet';
 import QuranWordWindow from './QuranWordWindow';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 import { SURAH_NAMES_AR, recitationByCode } from '@/Domain/quran/quran';
@@ -118,7 +118,7 @@ export default function RadioMiniPlayer() {
       </div>
 
       {/* Mobile: a floating button that opens the controls. */}
-      <div className="fixed bottom-4 right-4 z-40 md:hidden">
+      <div className="fixed bottom-4 start-4 z-40 md:hidden">
         <Sheet>
           <SheetTrigger asChild>
             <Button
@@ -133,12 +133,13 @@ export default function RadioMiniPlayer() {
               )}
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" dir="rtl" className="rounded-t-3xl border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <SheetContent side="bottom" dir="rtl" className="max-h-[85dvh] overflow-y-auto rounded-t-3xl border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             <SheetHeader className="text-start">
               <SheetTitle className="flex items-center gap-2">
                 <Radio className="h-5 w-5 text-primary" />
                 إذاعة القرآن
               </SheetTitle>
+              <SheetDescription className="sr-only">التحكم بتشغيل إذاعة القرآن الكريم</SheetDescription>
             </SheetHeader>
             <div className="space-y-5 pt-4">
               <div className="text-center">

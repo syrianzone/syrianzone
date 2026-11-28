@@ -32,7 +32,7 @@ export function MilestonesSheet(props: { open: boolean; onOpenChange: (open: boo
   return (
     <Sheet open={props.open} onOpenChange={props.onOpenChange}>
       <SheetContent side="bottom" dir="rtl" className="max-h-[80dvh] overflow-y-auto">
-        <SheetHeader className="text-right sm:text-right">
+        <SheetHeader className="text-start sm:text-start">
           <SheetTitle>مستويات مشوار</SheetTitle>
           <SheetDescription>اجمع النقاط بمساهماتك في مشوار وارتقِ في المستويات.</SheetDescription>
         </SheetHeader>
@@ -49,7 +49,7 @@ export function MilestonesSheet(props: { open: boolean; onOpenChange: (open: boo
             <h4 className="mb-2 text-sm font-semibold text-foreground">الرتب</h4>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-right text-xs text-muted-foreground">
+                <tr className="border-b border-border text-start text-xs text-muted-foreground">
                   <th className="py-1.5 pe-2 font-medium">الرتبة</th>
                   <th className="py-1.5 pe-2 font-medium">النقاط المطلوبة</th>
                 </tr>

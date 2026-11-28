@@ -1,5 +1,5 @@
 import React, { useId, useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { Label } from "@/Components/ui/label";
 import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
@@ -69,6 +69,7 @@ export default function EditLinkDialog({
             <DialogContent dir="rtl">
                 <DialogHeader className="text-start sm:text-start">
                     <DialogTitle>تعديل الرابط المخصص</DialogTitle>
+                    <DialogDescription className="sr-only">تعديل بيانات الرابط المخصص أو حذفه</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4 text-start">
                     <div className="space-y-2">

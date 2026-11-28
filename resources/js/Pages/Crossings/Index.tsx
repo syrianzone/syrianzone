@@ -229,7 +229,7 @@ export default function CrossingsPage() {
                     </p>
                 </aside>
 
-                <div className="relative h-[45vh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1">
+                <div className="relative isolate z-0 h-[45vh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1">
                     <MapErrorBoundary className="h-full w-full">
                         <React.Suspense
                             fallback={

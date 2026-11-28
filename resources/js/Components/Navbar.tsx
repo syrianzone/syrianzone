@@ -28,6 +28,7 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -696,6 +697,7 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                     <SiteLogo className="h-7" />
                   </Link>
                 </SheetTitle>
+                <SheetDescription className="sr-only">قائمة التنقل الرئيسية والبحث</SheetDescription>
                 <SheetClose asChild>
                   <Button
                     variant="ghost"

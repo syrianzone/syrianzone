@@ -15,9 +15,9 @@ export function WidgetGallery(props: {
 }) {
   return (
     <Sheet open={props.open} onOpenChange={props.onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[85svh] overflow-y-auto">
-        <div dir="rtl">
-          <SheetHeader className="text-right">
+      <SheetContent side="bottom" dir="rtl" className="max-h-[85svh] overflow-y-auto">
+        <div>
+          <SheetHeader className="text-start">
             <SheetTitle>إضافة ويدجت</SheetTitle>
             <SheetDescription>اختر ما تريد إضافته إلى لوحتك</SheetDescription>
           </SheetHeader>

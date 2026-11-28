@@ -85,6 +85,7 @@ export default function ShareImageDialog({
   const cardRef = useRef<HTMLDivElement>(null);
   const previewWrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [scaledHeight, setScaledHeight] = useState<number | null>(null);
   const generation = useRef(0);
   const exporting = useRef(false);
 
@@ -138,21 +139,29 @@ export default function ShareImageDialog({
     };
   }, [open, renderImage, themeId, format]);
 
-  // Scale DOM card preview cleanly to fit dialog width without clipping.
+  // Scale DOM card preview cleanly to fit dialog width without clipping or empty vertical gap.
   useEffect(() => {
     if (!open || !renderCard) return;
     const updateScale = () => {
       const wrap = previewWrapRef.current;
       const card = cardRef.current;
       if (!wrap || !card) return;
-      const available = Math.min(wrap.clientWidth, previewMaxWidth);
-      const natural = card.offsetWidth || available;
-      setScale(natural > 0 ? Math.min(1, available / natural) : 1);
+      const innerWidth = Math.max(wrap.clientWidth - 24, 0);
+      const available = Math.min(innerWidth || wrap.clientWidth, previewMaxWidth);
+      const naturalWidth = card.offsetWidth || available;
+      const naturalHeight = card.offsetHeight || 0;
+      const nextScale = naturalWidth > 0 ? Math.min(1, available / naturalWidth) : 1;
+      setScale(nextScale);
+      setScaledHeight(naturalHeight > 0 ? Math.round(naturalHeight * nextScale) : null);
     };
     const id = requestAnimationFrame(updateScale);
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateScale) : null;
+    if (observer && cardRef.current) observer.observe(cardRef.current);
+    if (observer && previewWrapRef.current) observer.observe(previewWrapRef.current);
     window.addEventListener('resize', updateScale);
     return () => {
       cancelAnimationFrame(id);
+      observer?.disconnect();
       window.removeEventListener('resize', updateScale);
     };
   }, [open, renderCard, themeId, format, previewMaxWidth]);
@@ -305,15 +314,18 @@ export default function ShareImageDialog({
         >
           {renderCard ? (
             <div
-              style={{
-                transform: scale < 1 ? `scale(${scale})` : undefined,
-                transformOrigin: 'top center',
-                boxShadow: '0 10px 30px rgba(14, 17, 41, 0.16)',
-                borderRadius: 12,
-                overflow: 'hidden',
-              }}
+              className="flex w-full items-start justify-center overflow-hidden"
+              style={scaledHeight ? { height: scaledHeight } : undefined}
             >
-              {renderCard({ themeId, format, cardRef })}
+              <div
+                className="shrink-0 overflow-hidden rounded-xl shadow-lg"
+                style={{
+                  transform: scale < 1 ? `scale(${scale})` : undefined,
+                  transformOrigin: 'top center',
+                }}
+              >
+                {renderCard({ themeId, format, cardRef })}
+              </div>
             </div>
           ) : previewLoading ? (
             <div className="flex h-60 items-center justify-center gap-2 text-sm text-muted-foreground">

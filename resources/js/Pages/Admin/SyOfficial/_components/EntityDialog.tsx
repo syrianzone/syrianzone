@@ -100,7 +100,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+            <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto" dir="rtl">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'تعديل بيانات الجهة الرسمية' : 'إضافة جهة رسمية جديدة'}</DialogTitle>
                     <DialogDescription>بيانات الجهة وشعارها وحساباتها الرسمية كما تظهر في دليل الحسابات الرسمية.</DialogDescription>

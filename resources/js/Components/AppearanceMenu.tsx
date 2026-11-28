@@ -138,7 +138,7 @@ export default function AppearanceMenu({ className }: { className?: string }) {
                                         type="button"
                                         title={t.nameAr}
                                         onClick={() => handleThemeChange(t.id)}
-                                        className="w-6 h-6 inline-flex items-center justify-center rounded-full shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="h-8 w-8 inline-flex items-center justify-center rounded-full shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
                                         <span
                                             aria-hidden="true"

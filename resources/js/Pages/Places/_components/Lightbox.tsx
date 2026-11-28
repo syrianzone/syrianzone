@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { zipSync } from 'fflate';
 import { ChevronLeft, ChevronRight, Download, Loader2, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/Components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/Components/ui/dialog';
 import { useIsMobile } from '@/Lib/useIsMobile';
 import type { PlacePhoto } from '@/Domain/places/types';
 
@@ -165,6 +165,7 @@ export function Lightbox(props: {
         className="flex h-dvh max-h-none w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 bg-background/95 p-0 sm:rounded-none [&>button]:hidden"
       >
         <DialogTitle className="sr-only">{name}</DialogTitle>
+        <DialogDescription className="sr-only">عارض صور {name}</DialogDescription>
         <div className="relative flex items-center gap-2 p-3">
           {!narrow && downloadButtons('')}
           {!narrow && error && <span className="text-sm text-destructive">{error}</span>}
@@ -203,7 +204,7 @@ export function Lightbox(props: {
                 type="button"
                 variant="outline"
                 size="icon"
-                className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-full ${current === 0 ? 'opacity-50' : ''}`}
+                className={`absolute start-3 top-1/2 -translate-y-1/2 rounded-full ${current === 0 ? 'opacity-50' : ''}`}
                 onClick={goPrev}
                 aria-disabled={current === 0}
                 aria-label="الصورة السابقة"
@@ -214,7 +215,7 @@ export function Lightbox(props: {
                 type="button"
                 variant="outline"
                 size="icon"
-                className={`absolute left-3 top-1/2 -translate-y-1/2 rounded-full ${current === photos.length - 1 ? 'opacity-50' : ''}`}
+                className={`absolute end-3 top-1/2 -translate-y-1/2 rounded-full ${current === photos.length - 1 ? 'opacity-50' : ''}`}
                 onClick={goNext}
                 aria-disabled={current === photos.length - 1}
                 aria-label="الصورة التالية"

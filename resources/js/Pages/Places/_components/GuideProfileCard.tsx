@@ -1,7 +1,7 @@
 import { MapPin } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import { Button } from '@/Components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/Components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/Components/ui/dialog';
 import type { Guide } from '@/Domain/places/types';
 import { LevelBadge, RANK_NAMES, rankName } from './LevelBadge';
 
@@ -30,6 +30,7 @@ export function GuideProfileCard(props: {
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent dir="rtl" className="max-w-sm">
         <DialogTitle className="sr-only">{guide.name}</DialogTitle>
+        <DialogDescription className="sr-only">ملف الدليل وإحصائيات مساهماته</DialogDescription>
         <div className="flex flex-col items-center gap-3 pt-2 text-center">
           <Avatar className="h-20 w-20">
             <AvatarImage src={guide.avatar_url ?? undefined} alt={guide.name} />

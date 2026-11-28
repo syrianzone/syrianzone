@@ -601,16 +601,17 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
 
             {/* Edit/Add Modal */}
             <Dialog open={isCandidateModalOpen} onOpenChange={setIsCandidateModalOpen}>
-                <DialogContent>
+                <DialogContent dir="rtl">
                     <DialogHeader>
-                        <DialogTitle>{editingCandidate ? "Edit Candidate" : "Add Candidate"}</DialogTitle>
+                        <DialogTitle>{editingCandidate ? "تعديل المرشح" : "إضافة مرشح"}</DialogTitle>
+                        <DialogDescription className="sr-only">إدخال أو تعديل بيانات المرشح في الاستبيان</DialogDescription>
                     </DialogHeader>
                     {/* A form, so Enter in any field saves; validation stays in
                         handleSaveCandidate (noValidate) to show the Arabic error. */}
                     <form noValidate className="grid gap-4" onSubmit={(e) => { e.preventDefault(); void handleSaveCandidate(); }}>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="c-name" className="text-right">Name</Label>
+                            <Label htmlFor="c-name" className="text-start">الاسم</Label>
                             <div className="col-span-3 space-y-1">
                                 <Input
                                     id="c-name"
@@ -623,15 +624,15 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                             </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="c-title" className="text-right">Title</Label>
+                            <Label htmlFor="c-title" className="text-start">المنصب</Label>
                             <Input id="c-title" value={cTitle} onChange={e => setCTitle(e.target.value)} className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="c-handle" className="text-right">X Handle</Label>
+                            <Label htmlFor="c-handle" className="text-start">حساب إكس</Label>
                             <Input id="c-handle" value={cHandle} onChange={e => setCHandle(e.target.value)} placeholder="@username" dir="ltr" className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-start gap-4">
-                            <Label htmlFor="c-image" className="text-right pt-2">Image</Label>
+                            <Label htmlFor="c-image" className="text-start pt-2">الصورة</Label>
                             <div className="col-span-3 space-y-2">
                                 {/* A label for the file input: click, Enter and Space all open
                                     the picker natively, and the input stays focusable. */}
@@ -707,13 +708,13 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                             </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="c-group" className="text-right">Group</Label>
+                            <Label htmlFor="c-group" className="text-start">المجموعة</Label>
                             <Select value={cGroupId || "none"} onValueChange={(val) => setCGroupId(val === "none" ? null : val)}>
                                 <SelectTrigger className="col-span-3" aria-label="اختر المجموعة">
-                                    <SelectValue placeholder="Select Group" />
+                                    <SelectValue placeholder="اختر المجموعة" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">No Group</SelectItem>
+                                    <SelectItem value="none">بدون مجموعة</SelectItem>
                                     {groups.map(g => (
                                         <SelectItem key={g.id} value={g.id}>
                                             {g.name}{g.is_active === false ? " (معطّلة)" : ""}
@@ -724,9 +725,9 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setIsCandidateModalOpen(false)}>Cancel</Button>
+                        <Button type="button" variant="outline" onClick={() => setIsCandidateModalOpen(false)}>إلغاء</Button>
                         <Button type="submit" disabled={editingCandidate ? !canEdit : !canCreate}>
-                            Save
+                            حفظ
                         </Button>
                     </DialogFooter>
                     </form>
@@ -735,7 +736,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
 
             {/* Archive Modal */}
             <Dialog open={!!archiveTarget} onOpenChange={(open) => !open && setArchiveTarget(null)}>
-                <DialogContent>
+                <DialogContent dir="rtl">
                     <DialogHeader>
                         <DialogTitle>أرشفة المرشح</DialogTitle>
                         <DialogDescription>
@@ -744,7 +745,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="a-end" className="text-right">تاريخ الانتهاء</Label>
+                            <Label htmlFor="a-end" className="text-start">تاريخ الانتهاء</Label>
                             <Input
                                 id="a-end"
                                 type="date"
@@ -754,7 +755,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                             />
                         </div>
                         <div className="grid grid-cols-4 items-start gap-4">
-                            <Label htmlFor="a-reason" className="text-right pt-2">السبب</Label>
+                            <Label htmlFor="a-reason" className="text-start pt-2">السبب</Label>
                             <Textarea
                                 id="a-reason"
                                 value={aReason}
@@ -765,7 +766,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="a-successor" className="text-right">الخليفة</Label>
+                            <Label htmlFor="a-successor" className="text-start">الخليفة</Label>
                             <Select value={aSuccessorId} onValueChange={setASuccessorId}>
                                 <SelectTrigger className="col-span-3" aria-label="اختر الخليفة (اختياري)">
                                     <SelectValue placeholder="اختر الخليفة (اختياري)" />

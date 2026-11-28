@@ -156,7 +156,7 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto" dir="rtl">
+            <DialogContent className="max-w-xl max-h-[90dvh] overflow-y-auto" dir="rtl">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold">
                         {isEdit ? `تعديل الشخصية: ${character.name_ar}` : 'إضافة شخصية جديدة'}

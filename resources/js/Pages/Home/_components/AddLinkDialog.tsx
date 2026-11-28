@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { Label } from "@/Components/ui/label";
 import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
@@ -56,6 +56,7 @@ export default function AddLinkDialog({
             <DialogContent dir="rtl">
                 <DialogHeader className="text-start sm:text-start">
                     <DialogTitle>إضافة رابط مخصص</DialogTitle>
+                    <DialogDescription className="sr-only">أدخل اسم وعنوان الرابط المخصص لإضافته إلى صفحتك</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4 text-start">
                     <div className="space-y-2">

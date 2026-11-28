@@ -60,27 +60,6 @@ async function fetchApi(path) {
   return body.data
 }
 
-async function fetchDataUrl(url) {
-  const response = await fetch(url, { headers: { 'user-agent': 'syrianzone-card-renderer' } })
-  if (!response.ok) throw new Error(`image fetch failed ${response.status}: ${url}`)
-  const type = response.headers.get('content-type') || 'image/png'
-  const bytes = Buffer.from(await response.arrayBuffer())
-  return `data:${type};base64,${bytes.toString('base64')}`
-}
-
-// The site's own branding, inlined; the card should look like the site.
-// The square icon, not the logo: the logo is white-on-transparent for the
-// site's dark header and disappears on this light card.
-async function fetchSiteLogo() {
-  try {
-    const { branding } = await fetchApi('/answer/api/v1/siteinfo')
-    const url = branding?.square_icon || branding?.favicon
-    return url ? await fetchDataUrl(url) : null
-  } catch {
-    return null
-  }
-}
-
 async function fetchNewAnswers() {
   const cutoff = Date.now() - LOOKBACK_HOURS * 3600e3
   const found = []
@@ -168,9 +147,10 @@ function caption(title, url) {
 
 // ***** template *****
 
-// The site renders in IBM Plex Sans Arabic; the card must match it, and
-// unlike the tierlist AlJazeera faces these also cover Latin and digits.
-const FONT = (name) => readFileSync(join(HERE, 'fonts', name)).toString('base64')
+const ROOT = resolve(HERE, '..', '..')
+const TOKENS = JSON.parse(readFileSync(join(ROOT, 'resources', 'og', 'tokens.json'), 'utf8'))
+const FONT_WOFF2 = (relPath) => readFileSync(join(ROOT, 'public', 'fonts', relPath)).toString('base64')
+const LOGO = readFileSync(join(ROOT, 'public', 'assets', 'logo-lightmode.svg'), 'utf8')
 
 // The card shows the markdown source as plain text; strip the syntax that
 // reads as noise on an image. The full formatting lives behind the link.
@@ -193,7 +173,8 @@ function escapeHtml(text) {
     .replaceAll("'", '&#39;')
 }
 
-function html(question, answer, logo) {
+function html(question, answer) {
+  const t = TOKENS.light
   // The answer's own date, not the render date: a card can go out up to a
   // lookback window after the answer was written.
   const date = damascusDate(answer.create_time)
@@ -201,58 +182,237 @@ function html(question, answer, logo) {
   const description = (question.description || '').trim()
   const tags = (question.tags || []).slice(0, 3)
     .map((tag) => `<span class="tag">${escapeHtml(tag.display_name || tag.slug_name || '')}</span>`).join('')
-  // Palette lifted from the live site: white panels on warm off-white,
-  // near-black text, primary #556A4E, muted #6c757d, borders #dee2e6.
   // The upstream `html` field is deliberately unused: rendering server-made
   // markup from user content would reopen the injection door escapeHtml closes.
   // The markdown source shown as pre-wrap plain text is close enough visually.
   return `<!doctype html>
 <html dir="rtl" lang="ar"><head><meta charset="utf-8"><style>
-  @font-face { font-family: Plex; font-weight: 700; src: url(data:font/ttf;base64,${FONT('IBMPlexSansArabic-Bold.ttf')}); }
-  @font-face { font-family: Plex; font-weight: 400; src: url(data:font/ttf;base64,${FONT('IBMPlexSansArabic-Regular.ttf')}); }
-  @font-face { font-family: Plex; font-weight: 300; src: url(data:font/ttf;base64,${FONT('IBMPlexSansArabic-Light.ttf')}); }
-  * { margin: 0; box-sizing: border-box; }
-  body { line-height: 1.3; }
-  body {
-    width: 1080px; height: 1350px; overflow: hidden;
-    font-family: Plex, sans-serif; color: #212529; background: #f7f7f5;
-    display: flex; flex-direction: column; padding: 48px 56px 0;
+  @font-face {
+    font-family: 'Beiruti';
+    font-weight: 200 900;
+    font-style: normal;
+    src: url(data:font/woff2;base64,${FONT_WOFF2('beiruti/Beiruti-VariableFont_wght.woff2')}) format('woff2');
   }
-  .header { display: flex; align-items: center; justify-content: space-between; }
-  .header .brand { display: flex; align-items: center; gap: 20px; }
-  .header .logo { height: 76px; width: auto; }
-  .header .logo-text { font-size: 40px; font-weight: 700; color: #556A4E; }
-  .header .date { font-size: 24px; color: #6c757d; }
-  .question { margin-top: 34px; }
-  .question h1 { font-size: 46px; font-weight: 700; line-height: 1.4;
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-  .tags { display: flex; gap: 12px; margin-top: 18px; }
-  .tag { font-size: 22px; color: #495057; background: #fff; border: 1px solid #dee2e6;
-    border-radius: 10px; padding: 6px 18px; }
-  .question .description { font-size: 26px; color: #6c757d; margin-top: 18px; line-height: 1.6;
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-  .answer { margin-top: 30px; border-radius: 14px; padding: 30px 34px;
-    background: #fff; border: 1px solid #e4e4e1; }
-  .answer .label-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
-    padding-bottom: 16px; border-bottom: 1px solid #eceae6; }
-  .answer .label { font-size: 28px; font-weight: 700; color: #556A4E; }
-  .answer .accepted { font-size: 21px; font-weight: 700; color: #fff;
-    background: #556A4E; border-radius: 999px; padding: 5px 20px; }
-  .answer .text { font-size: 30px; line-height: 1.7; white-space: pre-wrap; word-break: break-word;
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 12; overflow: hidden; }
-  .answer .byline { font-size: 24px; color: #6c757d; margin-top: 20px; }
-  .footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between;
-    padding: 20px 4px 30px; font-size: 26px; border-top: 1px solid #e4e4e1; }
-  .footer .more { color: #556A4E; font-weight: 700; }
-  .footer .site { direction: ltr; color: #6c757d; }
+  @font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    font-weight: 400 500;
+    font-style: normal;
+    src: url(data:font/woff2;base64,${FONT_WOFF2('ibm-plex-sans-arabic/ibm-plex-sans-arabic-regular.woff2')}) format('woff2');
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    font-weight: 600 700;
+    font-style: normal;
+    src: url(data:font/woff2;base64,${FONT_WOFF2('ibm-plex-sans-arabic/ibm-plex-sans-arabic-bold.woff2')}) format('woff2');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    position: relative;
+    width: 1080px;
+    height: 1350px;
+    overflow: hidden;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    line-height: 1.35;
+    color: ${t.foreground};
+    background: linear-gradient(180deg, ${t.card} 0%, ${t.background} 20%, ${t.background} 100%);
+    display: flex;
+    flex-direction: column;
+    padding: 40px 64px 0 56px;
+  }
+  /* Madar signature: 12px RTL right-edge primary rail + saffron node notch */
+  .rail {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 12px;
+    background: ${t.primary};
+  }
+  .rail-notch {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    width: 12px;
+    height: 44px;
+    background: ${t.node};
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 22px;
+    border-bottom: 1px solid ${t.border};
+  }
+  .topbar svg {
+    height: 58px;
+    width: auto;
+    display: block;
+  }
+  .topbar-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .module-pill {
+    font-size: 22px;
+    font-weight: 700;
+    color: ${t.primary};
+    background: ${t.card};
+    border: 1px solid ${t.border};
+    border-radius: 999px;
+    padding: 8px 22px;
+    white-space: nowrap;
+  }
+  .date {
+    font-size: 22px;
+    color: ${t.mutedForeground};
+    white-space: nowrap;
+  }
+  .question {
+    margin-top: 28px;
+  }
+  .question h1 {
+    font-family: 'Beiruti', 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.28;
+    color: ${t.foreground};
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .tag {
+    font-size: 21px;
+    font-weight: 600;
+    color: ${t.primary};
+    background: ${t.secondary};
+    border: 1px solid ${t.border};
+    border-radius: 999px;
+    padding: 6px 20px;
+  }
+  .question .description {
+    font-size: 24px;
+    color: ${t.mutedForeground};
+    margin-top: 16px;
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .answer {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-top: 26px;
+    border-radius: 22px;
+    padding: 28px 34px 24px;
+    background: ${t.card};
+    border: 1px solid ${t.border};
+  }
+  .answer .label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid ${t.border};
+  }
+  .answer .label {
+    font-family: 'Beiruti', 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: ${t.primary};
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    line-height: 1.15;
+  }
+  .answer .label-bar {
+    width: 6px;
+    height: 26px;
+    border-radius: 999px;
+    background: ${t.node};
+    display: inline-block;
+  }
+  .answer .accepted {
+    font-size: 20px;
+    font-weight: 700;
+    color: ${t.primaryForeground};
+    background: ${t.primary};
+    border-radius: 999px;
+    padding: 6px 20px;
+  }
+  .answer .text {
+    font-size: 28px;
+    line-height: 1.7;
+    color: ${t.foreground};
+    white-space: pre-wrap;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 12;
+    overflow: hidden;
+  }
+  .answer .byline {
+    margin-top: auto;
+    padding-top: 18px;
+    border-top: 1px solid ${t.muted};
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22px;
+    color: ${t.mutedForeground};
+  }
+  .answer .byline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: ${t.node};
+    display: inline-block;
+  }
+  .answer .byline-name {
+    font-weight: 600;
+    color: ${t.foreground};
+  }
+  .footer {
+    margin-top: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 32px;
+    font-size: 24px;
+    border-top: 1px solid ${t.border};
+  }
+  .footer .more {
+    color: ${t.primary};
+    font-weight: 700;
+  }
+  .footer .site {
+    direction: ltr;
+    color: ${t.mutedForeground};
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
 </style></head>
 <body>
-  <div class="header">
-    <div class="brand">
-      ${logo ? `<img class="logo" src="${logo}" alt="">` : ''}
-      <div class="logo-text">إجابات سوريا</div>
+  <div class="rail"></div>
+  <div class="rail-notch"></div>
+  <div class="topbar">
+    ${LOGO}
+    <div class="topbar-meta">
+      <span class="date">${escapeHtml(dateLabel)}</span>
+      <span class="module-pill">إجابات سوريا</span>
     </div>
-    <div class="date">${dateLabel}</div>
   </div>
   <div class="question">
     <h1>${escapeHtml(question.title)}</h1>
@@ -261,11 +421,11 @@ function html(question, answer, logo) {
   </div>
   <div class="answer">
     <div class="label-row">
-      <div class="label">الإجابة</div>
-      ${answer.accepted === 2 ? '<div class="accepted">معتمدة</div>' : ''}
+      <div class="label"><span class="label-bar"></span>الإجابة</div>
+      ${answer.accepted === 2 ? '<div class="accepted">إجابة معتمدة</div>' : ''}
     </div>
     <div class="text">${escapeHtml(stripMarkdown(answer.content))}</div>
-    ${answer.user_info?.display_name ? `<div class="byline">${escapeHtml(answer.user_info.display_name)}</div>` : ''}
+    ${answer.user_info?.display_name ? `<div class="byline"><span class="byline-dot"></span><span>بقلم</span><span class="byline-name">${escapeHtml(answer.user_info.display_name)}</span></div>` : ''}
   </div>
   <div class="footer">
     <div class="more">الإجابة الكاملة عبر الرابط</div>
@@ -283,14 +443,13 @@ if (!selected.length) {
 }
 
 const chrome = chromeBinary()
-const logo = await fetchSiteLogo()
 mkdirSync(OUT_DIR, { recursive: true })
 
 for (const { question, answer } of selected) {
   const url = `${BASE_URL}/questions/${answer.question_id}/${answer.id}`
   const page = join(OUT_DIR, `answer-${answer.id}.html`)
   const png = join(OUT_DIR, `answer-${answer.id}.png`)
-  writeFileSync(page, html(question, answer, logo))
+  writeFileSync(page, html(question, answer))
   execFileSync(chrome, [
     '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
     '--force-device-scale-factor=2', '--window-size=1080,1350',

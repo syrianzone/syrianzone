@@ -257,10 +257,10 @@ export default function PopulationClient() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-var(--sz-navbar-h))] overflow-hidden relative bg-background text-foreground" dir="rtl">
+        <div className="isolate z-0 flex flex-col h-[calc(100vh-var(--sz-navbar-h))] overflow-hidden relative bg-background text-foreground" dir="rtl">
 
             {showComparison && comparisonData && (
-                <div role="region" aria-labelledby="population-comparison-heading" className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[1100] w-[90%] max-w-2xl bg-card border-2 border-primary rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
+                <div role="region" aria-labelledby="population-comparison-heading" className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[1100] w-[90%] max-w-2xl max-h-[calc(100%-6rem)] overflow-y-auto bg-card border-2 border-primary rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
                     <div className="flex justify-between items-center p-4 border-b border-border">
                         <h2 id="population-comparison-heading" ref={comparisonHeadingRef} tabIndex={-1} className="text-lg font-bold flex items-center gap-2 focus:outline-none">
                             <BarChart3 className="text-primary" size={20} aria-hidden="true" />

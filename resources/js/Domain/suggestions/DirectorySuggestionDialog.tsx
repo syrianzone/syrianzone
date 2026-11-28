@@ -307,7 +307,7 @@ export default function DirectorySuggestionDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+            <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>
                         {fixedTarget ? copy.dialogTitleEdit : copy.dialogTitleAdd}
@@ -445,7 +445,7 @@ export default function DirectorySuggestionDialog({
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            className="h-7 w-7 shrink-0"
+                                            className="h-8 w-8 shrink-0"
                                             aria-label="تغيير العنصر المحدد"
                                             ref={changeTargetRef}
                                             onClick={() => {

@@ -25,7 +25,7 @@ export function RejectDialog(props: {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent dir="rtl">
-        <DialogHeader className="text-right">
+        <DialogHeader className="text-start">
           <DialogTitle>رفض المكان</DialogTitle>
           <DialogDescription>سبب الرفض يظهر للمساهم ليتمكن من التحسين</DialogDescription>
         </DialogHeader>

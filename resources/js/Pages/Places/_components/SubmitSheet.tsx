@@ -173,7 +173,7 @@ export function SubmitSheet(props: {
         dir="rtl"
         className={isMobile ? 'max-h-[85dvh] overflow-y-auto' : 'overflow-y-auto'}
       >
-        <SheetHeader className="text-right">
+        <SheetHeader className="text-start">
           <SheetTitle>إضافة مكان جديد</SheetTitle>
           <SheetDescription>
             شارك مكاناً يستحق المشوار ليظهر على الخريطة بعد موافقة المشرفين

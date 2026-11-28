@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -78,6 +78,7 @@ export default function CategoryDialog({
             <DialogContent className="max-w-md" dir="rtl">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? title.edit : title.create}</DialogTitle>
+                    <DialogDescription className="sr-only">نموذج إضافة أو تعديل فئة الدليل</DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={submitForm} className="space-y-4 py-2">

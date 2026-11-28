@@ -4,6 +4,7 @@ import { BookOpen, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -101,9 +102,10 @@ export default function GameShell({
                   <DialogTrigger asChild>
                     <HeaderButton icon={BookOpen}>القوانين</HeaderButton>
                   </DialogTrigger>
-                  <DialogContent dir="rtl" className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+                  <DialogContent dir="rtl" className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
                     <DialogHeader className="text-start sm:text-start">
                       <DialogTitle>قوانين {title}</DialogTitle>
+                      <DialogDescription className="sr-only">شرح قواعد وطريقة لعب {title}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3 text-sm leading-relaxed text-foreground">{rules}</div>
                   </DialogContent>

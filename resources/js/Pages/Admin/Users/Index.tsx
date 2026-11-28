@@ -187,7 +187,10 @@ export default function UsersIndex({
     );
 
     const hasTransitPermission = useMemo(
-        () => form.permissions.some((perm) => transitCapabilityKeys.includes(perm)),
+        () =>
+            form.permissions.some(
+                (perm) => perm === '*' || transitCapabilityKeys.includes(perm),
+            ),
         [form.permissions, transitCapabilityKeys],
     );
 
@@ -237,8 +240,12 @@ export default function UsersIndex({
         setForm(formFromUser(user));
         setFieldErrors({});
         const initialOpen: Record<string, boolean> = {};
+        const hasWildcard = user.permissions.includes('*');
         for (const [groupKey, caps] of Object.entries(permissionGroups)) {
-            if (Object.keys(caps).some((cap) => user.permissions.includes(cap))) {
+            if (
+                (groupKey === 'transit' && (hasWildcard || user.transit_scope.length > 0)) ||
+                Object.keys(caps).some((cap) => user.permissions.includes(cap))
+            ) {
                 initialOpen[groupKey] = true;
             }
         }

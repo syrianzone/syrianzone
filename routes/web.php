@@ -1125,6 +1125,10 @@ Route::post('/api/user/radio-usage', [RadioUsageController::class, 'add'])
 Route::post('/api/user/radio-usage/clear', [RadioUsageController::class, 'clear'])
     ->middleware(['api_user', 'throttle:10,1']);
 
+// The Filament superadmin panel was replaced by the Inertia users console.
+Route::redirect('/superadmin', '/admin/users', 301);
+Route::redirect('/superadmin/{any}', '/admin/users', 301)->where('any', '.*');
+
 require __DIR__.'/admin-console.php';
 require __DIR__.'/admin-users.php';
 require __DIR__.'/admin-civic-pages.php';

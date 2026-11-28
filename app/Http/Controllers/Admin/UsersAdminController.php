@@ -101,7 +101,11 @@ class UsersAdminController extends Controller
         }
 
         $permissions = $this->mergePermissions($data['permissions'] ?? [], []);
-        $permissionScopes = $this->mergePermissionScopes($data['transit_scope'] ?? [], []);
+        $permissionScopes = $this->mergePermissionScopes(
+            $data['transit_scope'] ?? [],
+            [],
+            $this->hasTransitPermissions($permissions),
+        );
 
         $user = DB::transaction(function () use ($data, $permissions, $permissionScopes, $wantsBanned, $moderation, $request): User {
             $created = User::create([
@@ -164,9 +168,11 @@ class UsersAdminController extends Controller
             }
 
             if (array_key_exists('transit_scope', $data)) {
+                $mergedPermissions = is_array($user->permissions) ? $user->permissions : [];
                 $user->permission_scopes = $this->mergePermissionScopes(
                     is_array($data['transit_scope']) ? $data['transit_scope'] : [],
                     is_array($user->permission_scopes) ? $user->permission_scopes : [],
+                    $this->hasTransitPermissions($mergedPermissions),
                 );
             }
 
@@ -281,6 +287,29 @@ class UsersAdminController extends Controller
     }
 
     /**
+     * Whether a user's stored permissions grant any transit capability
+     * (including the wildcard '*' grant).
+     *
+     * @param  array<int, mixed>  $permissions
+     */
+    private function hasTransitPermissions(array $permissions): bool
+    {
+        if (in_array('*', $permissions, true)) {
+            return true;
+        }
+
+        $transitKeys = array_keys(PermissionCatalogue::groups()['transit'] ?? []);
+
+        foreach ($permissions as $permission) {
+            if (is_string($permission) && in_array($permission, $transitKeys, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Merge submitted transit city scopes into permission_scopes while keeping
      * any non-transit module scopes intact, matching UserResource::mergePermissionFormData().
      *
@@ -288,8 +317,17 @@ class UsersAdminController extends Controller
      * @param  array<string, mixed>  $existingScopes
      * @return array<string, array<int, string>>|null
      */
-    private function mergePermissionScopes(array $transitScope, array $existingScopes): ?array
-    {
+    private function mergePermissionScopes(
+        array $transitScope,
+        array $existingScopes,
+        bool $hasTransitPermissions = true,
+    ): ?array {
+        if (! $hasTransitPermissions) {
+            unset($existingScopes['transit']);
+
+            return $existingScopes === [] ? null : $existingScopes;
+        }
+
         $cleanCities = array_values(array_unique(array_filter(
             array_map(fn ($city): string => is_string($city) ? trim($city) : '', $transitScope),
             fn (string $city): bool => $city !== '',

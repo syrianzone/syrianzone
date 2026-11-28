@@ -877,7 +877,7 @@ export default function Dashboard({
                               </span>
                               {typeof result.top_score === 'number' && (
                                 <Badge variant="secondary" className="tabular-nums" dir="ltr">
-                                  {Math.round(result.top_score)}%
+                                  {Math.round(result.top_score <= 1 ? result.top_score * 100 : result.top_score)}%
                                 </Badge>
                               )}
                             </div>

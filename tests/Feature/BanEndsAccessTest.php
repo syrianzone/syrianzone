@@ -1,10 +1,8 @@
 <?php
 
-use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Models\User;
 use App\Services\Users\UserModerationService;
 use Illuminate\Support\Facades\DB;
-use Livewire\Livewire;
 
 // Login refuses banned users, but credentials issued before a ban used to
 // outlive it. A ban has to end the access the user already holds.
@@ -68,29 +66,36 @@ test('a session opened before the ban is refused on admin JSON routes', function
     expect($target->fresh()->is_banned)->toBeFalse();
 });
 
-test('the superadmin panel bans through the moderation service', function () {
+test('the admin users console bans through the moderation service', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $target = User::factory()->create();
     $target->createToken('phone', ['mobile']);
 
-    $this->actingAs($superadmin);
-    Livewire::test(EditUser::class, ['record' => $target->getRouteKey()])
-        ->fillForm(['is_banned' => true])
-        ->call('save')
-        ->assertHasNoFormErrors();
+    $this->actingAs($superadmin)
+        ->putJson("/api/v1/admin/users/{$target->id}", [
+            'name' => $target->name,
+            'email' => $target->email,
+            'role' => $target->role,
+            'is_banned' => true,
+        ])
+        ->assertOk();
 
     expect($target->fresh()->is_banned)->toBeTrue()
         ->and($target->tokens()->count())->toBe(0);
 });
 
-test('the superadmin panel cannot ban a superadmin', function () {
+test('the admin users console cannot ban a superadmin', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $other = User::factory()->create(['role' => 'superadmin']);
 
-    $this->actingAs($superadmin);
-    Livewire::test(EditUser::class, ['record' => $other->getRouteKey()])
-        ->fillForm(['is_banned' => true])
-        ->call('save');
+    $this->actingAs($superadmin)
+        ->putJson("/api/v1/admin/users/{$other->id}", [
+            'name' => $other->name,
+            'email' => $other->email,
+            'role' => 'superadmin',
+            'is_banned' => true,
+        ])
+        ->assertForbidden();
 
     expect($other->fresh()->is_banned)->toBeFalse();
 });

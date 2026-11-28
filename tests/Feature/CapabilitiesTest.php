@@ -1,6 +1,5 @@
 <?php
 
-use App\Filament\Resources\UserResource;
 use App\Http\Middleware\AutoLoginDevUser;
 use App\Models\Place;
 use App\Models\Poll;
@@ -143,16 +142,30 @@ it('defaults an omitted role to user, and the column default agrees', function (
 it('offers exactly superadmin and user in the role select', function () {
     // The one place roles are assigned. Both retired groups are asserted absent
     // explicitly rather than by set difference, so re-adding either fails here.
-    expect(array_keys(UserResource::roleOptions()))
-        ->toEqualCanonicalizing(['superadmin', 'user'])
-        ->not->toContain(
-            'admin',
-            'syofficial_admin',
-            'transit_admin',
-            'govapps_admin',
-            'phonebook_admin',
-            'places_admin',
-            'users_admin',
+    $superadmin = User::factory()->create(['role' => 'superadmin']);
+
+    $this->actingAs($superadmin)
+        ->get('/admin/users')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/Users/Index')
+            ->where('roleOptions', function ($options) {
+                $keys = array_keys(is_array($options) ? $options : $options->toArray());
+
+                expect($keys)
+                    ->toEqualCanonicalizing(['superadmin', 'user'])
+                    ->not->toContain(
+                        'admin',
+                        'syofficial_admin',
+                        'transit_admin',
+                        'govapps_admin',
+                        'phonebook_admin',
+                        'places_admin',
+                        'users_admin',
+                    );
+
+                return true;
+            })
         );
 });
 

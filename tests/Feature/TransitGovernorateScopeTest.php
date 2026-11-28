@@ -1,14 +1,10 @@
 <?php
 
-use App\Filament\Resources\UserResource;
-use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Models\TransitRouteLog;
 use App\Models\User;
-use App\Support\Facts;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
-use Livewire\Livewire;
 
 test('allowedTransitCities is null when unscoped and for superadmin', function () {
     $plain = User::factory()->create(['role' => 'user', 'permissions' => ['transit.approve']]);
@@ -357,42 +353,52 @@ test('scoped staff cannot open out-of-scope drafts or routes in studio', functio
     $this->actingAs($user)->getJson("/api/v1/studio/routes/{$outsideRoute->id}/from-route")->assertForbidden();
 });
 
-test('mergePermissionFormData folds grouped checkboxes and preserves unknown capabilities', function () {
-    $merged = UserResource::mergePermissionFormData([
+test('updating user permissions via admin API preserves unknown capabilities like wildcard', function () {
+    seedCity('homs');
+    seedCity('aleppo');
+    $superadmin = User::factory()->create(['role' => 'superadmin']);
+    $target = User::factory()->create([
+        'role' => 'user',
         'permissions' => ['*'],
-        'perm_syofficial' => ['syofficial.create'],
-        'perm_transit' => ['transit.approve', 'transit.edit_routes'],
-        'perm_polls' => [],
-        'transit_scope' => ['homs', 'aleppo'],
     ]);
 
-    expect($merged['permissions'])
+    $this->actingAs($superadmin)
+        ->putJson("/api/v1/admin/users/{$target->id}", [
+            'name' => $target->name,
+            'email' => $target->email,
+            'role' => 'user',
+            'permissions' => ['syofficial.create', 'transit.approve', 'transit.edit_routes'],
+            'transit_scope' => ['homs', 'aleppo'],
+        ])
+        ->assertOk();
+
+    $target->refresh();
+
+    expect($target->permissions)
         ->toContain('syofficial.create', 'transit.approve', 'transit.edit_routes', '*')
         ->not->toContain('polls.create')
-        ->and($merged['permission_scopes'])->toBe(['transit' => ['homs', 'aleppo']])
-        ->and($merged)->not->toHaveKey('perm_transit')
-        ->and($merged)->not->toHaveKey('transit_scope');
+        ->and($target->permission_scopes)->toBe(['transit' => ['homs', 'aleppo']]);
 });
 
 test('clearing the transit scope keeps other module scopes', function () {
-    $merged = UserResource::mergePermissionFormData(
-        ['perm_transit' => ['transit.approve'], 'transit_scope' => []],
-        ['transit' => ['homs'], 'places' => ['foo']],
-    );
-
-    expect($merged['permission_scopes'])->toBe(['places' => ['foo']]);
-});
-
-test('splitPermissionFormData maps stored permissions and scope to form state', function () {
-    $split = UserResource::splitPermissionFormData([
-        'permissions' => ['syofficial.create', 'transit.approve'],
-        'permission_scopes' => ['transit' => ['homs']],
+    $superadmin = User::factory()->create(['role' => 'superadmin']);
+    $target = User::factory()->create([
+        'role' => 'user',
+        'permissions' => ['transit.approve'],
+        'permission_scopes' => ['transit' => ['homs'], 'places' => ['foo']],
     ]);
 
-    expect($split['perm_syofficial'])->toBe(['syofficial.create'])
-        ->and($split['perm_transit'])->toBe(['transit.approve'])
-        ->and($split['perm_polls'])->toBe([])
-        ->and($split['transit_scope'])->toBe(['homs']);
+    $this->actingAs($superadmin)
+        ->putJson("/api/v1/admin/users/{$target->id}", [
+            'name' => $target->name,
+            'email' => $target->email,
+            'role' => 'user',
+            'permissions' => ['transit.approve'],
+            'transit_scope' => [],
+        ])
+        ->assertOk();
+
+    expect($target->fresh()->permission_scopes)->toBe(['places' => ['foo']]);
 });
 
 test('every permission group has a project icon and matching capability prefix', function () {
@@ -419,63 +425,66 @@ test('permission scopes are shared with the frontend', function () {
         );
 });
 
-test('filament user form renders grouped permissions with project icons', function () {
+test('admin users console ships grouped Arabic permission metadata and user transit scope', function () {
+    seedCity('homs');
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $target = User::factory()->create([
         'role' => 'user',
-        'permissions' => ['transit.approve'],
+        'permissions' => ['syofficial.create', 'transit.approve'],
         'permission_scopes' => ['transit' => ['homs']],
     ]);
 
-    // The drawing the panel must render is the one in the shared icon file, not
-    // a copy: its own viewBox is what tells a project icon from Filament's.
-    $projectViewBox = Facts::projectIcons()['icons']['transit']['viewBox'];
-
-    Livewire::actingAs($superadmin)
-        ->test(EditUser::class, ['record' => $target->getRouteKey()])
+    $this->actingAs($superadmin)
+        ->get('/admin/users')
         ->assertOk()
-        ->assertSee('الحسابات الرسمية')
-        ->assertSee('ترانزيت')
-        ->assertSee('نطاق المحافظات')
-        ->assertSee('viewBox="'.$projectViewBox.'"', false);
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Users/Index')
+            ->where('permissionGroupMeta.syofficial.label', 'الحسابات الرسمية')
+            ->where('permissionGroupMeta.transit.label', 'ترانزيت')
+            ->has('permissionGroups.transit')
+            ->has('cities')
+            ->where('users.data', function ($rows) use ($target) {
+                $row = collect($rows)->firstWhere('id', $target->id);
+
+                expect($row)->not->toBeNull()
+                    ->and($row['permissions'])->toEqualCanonicalizing(['syofficial.create', 'transit.approve'])
+                    ->and($row['transit_scope'])->toBe(['homs']);
+
+                return true;
+            })
+        );
 });
 
-test('filament panel stays arabic even when the app locale is english', function () {
-    app()->setLocale('en');
-
+test('legacy superadmin URLs permanently redirect to the Inertia users console', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);
-    $target = User::factory()->create([
-        'role' => 'user',
-        'permissions' => ['transit.approve'],
-    ]);
-
-    $projectViewBox = Facts::projectIcons()['icons']['transit']['viewBox'];
+    $target = User::factory()->create();
 
     $this->actingAs($superadmin)
-        ->get("/superadmin/users/{$target->getRouteKey()}/edit")
-        ->assertOk()
-        ->assertSee('الصلاحيات التفصيلية')
-        ->assertSee('نطاق المحافظات')
-        // Filament's own UI translations follow the forced panel locale.
-        ->assertSee('حفظ التغييرات')
-        ->assertSee('viewBox="'.$projectViewBox.'"', false);
+        ->get('/superadmin')
+        ->assertStatus(301)
+        ->assertRedirect('/admin/users');
+
+    $this->actingAs($superadmin)
+        ->get("/superadmin/users/{$target->id}/edit")
+        ->assertStatus(301)
+        ->assertRedirect('/admin/users');
 });
 
-test('filament user form saves grouped permissions and governorate scope', function () {
+test('admin users API saves grouped permissions and governorate scope', function () {
     seedCity('homs');
     seedCity('aleppo');
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $target = User::factory()->create();
 
-    Livewire::actingAs($superadmin)
-        ->test(EditUser::class, ['record' => $target->getRouteKey()])
-        ->fillForm([
-            'perm_transit' => ['transit.approve', 'transit.edit_routes'],
-            'perm_phonebook' => ['phonebook.create'],
+    $this->actingAs($superadmin)
+        ->putJson("/api/v1/admin/users/{$target->id}", [
+            'name' => $target->name,
+            'email' => $target->email,
+            'role' => 'user',
+            'permissions' => ['transit.approve', 'transit.edit_routes', 'phonebook.create'],
             'transit_scope' => ['homs', 'aleppo'],
         ])
-        ->call('save')
-        ->assertHasNoFormErrors();
+        ->assertOk();
 
     $target->refresh();
 
@@ -485,7 +494,7 @@ test('filament user form saves grouped permissions and governorate scope', funct
         ->and($target->permission_scopes)->toBe(['transit' => ['homs', 'aleppo']]);
 });
 
-test('clearing the governorate scope in the form makes the user unrestricted', function () {
+test('clearing the governorate scope via admin users API makes the user unrestricted', function () {
     seedCity('homs');
     seedCity('aleppo');
     $superadmin = User::factory()->create(['role' => 'superadmin']);
@@ -495,11 +504,14 @@ test('clearing the governorate scope in the form makes the user unrestricted', f
         'permission_scopes' => ['transit' => ['homs']],
     ]);
 
-    Livewire::actingAs($superadmin)
-        ->test(EditUser::class, ['record' => $target->getRouteKey()])
-        ->fillForm(['transit_scope' => []])
-        ->call('save')
-        ->assertHasNoFormErrors();
+    $this->actingAs($superadmin)
+        ->putJson("/api/v1/admin/users/{$target->id}", [
+            'name' => $target->name,
+            'email' => $target->email,
+            'role' => 'user',
+            'transit_scope' => [],
+        ])
+        ->assertOk();
 
     $target->refresh();
 

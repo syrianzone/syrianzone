@@ -71,7 +71,6 @@ class DashboardController extends Controller
                 ->select(self::DRAFT_LIST_COLUMNS)
                 ->with('city:id,name_ar,name_en')
                 ->orderBy('created_at', 'desc')
-                ->limit(self::HUB_LIST_LIMIT)
                 ->get(),
             'myPlaces' => Schema::hasTable('places')
                 ? Place::where('user_id', $user->id)

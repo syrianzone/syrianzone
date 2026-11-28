@@ -181,7 +181,7 @@ it('never calls useAuth() from a page that renders MainLayout', function () {
     foreach ($pages as $file) {
         $source = file_get_contents(base_path($file));
 
-        if ($source === false || ! str_contains($source, 'MainLayout')) {
+        if ($source === false || (! str_contains($source, 'MainLayout') && ! str_contains($source, 'AdminLayout'))) {
             continue;
         }
 

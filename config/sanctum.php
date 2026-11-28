@@ -17,7 +17,7 @@ return [
     'guard' => ['web'],
 
     // Deliberately null: agent API tokens carry a per-token "expires_at" that
-    // the minting superadmin chooses (see App\Filament\Resources\ApiTokenResource),
+    // the minting superadmin chooses (see App\Http\Controllers\ApiTokenAdminController),
     // so a blanket global would silently override that choice. Leave it null
     // unless you want a hard ceiling.
 

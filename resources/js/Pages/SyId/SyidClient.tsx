@@ -4,6 +4,7 @@ import {
     ArrowLeft, Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Tag, Eye
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
+import { PageBody, PageHeader } from "@/Components/layout";
 import { notify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
 import { MEDIA_BASE } from '@/Domain/govapps/media';
@@ -259,31 +260,24 @@ export default function SyidClient({ syid }: SyidClientProps) {
 
     return (
         <div className="min-h-screen bg-background text-foreground transition-colors" dir="rtl">
-
-            <header className="py-12 border-b border-border text-center bg-muted/20">
-                <div className="container mx-auto px-4 max-w-4xl">
-                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
-                        عناصر الهوية البصرية السورية
-                    </h1>
-                    <p className="text-muted-foreground text-base max-w-2xl mx-auto mb-6">
-                        دليل متكامل ومجمّع للمواد الرقمية والملفات المتصلة بالهوية البصرية السورية
-                    </p>
-                    <a
-                        href="https://syrianidentity.sy"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 font-medium text-sm bg-[#428177] hover:bg-[#054239] text-white h-10 px-5 rounded-lg transition-colors shadow-xs"
-                    >
-                        <span>زيارة الموقع الرسمي</span>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                    <p className="mt-3 text-xs text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                        الموقع متوقف عن العمل منذ فترة، لتحميل الموجود فيه تحقق من قسم &quot;شعار الهوية والمواد الرسمية&quot;
-                    </p>
-                </div>
-            </header>
-
-            <div className="container mx-auto py-10 max-w-6xl px-4 space-y-14">
+            <PageBody className="space-y-12">
+                <PageHeader
+                    title="عناصر الهوية البصرية السورية"
+                    description="دليل متكامل ومجمّع للمواد الرقمية والملفات المتصلة بالهوية البصرية السورية — الشعار، العلم، الألوان، الخطوط، وأيقونات المحافظات."
+                    divider
+                    actions={
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <a
+                                href="https://syrianidentity.sy"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <span>الموقع الرسمي</span>
+                                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                            </a>
+                        </Button>
+                    }
+                />
 
                 <section aria-labelledby="syid-hub-links-heading">
                     <h2 id="syid-hub-links-heading" className="sr-only">صفحات الشعار والعلم المخصّصة</h2>
@@ -1023,7 +1017,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                     </Card>
                 </section>
 
-            </div>
+            </PageBody>
 
             <footer className="border-t border-border py-8 mt-16 text-center text-xs text-muted-foreground bg-muted/10">
                 <p>&copy; 2025 syrian.zone • التطوير بواسطة هادي الأحمد</p>

@@ -14,6 +14,7 @@ import type { OfficialCategory, OfficialEntity } from '@/Domain/syofficial/types
 import type { SuggestionCategoryOption, SuggestionTargetOption } from '@/Domain/suggestions/types';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
 import { DirectoryFacetFilter } from '@/Components/directory/DirectoryFacetFilter';
+import { ResponsiveTable } from '@/Components/directory/ResponsiveTable';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
 import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
@@ -450,176 +451,166 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-card rounded-lg border border-border overflow-hidden">
-                                {/* Mobile 2-row-per-item list */}
-                                <ul className="md:hidden divide-y divide-border" aria-label={t.tableName}>
-                                    {filteredData.map(item => (
-                                        <li key={item.id} className="px-3.5 py-3 space-y-2">
-                                            {/* Row 1: Avatar + Name + Category */}
-                                            <div className="flex items-start justify-between gap-2.5">
-                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                    <div className="w-9 h-9 rounded-lg overflow-hidden bg-muted shrink-0 ring-1 ring-border/50">
-                                                        <img
-                                                            src={formatEntityImage(item.image)}
-                                                            alt=""
-                                                            loading="lazy"
-                                                            decoding="async"
-                                                            className="w-full h-full object-cover"
-                                                            onError={(e) => {
-                                                                (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <span lang={contentLang} dir={contentDir} className="block text-foreground font-semibold text-sm leading-snug">
-                                                            {language === 'ar' ? item.name_ar : item.name}
-                                                        </span>
-                                                        <span className="block text-[11px] text-muted-foreground mt-0.5 truncate">
-                                                            {getCategoryLabel(item.category)}
-                                                        </span>
-                                                    </div>
+                            <ResponsiveTable
+                                items={filteredData}
+                                getKey={(item) => item.id}
+                                mobileLabel={t.tableName}
+                                renderMobileItem={(item) => (
+                                    <>
+                                        <div className="flex items-start justify-between gap-2.5">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-9 h-9 rounded-lg overflow-hidden bg-muted shrink-0 ring-1 ring-border/50">
+                                                    <img
+                                                        src={formatEntityImage(item.image)}
+                                                        alt=""
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <span lang={contentLang} dir={contentDir} className="block text-foreground font-semibold text-sm leading-snug">
+                                                        {language === 'ar' ? item.name_ar : item.name}
+                                                    </span>
+                                                    <span className="block text-[11px] text-muted-foreground mt-0.5 truncate">
+                                                        {getCategoryLabel(item.category)}
+                                                    </span>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            {/* Row 2: Social links | Actions */}
-                                            <div className="flex items-center justify-between gap-2">
-                                                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                                                    {nonEmptySocials(item).map(([plat, url]) => {
-                                                        const visual = socialVisual(plat);
-                                                        return (
-                                                            <a
-                                                                key={plat}
-                                                                href={url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className={`p-1.5 rounded-lg border border-border/50 bg-muted/40 text-muted-foreground transition-colors ${visual.hoverClass}`}
-                                                                title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
-                                                                aria-label={socialLinkLabel(plat, item)}
-                                                            >
-                                                                <visual.Icon className={`w-3.5 h-3.5 ${visual.iconClass}`} aria-hidden="true" />
-                                                            </a>
-                                                        );
-                                                    })}
-                                                </div>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => openEditSuggestion(item)}
-                                                        aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
-                                                        title="اقتراح تعديل"
-                                                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                                    >
-                                                        <PencilLine className="h-4 w-4" aria-hidden="true" />
-                                                    </Button>
-                                                    {canEditEntries && (
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                                {nonEmptySocials(item).map(([plat, url]) => {
+                                                    const visual = socialVisual(plat);
+                                                    return (
                                                         <a
-                                                            href={`/admin/syofficial?edit=${item.id}`}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-semibold transition-colors"
+                                                            key={plat}
+                                                            href={url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={`p-1.5 rounded-lg border border-border/50 bg-muted/40 text-muted-foreground transition-colors ${visual.hoverClass}`}
+                                                            title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                            aria-label={socialLinkLabel(plat, item)}
                                                         >
-                                                            <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-                                                            تعديل
+                                                            <visual.Icon className={`w-3.5 h-3.5 ${visual.iconClass}`} aria-hidden="true" />
                                                         </a>
-                                                    )}
-                                                </div>
+                                                    );
+                                                })}
                                             </div>
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                {/* Desktop table */}
-                                <div className="hidden md:block">
-                                    <Table>
-                                        <TableHeader className="bg-muted/60">
-                                            <TableRow lang={ui.lang} className="border-border/60">
-                                                <TableHead className="text-start font-bold">{t.tableName}</TableHead>
-                                                <TableHead className="text-start font-bold">{t.tableCategory}</TableHead>
-                                                <TableHead className="text-start font-bold">{t.tableDesc}</TableHead>
-                                                <TableHead className="text-start font-bold">{t.tableSocial}</TableHead>
-                                                <TableHead className="text-end font-bold">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredData.map(item => (
-                                                <TableRow key={item.id} className="hover:bg-muted/40 transition-colors border-border/40">
-                                                    <TableCell className="font-medium">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border/50 shadow-2xs">
-                                                                <img
-                                                                    src={formatEntityImage(item.image)}
-                                                                    alt=""
-                                                                    loading="lazy"
-                                                                    decoding="async"
-                                                                    className="w-full h-full object-cover"
-                                                                    onError={(e) => {
-                                                                        (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <span lang={contentLang} dir={contentDir} className="text-foreground font-semibold text-sm">{language === 'ar' ? item.name_ar : item.name}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="secondary" className="font-normal bg-accent/80 text-accent-foreground border-border/40 rounded-lg">
-                                                            {getCategoryLabel(item.category)}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-muted-foreground text-xs max-w-xs truncate">
-                                                        <span lang={contentLang} dir={contentDir}>
-                                                            {language === 'ar' ? (item.description_ar || item.description) : item.description}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                                            {nonEmptySocials(item).map(([plat, url]) => {
-                                                                const visual = socialVisual(plat);
-                                                                return (
-                                                                    <a
-                                                                        key={plat}
-                                                                        href={url}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${visual.hoverClass}`}
-                                                                        title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
-                                                                                aria-label={socialLinkLabel(plat, item)}
-                                                                    >
-                                                                        <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} aria-hidden="true" />
-                                                                    </a>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-end">
-                                                        <div className="flex items-center justify-end gap-1.5">
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => openEditSuggestion(item)}
-                                                                aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
-                                                                title="اقتراح تعديل"
-                                                                className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                                            >
-                                                                <PencilLine className="h-4 w-4" aria-hidden="true" />
-                                                            </Button>
-                                                            {canEditEntries && (
-                                                                <a
-                                                                    href={`/admin/syofficial?edit=${item.id}`}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-colors"
-                                                                >
-                                                                    <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-                                                                    تعديل
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </div>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => openEditSuggestion(item)}
+                                                    aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
+                                                    title="اقتراح تعديل"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                >
+                                                    <PencilLine className="h-4 w-4" aria-hidden="true" />
+                                                </Button>
+                                                {canEditEntries && (
+                                                    <a
+                                                        href={`/admin/syofficial?edit=${item.id}`}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-semibold transition-colors"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                                                        تعديل
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                                desktopHeader={
+                                    <TableRow lang={ui.lang} className="border-border/60">
+                                        <TableHead className="text-start font-bold">{t.tableName}</TableHead>
+                                        <TableHead className="text-start font-bold">{t.tableCategory}</TableHead>
+                                        <TableHead className="text-start font-bold">{t.tableDesc}</TableHead>
+                                        <TableHead className="text-start font-bold">{t.tableSocial}</TableHead>
+                                        <TableHead className="text-end font-bold">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
+                                    </TableRow>
+                                }
+                                renderDesktopRow={(item) => (
+                                    <TableRow key={item.id} className="hover:bg-muted/40 transition-colors border-border/40">
+                                        <TableCell className="font-medium">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border/50 shadow-2xs">
+                                                    <img
+                                                        src={formatEntityImage(item.image)}
+                                                        alt=""
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
+                                                        }}
+                                                    />
+                                                </div>
+                                                <span lang={contentLang} dir={contentDir} className="text-foreground font-semibold text-sm">{language === 'ar' ? item.name_ar : item.name}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary" className="font-normal bg-accent/80 text-accent-foreground border-border/40 rounded-lg">
+                                                {getCategoryLabel(item.category)}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground text-xs max-w-xs truncate">
+                                            <span lang={contentLang} dir={contentDir}>
+                                                {language === 'ar' ? (item.description_ar || item.description) : item.description}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                {nonEmptySocials(item).map(([plat, url]) => {
+                                                    const visual = socialVisual(plat);
+                                                    return (
+                                                        <a
+                                                            key={plat}
+                                                            href={url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${visual.hoverClass}`}
+                                                            title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                            aria-label={socialLinkLabel(plat, item)}
+                                                        >
+                                                            <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} aria-hidden="true" />
+                                                        </a>
+                                                    );
+                                                })}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-end">
+                                            <div className="flex items-center justify-end gap-1.5">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => openEditSuggestion(item)}
+                                                    aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
+                                                    title="اقتراح تعديل"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                >
+                                                    <PencilLine className="h-4 w-4" aria-hidden="true" />
+                                                </Button>
+                                                {canEditEntries && (
+                                                    <a
+                                                        href={`/admin/syofficial?edit=${item.id}`}
+                                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-colors"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                                                        تعديل
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            />
                         )}
                     </>
                 )}

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
-import { CurrencyIcon } from '@/Components/Icons/ProjectIcons';
+import { PageBody, PageHeader } from '@/Components/layout';
 import {
     convert,
     parseAmount,
@@ -41,21 +41,13 @@ export default function CurrencyIndex({ currency }: CurrencyPageProps) {
     return (
         <MainLayout>
             <div className="min-h-screen bg-background text-foreground" dir="rtl">
-                <section className="border-b border-border bg-card py-7 shadow-xs sm:py-10">
-                    <div className="mx-auto max-w-4xl px-4 text-center">
-                        <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background shadow-xs sm:h-14 sm:w-14">
-                            <CurrencyIcon className="h-7 w-7 sm:h-8 sm:w-8" />
-                        </div>
-                        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
-                            تحويل الليرة السورية الجديدة والقديمة
-                        </h1>
-                        <p className="mx-auto mt-2.5 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                            أداة حساب تحويل العملة السورية بمعيار حذف صفرين (100 قديمة = 1 جديدة)، مع تقسيم الفئات للدفع ومعرض الأوراق النقدية الرسمية.
-                        </p>
-                    </div>
-                </section>
+                <PageBody className="space-y-6 sm:space-y-8">
+                    <PageHeader
+                        title="تحويل الليرة السورية الجديدة والقديمة"
+                        description="أداة حساب تحويل العملة السورية بمعيار حذف صفرين (100 قديمة = 1 جديدة)، مع تقسيم الفئات للدفع ومعرض الأوراق النقدية الرسمية."
+                        divider
+                    />
 
-                <div className="mx-auto w-full max-w-6xl space-y-6 px-3.5 py-5 sm:space-y-8 sm:px-6 sm:py-8">
                     <Alert variant="warning" className="px-3.5 py-3 sm:px-4 sm:py-3.5">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                         <div className="min-w-0 space-y-1">
@@ -123,7 +115,7 @@ export default function CurrencyIndex({ currency }: CurrencyPageProps) {
                             ))}
                         </ul>
                     </footer>
-                </div>
+                </PageBody>
             </div>
         </MainLayout>
     );

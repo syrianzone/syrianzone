@@ -14,7 +14,7 @@ import {
 import { copyText } from '@/Lib/copy';
 import { notify } from '@/Lib/notify';
 import { SYID_FACTS, type SyidFacts } from '@/Domain/syid/facts';
-import { SyidBreadcrumbs } from './_components/SyidBreadcrumbs';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { DownloadRow } from './_components/DownloadRow';
 import { FlagProportionsDiagram } from './_components/FlagProportionsDiagram';
 import './page_custom.css';
@@ -88,19 +88,16 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
 
     return (
         <MainLayout>
-            <div className="mx-auto w-full max-w-6xl space-y-12 px-4 py-6 sm:px-6 sm:py-10" dir="rtl">
-                <header className="space-y-4">
-                    <SyidBreadcrumbs currentLabel="العلم السوري" />
-
-                    <div className="space-y-2">
-                        <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-foreground">
-                            علم الجمهورية العربية السورية الجديد
-                        </h1>
-                        <p className="text-sm sm:text-base text-muted-foreground max-w-3xl leading-relaxed">
-                            تحميل علم سوريا الجديد بصيغة SVG المتّجهة وصور PNG بدقات 640 و1280 و1920 و4K، مع زر نسخ إيموجي العلم مباشرة، النسب الهندسية المعتمدة (2:3)، أكواد الألوان، والخلفيات الرسمية.
-                        </p>
-                    </div>
-                </header>
+            <PageBody className="space-y-10">
+                <PageHeader
+                    title="علم الجمهورية العربية السورية الجديد"
+                    description="تحميل علم سوريا الجديد بصيغة SVG المتّجهة وصور PNG بدقات 640 و1280 و1920 و4K، مع زر نسخ إيموجي العلم مباشرة، النسب الهندسية المعتمدة (2:3)، أكواد الألوان، والخلفيات الرسمية."
+                    breadcrumbs={[
+                        { label: 'الهوية البصرية', href: '/syid' },
+                        { label: 'العلم السوري' },
+                    ]}
+                    divider
+                />
 
                 <section aria-labelledby="flag-hero-heading" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     <Card className="lg:col-span-7 border border-border rounded-2xl overflow-hidden">
@@ -544,7 +541,7 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
                         ))}
                     </ul>
                 </footer>
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

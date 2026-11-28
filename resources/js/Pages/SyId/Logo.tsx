@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { MEDIA_BASE } from '@/Domain/govapps/media';
 import { SYID_FACTS, type SyidFacts } from '@/Domain/syid/facts';
-import { SyidBreadcrumbs } from './_components/SyidBreadcrumbs';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { DownloadRow } from './_components/DownloadRow';
 
 interface SyidLogoPageProps {
@@ -21,19 +21,16 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
 
     return (
         <MainLayout>
-            <div className="mx-auto w-full max-w-6xl space-y-12 px-4 py-6 sm:px-6 sm:py-10" dir="rtl">
-                <header className="space-y-4">
-                    <SyidBreadcrumbs currentLabel="الشعار" />
-
-                    <div className="space-y-2">
-                        <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-foreground">
-                            شعار الجمهورية العربية السورية الجديد (العقاب الذهبي)
-                        </h1>
-                        <p className="text-sm sm:text-base text-muted-foreground max-w-3xl leading-relaxed">
-                            تحميل الشعار الرسمي للجمهورية العربية السورية المُطلق في 3 تموز 2025 بصيغ SVG وPNG بدقة 4K و1080px وPDF للطباعة، بالنسخ الذهبية والأحادية (الأسود والأبيض)، مع دلالاته الرسمية وضوابط استخدامه الموثّقة.
-                        </p>
-                    </div>
-                </header>
+            <PageBody className="space-y-10">
+                <PageHeader
+                    title="شعار الجمهورية العربية السورية الجديد (العقاب الذهبي)"
+                    description="تحميل الشعار الرسمي للجمهورية العربية السورية المُطلق في 3 تموز 2025 بصيغ SVG وPNG بدقة 4K و1080px وPDF للطباعة، بالنسخ الذهبية والأحادية (الأسود والأبيض)، مع دلالاته الرسمية وضوابط استخدامه الموثّقة."
+                    breadcrumbs={[
+                        { label: 'الهوية البصرية', href: '/syid' },
+                        { label: 'الشعار' },
+                    ]}
+                    divider
+                />
 
                 <section aria-labelledby="emblem-hero-heading" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     <Card className="lg:col-span-5 border border-border rounded-2xl overflow-hidden">
@@ -301,7 +298,7 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
                             ))}
                     </ul>
                 </footer>
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

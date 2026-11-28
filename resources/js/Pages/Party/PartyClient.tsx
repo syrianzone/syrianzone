@@ -12,6 +12,7 @@ import DirectoryLoadMore from '@/Components/directory/DirectoryLoadMore';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
 import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
+import { ResponsiveTable } from '@/Components/directory/ResponsiveTable';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
@@ -200,113 +201,106 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                 })}
                             </div>
                         ) : (
-                            <div className="bg-card rounded-lg border border-border overflow-hidden">
-                                {/* Mobile 2-row-per-item list */}
-                                <ul className="md:hidden divide-y divide-border" aria-label="قائمة المنظمات">
-                                    {directory.visible.map(org => (
-                                        <li key={org.id} className="px-3.5 py-3 space-y-2">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="text-sm font-semibold text-foreground leading-snug">{org.name}</div>
-                                                    {org.description && (
-                                                        <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{org.description}</div>
-                                                    )}
-                                                </div>
-                                                {org.type && (
-                                                    <Badge variant="secondary" className="font-normal text-[10px] shrink-0 whitespace-nowrap">{org.type}</Badge>
+                            <ResponsiveTable
+                                items={directory.visible}
+                                getKey={(org) => org.id}
+                                mobileLabel="قائمة المنظمات"
+                                headerClassName="bg-muted"
+                                renderMobileItem={(org) => (
+                                    <>
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="text-sm font-semibold text-foreground leading-snug">{org.name}</div>
+                                                {org.description && (
+                                                    <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{org.description}</div>
                                                 )}
                                             </div>
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span className="text-xs text-muted-foreground truncate">{org.formattedLocation || '—'}</span>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    {safeHttpUrl(org.website) && (
-                                                        <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                            <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني" aria-label={`الموقع الإلكتروني — ${org.name}`}>
-                                                                <Globe className="h-4 w-4" aria-hidden="true" />
-                                                            </a>
-                                                        </Button>
-                                                    )}
-                                                    {org.socialX && formatSocialUrl('x', org.socialX) && (
-                                                        <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                                            <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.x} aria-label={`${SOCIAL_LABEL.x} — ${org.name}`}>
-                                                                <Twitter className="h-4 w-4" aria-hidden="true" />
-                                                            </a>
-                                                        </Button>
-                                                    )}
-                                                    {org.socialFb && formatSocialUrl('facebook', org.socialFb) && (
-                                                        <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                            <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.facebook} aria-label={`${SOCIAL_LABEL.facebook} — ${org.name}`}>
-                                                                <Facebook className="h-4 w-4" aria-hidden="true" />
-                                                            </a>
-                                                        </Button>
-                                                    )}
-                                                </div>
+                                            {org.type && (
+                                                <Badge variant="secondary" className="font-normal text-[10px] shrink-0 whitespace-nowrap">{org.type}</Badge>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs text-muted-foreground truncate">{org.formattedLocation || '—'}</span>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                {safeHttpUrl(org.website) && (
+                                                    <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                        <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني" aria-label={`الموقع الإلكتروني — ${org.name}`}>
+                                                            <Globe className="h-4 w-4" aria-hidden="true" />
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                                {org.socialX && formatSocialUrl('x', org.socialX) && (
+                                                    <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                                        <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.x} aria-label={`${SOCIAL_LABEL.x} — ${org.name}`}>
+                                                            <Twitter className="h-4 w-4" aria-hidden="true" />
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                                {org.socialFb && formatSocialUrl('facebook', org.socialFb) && (
+                                                    <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                        <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.facebook} aria-label={`${SOCIAL_LABEL.facebook} — ${org.name}`}>
+                                                            <Facebook className="h-4 w-4" aria-hidden="true" />
+                                                        </a>
+                                                    </Button>
+                                                )}
                                             </div>
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                {/* Desktop table */}
-                                <div className="hidden md:block">
-                                    <Table>
-                                        <TableHeader className="bg-muted">
-                                            <TableRow>
-                                                <TableHead className="text-start font-bold">المنظمة</TableHead>
-                                                <TableHead className="text-start font-bold">النوع</TableHead>
-                                                <TableHead className="text-start font-bold">الموقع</TableHead>
-                                                <TableHead className="text-start font-bold">تواصل</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {directory.visible.map(org => (
-                                                <TableRow key={org.id} className="hover:bg-muted/50 border-border transition-colors">
-                                                    <TableCell className="font-medium align-top">
-                                                        <div className="text-base text-foreground font-semibold">{org.name}</div>
-                                                        {org.description && (
-                                                            <div className="text-xs text-muted-foreground mt-1 line-clamp-2 max-w-sm">
-                                                                {org.description}
-                                                            </div>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="whitespace-nowrap align-top">
-                                                        {org.type && <Badge variant="secondary" className="font-normal">{org.type}</Badge>}
-                                                    </TableCell>
-                                                    <TableCell className="whitespace-nowrap align-top text-muted-foreground">
-                                                        <div className="flex flex-col gap-1">
-                                                            {org.formattedLocation && <span>{org.formattedLocation}</span>}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="align-top">
-                                                        <div className="flex flex-wrap gap-2 text-muted-foreground">
-                                                            {safeHttpUrl(org.website) && (
-                                                                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                                    <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني" aria-label={`الموقع الإلكتروني — ${org.name}`}>
-                                                                        <Globe className="h-4 w-4" aria-hidden="true" />
-                                                                    </a>
-                                                                </Button>
-                                                            )}
-                                                            {org.socialX && formatSocialUrl('x', org.socialX) && (
-                                                                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                                                    <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.x} aria-label={`${SOCIAL_LABEL.x} — ${org.name}`}>
-                                                                        <Twitter className="h-4 w-4" aria-hidden="true" />
-                                                                    </a>
-                                                                </Button>
-                                                            )}
-                                                            {org.socialFb && formatSocialUrl('facebook', org.socialFb) && (
-                                                                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                                    <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.facebook} aria-label={`${SOCIAL_LABEL.facebook} — ${org.name}`}>
-                                                                        <Facebook className="h-4 w-4" aria-hidden="true" />
-                                                                    </a>
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </div>
+                                        </div>
+                                    </>
+                                )}
+                                desktopHeader={
+                                    <TableRow>
+                                        <TableHead className="text-start font-bold">المنظمة</TableHead>
+                                        <TableHead className="text-start font-bold">النوع</TableHead>
+                                        <TableHead className="text-start font-bold">الموقع</TableHead>
+                                        <TableHead className="text-start font-bold">تواصل</TableHead>
+                                    </TableRow>
+                                }
+                                renderDesktopRow={(org) => (
+                                    <TableRow key={org.id} className="hover:bg-muted/50 border-border transition-colors">
+                                        <TableCell className="font-medium align-top">
+                                            <div className="text-base text-foreground font-semibold">{org.name}</div>
+                                            {org.description && (
+                                                <div className="text-xs text-muted-foreground mt-1 line-clamp-2 max-w-sm">
+                                                    {org.description}
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="whitespace-nowrap align-top">
+                                            {org.type && <Badge variant="secondary" className="font-normal">{org.type}</Badge>}
+                                        </TableCell>
+                                        <TableCell className="whitespace-nowrap align-top text-muted-foreground">
+                                            <div className="flex flex-col gap-1">
+                                                {org.formattedLocation && <span>{org.formattedLocation}</span>}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="align-top">
+                                            <div className="flex flex-wrap gap-2 text-muted-foreground">
+                                                {safeHttpUrl(org.website) && (
+                                                    <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                        <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني" aria-label={`الموقع الإلكتروني — ${org.name}`}>
+                                                            <Globe className="h-4 w-4" aria-hidden="true" />
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                                {org.socialX && formatSocialUrl('x', org.socialX) && (
+                                                    <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                                        <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.x} aria-label={`${SOCIAL_LABEL.x} — ${org.name}`}>
+                                                            <Twitter className="h-4 w-4" aria-hidden="true" />
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                                {org.socialFb && formatSocialUrl('facebook', org.socialFb) && (
+                                                    <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                        <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.facebook} aria-label={`${SOCIAL_LABEL.facebook} — ${org.name}`}>
+                                                            <Facebook className="h-4 w-4" aria-hidden="true" />
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            />
                         )}
 
                         {directory.hasMore && <DirectoryLoadMore onClick={directory.loadMore} />}

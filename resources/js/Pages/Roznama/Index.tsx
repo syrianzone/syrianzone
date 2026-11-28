@@ -55,6 +55,7 @@ interface F3aliaEvent {
 
 import { Label } from "@/Components/ui/label";
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
 import {
     accountPatchForLocation,
@@ -372,16 +373,25 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                 style={{ fontFamily: "var(--site-font, inherit)" }}
             >
                 
-                <section className="bg-card py-10 shadow-sm border-b border-border">
-                    <div className="container mx-auto px-4 text-center max-w-4xl">
-                        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
-                            الروزنامة السورية {mounted ? currentYear : displayYear} — التقويم والعطل الرسمية
-                        </h1>
-                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                            الروزنامة (التقويم) السورية لعرض التاريخ اليوم ميلادياً وهجرياً، والأعياد والعطل الرسمية، وكم باقي على رمضان ومواقيت الصلاة بتوقيت دمشق (وتُعرف أيضاً باسم «روزناما» سوريا).
-                        </p>
-                    </div>
-                </section>
+                <PageBody className="pb-2">
+                    <PageHeader
+                        title={`الروزنامة السورية ${mounted ? currentYear : displayYear} — التقويم والعطل الرسمية`}
+                        description="الروزنامة (التقويم) السورية لعرض التاريخ اليوم ميلادياً وهجرياً، والأعياد والعطل الرسمية، وكم باقي على رمضان ومواقيت الصلاة بتوقيت دمشق (وتُعرف أيضاً باسم «روزناما» سوريا)."
+                        divider
+                        actions={mounted ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-9 gap-1.5"
+                                onClick={() => setRoznamaSettingsOpen(true)}
+                            >
+                                <Settings className="h-4 w-4" aria-hidden="true" />
+                                <span>إعدادات الموقع والصلاة</span>
+                            </Button>
+                        ) : undefined}
+                    />
+                </PageBody>
 
                 {!mounted && (
                 <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">

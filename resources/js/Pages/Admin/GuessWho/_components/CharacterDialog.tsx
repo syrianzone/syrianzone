@@ -18,9 +18,18 @@ export interface GuessWhoCharacterData {
     name_ar: string;
     name_en: string;
     image_path: string;
+    image_url?: string;
     attributes?: Record<string, string> | null;
     is_active: boolean;
     category?: { id: number; name_ar: string };
+}
+
+export function guessWhoImageSrc(ch: Pick<GuessWhoCharacterData, 'image_path' | 'image_url'>): string {
+    if (ch.image_url) return ch.image_url;
+    if (ch.image_path.startsWith('http://') || ch.image_path.startsWith('https://') || ch.image_path.startsWith('/')) {
+        return ch.image_path;
+    }
+    return `/storage/${ch.image_path}`;
 }
 
 /** Parse `key: value` lines into an object (Filament KeyValue equivalent). */
@@ -87,7 +96,7 @@ export default function CharacterDialog({ open, onOpenChange, character, categor
             setNameEn(character.name_en || '');
             setAttributesText(stringifyAttributes(character.attributes));
             setIsActive(character.is_active ?? true);
-            setImagePreview(`/storage/${character.image_path}`);
+            setImagePreview(guessWhoImageSrc(character));
         } else {
             setCategoryId(defaultCategoryId ? String(defaultCategoryId) : (categories[0] ? String(categories[0].id) : ''));
             setNameAr('');

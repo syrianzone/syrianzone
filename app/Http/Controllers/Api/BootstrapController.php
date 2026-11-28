@@ -88,7 +88,6 @@ class BootstrapController extends Controller
     private function mediaBaseUrl(): string
     {
         $url = config('filesystems.disks.r2.url')
-            ?: env('R2_PUBLIC_URL')
             ?: Facts::media()['public_base'];
 
         return rtrim((string) $url, '/');

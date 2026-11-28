@@ -9,7 +9,6 @@ use App\Support\Agents\AgentContext;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -60,14 +59,8 @@ class DeleteGuessWhoCharacterTool extends AuditedTool
             $character->delete();
         });
 
-        if ($imagePath && str_starts_with($imagePath, 'guesswho/') && ! GuessWhoCharacter::where('image_path', $imagePath)->exists()) {
-            try {
-                if (Storage::disk('public')->exists($imagePath)) {
-                    Storage::disk('public')->delete($imagePath);
-                }
-            } catch (\Throwable $e) {
-                report($e);
-            }
+        if ($imagePath && ! GuessWhoCharacter::where('image_path', $imagePath)->exists()) {
+            GuessWhoCharacter::deleteStoredImage($imagePath);
         }
 
         return Response::structured([

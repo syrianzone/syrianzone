@@ -215,7 +215,7 @@ class PromisesAdminController extends Controller
         $file = $request->file('image');
         $filename = Str::uuid().'.'.$file->extension();
 
-        if (config('filesystems.disks.r2.bucket')) {
+        if (config('filesystems.media_disk', 'public') === 'r2' && ! empty(config('filesystems.disks.r2.bucket'))) {
             $path = "promises/{$folder}/{$filename}";
             $disk = Storage::disk('r2');
             $disk->putFileAs("promises/{$folder}", $file, $filename, 'public');

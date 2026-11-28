@@ -168,29 +168,25 @@ class GuessWhoAdminController extends Controller
     }
 
     /**
-     * Store the uploaded image on the public disk under guesswho/characters
-     * and return the relative path (game renders it via /storage/...).
+     * Store the uploaded image on the configured media disk under
+     * `guesswho/characters` and return the relative key (`image_url` resolves
+     * it to R2 or `/storage/...`).
      */
     private function storeImage($file): string
     {
+        $diskName = GuessWhoCharacter::mediaDisk();
         $name = Str::random(16) . '_' . time() . '.' . $file->getClientOriginalExtension();
 
-        return $file->storeAs('guesswho/characters', $name, 'public');
+        if ($diskName === 'r2') {
+            return Storage::disk('r2')->putFileAs('guesswho/characters', $file, $name, 'public');
+        }
+
+        return $file->storeAs('guesswho/characters', $name, $diskName);
     }
 
     private function deleteImage(?string $path): void
     {
-        if (!$path) {
-            return;
-        }
-
-        try {
-            if (Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
-            }
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        GuessWhoCharacter::deleteStoredImage($path);
     }
 
     private function deleteImageIfUnused(?string $path): void

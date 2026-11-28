@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Plus, Edit3, Trash2, HelpCircle, Users } from 'lucide-react';
 import CategoryDialog, { GuessWhoCategoryData } from './_components/CategoryDialog';
-import CharacterDialog, { GuessWhoCharacterData } from './_components/CharacterDialog';
+import CharacterDialog, { GuessWhoCharacterData, guessWhoImageSrc } from './_components/CharacterDialog';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
 import { useDirectory } from '@/Components/directory/useDirectory';
@@ -223,7 +223,7 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
                                             <TableRow key={ch.id}>
                                                 <TableCell>
                                                     <img
-                                                        src={`/storage/${ch.image_path}`}
+                                                        src={guessWhoImageSrc(ch)}
                                                         alt={ch.name_ar}
                                                         width={40}
                                                         height={40}

@@ -48,9 +48,14 @@ class DeleteCompassFigureTool extends AuditedTool
             return Response::error("Compass figure #{$validated['id']} was not found. Call list-compass-figures to see valid ids.");
         }
 
-        if ($figure->image_path && str_starts_with($figure->image_path, 'compass/')) {
+        if ($figure->image_path && (str_starts_with($figure->image_path, 'compass/') || str_starts_with($figure->image_path, 'images/compass/'))) {
             try {
-                Storage::disk(config('filesystems.disks.r2.bucket') ? 'r2' : 'public')->delete($figure->image_path);
+                $useR2 = config('filesystems.media_disk', 'public') === 'r2'
+                    && ! empty(config('filesystems.disks.r2.bucket'));
+                $disk = str_starts_with($figure->image_path, 'images/compass/')
+                    ? 'public'
+                    : ($useR2 ? 'r2' : 'public');
+                Storage::disk($disk)->delete($figure->image_path);
             } catch (\Throwable $e) {
                 report($e);
             }

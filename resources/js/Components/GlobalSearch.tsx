@@ -992,47 +992,41 @@ export function MobileMenuSearchSection({
 
     return (
         <div className="flex flex-col gap-3">
-            {/* Sticky Search Bar + Filter Pills at the top of the mobile menu */}
+            {/* Search Bar + Filter Pills at the top of the mobile menu */}
             <div className="flex flex-col gap-2.5">
-                <div className="flex flex-col gap-1.5">
-                    <label
-                        htmlFor="sz-mobile-menu-search"
-                        className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-muted-foreground"
-                    >
-                        <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span>ابحث في: الأقسام · المسؤولين · المدن وخطوط السرفيس · سور القرآن · المعابر · دليل الهاتف</span>
-                    </label>
+                <label htmlFor="sz-mobile-menu-search" className="sr-only">
+                    ابحث في المنصة
+                </label>
 
-                    <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-muted/30 px-3 py-2.5 transition-all focus-within:border-primary focus-within:bg-muted/50 focus-within:ring-2 focus-within:ring-primary/20">
-                        <Search className="h-4 w-4 text-primary shrink-0" />
-                        <input
-                            id="sz-mobile-menu-search"
-                            ref={inputRef}
-                            type="text"
-                            inputMode="search"
-                            enterKeyHint="search"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="اكتب للبحث الفوري في المنصة..."
-                            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-                        />
-                        {data.loadingRemote && (
-                            <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
-                        )}
-                        {query && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setQuery('');
-                                    inputRef.current?.focus();
-                                }}
-                                aria-label="مسح البحث"
-                                className="-m-0.5 rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
+                <div className="flex h-10 items-center gap-2 rounded-lg border border-input bg-card px-3 transition-colors focus-within:ring-1 focus-within:ring-ring">
+                    <Search className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+                    <input
+                        id="sz-mobile-menu-search"
+                        ref={inputRef}
+                        type="text"
+                        inputMode="search"
+                        enterKeyHint="search"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="ابحث في الأقسام، المسؤولين، المدن، المعابر..."
+                        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                    />
+                    {data.loadingRemote && (
+                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                    )}
+                    {query && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setQuery('');
+                                inputRef.current?.focus();
+                            }}
+                            aria-label="مسح البحث"
+                            className="-m-0.5 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        >
+                            <X className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Category Filter Pills — always visible */}
@@ -1104,29 +1098,13 @@ export function HomeInlineSearchSection({
     return (
         <div className="mb-12">
             {/* Search Bar + Category Filter Pills */}
-            <div className="mx-auto mb-8 max-w-2xl flex flex-col gap-2.5">
-                <div className="flex items-center justify-between px-1">
-                    <label
-                        htmlFor="sz-home-inline-search"
-                        className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground"
-                    >
-                        <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span>ابحث في: الأقسام · المسؤولين · المدن وخطوط السرفيس · سور القرآن · المعابر · دليل الهاتف</span>
-                    </label>
-                    {isSearching && (
-                        <button
-                            type="button"
-                            onClick={handleReset}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline shrink-0 ms-2"
-                        >
-                            <X className="h-3.5 w-3.5" />
-                            <span>عرض كل الأقسام</span>
-                        </button>
-                    )}
-                </div>
+            <div className="mx-auto mb-7 max-w-2xl flex flex-col gap-2.5">
+                <label htmlFor="sz-home-inline-search" className="sr-only">
+                    ابحث في المنصة
+                </label>
 
-                <div className="flex items-center gap-2.5 rounded-2xl border border-border/80 bg-card/80 px-4 py-3 shadow-2xs transition-all focus-within:border-primary focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/20">
-                    <Search className="h-5 w-5 text-primary shrink-0" />
+                <div className="flex h-11 items-center gap-2.5 rounded-lg border border-input bg-card px-3.5 transition-colors focus-within:ring-1 focus-within:ring-ring">
+                    <Search className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
                     <input
                         id="sz-home-inline-search"
                         ref={inputRef}
@@ -1143,10 +1121,19 @@ export function HomeInlineSearchSection({
                             }
                         }}
                         placeholder="ابحث عن أداة، مسؤول، مدينة، خط سرفيس، سورة، معبر، أو رقم طوارئ..."
-                        className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
+                        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                     />
                     {data.loadingRemote && (
                         <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                    )}
+                    {isSearching && (
+                        <button
+                            type="button"
+                            onClick={handleReset}
+                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground shrink-0"
+                        >
+                            <span>كل الأقسام</span>
+                        </button>
                     )}
                     {query ? (
                         <button

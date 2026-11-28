@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { usePage } from '@inertiajs/react'
 import Navbar from './Navbar'
+import SiteFooter from './SiteFooter'
 import UnblockSyriaNotification from './UnblockSyriaNotification'
 import { DevRoleSwitcher } from './DevRoleSwitcher'
 import { FocusModeProvider } from '@/Contexts/FocusModeContext'
@@ -24,7 +25,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
 
   return (
     <FocusModeProvider value={focusValue}>
-      <div className={fullBleed ? 'flex flex-col h-dvh overflow-hidden' : ''}>
+      <div className={fullBleed ? 'flex flex-col h-dvh overflow-hidden' : 'flex min-h-dvh flex-col'}>
         {!focus && (
           <a
             href="#main-content"
@@ -38,11 +39,12 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
           id="main-content"
           tabIndex={-1}
           className={
-            (fullBleed ? 'flex-1 min-h-0 overflow-hidden ' : '') + 'focus:outline-none'
+            (fullBleed ? 'flex-1 min-h-0 overflow-hidden ' : 'flex-1 ') + 'focus:outline-none'
           }
         >
           {children}
         </main>
+        {!focus && !fullBleed && <SiteFooter />}
         {/* The popup is suppressed for the whole transit section. */}
         {routeFamily(path) !== 'transit' && <UnblockSyriaNotification />}
         <DevRoleSwitcher />

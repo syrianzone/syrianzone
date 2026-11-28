@@ -18,15 +18,15 @@ export function DesktopSearchTrigger({ className = '' }: { className?: string })
             variant="outline"
             onClick={() => setSearchOpen(true)}
             aria-label={`بحث سريع في المنصة (${shortcutLabel})`}
-            className={`hidden lg:inline-flex h-9 items-center justify-between gap-3 rounded-xl border-border/80 bg-muted/40 px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ${className}`}
+            className={`hidden lg:inline-flex h-9 items-center justify-between gap-3 rounded-lg border-input bg-card/70 px-3 text-xs font-medium text-muted-foreground shadow-none hover:bg-accent/60 hover:text-foreground transition-colors ${className}`}
         >
             <span className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
                 <span>بحث سريع...</span>
             </span>
             <kbd
                 dir="ltr"
-                className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded-md border border-border bg-background px-1.5 font-mono text-[10px] font-semibold text-muted-foreground shadow-2xs"
+                className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted/60 px-1.5 font-mono text-[10px] font-medium text-muted-foreground"
             >
                 {shortcutLabel}
             </kbd>

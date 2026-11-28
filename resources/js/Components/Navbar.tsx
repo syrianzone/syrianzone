@@ -38,6 +38,7 @@ import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
 import { DesktopSearchTrigger } from './DesktopSearchTrigger';
 import { Logo } from '@/Components/brand/Logo';
+import { Node } from '@/Components/brand/Node';
 import { groupSiteLinks, useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { isActive, pathnameOf, routeFamily, routeSegment } from '@/Lib/routes';
 import { siteModule, type SiteModuleGroup } from '@/Lib/siteModules';
@@ -336,37 +337,37 @@ function DomainPanel({
   footer?: React.ReactNode;
 }) {
   return (
-    <div
+      <div
       id={`sz-nav-panel-${id}`}
       role="region"
       aria-label={title}
-      className="w-[min(640px,92vw)] max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-xl border bg-popover p-4 text-popover-foreground shadow-lg"
+      className="w-[min(620px,92vw)] max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-lg border border-border bg-popover p-3.5 text-popover-foreground shadow-md"
       dir="rtl"
     >
-      <p className="mb-3 flex items-center gap-2 px-1 text-xs font-extrabold text-muted-foreground">
-        <span aria-hidden="true" className="inline-block size-1.5 shrink-0 rounded-[2px] bg-sz-node" />
+      <p className="mb-2.5 flex items-center gap-2 px-1.5 font-display text-sm font-bold text-foreground">
+        <Node size="sm" />
         {title}
       </p>
-      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
         {links.map((link) => {
           const Icon = link.icon;
           const active = isActive(link.href, pathname);
           const itemClass = cn(
-            'group flex items-start gap-3 rounded-lg p-2.5 text-start transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            active && 'bg-accent/70 text-primary',
+            'group flex items-start gap-2.5 rounded-md px-2.5 py-2 text-start transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            active && 'bg-accent text-primary',
           );
           const body = (
             <>
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+              <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center">
                 {link.image && link.imageDark ? (
                   <>
-                    <img src={link.image} alt="" loading="lazy" decoding="async" className="h-6 w-6 object-contain dark:hidden" />
-                    <img src={link.imageDark} alt="" loading="lazy" decoding="async" className="hidden h-6 w-6 object-contain dark:block" />
+                    <img src={link.image} alt="" loading="lazy" decoding="async" className="h-5 w-5 object-contain dark:hidden" />
+                    <img src={link.imageDark} alt="" loading="lazy" decoding="async" className="hidden h-5 w-5 object-contain dark:block" />
                   </>
                 ) : link.image ? (
-                  <img src={link.image} alt="" loading="lazy" decoding="async" className="h-6 w-6 object-contain" />
+                  <img src={link.image} alt="" loading="lazy" decoding="async" className="h-5 w-5 object-contain" />
                 ) : Icon ? (
-                  <Icon className="h-6 w-6 shrink-0" />
+                  <Icon className="h-5 w-5 shrink-0" />
                 ) : null}
               </span>
               <span className="min-w-0 flex-1">
@@ -683,26 +684,26 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
               dir="rtl"
               style={{ '--sz-menu-x': `${menuOrigin.x}px`, '--sz-menu-y': `${menuOrigin.y}px` } as React.CSSProperties}
             >
-              <SheetHeader className="flex-row items-center justify-between gap-2 space-y-0 px-4 pt-4 pb-2 text-right shrink-0">
-                <SheetTitle className="flex h-10 items-center">
+              <SheetHeader className="flex-row items-center justify-between gap-2 space-y-0 h-14 border-b border-border px-4 text-start shrink-0">
+                <SheetTitle className="flex h-9 items-center">
                   <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
-                    <SiteLogo className="h-8" />
+                    <SiteLogo className="h-7" />
                   </Link>
                 </SheetTitle>
                 <SheetClose asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 shrink-0"
+                    className="h-9 w-9 shrink-0"
                     title="إغلاق"
                     aria-label="إغلاق القائمة"
                   >
-                    <X className="h-6 w-6" />
+                    <X className="h-5 w-5" aria-hidden="true" />
                   </Button>
                 </SheetClose>
               </SheetHeader>
 
-              <div className="flex flex-1 flex-col justify-between gap-4 px-6 sm:px-10 pb-6">
+              <div className="flex flex-1 flex-col justify-between gap-4 px-4 pt-3 pb-6">
                 <div className="flex flex-col gap-4">
                   {isTransitPage && (
                     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">

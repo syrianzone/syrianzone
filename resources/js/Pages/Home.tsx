@@ -14,6 +14,7 @@ import UserNav from '@/Components/UserNav';
 import AppearanceMenu from '@/Components/AppearanceMenu';
 import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
 import { Logo } from '@/Components/brand/Logo';
+import { Node } from '@/Components/brand/Node';
 import F3aliaEvents from '@/Pages/Home/_components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_lib/links';
 import { readCustomLinks, saveCustomLinks } from '@/Pages/Home/_lib/links';
@@ -177,36 +178,36 @@ export default function Home() {
         <MainLayout>
             
       <h1 className="sr-only">المساحة السورية</h1>
-            <div className="min-h-screen text-foreground transition-colors" dir="rtl">
-                <header className="hidden lg:block border-b border-border bg-card/60 backdrop-blur-sm">
-                    <div className="mx-auto max-w-6xl px-3 pt-1.5 pb-3 flex items-center justify-between gap-4">
+            <div className="text-foreground transition-colors" dir="rtl">
+                <header className="hidden lg:block sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+                    <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
                         <div className="flex items-center gap-5">
                         <a href="/" className="flex items-center shrink-0">
-                            <Logo className="h-10 w-auto" title="المساحة السورية" />
+                            <Logo className="h-9 w-auto" title="المساحة السورية" />
                         </a>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             {prayerMini && (
                                 <span className="flex items-center gap-1.5 whitespace-nowrap">
                                     <span className="font-semibold text-foreground">{prayerMini.label}</span>
-                                    <span dir="ltr" className="tabular-nums">{prayerMini.time}</span>
+                                    <span dir="ltr" className="font-mono tabular-nums">{prayerMini.time}</span>
                                 </span>
                             )}
                             {prayerMini && weatherMini && (
-                                <div className="w-px h-6 bg-border shrink-0" />
+                                <div className="w-px h-4 bg-border shrink-0" />
                             )}
                             {weatherMini && (
                                 <span className="flex items-center gap-1.5 whitespace-nowrap">
                                     <span className="[&>svg]:w-4 [&>svg]:h-4"><WeatherIcon code={weatherMini.icon} /></span>
-                                    <span className="font-semibold text-foreground">{weatherMini.temp}°C</span>
+                                    <span className="font-semibold tabular-nums text-foreground">{weatherMini.temp}°C</span>
                                     <span>{weatherMini.description}</span>
                                 </span>
                             )}
                             {(prayerMini || weatherMini) && (
-                                <div className="w-px h-6 bg-border shrink-0" />
+                                <div className="w-px h-4 bg-border shrink-0" />
                             )}
                             {mounted && (
                                 <span className="whitespace-nowrap font-medium text-foreground">
-                                    {formatGregorianSyrian(new Date())} <span aria-hidden="true">•</span> {formatHijriDate(new Date())}
+                                    {formatGregorianSyrian(new Date())} <span aria-hidden="true" className="text-muted-foreground">·</span> <span className="text-muted-foreground">{formatHijriDate(new Date())}</span>
                                 </span>
                             )}
                         </div>
@@ -214,15 +215,15 @@ export default function Home() {
                         <div className="flex items-center gap-1.5">
                             <AppearanceMenu />
                             <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} title="الإعدادات" aria-label="الإعدادات">
-                                <Settings className="h-5 w-5" />
+                                <Settings className="h-5 w-5" aria-hidden="true" />
                             </Button>
-                            <div className="w-px h-6 bg-border shrink-0" />
+                            <div className="w-px h-5 bg-border shrink-0" />
                             {user ? (
                                 <UserNav />
                             ) : (
-                                <Button variant="ghost" size="sm" asChild className="gap-2">
+                                <Button variant="outline" size="sm" asChild className="h-9 gap-2">
                                     <a href="/auth/google" className="flex items-center gap-2">
-                                        <svg className="h-4 w-4" viewBox="0 0 24 24">
+                                        <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
                                             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                             <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                                             <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
@@ -236,31 +237,31 @@ export default function Home() {
                     </div>
                 </header>
 
-                <div className="container mx-auto px-4 pt-6 pb-12 max-w-6xl">
-                    {/* Both rows fill in after mount (device clock, stored location):
-                        their heights are reserved so the page below does not jump. */}
-                    <div className="flex flex-col items-center gap-1 mb-6 min-h-12 lg:hidden">
+                <div className="mx-auto w-full max-w-[76rem] px-4 pt-5 pb-12 md:px-8">
+                    {/* Compact mobile status bar: date + weather + next prayer on one calm strip */}
+                    <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-3.5 py-2.5 text-xs lg:hidden min-h-11">
                         {mounted && (
-                            <>
-                                <span className="text-base font-bold text-foreground">{formatGregorianSyrian(new Date())}</span>
-                                <span className="text-sm text-primary font-medium">{formatHijriDate(new Date())}</span>
-                            </>
+                            <div className="min-w-0">
+                                <span className="font-semibold text-foreground">{formatGregorianSyrian(new Date())}</span>
+                                <span className="mx-1.5 text-muted-foreground" aria-hidden="true">·</span>
+                                <span className="text-muted-foreground">{formatHijriDate(new Date())}</span>
+                            </div>
                         )}
-                    </div>
-
-                    <div className={`flex items-center justify-center gap-4 mb-6 text-sm lg:hidden ${showWeather || showPrayerTimes ? 'min-h-5' : ''}`}>
-                        {showWeather && weather && (
-                            <span className="flex items-center gap-1.5 text-muted-foreground">
-                                <span className="[&>svg]:w-5 [&>svg]:h-5"><WeatherIcon code={weather.icon} /></span>
-                                <span className="font-semibold text-foreground">{weather.temp}°C</span>
-                                <span className="text-xs">{weather.description}</span>
-                            </span>
-                        )}
-                        {prayerMini && (
-                            <span className="flex items-center gap-1.5 text-muted-foreground">
-                                <span className="font-semibold text-foreground">{prayerMini.label}</span>
-                                <span dir="ltr" className="tabular-nums text-xs">{prayerMini.time}</span>
-                            </span>
+                        {(weatherMini || prayerMini) && (
+                            <div className="flex items-center gap-3 text-muted-foreground shrink-0">
+                                {weatherMini && (
+                                    <span className="inline-flex items-center gap-1">
+                                        <span className="[&>svg]:w-4 [&>svg]:h-4"><WeatherIcon code={weatherMini.icon} /></span>
+                                        <span className="font-semibold tabular-nums text-foreground">{weatherMini.temp}°</span>
+                                    </span>
+                                )}
+                                {prayerMini && (
+                                    <span className="inline-flex items-center gap-1">
+                                        <span className="font-semibold text-foreground">{prayerMini.label}</span>
+                                        <span dir="ltr" className="font-mono tabular-nums">{prayerMini.time}</span>
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
 
@@ -316,10 +317,10 @@ export default function Home() {
                                 );
                             };
 
-                            const bentoCard = 'rounded-[calc(var(--radius)+4px)] border border-border/70 bg-card/80 p-4 sm:p-5';
+                            const bentoCard = 'rounded-xl border border-border bg-card p-4 sm:p-5';
                             const renderHeading = (id: string, title: string) => (
-                                <h2 id={id} className="mb-4 flex items-center gap-2 text-base font-extrabold text-foreground">
-                                    <span aria-hidden="true" className="inline-block size-1.5 shrink-0 rounded-[2px] bg-sz-node" />
+                                <h2 id={id} className="mb-4 flex items-center gap-2 font-display text-lg font-bold tracking-tight text-foreground">
+                                    <Node size="sm" />
                                     {title}
                                 </h2>
                             );
@@ -397,27 +398,28 @@ export default function Home() {
                     </HomeInlineSearchSection>
 
                     <div>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-foreground">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-foreground">
+                                <Node size="sm" />
                                 روابط مخصصة
                             </h2>
                             <div className="flex gap-2">
                                 <Button
                                     variant={editMode ? "default" : "outline"}
                                     size="sm"
+                                    className="h-8 gap-1.5 text-xs"
                                     onClick={() => setEditMode(!editMode)}
-                                    className={editMode ? "" : "bg-muted text-foreground border-border hover:bg-accent"}
                                 >
-                                    <Edit className="w-4 h-4 me-2" />
+                                    <Edit className="w-3.5 h-3.5" aria-hidden="true" />
                                     {editMode ? 'تم' : 'تعديل'}
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="sm"
+                                    className="h-8 gap-1.5 text-xs"
                                     onClick={() => setAddLinkOpen(true)}
-                                    className="bg-muted text-foreground border-border hover:bg-accent"
                                 >
-                                    <Plus className="w-4 h-4 me-2" />
+                                    <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                                     إضافة
                                 </Button>
                             </div>
@@ -541,46 +543,22 @@ export default function Home() {
                                 })}
                             </div>
                         ) : (
-                            <Card className="border-dashed border-2 border-border bg-transparent">
-                                <CardContent className="p-12 text-center">
-                                    <p className="text-muted-foreground mb-4">
-                                        لا توجد روابط مخصصة
-                                    </p>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setAddLinkOpen(true)}
-                                        className="bg-muted text-foreground border-border hover:bg-accent"
-                                    >
-                                        <Plus className="w-4 h-4 me-2" />
-                                        إضافة رابط
-                                    </Button>
-                                </CardContent>
-                            </Card>
+                            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-card/50 px-4 py-4">
+                                <p className="text-sm text-muted-foreground">
+                                    أضف اختصارات لمواقعك وأدواتك اليومية للوصول إليها بسرعة.
+                                </p>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 gap-1.5 text-xs"
+                                    onClick={() => setAddLinkOpen(true)}
+                                >
+                                    <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                                    إضافة رابط
+                                </Button>
+                            </div>
                         )}
                     </div>
-                    <footer className="mt-4 border-t border-border pt-6 flex flex-col items-center gap-3">
-                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                            <a href="/about" className="flex items-center gap-1.5 hover:text-primary transition-colors">
-                                <Info className="h-4 w-4" />
-                                <span>عن المنصة</span>
-                            </a>
-                            <span aria-hidden="true">•</span>
-                            <a href="/stats" className="flex items-center gap-1.5 hover:text-primary transition-colors">
-                                <BarChart3 className="h-4 w-4" />
-                                <span>الإحصائيات</span>
-                            </a>
-                            <span aria-hidden="true">•</span>
-                            <a href="/privacy" className="flex items-center gap-1.5 hover:text-primary transition-colors">
-                                <Shield className="h-4 w-4" />
-                                <span>سياسة الخصوصية</span>
-                            </a>
-                            <span aria-hidden="true">•</span>
-                            <a href="/terms" className="flex items-center gap-1.5 hover:text-primary transition-colors">
-                                <FileText className="h-4 w-4" />
-                                <span>الشروط والأحكام</span>
-                            </a>
-                        </div>
-                    </footer>
                 </div>
 
                 {settingsOpen && (

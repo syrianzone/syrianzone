@@ -19,7 +19,9 @@ import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
 const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 import DirectoryViewToggle, { type DirectoryView } from '@/Components/directory/DirectoryViewToggle';
+import { ProgressiveListFooter } from '@/Components/directory/ProgressiveListFooter';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
+import { useProgressiveList } from '@/Lib/useProgressiveList';
 import { PageBody, PageHeader } from '@/Components/layout';
 
 interface SyOfficialClientProps {
@@ -153,15 +155,32 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
     const canOpenPanel = canModule('syofficial');
     const canEditEntries = canAny('syofficial.edit');
 
+    const orderedFiltered = useMemo(() => {
+        if (currentCategory !== 'all') return filteredData;
+        const result: OfficialEntity[] = [];
+        categoryList.forEach(cat => {
+            if (cat.key !== 'all') {
+                result.push(...filteredData.filter(item => item.category === cat.key));
+            }
+        });
+        return result;
+    }, [filteredData, currentCategory, categoryList]);
+
+    const progressive = useProgressiveList(orderedFiltered, {
+        initial: 28,
+        step: 35,
+        resetKey: `${directory.query}|${currentCategory}|${viewMode}`,
+    });
+
     const groupedData = useMemo(() => {
         if (currentCategory !== 'all') {
-            return { [currentCategory]: filteredData };
+            return { [currentCategory]: progressive.visibleItems };
         }
 
         const groups: { [key: string]: OfficialEntity[] } = {};
         categoryList.forEach(cat => {
             if (cat.key !== 'all') {
-                groups[cat.key] = filteredData.filter(item => item.category === cat.key);
+                groups[cat.key] = progressive.visibleItems.filter(item => item.category === cat.key);
             }
         });
 
@@ -170,7 +189,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
         });
 
         return groups;
-    }, [filteredData, currentCategory, categoryList]);
+    }, [progressive.visibleItems, currentCategory, categoryList]);
 
     const t = TRANSLATIONS[language];
     const ui = LANGUAGE_META[language];
@@ -452,7 +471,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                             </div>
                         ) : (
                             <ResponsiveTable
-                                items={filteredData}
+                                items={progressive.visibleItems}
                                 getKey={(item) => item.id}
                                 mobileLabel={t.tableName}
                                 renderMobileItem={(item) => (
@@ -612,6 +631,12 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                 )}
                             />
                         )}
+                        <ProgressiveListFooter
+                            hasMore={progressive.hasMore}
+                            remaining={progressive.remaining}
+                            onShowMore={progressive.showMore}
+                            sentinelRef={progressive.sentinelRef}
+                        />
                     </>
                 )}
             </PageBody>

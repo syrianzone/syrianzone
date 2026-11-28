@@ -412,7 +412,7 @@ export default function GovtCvsIndex({
                 {allOfficialsIndex.length > 0 && (
                     <section
                         aria-labelledby="all-officials-index-heading"
-                        className="border-t border-border pt-8"
+                        className="border-t border-border pt-8 [content-visibility:auto] [contain-intrinsic-size:auto_600px]"
                     >
                         <div className="mb-4 flex items-center justify-between gap-2">
                             <h2

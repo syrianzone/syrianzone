@@ -206,7 +206,7 @@ export default function MinistriesIndex({
                 <section
                     id="government-timeline"
                     aria-labelledby="timeline-heading"
-                    className="scroll-mt-20 space-y-5"
+                    className="scroll-mt-20 space-y-5 [content-visibility:auto] [contain-intrinsic-size:auto_1200px]"
                 >
                     <div className="space-y-1">
                         <h2
@@ -230,7 +230,7 @@ export default function MinistriesIndex({
                 </section>
 
                 {/* 3. Mergers, Splits & Structural Changes */}
-                <section aria-labelledby="restructurings-heading" className="space-y-5">
+                <section aria-labelledby="restructurings-heading" className="space-y-5 [content-visibility:auto] [contain-intrinsic-size:auto_900px]">
                     <div className="space-y-1">
                         <h2
                             id="restructurings-heading"

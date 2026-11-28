@@ -9,6 +9,8 @@ import SmartFilterSearch from '@/Components/SmartFilterSearch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/Components/ui/accordion';
 import { ChartColumn, LayoutGrid, List, Plus, SearchX } from 'lucide-react';
 import { PageBody, PageHeader } from '@/Components/layout';
+import { ProgressiveListFooter } from '@/Components/directory/ProgressiveListFooter';
+import { useProgressiveList } from '@/Lib/useProgressiveList';
 import { toggleFilterValue, type SmartFilterValue } from '@/Lib/smartFilterSearch';
 import { cn } from '@/Lib/utils';
 import PromiseCard, { type PromiseCardLayout } from './_components/PromiseCard';
@@ -42,6 +44,11 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
     const [value, setValue] = useRemember<SmartFilterValue>(initialValue, 'promises.filters');
     const base = useMemo(() => filterPromises(promises, value), [promises, value]);
     const visible = useMemo(() => visiblePromises(base, value, dueSoonDays), [base, value, dueSoonDays]);
+    const progressive = useProgressiveList(visible, {
+        initial: 18,
+        step: 24,
+        resetKey: `${value.search}|${value.sort}|${JSON.stringify(value.filters)}`,
+    });
     const stateFacet = useMemo(() => facets.find((facet) => facet.key === 'state'), [facets]);
     const searchFacets = useMemo(() => facets.filter((facet) => facet.key !== 'state'), [facets]);
     const stateOptions = useMemo(() => stateFacet?.options.map((option) => ({
@@ -186,9 +193,17 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
                                 onFilter={(key, id) => changeFilters(narrowFromChart(value, key, id) ?? value)} />
                         </Suspense>
                     ) : (
+                        <>
                         <div className={layout === 'list' ? 'flex flex-col gap-2 sm:gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
-                            {visible.map((p) => <PromiseCard key={p.id} promise={p} returnUrl={listUrl} layout={layout} />)}
+                            {progressive.visibleItems.map((p) => <PromiseCard key={p.id} promise={p} returnUrl={listUrl} layout={layout} />)}
                         </div>
+                        <ProgressiveListFooter
+                            hasMore={progressive.hasMore}
+                            remaining={progressive.remaining}
+                            onShowMore={progressive.showMore}
+                            sentinelRef={progressive.sentinelRef}
+                        />
+                        </>
                     )
                 ) : (
                     <Card>

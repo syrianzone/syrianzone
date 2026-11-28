@@ -27,7 +27,9 @@ import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
 const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
+import { ProgressiveListFooter } from '@/Components/directory/ProgressiveListFooter';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
+import { useProgressiveList } from '@/Lib/useProgressiveList';
 import { PageBody, PageHeader } from '@/Components/layout';
 
 interface PhonebookProps {
@@ -111,6 +113,12 @@ export default function Index({ initialData, categories: serverCategories = [] }
         facets,
         sort: shortCodesFirst,
         initialQuery,
+    });
+
+    const progressive = useProgressiveList(directory.results, {
+        initial: 25,
+        step: 30,
+        resetKey: `${directory.query}|${JSON.stringify(directory.value.filters)}|${viewMode}`,
     });
 
     const handleCopy = async (number: string, id: string) => {
@@ -242,8 +250,9 @@ export default function Index({ initialData, categories: serverCategories = [] }
                         />
                     ) : viewMode === 'grid' ? (
                         
+                        <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {directory.results.map(item => (
+                            {progressive.visibleItems.map(item => (
                                 <Card key={item.id} className="overflow-hidden hover:shadow-md transition-all border border-border bg-card flex flex-col justify-between">
                                     <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
                                         <div className="flex items-start justify-between gap-2">
@@ -340,10 +349,17 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                 </Card>
                             ))}
                         </div>
+                        <ProgressiveListFooter
+                            hasMore={progressive.hasMore}
+                            remaining={progressive.remaining}
+                            onShowMore={progressive.showMore}
+                            sentinelRef={progressive.sentinelRef}
+                        />
+                        </>
                     ) : (
-                        
+                        <>
                         <ResponsiveTable
-                            items={directory.results}
+                            items={progressive.visibleItems}
                             getKey={(item) => item.id}
                             mobileLabel="قائمة أرقام الهاتف"
                             headerClassName="bg-muted"
@@ -544,6 +560,13 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                 </TableRow>
                             )}
                         />
+                        <ProgressiveListFooter
+                            hasMore={progressive.hasMore}
+                            remaining={progressive.remaining}
+                            onShowMore={progressive.showMore}
+                            sentinelRef={progressive.sentinelRef}
+                        />
+                        </>
                     )}
 
                     <Card className="border-border bg-muted/20 shadow-xs p-5 mt-8">

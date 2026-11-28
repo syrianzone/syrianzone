@@ -9,7 +9,9 @@ import { Facebook, Twitter } from '@/Components/ui/icons';
 import type { SmartFilterValue } from '@/Lib/smartFilterSearch';
 import type { DirectoryFacet } from '@/Components/directory/useDirectory';
 import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
+import { ProgressiveListFooter } from '@/Components/directory/ProgressiveListFooter';
 import { useDirectory } from '@/Components/directory/useDirectory';
+import { useProgressiveList } from '@/Lib/useProgressiveList';
 import type { Member2026 } from './members2026';
 import { AGE_LABEL, ageGroupOf, SOCIAL_LABEL, socialGroupOf } from './ParliamentChart2026';
 
@@ -78,6 +80,12 @@ export default function MemberTable2026({ members, filters }: { members: Member2
         return c;
     }, [members]);
 
+    const progressive = useProgressiveList(filtered, {
+        initial: 25,
+        step: 40,
+        resetKey: `${status}|${directory.query}|${gov}|${gender}|${selection}|${age}|${social}`,
+    });
+
     return (
         <div className="space-y-6">
             <Card>
@@ -101,8 +109,9 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                             لا توجد نتائج
                         </div>
                     ) : (
+                        <>
                         <ResponsiveTable
-                            items={filtered}
+                            items={progressive.visibleItems}
                             getKey={(m) => m.member_number || m.name_ar}
                             mobileLabel="قائمة أعضاء مجلس الشعب"
                             renderMobileItem={(m) => (
@@ -220,6 +229,13 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                                 </TableRow>
                             )}
                         />
+                        <ProgressiveListFooter
+                            hasMore={progressive.hasMore}
+                            remaining={progressive.remaining}
+                            onShowMore={progressive.showMore}
+                            sentinelRef={progressive.sentinelRef}
+                        />
+                        </>
                     )}
                 </CardContent>
             </Card>

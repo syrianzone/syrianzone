@@ -282,7 +282,7 @@ Route::get('/syid/logo', [ExternalDataController::class, 'syidLogo']);
 Route::get('/syid/flag', [ExternalDataController::class, 'syidFlag']);
 Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors']);
 Route::get('/sites', [ExternalDataController::class, 'sites']);
-Route::get('/party', [ExternalDataController::class, 'party']);
+Route::redirect('/party', '/', 301);
 Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/house/members/{member_number}', [ExternalDataController::class, 'houseMember'])->where('member_number', '[0-9]+');
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);

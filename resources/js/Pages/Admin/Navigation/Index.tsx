@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { router } from '@inertiajs/react';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -23,13 +23,11 @@ import {
 } from '@/Components/ui/dialog';
 import {
     ArrowDown,
-    ArrowRight,
     ArrowUp,
     Edit,
     Eye,
     EyeOff,
     Globe,
-    LayoutGrid,
     Plus,
     RotateCcw,
     Save,
@@ -386,59 +384,46 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
     };
 
     return (
-        <MainLayout>
-            <h1 className="sr-only">إدارة أيقونات وأقسام المنصة</h1>
-            <div className="container mx-auto px-4 py-8 max-w-5xl space-y-6" dir="rtl">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                            <Link href="/dashboard" className="hover:text-foreground inline-flex items-center gap-1">
-                                <ArrowRight className="w-3.5 h-3.5" />
-                                لوحة التحكم
-                            </Link>
-                            <span>/</span>
-                            <span>إدارة الأيقونات والقوائم</span>
-                        </div>
-                        <h2 className="text-2xl font-extrabold flex items-center gap-2.5">
-                            <LayoutGrid className="w-6 h-6 text-primary" />
-                            إدارة أيقونات وأقسام المنصة (Single Source of Truth)
-                        </h2>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            تحكم بترتيب وإظهار أو إخفاء الأقسام في الصفحة الرئيسية، الشريط العلوي، قائمة الجوال، وتطبيق Flutter عبر <code dir="ltr" className="text-xs bg-muted px-1.5 py-0.5 rounded">/api/v1/navigation</code>.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={openCreateModal}
-                            className="gap-1.5 font-bold"
-                        >
-                            <Plus className="w-4 h-4" />
-                            إضافة عنصر جديد
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleResetDefaults}
-                            disabled={saving}
-                            className="gap-1.5 text-destructive hover:text-destructive"
-                        >
-                            <RotateCcw className="w-4 h-4" />
-                            الافتراضي
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={handleSaveAll}
-                            disabled={saving}
-                            className="gap-1.5 font-bold"
-                        >
-                            <Save className="w-4 h-4" />
-                            {saving ? 'جارٍ الحفظ...' : 'حفظ التغييرات'}
-                        </Button>
-                    </div>
+        <AdminLayout
+            title="إدارة أيقونات وأقسام المنصة"
+            subtitle="تحكم بترتيب وإظهار أو إخفاء الأقسام في الصفحة الرئيسية، الشريط العلوي، قائمة الجوال، وتطبيق الجوال."
+            activeSection="site_navigation"
+            actions={
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={openCreateModal}
+                        className="gap-1.5 font-bold"
+                    >
+                        <Plus className="w-4 h-4" />
+                        إضافة عنصر جديد
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResetDefaults}
+                        disabled={saving}
+                        className="gap-1.5 text-destructive hover:text-destructive"
+                    >
+                        <RotateCcw className="w-4 h-4" />
+                        الافتراضي
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSaveAll}
+                        disabled={saving}
+                        className="gap-1.5 font-bold"
+                    >
+                        <Save className="w-4 h-4" />
+                        {saving ? 'جارٍ الحفظ...' : 'حفظ التغييرات'}
+                    </Button>
                 </div>
+            }
+        >
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
@@ -929,7 +914,6 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                         </form>
                     </DialogContent>
                 </Dialog>
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

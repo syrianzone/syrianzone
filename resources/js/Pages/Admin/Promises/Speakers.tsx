@@ -1,7 +1,7 @@
 import { promisesApi } from '@/Domain/promises/api';
 import { useMemo, useRef, useState } from 'react';
-import { router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { Head, router } from '@inertiajs/react';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -21,7 +21,7 @@ import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import SpeakerPicker from '@/Domain/promises/SpeakerPicker';
 import { PENDING_SPEAKER_LABEL, SPEAKER_SOURCE_LABEL } from '@/Domain/promises/status';
 import type { SpeakerOption } from '@/Domain/promises/types';
-import AdminHeader from './_components/AdminHeader';
+import AdminNav from './_components/AdminNav';
 import { useCan } from '@/Lib/useCan';
 import type { AdminSpeaker } from './_lib/types';
 
@@ -144,16 +144,17 @@ export default function PromiseSpeakers({ speakers, institutions, queueCount }: 
     };
 
     return (
-        <MainLayout>
-            <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8" dir="rtl">
-                <AdminHeader
-                    title="أصحاب التصريحات"
-                    current="speakers"
-                    queueCount={queueCount}
-                    actions={canManage && (
-                        <Button onClick={openCreate} className="gap-2"><UserPlus className="h-4 w-4" aria-hidden="true" />إضافة شخص جديد</Button>
-                    )}
-                />
+        <AdminLayout
+            title="أصحاب التصريحات"
+            activeSection="promises"
+            publicHref="/promises"
+            publicLabel="عرض عداد الوعود"
+            actions={canManage ? (
+                <Button size="sm" onClick={openCreate} className="gap-2"><UserPlus className="h-4 w-4" aria-hidden="true" />إضافة شخص جديد</Button>
+            ) : undefined}
+        >
+            <Head title="أصحاب التصريحات" />
+            <AdminNav current="speakers" queueCount={queueCount} />
 
                 {canManage && (
                     <Card>
@@ -235,7 +236,6 @@ export default function PromiseSpeakers({ speakers, institutions, queueCount }: 
                         </div>
                     </CardContent>
                 </Card>
-            </div>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent dir="rtl" className="sm:max-w-lg">
@@ -292,6 +292,6 @@ export default function PromiseSpeakers({ speakers, institutions, queueCount }: 
                     </form>
                 </DialogContent>
             </Dialog>
-        </MainLayout>
+        </AdminLayout>
     );
 }

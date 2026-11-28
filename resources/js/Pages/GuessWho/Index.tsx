@@ -130,7 +130,7 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
                 <div {...tabs.panelProps('create')} className="space-y-6">
                   <div>
                     <h2 className="text-lg font-extrabold text-foreground mb-1">اختر فئة الشخصيات</h2>
-                    <p className="text-xs text-muted-foreground mb-4">سيتم سحب ٢٤ شخصية من الفئة المحددة بشكل متطابق لك ولخصمك.</p>
+                    <p className="text-xs text-muted-foreground mb-4">سيتم سحب 24 شخصية من الفئة المحددة بشكل متطابق لك ولخصمك.</p>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[340px] overflow-y-auto ps-1">
                       {total_characters >= 12 && (
@@ -243,7 +243,7 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
 
             <div className="grid md:grid-cols-3 gap-6">
               <Card className="bg-card/50 border-border/80 rounded-2xl p-5 shadow-sm text-center flex flex-col items-center gap-3">
-                <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-black text-primary text-lg">١</div>
+                <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-black text-primary text-lg">1</div>
                 <span className="font-extrabold text-base text-foreground">اختر بطلاً سرياً</span>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   يختار كل لاعب بطاقة بطل سرّي في بداية اللعبة. هدف خصمك هو معرفة من هو بطلّك السري، والعكس صحيح!
@@ -251,7 +251,7 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
               </Card>
 
               <Card className="bg-card/50 border-border/80 rounded-2xl p-5 shadow-sm text-center flex flex-col items-center gap-3">
-                <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-black text-primary text-lg">٢</div>
+                <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-black text-primary text-lg">2</div>
                 <span className="font-extrabold text-base text-foreground">اطرح أسئلة ذكية</span>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   تبادل الأسئلة التي يُجاب عليها بـ "نعم" أو "لا" (مثلاً: "هل بطلّك لديه لحية؟"). استبعد الشخصيات بالنقر عليها وتظليلها بناءً على الإجابة.
@@ -259,7 +259,7 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
               </Card>
 
               <Card className="bg-card/50 border-border/80 rounded-2xl p-5 shadow-sm text-center flex flex-col items-center gap-3">
-                <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-black text-primary text-lg">٣</div>
+                <div className="h-10 w-10 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-black text-primary text-lg">3</div>
                 <span className="font-extrabold text-base text-foreground">خَمِّن البطل لتفوز</span>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   عندما يتبقى لديك بطل واحد محتمل وتتأكد من إجابتك، استخدم زر "تخمين الشخصية". التخمين الصحيح يفوزك باللعبة مباشرة!

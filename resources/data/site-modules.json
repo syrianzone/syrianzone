@@ -204,6 +204,7 @@
    "fullBleedPrefixes": [
     "/transit/studio",
     "/transit/admin",
+    "/admin/transit",
     "/transit/city"
    ],
    "group": "maps",
@@ -685,65 +686,46 @@
  ],
  "adminSections": [
   {
-   "id": "transit",
-   "label": "ترانزيت",
-   "href": "/transit/admin",
+   "id": "suggestions",
+   "label": "صندوق الاقتراحات",
+   "href": "/admin/suggestions",
+   "group": "moderation",
    "gate": {
-    "capability": "transit.review_drafts"
+    "anyOf": [
+     "govtcvs.edit",
+     "syofficial.edit",
+     "govapps.edit",
+     "phonebook.edit",
+     "promises.review",
+     "places.review",
+     "places.approve",
+     "transit.review_drafts"
+    ]
    }
   },
   {
    "id": "places",
    "label": "مشوار",
    "href": "/admin/places",
+   "group": "moderation",
    "gate": {
     "module": "places"
    }
   },
   {
-   "id": "syofficial",
-   "label": "الحسابات الرسمية",
-   "href": "/admin/syofficial",
+   "id": "transit",
+   "label": "ترانزيت",
+   "href": "/admin/transit",
+   "group": "moderation",
    "gate": {
-    "module": "syofficial"
-   }
-  },
-  {
-   "id": "govapps",
-   "label": "التطبيقات الحكومية",
-   "href": "/admin/govapps",
-   "gate": {
-    "module": "govapps"
-   }
-  },
-  {
-   "id": "guesswho",
-   "label": "من هو؟",
-   "href": "/admin/guesswho",
-   "gate": {
-    "capability": "guesswho.manage"
-   }
-  },
-  {
-   "id": "phonebook",
-   "label": "دليل الهاتف",
-   "href": "/admin/phonebook",
-   "gate": {
-    "module": "phonebook"
-   }
-  },
-  {
-   "id": "compass",
-   "label": "بوصلة سوريا",
-   "href": "/admin/compass",
-   "gate": {
-    "module": "compass"
+    "capability": "transit.review_drafts"
    }
   },
   {
    "id": "promises",
    "label": "عداد الوعود",
    "href": "/admin/promises",
+   "group": "moderation",
    "gate": {
     "module": "promises"
    }
@@ -752,38 +734,133 @@
    "id": "govtcvs",
    "label": "السير الذاتية للمسؤولين",
    "href": "/admin/govtcvs",
+   "group": "directories",
    "gate": {
     "module": "govtcvs"
    }
   },
   {
-   "id": "assets",
-   "label": "الملفات",
-   "href": "/admin/assets",
+   "id": "syofficial",
+   "label": "الحسابات الرسمية",
+   "href": "/admin/syofficial",
+   "group": "directories",
    "gate": {
-    "capability": "assets.manage"
+    "module": "syofficial"
    }
   },
   {
-   "id": "site_popup",
-   "label": "النافذة المنبثقة",
-   "href": "/admin/site-popup",
+   "id": "govapps",
+   "label": "التطبيقات الحكومية",
+   "href": "/admin/govapps",
+   "group": "directories",
    "gate": {
-    "capability": "site.popup"
+    "module": "govapps"
+   }
+  },
+  {
+   "id": "phonebook",
+   "label": "دليل الهاتف",
+   "href": "/admin/phonebook",
+   "group": "directories",
+   "gate": {
+    "module": "phonebook"
+   }
+  },
+  {
+   "id": "crossings",
+   "label": "المنافذ الحدودية",
+   "href": "/admin/crossings",
+   "group": "directories",
+   "gate": {
+    "superadmin": true
+   }
+  },
+  {
+   "id": "sites",
+   "label": "دليل المواقع",
+   "href": "/admin/sites",
+   "group": "directories",
+   "gate": {
+    "superadmin": true
+   }
+  },
+  {
+   "id": "house",
+   "label": "مجلس الشعب 2026",
+   "href": "/admin/house",
+   "group": "directories",
+   "gate": {
+    "superadmin": true
+   }
+  },
+  {
+   "id": "polls",
+   "label": "الاستبيانات والتقييم",
+   "href": "/admin/polls",
+   "group": "interactive",
+   "gate": {
+    "module": "polls"
+   }
+  },
+  {
+   "id": "compass",
+   "label": "بوصلة سوريا",
+   "href": "/admin/compass",
+   "group": "interactive",
+   "gate": {
+    "module": "compass"
+   }
+  },
+  {
+   "id": "guesswho",
+   "label": "من هو؟",
+   "href": "/admin/guesswho",
+   "group": "interactive",
+   "gate": {
+    "capability": "guesswho.manage"
+   }
+  },
+  {
+   "id": "users",
+   "label": "المستخدمون والصلاحيات",
+   "href": "/admin/users",
+   "group": "system",
+   "gate": {
+    "capability": "users.ban"
    }
   },
   {
    "id": "site_navigation",
    "label": "الأيقونات والقوائم",
    "href": "/admin/navigation",
+   "group": "system",
    "gate": {
     "capability": "site.navigation"
+   }
+  },
+  {
+   "id": "site_popup",
+   "label": "النافذة المنبثقة",
+   "href": "/admin/site-popup",
+   "group": "system",
+   "gate": {
+    "capability": "site.popup"
+   }
+  },
+  {
+   "id": "assets",
+   "label": "الملفات",
+   "href": "/admin/assets",
+   "group": "system",
+   "gate": {
+    "capability": "assets.manage"
    }
   },
   {
    "id": "api_tokens",
    "label": "رموز الوكلاء",
    "href": "/admin/api-tokens",
+   "group": "system",
    "gate": {
     "anyCapability": true
    }

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
@@ -15,7 +15,6 @@ import {
 } from '@/Components/ui/select';
 import {
     ArrowLeft,
-    ArrowRight,
     Check,
     CheckCircle2,
     ExternalLink,
@@ -138,7 +137,7 @@ function formatTimestamp(iso: string | null): string {
     try {
         // A fixed zone keeps the server render and the browser's hydration
         // identical, and shows moderators Syrian local time.
-        return new Date(iso).toLocaleString('ar-SY', {
+        return new Date(iso).toLocaleString('ar-SY-u-nu-latn', {
             timeZone: 'Asia/Damascus',
             year: 'numeric',
             month: 'short',
@@ -365,42 +364,19 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
     };
 
     return (
-        <MainLayout>
-            <Head title="الاقتراحات الواردة" />
-            <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8" dir="rtl">
-                {/* Header */}
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-1.5">
-                        <Link
-                            href="/dashboard"
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                            العودة إلى لوحة التحكم
-                        </Link>
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            <span
-                                className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"
-                                aria-hidden="true"
-                            >
-                                <Inbox className="h-5 w-5" />
-                            </span>
-                            <h1 className="text-2xl font-extrabold text-foreground">
-                                الاقتراحات الواردة
-                            </h1>
-                            <Badge
-                                variant={overview.total_pending > 0 ? 'default' : 'secondary'}
-                                className="tabular-nums"
-                                dir="ltr"
-                            >
-                                {overview.total_pending}
-                            </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            نظرة موحّدة على جميع الاقتراحات والإضافات والبلاغات ومسودات المسارات الواردة من مختلف أقسام المنصة بانتظار المراجعة.
-                        </p>
-                    </div>
-
+        <AdminLayout
+            title="الاقتراحات الواردة"
+            subtitle="نظرة موحّدة على جميع الاقتراحات والإضافات والبلاغات ومسودات المسارات الواردة من مختلف أقسام المنصة بانتظار المراجعة."
+            activeSection="suggestions"
+            actions={
+                <div className="flex items-center gap-2">
+                    <Badge
+                        variant={overview.total_pending > 0 ? 'default' : 'secondary'}
+                        className="tabular-nums"
+                        dir="ltr"
+                    >
+                        {overview.total_pending}
+                    </Badge>
                     <Button
                         type="button"
                         variant="outline"
@@ -413,6 +389,9 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
                         تحديث
                     </Button>
                 </div>
+            }
+        >
+            <Head title="الاقتراحات الواردة" />
 
                 {/* Section overview cards */}
                 <section aria-label="ملخص الأقسام" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -997,7 +976,6 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
                         </div>
                     )}
                 </section>
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

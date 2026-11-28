@@ -357,7 +357,7 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
                                         title={`تقدم ${group.name}`}
                                     />
                                     {rows.length >= 3 && (
-                                        <Top3Podium rows={rows.slice(0, 3)} title={`أفضل ٣ - ${group.name}`} />
+                                        <Top3Podium rows={rows.slice(0, 3)} title={`أفضل 3 - ${group.name}`} />
                                     )}
                                     <LeaderboardTable
                                         rows={rows}

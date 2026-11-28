@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { apiErrorMessage } from '@/Lib/api';
 import { compassAdminApi } from '@/Domain/compass/api';
-import MainLayout from '@/Layouts/MainLayout';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -18,8 +18,9 @@ import {
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/Components/ui/table';
-import { Compass, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
 import { Textarea } from '@/Components/ui/textarea';
+import { useCan } from '@/Lib/useCan';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { AXES } from '@/Domain/compass/axes';
@@ -101,6 +102,8 @@ function emptyForm(icons: string[]): FormState {
 }
 
 export default function CompassPersonas({ personas, icons, canViewStats }: Props) {
+    const can = useCan();
+    const canManageFigures = can('compass.figures');
     const [open, setOpen] = useState(false);
     const [editing, setEditing] = useState<AdminPersona | null>(null);
     const [form, setForm] = useState<FormState>(() => emptyForm(icons));
@@ -210,28 +213,43 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
     };
 
     return (
-        <MainLayout>
-            
-            <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8" dir="rtl">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                        <Compass className="h-6 w-6 text-primary" />
-                        <h1 className="text-xl font-extrabold">أنماط بوصلة سوريا</h1>
-                        <Badge variant="secondary" className="text-[11px]">
-                            {enabledCount} مفعّل من {personas.length}
-                        </Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {canViewStats && (
-                            <Button variant="outline" asChild>
-                                <Link href="/admin/compass">الإحصاءات</Link>
-                            </Button>
-                        )}
-                        <Button onClick={openCreate} className="gap-2">
-                            <Plus className="h-4 w-4" /> إضافة نمط
-                        </Button>
-                    </div>
-                </div>
+        <AdminLayout
+            title="أنماط بوصلة سوريا"
+            subtitle={`${enabledCount} مفعّل من ${personas.length}`}
+            activeSection="compass"
+            publicHref="/compass"
+            publicLabel="عرض بوصلة سوريا"
+            actions={(
+                <Button size="sm" onClick={openCreate} className="gap-2">
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    <span>إضافة نمط</span>
+                </Button>
+            )}
+        >
+            <nav aria-label="أقسام بوصلة سوريا" className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
+                {canViewStats && (
+                    <Button asChild size="sm" variant="outline">
+                        <Link href="/admin/compass">
+                            نظرة عامة
+                        </Link>
+                    </Button>
+                )}
+                {canManageFigures && (
+                    <Button asChild size="sm" variant="outline">
+                        <Link href="/admin/compass/figures">
+                            الشخصيات
+                        </Link>
+                    </Button>
+                )}
+                <Button asChild size="sm" variant="default">
+                    <Link href="/admin/compass/personas" aria-current="page">
+                        الأنماط
+                    </Link>
+                </Button>
+                <Badge variant="secondary" className="ms-auto text-[11px]">
+                    {enabledCount} مفعّل من {personas.length}
+                </Badge>
+            </nav>
 
                 <Card>
                     <CardHeader className="pb-3">
@@ -301,7 +319,6 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                         </Table>
                     </CardContent>
                 </Card>
-            </div>
 
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
@@ -463,6 +480,6 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                     </form>
                 </DialogContent>
             </Dialog>
-        </MainLayout>
+        </AdminLayout>
     );
 }

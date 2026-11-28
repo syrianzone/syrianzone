@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CompassResult;
+use App\Models\DirectorySuggestion;
+use App\Models\Place;
+use App\Models\PlaceSave;
 use App\Models\Poll;
+use App\Models\QuranBookmark;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\User;
@@ -11,17 +16,11 @@ use App\Services\AvatarService;
 use App\Services\Users\UserModerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    /**
-     * Whether the user holds any capability in a module.
-     *
-     * Resolved from the permissions list rather than the role, so a grant made
-     * per user is honoured. There is no polls_admin role, so role-gating this
-     * is what made the polls capabilities unusable outside `admin`.
-     */
     /**
      * Draft columns the dashboard lists. `geojson` (the full drawn route, often
      * the bulk of the row) is left out: the dashboard never reads it, and the
@@ -33,6 +32,15 @@ class DashboardController extends Controller
         'status', 'rejection_reason', 'color_index', 'created_at', 'updated_at',
     ];
 
+    private const HUB_LIST_LIMIT = 30;
+
+    /**
+     * Whether the user holds any capability in a module.
+     *
+     * Resolved from the permissions list rather than the role, so a grant made
+     * per user is honoured. There is no polls_admin role, so role-gating this
+     * is what made the polls capabilities unusable outside `admin`.
+     */
     private function canModule(User $user, string $module): bool
     {
         foreach ($user->effectivePermissions() as $capability) {
@@ -47,34 +55,118 @@ class DashboardController extends Controller
     public function index(Request $request, IncomingSuggestionsOverviewService $incomingSuggestions)
     {
         $user = $request->user();
+        $hasAdminAccess = $user->isSuperAdmin() || $user->effectivePermissions() !== [];
+
         $data = [
             'role' => $user->role,
-            'incomingSuggestionsCount' => $user->isSuperAdmin()
-                ? $incomingSuggestions->totalPendingCount()
+            'hasAdminAccess' => $hasAdminAccess,
+            'incomingSuggestionsCount' => $incomingSuggestions->canAccess($user)
+                ? $incomingSuggestions->totalPendingCountFor($user)
                 : 0,
             // Studio submissions are open to every account (the endpoint takes
             // anonymous drafts too), so the rule is "not banned", not a role.
-            // The dashboard's submissions tab follows this flag instead of
-            // testing the role string, which is why a staff account that
-            // submits in the studio can now watch its own drafts.
             'canSubmitTransit' => ! $user->is_banned,
-            // The account's own drafts, whoever it is: the tab that lists them
-            // is the account's, not a role's.
+            // The account's own drafts, whoever it is.
             'myDrafts' => RouteDraft::where('user_id', $user->id)
                 ->select(self::DRAFT_LIST_COLUMNS)
                 ->with('city:id,name_ar,name_en')
                 ->orderBy('created_at', 'desc')
+                ->limit(self::HUB_LIST_LIMIT)
                 ->get(),
+            'myPlaces' => Schema::hasTable('places')
+                ? Place::where('user_id', $user->id)
+                    ->select(['id', 'name', 'category', 'status', 'rejection_reason', 'created_at'])
+                    ->orderBy('created_at', 'desc')
+                    ->limit(self::HUB_LIST_LIMIT)
+                    ->get()
+                    ->map(fn (Place $place) => [
+                        'id' => $place->id,
+                        'name' => $place->name,
+                        'category' => $place->category,
+                        'status' => $place->status,
+                        'rejection_reason' => $place->rejection_reason,
+                        'public_path' => $place->status === 'approved' ? $place->publicPath() : null,
+                        'created_at' => $place->created_at?->toIso8601String(),
+                    ])
+                    ->values()
+                : [],
+            'mySuggestions' => Schema::hasTable('directory_suggestions')
+                ? DirectorySuggestion::where('user_id', $user->id)
+                    ->select(['id', 'module', 'kind', 'target_label', 'title', 'status', 'resolution_note', 'created_at'])
+                    ->orderBy('created_at', 'desc')
+                    ->limit(self::HUB_LIST_LIMIT)
+                    ->get()
+                    ->map(fn (DirectorySuggestion $suggestion) => [
+                        'id' => $suggestion->id,
+                        'module' => $suggestion->module,
+                        'kind' => $suggestion->kind,
+                        'target_label' => $suggestion->target_label,
+                        'title' => $suggestion->title,
+                        'status' => $suggestion->status,
+                        'resolution_note' => $suggestion->resolution_note,
+                        'created_at' => $suggestion->created_at?->toIso8601String(),
+                    ])
+                    ->values()
+                : [],
+            'savedPlaces' => Schema::hasTable('place_saves') && Schema::hasTable('places')
+                ? PlaceSave::where('user_id', $user->id)
+                    ->select(['id', 'place_id', 'created_at'])
+                    ->with('place:id,name,category,status')
+                    ->orderBy('created_at', 'desc')
+                    ->limit(self::HUB_LIST_LIMIT)
+                    ->get()
+                    ->filter(fn (PlaceSave $save) => $save->place !== null)
+                    ->map(fn (PlaceSave $save) => [
+                        'id' => $save->id,
+                        'place_id' => $save->place_id,
+                        'created_at' => $save->created_at?->toIso8601String(),
+                        'place' => [
+                            'id' => $save->place->id,
+                            'name' => $save->place->name,
+                            'category' => $save->place->category,
+                            'status' => $save->place->status,
+                            'public_path' => $save->place->publicPath(),
+                        ],
+                    ])
+                    ->values()
+                : [],
+            'quranBookmarks' => Schema::hasTable('quran_bookmarks')
+                ? QuranBookmark::where('user_id', $user->id)
+                    ->select(['id', 'surah', 'ayah', 'page', 'juz', 'created_at'])
+                    ->orderBy('created_at', 'desc')
+                    ->limit(self::HUB_LIST_LIMIT)
+                    ->get()
+                    ->map(fn (QuranBookmark $bookmark) => [
+                        'id' => $bookmark->id,
+                        'surah' => $bookmark->surah,
+                        'ayah' => $bookmark->ayah,
+                        'page' => $bookmark->page,
+                        'juz' => $bookmark->juz,
+                        'created_at' => $bookmark->created_at?->toIso8601String(),
+                    ])
+                    ->values()
+                : [],
+            'compassResults' => Schema::hasTable('compass_results')
+                ? CompassResult::where('user_id', $user->id)
+                    ->select(['id', 'share_id', 'top_figure', 'top_score', 'spectrum', 'answered', 'created_at'])
+                    ->orderBy('created_at', 'desc')
+                    ->limit(self::HUB_LIST_LIMIT)
+                    ->get()
+                    ->map(fn (CompassResult $result) => [
+                        'id' => $result->id,
+                        'share_id' => $result->share_id,
+                        'top_figure' => $result->top_figure,
+                        'top_score' => $result->top_score,
+                        'spectrum' => $result->spectrum,
+                        'answered' => $result->answered,
+                        'created_at' => $result->created_at?->toIso8601String(),
+                    ])
+                    ->values()
+                : [],
         ];
 
-        // 3. Anyone holding a polls capability sees Polls management data.
-        //
-        // This was `role === 'admin' || role === 'superadmin'`, while the
-        // dashboard's own tab is gated on capabilities
-        // (canModule(perms, 'polls')). A user granted polls.create therefore
-        // saw the tab, could create a poll, and was handed an empty list — the
-        // capability was half-wired, because there is no polls_admin role and an
-        // explicit grant to a `user` account is the only way to hold one.
+        // Anyone holding a polls capability keeps receiving Polls management data
+        // so existing Inertia prop expectations remain satisfied.
         if ($this->canModule($user, 'polls')) {
             $data['polls'] = Poll::withCount('candidates')->get();
         }
@@ -188,13 +280,6 @@ class DashboardController extends Controller
      */
     public function toggleBan(Request $request, $id, UserModerationService $moderation)
     {
-        // Authorisation is the `users.ban` capability, enforced by the
-        // users_admin middleware on the route: a capability can be granted to
-        // one person, a role cannot.
-        //
-        // The refusals themselves live in the service, shared with the agent
-        // tool, so the dashboard and the MCP surface cannot diverge on who is
-        // bannable. UserModerationException is rendered by bootstrap/app.php.
         $userToBan = User::findOrFail($id);
 
         $userToBan = $moderation->toggleBanned($userToBan, $request->user());

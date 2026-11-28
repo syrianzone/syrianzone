@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
-import MainLayout from '@/Layouts/MainLayout';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { FilterChip } from '@/Components/ui/filter-chip';
@@ -204,41 +204,33 @@ export default function AssetManagerIndex() {
     };
 
     return (
-        <MainLayout>
-            
-            <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
-                
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-2">
-                            <CloudUpload className="h-7 w-7 text-primary" />
-                            إدارة ملفات Cloudflare R2 CDN
-                        </h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            رفع، تصفح، وتنزيل جميع الأصول الرقمية والملفات المخزنة على خوادم Cloudflare R2
-                        </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => fetchFiles(true)}
-                            disabled={loadingFiles}
-                        >
-                            <RefreshCw className={`h-4 w-4 me-2 ${loadingFiles ? 'animate-spin' : ''}`} />
-                            تحديث
-                        </Button>
-                        <Button 
-                            onClick={handleDownloadAll} 
-                            disabled={downloadingZip || files.length === 0}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                        >
-                            <Archive className="h-4 w-4 me-2" />
-                            {downloadingZip ? `جاري التجميع (${zipProgress}%)` : 'تنزيل الكل (ZIP)'}
-                        </Button>
-                    </div>
+        <AdminLayout
+            title="إدارة ملفات Cloudflare R2 CDN"
+            subtitle="رفع، تصفح، وتنزيل جميع الأصول الرقمية والملفات المخزنة على خوادم Cloudflare R2"
+            activeSection="assets"
+            actions={
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fetchFiles(true)}
+                        disabled={loadingFiles}
+                    >
+                        <RefreshCw className={`h-4 w-4 me-2 ${loadingFiles ? 'animate-spin' : ''}`} />
+                        تحديث
+                    </Button>
+                    <Button
+                        size="sm"
+                        onClick={handleDownloadAll}
+                        disabled={downloadingZip || files.length === 0}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                        <Archive className="h-4 w-4 me-2" />
+                        {downloadingZip ? `جاري التجميع (${zipProgress}%)` : 'تنزيل الكل (ZIP)'}
+                    </Button>
                 </div>
+            }
+        >
 
                 <Tabs defaultValue="browser" className="space-y-6">
                     <TabsList className="grid grid-cols-2 max-w-md">
@@ -496,8 +488,6 @@ export default function AssetManagerIndex() {
                         </Card>
                     </TabsContent>
                 </Tabs>
-
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

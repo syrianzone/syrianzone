@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Services\Admin\IncomingSuggestionsOverviewService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Superadmin cross-section inbox aggregating incoming suggestions, community
- * submissions, reports, and drafts from every module in one place.
+ * Cross-section inbox aggregating incoming suggestions, community
+ * submissions, reports, and drafts scoped to the authenticated user's
+ * moderation capabilities.
  */
 class IncomingSuggestionsAdminController extends Controller
 {
@@ -17,15 +19,27 @@ class IncomingSuggestionsAdminController extends Controller
         private readonly IncomingSuggestionsOverviewService $overview,
     ) {}
 
-    public function renderIndex(): Response
+    public function renderIndex(Request $request): Response
     {
+        $user = $request->user();
+
+        if (! $user || ! $this->overview->canAccess($user)) {
+            abort(403);
+        }
+
         return Inertia::render('Admin/Suggestions/Index', [
-            'initialOverview' => $this->overview->overview(),
+            'initialOverview' => $this->overview->overviewFor($user),
         ]);
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return response()->json($this->overview->overview());
+        $user = $request->user();
+
+        if (! $user || ! $this->overview->canAccess($user)) {
+            abort(403);
+        }
+
+        return response()->json($this->overview->overviewFor($user));
     }
 }

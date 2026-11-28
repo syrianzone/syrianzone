@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
@@ -116,59 +116,42 @@ export default function SyOfficialAdminIndex({
     };
 
     return (
-        <MainLayout>
-            
+        <AdminLayout
+            title="لوحة إدارة الحسابات الرسمية (SyOfficial)"
+            subtitle="إضافة، تعديل، وترتيب الجهات الرسمية والفئات واستضافة الصور عبر Cloudflare R2"
+            activeSection="syofficial"
+            publicHref="/syofficial"
+            publicLabel="عرض الحسابات الرسمية"
+            actions={canCreate ? (
+                <>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            setSelectedCategory(null);
+                            setCategoryDialogOpen(true);
+                        }}
+                        className="gap-2"
+                    >
+                        <FolderPlus className="w-4 h-4" aria-hidden="true" />
+                        <span>إضافة فئة جديدة</span>
+                    </Button>
 
-            <div className="min-h-screen py-8 bg-background" dir="rtl">
-                <div className="container mx-auto px-4 max-w-7xl">
-                    
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 pb-6 border-b border-border">
-                        <div>
-                            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                                <Globe className="w-8 h-8 text-primary shrink-0" />
-                                <span>لوحة إدارة الحسابات الرسمية (SyOfficial)</span>
-                            </h1>
-                            <p className="text-muted-foreground mt-1">إضافة، تعديل، وترتيب الجهات الرسمية والفئات واستضافة الصور عبر Cloudflare R2</p>
-                        </div>
-
-                        {(canCreate || canReorder) && (
-                            <div className="flex flex-wrap items-center gap-3">
-                                {canCreate && (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                                setSelectedCategory(null);
-                                                setCategoryDialogOpen(true);
-                                            }}
-                                            className="gap-2"
-                                        >
-                                            <FolderPlus className="w-4 h-4" />
-                                            <span>إضافة فئة جديدة</span>
-                                        </Button>
-
-                                        <Button
-                                            onClick={() => {
-                                                setSelectedEntity(null);
-                                                setEntityDialogOpen(true);
-                                            }}
-                                            className="gap-2"
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            <span>إضافة جهة جديدة</span>
-                                        </Button>
-                                    </>
-                                )}
-                                {canReorder && (
-                                    <span className="text-xs text-muted-foreground">
-                                        اسحب الصفوف لإعادة الترتيب
-                                    </span>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                    <Button
+                        size="sm"
+                        onClick={() => {
+                            setSelectedEntity(null);
+                            setEntityDialogOpen(true);
+                        }}
+                        className="gap-2"
+                    >
+                        <Plus className="w-4 h-4" aria-hidden="true" />
+                        <span>إضافة جهة جديدة</span>
+                    </Button>
+                </>
+            ) : undefined}
+        >
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                         <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-wrap h-auto max-w-full">
                             <TabsTrigger value="entities" className="gap-2 text-sm">
                                 <Globe className="w-4 h-4" />
@@ -470,8 +453,6 @@ export default function SyOfficialAdminIndex({
                             />
                         </TabsContent>
                     </Tabs>
-                </div>
-            </div>
 
             <CategoryDialog
                 open={categoryDialogOpen}
@@ -486,6 +467,6 @@ export default function SyOfficialAdminIndex({
                 entity={selectedEntity}
                 categories={categories}
             />
-        </MainLayout>
+        </AdminLayout>
     );
 }

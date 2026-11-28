@@ -1,78 +1,99 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { DEFAULT_POLL_TIMEZONE, isCorePollSlug } from '@/Domain/polls/core';
-import { Link, router, usePage } from '@inertiajs/react';
-import { apiErrorMessage } from '@/Lib/api';
-import { accountApi } from './_lib/api';
+import { Link, usePage } from '@inertiajs/react';
 import {
-  User as UserIcon,
+  ArrowUpLeft,
+  Ban,
+  BookOpen,
+  Bookmark,
+  Compass,
+  FileText,
+  LayoutGrid,
+  Loader2,
+  MapPin,
+  MessageSquarePlus,
+  Route,
+  Save,
   Settings,
   Shield,
+  Sparkles,
   Trash2,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Ban,
-  Edit,
-  Plus,
-  Loader2,
-  Megaphone,
-  LayoutGrid,
-  KeyRound,
-  CloudUpload,
-  Gamepad2,
-  Eye,
-  BarChart3,
-  X,
-  Save,
-  Compass,
-  Inbox,
 } from 'lucide-react';
-import { notify } from '@/Lib/notify';
-import { confirmDialog } from '@/Lib/confirm';
-import { apiFieldErrors } from '@/Lib/api';
-import {
-  TierlistIcon,
-  PromisesIcon,
-  GovtCvsIcon,
-  TransitIcon,
-  MishwarIcon,
-  SyOfficialIcon,
-  GovAppsIcon,
-  PhonebookIcon,
-} from '@/Components/Icons/ProjectIcons';
-import { ADMIN_SECTIONS, adminSectionAllowed } from '@/Lib/siteModules';
 import MainLayout from '@/Layouts/MainLayout';
+import { PageHeader } from '@/Components/layout/PageHeader';
+import { PageBody } from '@/Components/layout/PageShell';
 import { useAuth } from '@/Contexts/AuthContext';
-import { useCan, useCanModule } from '@/Lib/useCan';
-import { Button } from '@/Components/ui/button';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
+import { confirmDialog } from '@/Lib/confirm';
+import { notify } from '@/Lib/notify';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
+import { useTabList } from '@/Lib/useTabList';
+import { cn } from '@/Lib/utils';
+import { transitAdminApi } from '@/Domain/transit/api';
+import type { RouteDraftRow } from '@/Domain/transit/types';
 import { Badge } from '@/Components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Button } from '@/Components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import { Textarea } from '@/Components/ui/textarea';
-import { Switch } from '@/Components/ui/switch';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/Components/ui/dialog';
-import AdminPollManager from '@/Domain/polls/AdminPollManager';
-import { pollsApi } from '@/Domain/polls/api';
-import { transitAdminApi } from '@/Domain/transit/api';
-import type { DraftStatus, RouteDraftRow } from '@/Domain/transit/types';
-import type { Poll, PollCandidate, PollGroup } from '@/Domain/polls/types';
-import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import { cn } from '@/Lib/utils';
-import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
+import { accountApi } from './_lib/api';
 
-const pollPublicUrl = (slug: string) =>
-  isCorePollSlug(slug) ? '/tierlist' : `/polls/${slug}`;
+type DashboardTab = 'overview' | 'contributions' | 'saved' | 'account';
 
-const pollLeaderboardUrl = (slug: string) =>
-  isCorePollSlug(slug) ? '/tierlist/leaderboard' : `/polls/${slug}/leaderboard`;
+const TAB_IDS: readonly DashboardTab[] = ['overview', 'contributions', 'saved', 'account'] as const;
+
+interface MyPlaceRow {
+  id: number;
+  name: string;
+  category: string | null;
+  status: 'pending' | 'approved' | 'rejected' | string;
+  rejection_reason: string | null;
+  public_path: string | null;
+  created_at: string | null;
+}
+
+interface MySuggestionRow {
+  id: number;
+  module: string;
+  kind: 'add' | 'edit' | string;
+  target_label: string | null;
+  title: string | null;
+  status: 'pending' | 'accepted' | 'dismissed' | string;
+  resolution_note: string | null;
+  created_at: string | null;
+}
+
+interface SavedPlaceRow {
+  id: number;
+  place_id: number;
+  created_at: string | null;
+  place: {
+    id: number;
+    name: string;
+    category: string | null;
+    status: string;
+    public_path: string;
+  };
+}
+
+interface QuranBookmarkRow {
+  id: number;
+  surah: number;
+  ayah: number;
+  page: number | null;
+  juz: number | null;
+  created_at: string | null;
+}
+
+interface CompassResultRow {
+  id: number;
+  share_id: string | null;
+  top_figure: string | null;
+  top_score: number | null;
+  spectrum: string | null;
+  answered: number | null;
+  created_at: string | null;
+}
 
 interface DashboardProps {
   auth: {
@@ -83,28 +104,63 @@ interface DashboardProps {
       role: string;
       is_banned?: boolean;
       avatar_url: string | null;
-      /** Resolved server-side by User::effectivePermissions(); see AuthContext. */
       effective_permissions?: string[];
     };
   };
   role: string;
+  hasAdminAccess?: boolean;
   incomingSuggestionsCount?: number;
-  /** The studio's own rule, resolved server-side: any account that is not banned may submit. */
   canSubmitTransit: boolean;
   myDrafts?: RouteDraftRow[];
-  polls?: Poll[];
+  myPlaces?: MyPlaceRow[];
+  mySuggestions?: MySuggestionRow[];
+  savedPlaces?: SavedPlaceRow[];
+  quranBookmarks?: QuranBookmarkRow[];
+  compassResults?: CompassResultRow[];
 }
 
-// Rendered inside the <MainLayout> children, where the AuthProvider that
-// MainLayout mounts is an ancestor; calling useAuth() in the page component
-// body would run above the provider and throw, white-screening /dashboard.
+const MODULE_LABELS: Record<string, string> = {
+  govtcvs: 'السير الذاتية',
+  syofficial: 'الدليل الرسمي',
+  govapps: 'التطبيقات الحكومية',
+  phonebook: 'دليل الهواتف',
+};
+
+const KIND_LABELS: Record<string, string> = {
+  add: 'اقتراح إضافة',
+  edit: 'اقتراح تعديل',
+};
+
+function renderStatusBadge(status: string) {
+  if (status === 'approved' || status === 'accepted') {
+    return (
+      <Badge className="border-emerald-500/30 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400">
+        مقبول
+      </Badge>
+    );
+  }
+  if (status === 'rejected' || status === 'dismissed') {
+    return <Badge variant="destructive">مرفوض</Badge>;
+  }
+  return (
+    <Badge
+      variant="secondary"
+      className="border-amber-500/30 bg-amber-500/15 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400"
+    >
+      قيد المراجعة
+    </Badge>
+  );
+}
+
+// Rendered inside <MainLayout> children so the AuthProvider mounted by
+// MainLayout is an ancestor; calling useAuth() in the page component body
+// would run above the provider and throw.
 function AvatarUploader({ user }: { user: { name: string; avatar_url: string | null } }) {
   const { refreshUser } = useAuth();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user.avatar_url ?? null);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  // a dead avatar_url (lost file, stale Google url) falls back to the initial circle
   const [avatarBroken, setAvatarBroken] = useState(false);
 
   const handleAvatarPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,17 +183,17 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
   };
 
   return (
-    <>
+    <div className="space-y-3">
       <div className="flex items-center gap-4">
         {avatarUrl && !avatarBroken ? (
           <img
             src={avatarUrl}
             alt={user.name}
             onError={() => setAvatarBroken(true)}
-            className="h-16 w-16 rounded-full object-cover border border-border"
+            className="h-16 w-16 rounded-full border border-border object-cover"
           />
         ) : (
-          <div className="h-16 w-16 rounded-full bg-muted border border-border flex items-center justify-center text-foreground text-xl font-bold">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted text-xl font-bold text-foreground">
             {user.name.charAt(0)}
           </div>
         )}
@@ -156,7 +212,7 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
         >
           {avatarLoading ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               جارٍ الرفع
             </>
           ) : (
@@ -169,216 +225,68 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
         <div
           role={avatarMessage.type === 'error' ? 'alert' : 'status'}
           className={cn(
-          'p-4 rounded-lg text-sm',
-          avatarMessage.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/15 text-destructive'
-        )}>
+            'rounded-lg p-3 text-sm',
+            avatarMessage.type === 'success'
+              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+              : 'bg-destructive/15 text-destructive',
+          )}
+        >
           {avatarMessage.text}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
-/**
- * The drawing on each admin card. The catalogue owns the card's label, route
- * and gate; which picture sits on it is a React concern, so keys are mapped
- * here and fall back to the grid glyph rather than rendering nothing.
- */
-const ADMIN_SECTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  transit: TransitIcon,
-  places: MishwarIcon,
-  syofficial: SyOfficialIcon,
-  govapps: GovAppsIcon,
-  guesswho: Gamepad2,
-  phonebook: PhonebookIcon,
-  compass: Compass,
-  promises: PromisesIcon,
-  govtcvs: GovtCvsIcon,
-  assets: CloudUpload,
-  site_popup: Megaphone,
-  site_navigation: LayoutGrid,
-  api_tokens: KeyRound,
-};
-
-const statusBadge = (status: DraftStatus) => {
-  if (status === 'approved')
-    return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">تم القبول والنشر</Badge>;
-  if (status === 'rejected')
-    return <Badge variant="destructive">مرفوض</Badge>;
-  return <Badge variant="secondary" className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20">قيد المراجعة</Badge>;
-};
+function resolveInitialTab(pageUrl: string): DashboardTab {
+  const query = pageUrl.includes('?') ? pageUrl.slice(pageUrl.indexOf('?')) : '';
+  const tab = new URLSearchParams(query).get('tab');
+  if (tab === 'account' || tab === 'profile') return 'account';
+  if (tab === 'contributions' || tab === 'submissions') return 'contributions';
+  if (tab === 'saved') return 'saved';
+  return 'overview';
+}
 
 export default function Dashboard({
   auth,
   role,
+  hasAdminAccess = false,
   incomingSuggestionsCount = 0,
   canSubmitTransit,
   myDrafts = [],
-  polls = []
+  myPlaces = [],
+  mySuggestions = [],
+  savedPlaces = [],
+  quranBookmarks = [],
+  compassResults = [],
 }: DashboardProps) {
-  // useCan() reads usePage() props, not the AuthProvider context, so it works
-  // here even though this component renders <MainLayout> (and therefore
-  // AuthProvider) itself. The list is already resolved server-side, so this
-  // file never re-derives which role implies what.
-  const can = useCan();
-  const canModule = useCanModule();
-  const canManagePolls = canModule('polls');
-  // The admin cards, in catalogue order, filtered by the gate each one carries.
-  // A module gate is satisfied by any capability in that module; a `user`
-  // holding an explicit grant and a staff account holding the whole module are
-  // served by the same check.
-  const adminSections = ADMIN_SECTIONS.filter((section) => adminSectionAllowed(section, can, canModule));
-
-  // Declared above the tab state because the default tab is chosen with the
-  // same gates the sidebar renders with, so the landing tab is always one whose
-  // button is actually on screen.
-  // The page URL from Inertia is the same on the server and the client, so the
-  // landing tab can be derived from it without a hydration mismatch.
   const { url: pageUrl } = usePage();
-  const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(() => {
-    // ?tab=profile deep link from the navbar dropdown; profile is the only tab
-    // every account has, so it is always a safe landing place.
-    const query = pageUrl.includes('?') ? pageUrl.slice(pageUrl.indexOf('?')) : '';
-    if (new URLSearchParams(query).get('tab') === 'profile') return 'profile';
+  const [activeTab, setActiveTab] = useState<DashboardTab>(() => resolveInitialTab(pageUrl));
 
-    // Check canManagePolls first so a poll manager who may also submit routes
-    // lands on the Polls tab rather than on their (possibly empty) route
-    // submissions.
-    if (canManagePolls) return 'polls';
-    if (canSubmitTransit) return 'submissions';
-
-    return 'profile';
+  const tabs = useTabList<DashboardTab>({
+    ids: TAB_IDS,
+    active: activeTab,
+    onChange: setActiveTab,
+    dir: 'rtl',
   });
 
-  // The submissions tab belongs to the account, not to a role: anyone who may
-  // submit sees it, and an account that already has drafts keeps them even
-  // after a ban stops it submitting.
-  const showTransitSubmissions = canSubmitTransit || myDrafts.length > 0;
-
-  // Per-action poll capabilities. The tab itself opens for any polls.* holder,
-  // so without these a polls.delete-only account is offered create and edit
-  // buttons whose routes are tagged polls.create / polls.edit.
-  const canCreatePolls = can('polls.create');
-  const canEditPolls = can('polls.edit');
-  const canDeletePolls = can('polls.delete');
+  const [localMyDrafts, setLocalMyDrafts] = useState<RouteDraftRow[]>(myDrafts);
 
   const [profileName, setProfileName] = useState(auth.user.name);
-  const [profileEmail, setProfileEmail] = useState(auth.user.email);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
   const profileFormRef = useRef<HTMLFormElement>(null);
-  // Bumped only when a save fails, so the effect below runs after the errors
-  // are in the DOM — never on an ordinary re-render or while the user types.
   const [profileFailedSubmit, setProfileFailedSubmit] = useState(0);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // After a rejected save, land on the first control marked invalid instead of
-  // leaving focus on the submit button.
   useEffect(() => {
     if (!profileFailedSubmit) return;
     profileFormRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
   }, [profileFailedSubmit]);
 
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectDraftId, setRejectDraftId] = useState<number | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
-  const [rejectLoading, setRejectLoading] = useState(false);
-
-  const [localPolls, setLocalPolls] = useState<Poll[]>(polls);
-  const [localMyDrafts, setLocalMyDrafts] = useState<RouteDraftRow[]>(myDrafts);
-
-  const [apiLoading, setApiLoading] = useState<number | null>(null); // maps draft ID to loading state
-
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createTitle, setCreateTitle] = useState('');
-  const [createSlug, setCreateSlug] = useState('');
-  const [createActive, setCreateActive] = useState(true);
-  const [creating, setCreating] = useState(false);
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
-  const [editingCandidates, setEditingCandidates] = useState<PollCandidate[]>([]);
-  const [editingGroups, setEditingGroups] = useState<PollGroup[]>([]);
-  const [editingLoading, setEditingLoading] = useState(false);
-  const [editingSaving, setEditingSaving] = useState(false);
-
-  const fetchPollDetails = async (id: string) => {
-    setEditingLoading(true);
-    try {
-      const data = await pollsApi.details(id);
-      const poll = data.poll;
-      if (poll) {
-        setEditingPoll(poll);
-        setLocalPolls(prev => prev.map(p => p.id === poll.id ? { ...p, ...poll, candidates_count: data.candidates?.length ?? p.candidates_count } : p));
-      }
-      if (data.candidates) setEditingCandidates(data.candidates);
-      if (data.groups) setEditingGroups(data.groups);
-    } catch (err) {
-      notify.error(apiErrorMessage(err, 'تعذر تحميل بيانات الاستبيان'));
-      setEditingId(null);
-      setEditingPoll(null);
-    } finally {
-      setEditingLoading(false);
-    }
-  };
-
-  const openPollEditor = (poll: Poll) => {
-    setEditingId(poll.id);
-    setEditingPoll(poll);
-    setEditingCandidates([]);
-    setEditingGroups([]);
-    fetchPollDetails(poll.id);
-    // keep URL shareable without leaving the dashboard
-    const url = new URL(window.location.href);
-    url.searchParams.set('edit-poll', poll.id);
-    url.searchParams.delete('create-poll');
-    window.history.replaceState({}, '', url.toString());
-  };
-
-  const closePollEditor = () => {
-    setEditingId(null);
-    setEditingPoll(null);
-    setEditingCandidates([]);
-    setEditingGroups([]);
-    const url = new URL(window.location.href);
-    url.searchParams.delete('edit-poll');
-    url.searchParams.delete('edit');
-    window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
-  };
-
-  const handleRefreshEditor = async () => {
-    if (!editingId) return;
-    await fetchPollDetails(editingId);
-  };
-
-  // Deep links: legacy /admin/polls/* redirects (?edit-poll=, ?create-poll=1)
-  // and poll pages (?edit=) land here so the dashboard is the single editor.
-  useEffect(() => {
-    if (!canManagePolls) return;
-    const params = new URLSearchParams(window.location.search);
-    const editParam = params.get('edit-poll') ?? params.get('edit');
-    const createParam = params.get('create-poll') ?? params.get('create');
-    if (editParam) {
-      const target = localPolls.find(p => p.id === editParam || p.slug === editParam);
-      if (target) {
-        setActiveTab('polls');
-        openPollEditor(target);
-      } else {
-        // ID not in the summary list (e.g. stale link) — still try to load it.
-        setActiveTab('polls');
-        setEditingId(editParam);
-        setEditingPoll(null);
-        fetchPollDetails(editParam);
-      }
-    } else if (createParam !== null && (createParam === '1' || createParam === '')) {
-      setActiveTab('polls');
-      setCreateOpen(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const showAdminWorkspace = hasAdminAccess || role === 'superadmin';
+  const totalContributions = localMyDrafts.length + myPlaces.length + mySuggestions.length;
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -386,13 +294,13 @@ export default function Dashboard({
     setProfileMessage(null);
     setProfileErrors({});
     try {
-      await accountApi.updateProfile({ name: profileName, email: profileEmail });
+      await accountApi.updateProfile({ name: profileName, email: auth.user.email });
       setProfileMessage({ type: 'success', text: 'تم تحديث معلومات الحساب بنجاح.' });
+      notify.success('تم تحديث معلومات الحساب بنجاح');
     } catch (err) {
-      // 422 from the account endpoint: { message, errors: { name: [...], email: [...] } }
       const fields = apiFieldErrors(err, { arabicOnly: true });
       const fieldErrors = Object.fromEntries(
-        Object.keys(apiFieldErrors(err)).map((field) => [field, fields[field] ?? 'تحقق من هذه القيمة'])
+        Object.keys(apiFieldErrors(err)).map((field) => [field, fields[field] ?? 'تحقق من هذه القيمة']),
       );
       if (Object.keys(fieldErrors).length > 0) {
         setProfileErrors(fieldErrors);
@@ -406,6 +314,14 @@ export default function Dashboard({
   };
 
   const handleDeleteAccount = async () => {
+    const confirmed = await confirmDialog({
+      title: 'حذف الحساب نهائياً؟',
+      description: 'سيتم تعطيل حسابك وإزالة صورتك الشخصية وتسجيل خروجك فوراً. لا يمكن التراجع عن هذه الخطوة.',
+      destructive: true,
+      confirmText: 'حذف الحساب',
+    });
+    if (!confirmed) return;
+
     setDeleteLoading(true);
     try {
       await accountApi.deleteAccount();
@@ -416,264 +332,295 @@ export default function Dashboard({
     }
   };
 
-  const handleApproveDraft = async (id: number) => {
-    setApiLoading(id);
-    try {
-      const res = await transitAdminApi.approveDraft(id);
-      // The submission list is the page's own copy of the draft rows: without
-      // this the badge keeps reading «قيد المراجعة» until a reload.
-      setLocalMyDrafts(prev => prev.map(d => d.id === id
-        ? { ...d, status: 'approved', rejection_reason: null, route_id: res.route?.id ?? d.route_id }
-        : d));
-      notify.success('تمت الموافقة على المسار ونشره.');
-    } catch (err) {
-      notify.error(apiErrorMessage(err, 'خطأ أثناء الموافقة'));
-    } finally {
-      setApiLoading(null);
-    }
-  };
-
-  const openRejectDialog = (id: number) => {
-    setRejectDraftId(id);
-    setRejectReason('');
-    setRejectOpen(true);
-  };
-
-  const handleConfirmReject = async () => {
-    if (!rejectDraftId) return;
-    const reason = rejectReason.trim() || null;
-    setRejectLoading(true);
-    try {
-      await transitAdminApi.rejectDraft(rejectDraftId, reason);
-      setLocalMyDrafts(prev => prev.map(d => d.id === rejectDraftId
-        ? { ...d, status: 'rejected', rejection_reason: reason }
-        : d));
-      setRejectOpen(false);
-      notify.success('تم رفض المسار.');
-    } catch (err) {
-      notify.error(apiErrorMessage(err, 'خطأ أثناء الرفض'));
-    } finally {
-      setRejectLoading(false);
-      setRejectDraftId(null);
-    }
-  };
-
-  const handleDeletePoll = async (id: string, slug: string) => {
-    if (isCorePollSlug(slug)) {
-        notify.info('لا يمكن حذف استبيان تقييم الوزراء الرئيسي.');
-        return;
-    }
-    const okDelete = await confirmDialog({ title: 'حذف هذا الاستبيان؟', description: 'سيتم حذف الاستبيان وجميع المرشحين التابعين له نهائياً.', destructive: true, confirmText: 'حذف' });
-    if (!okDelete) return;
-
-    try {
-      await pollsApi.remove(id);
-      setLocalPolls(prev => prev.filter(p => p.id !== id));
-      if (editingId === id) closePollEditor();
-      notify.success('تم حذف الاستبيان.');
-    } catch (err) {
-      notify.error(apiErrorMessage(err, 'تعذر الحذف.'));
-    }
-  };
-
-  const handleCreatePoll = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (creating) return;
-    // `required` lets whitespace through; send focus to the blank field
-    // instead of ignoring the submit.
-    if (!createTitle.trim() || !createSlug.trim()) {
-      document.getElementById(!createTitle.trim() ? 'create-poll-title' : 'create-poll-slug')?.focus();
-      return;
-    }
-    setCreating(true);
-    try {
-      const created = await pollsApi.create({
-        title: createTitle.trim(),
-        slug: createSlug.trim(),
-        timezone: DEFAULT_POLL_TIMEZONE,
-        is_active: createActive,
-      });
-      setLocalPolls(prev => [...prev, { ...created, candidates_count: 0 }]);
-      setCreateOpen(false);
-      setCreateTitle('');
-      setCreateSlug('');
-      setCreateActive(true);
-      const url = new URL(window.location.href);
-      url.searchParams.delete('create-poll');
-      url.searchParams.delete('create');
-      window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
-      openPollEditor({ ...created, candidates_count: 0 });
-    } catch (err) {
-      notify.error(apiErrorMessage(err, 'تعذر إنشاء الاستبيان'));
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleSavePollMetadata = async () => {
-    if (!editingId || !editingPoll) return;
-    setEditingSaving(true);
-    try {
-      const updated = await pollsApi.update(editingId, {
-        title: editingPoll.title,
-        slug: editingPoll.slug,
-        is_active: editingPoll.is_active,
-      });
-      setEditingPoll(prev => prev ? { ...prev, ...updated } : prev);
-      setLocalPolls(prev => prev.map(p => p.id === editingId ? { ...p, ...updated } : p));
-    } catch (err) {
-      notify.error(apiErrorMessage(err, 'حدث خطأ أثناء حفظ الإعدادات'));
-    } finally {
-      setEditingSaving(false);
-    }
-  };
-
   const handleCancelMySubmission = async (id: number) => {
-    if (!(await confirmDialog({ title: 'سحب هذا الاقتراح؟', description: 'سيتم إلغاء الاقتراح ولا يمكن التراجع.', destructive: true, confirmText: 'سحب' }))) return;
+    const confirmed = await confirmDialog({
+      title: 'سحب هذا الاقتراح؟',
+      description: 'سيتم إلغاء الاقتراح ولا يمكن التراجع.',
+      destructive: true,
+      confirmText: 'سحب',
+    });
+    if (!confirmed) return;
+
     try {
       await transitAdminApi.deleteStudioRoute(id);
-      setLocalMyDrafts(prev => prev.filter(d => d.id !== id));
+      setLocalMyDrafts((prev) => prev.filter((d) => d.id !== id));
       notify.success('تم سحب الاقتراح');
     } catch (err) {
       notify.error(apiErrorMessage(err, 'تعذر سحب الاقتراح'));
     }
   };
 
-  const navItemClass = (active: boolean) =>
-    cn(
-      'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal',
-      active
-        ? 'bg-primary text-primary-foreground'
-        : 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-    );
+  const tabItems: Array<{
+    id: DashboardTab;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    count?: number;
+  }> = [
+    { id: 'overview', label: 'نظرة عامة', icon: LayoutGrid },
+    { id: 'contributions', label: 'مساهماتي', icon: FileText, count: totalContributions },
+    { id: 'saved', label: 'محفوظاتي', icon: Bookmark, count: savedPlaces.length + quranBookmarks.length + compassResults.length },
+    { id: 'account', label: 'الحساب', icon: Settings },
+  ];
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-background text-foreground font-sans antialiased" dir="rtl">
-        
-      <h1 className="sr-only">لوحة التحكم</h1>
+      <div className="min-h-screen bg-background font-sans text-foreground antialiased" dir="rtl">
+        <PageHeader
+          width="default"
+          divider
+          title="حسابي"
+          description={`مرحباً ${auth.user.name} — تابع مساهماتك ومحفوظاتك وإعدادات حسابك من مكان واحد.`}
+          actions={
+            showAdminWorkspace ? (
+              <Button asChild>
+                <Link href="/admin" className="gap-2">
+                  <Shield className="h-4 w-4" aria-hidden="true" />
+                  <span>لوحة الإدارة</span>
+                  {incomingSuggestionsCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ms-1 bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/25 tabular-nums"
+                      dir="ltr"
+                    >
+                      {incomingSuggestionsCount}
+                    </Badge>
+                  )}
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageBody width="default" className="space-y-6 pt-6">
           {auth.user.is_banned && (
-            <div role="alert" className="mb-6 flex items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
-              <Ban className="h-5 w-5 shrink-0" />
+            <div
+              role="alert"
+              className="flex items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+            >
+              <Ban className="h-5 w-5 shrink-0" aria-hidden="true" />
               <span>تم حظر حسابك من المساهمة — لا يمكنك إرسال مسارات نقل أو أماكن جديدة حالياً.</span>
             </div>
           )}
 
-          {role === 'superadmin' && (
-            <div className="flex justify-end mb-8">
-              {/* Filament panel access is the panel's own rule (User::canAccessPanel), not a module capability. */}
-              <a
-                href="/superadmin"
-                className="px-5 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg font-bold flex items-center gap-2 transition-colors shadow-lg"
-              >
-                <Shield className="h-5 w-5" />
-                لوحة الإدارة الفيدرالية (Filament)
-              </a>
+          <div
+            {...tabs.tabListProps}
+            aria-label="أقسام الحساب"
+            className="flex items-center gap-1.5 overflow-x-auto border-b border-border pb-2"
+          >
+            {tabItems.map(({ id, label, icon: Icon, count }) => {
+              const selected = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  {...tabs.tabProps(id)}
+                  className={cn(
+                    'inline-flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    selected
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  )}
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  <span>{label}</span>
+                  {typeof count === 'number' && count > 0 && (
+                    <span
+                      className={cn(
+                        'rounded-full px-1.5 py-0.5 text-xs tabular-nums',
+                        selected
+                          ? 'bg-primary-foreground/20 text-primary-foreground'
+                          : 'bg-muted text-muted-foreground',
+                      )}
+                      dir="ltr"
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {activeTab === 'overview' && (
+            <div {...tabs.panelProps('overview')} className="space-y-6">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">مساهماتي</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold tabular-nums">{totalContributions}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">خطوط، أماكن، واقتراحات</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">المحفوظات</CardTitle>
+                    <Bookmark className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold tabular-nums">{savedPlaces.length}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">أماكن محفوظة في مشوار</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">علامات القرآن</CardTitle>
+                    <BookOpen className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold tabular-nums">{quranBookmarks.length}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">مواضع محفوظة للتلاوة</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">بوصلة سوريا</CardTitle>
+                    <Compass className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-bold tabular-nums">{compassResults.length}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">نتائج محفوظة للبوصلة</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">إجراءات سريعة</CardTitle>
+                  <CardDescription>انتقل مباشرةً إلى أكثر الأدوات والخدمات استخداماً.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Link
+                    href="/board"
+                    className="group flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4 transition-colors hover:border-primary/40 hover:bg-muted/60"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">لوحة الإعلانات</p>
+                        <p className="text-xs text-muted-foreground">تصفّح وساهم في السبورة</p>
+                      </div>
+                    </div>
+                    <ArrowUpLeft className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+                  </Link>
+
+                  <Link
+                    href="/mishwar"
+                    className="group flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4 transition-colors hover:border-primary/40 hover:bg-muted/60"
+                  >
+                    <div className="flex items-center gap-3">
+                      <MapPin className="h-5 w-5 text-primary" aria-hidden="true" />
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">مشوار</p>
+                        <p className="text-xs text-muted-foreground">استكشف الأماكن وأضف جديداً</p>
+                      </div>
+                    </div>
+                    <ArrowUpLeft className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+                  </Link>
+
+                  {canSubmitTransit && (
+                    <a
+                      href="/transit/studio"
+                      className="group flex items-center justify-between rounded-xl border border-border bg-muted/30 p-4 transition-colors hover:border-primary/40 hover:bg-muted/60"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Route className="h-5 w-5 text-primary" aria-hidden="true" />
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">استوديو التنقل</p>
+                          <p className="text-xs text-muted-foreground">اقترح خط نقل جديد</p>
+                        </div>
+                      </div>
+                      <ArrowUpLeft className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+                    </a>
+                  )}
+
+                  {showAdminWorkspace && (
+                    <Link
+                      href="/admin"
+                      className="group flex items-center justify-between rounded-xl border border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/50 hover:bg-primary/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Shield className="h-5 w-5 text-primary" aria-hidden="true" />
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">لوحة الإدارة</p>
+                          <p className="text-xs text-muted-foreground">
+                            {incomingSuggestionsCount > 0
+                              ? `${incomingSuggestionsCount} عنصر بانتظار المراجعة`
+                              : 'إدارة المحتوى والمراجعات'}
+                          </p>
+                        </div>
+                      </div>
+                      <ArrowUpLeft className="h-4 w-4 text-primary transition-transform group-hover:-translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+                    </Link>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 
-          <div className="flex flex-col lg:flex-row gap-8">
-            <aside className="w-full lg:w-64 shrink-0">
-              <nav aria-label="أقسام لوحة التحكم" className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0">
-                {role === 'superadmin' && (
-                  <Link
-                    href="/admin/suggestions"
-                    className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-primary/10 text-primary hover:bg-primary/15 border border-primary/20"
-                  >
-                    <span className="flex items-center gap-3">
-                      <Inbox className="h-5 w-5" aria-hidden="true" />
-                      الاقتراحات الواردة
-                    </span>
-                    {incomingSuggestionsCount > 0 && (
-                      <Badge variant="default" className="tabular-nums" dir="ltr">
-                        {incomingSuggestionsCount}
-                      </Badge>
-                    )}
-                  </Link>
-                )}
-
-                {showTransitSubmissions && (
-                  <button type="button" aria-pressed={activeTab === 'submissions'} onClick={() => setActiveTab('submissions')} className={navItemClass(activeTab === 'submissions')}>
-                    <TransitIcon className="h-5 w-5" />
-                    اقتراحاتي للخطوط
-                  </button>
-                )}
-
-                {canManagePolls && (
-                  <button type="button" aria-pressed={activeTab === 'polls'} onClick={() => setActiveTab('polls')} className={navItemClass(activeTab === 'polls')}>
-                    <TierlistIcon className="h-5 w-5" />
-                    تير ليست
-                  </button>
-                )}
-
-                {adminSections.map((section) => {
-                  const Icon = ADMIN_SECTION_ICONS[section.id] ?? LayoutGrid;
-                  return (
-                    <Link
-                      key={section.id}
-                      href={section.href}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    >
-                      <Icon className="h-5 w-5" />
-                      {section.label}
-                    </Link>
-                  );
-                })}
-
-                <button type="button" aria-pressed={activeTab === 'profile'} onClick={() => setActiveTab('profile')} className={navItemClass(activeTab === 'profile')}>
-                  <Settings className="h-5 w-5" />
-                  الحساب
-                </button>
-              </nav>
-            </aside>
-
-            <div className="flex-1 bg-card border border-border rounded-xl p-6 shadow-sm min-h-[480px]">
-              {activeTab === 'submissions' && showTransitSubmissions && (
-                <div>
-                  <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-                    <TransitIcon className="h-6 w-6" />
-                    سجل اقتراحات المسارات الخاصة بك
-                  </h2>
-
+          {activeTab === 'contributions' && (
+            <div {...tabs.panelProps('contributions')} className="space-y-6">
+              <Card>
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Route className="h-5 w-5 text-primary" aria-hidden="true" />
+                      مسودات خطوط النقل
+                    </CardTitle>
+                    <CardDescription>خطوط النقل التي اقترحتها أو عدّلتها في استوديو التنقل.</CardDescription>
+                  </div>
+                  {canSubmitTransit && (
+                    <Button asChild variant="outline" size="sm" className="w-fit">
+                      <a href="/transit/studio">اقتراح خط جديد</a>
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
                   {localMyDrafts.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <TransitIcon className="h-16 w-16 mx-auto mb-4 opacity-25" />
-                      <p className="text-lg">لم تقم بتقديم أي اقتراحات مسارات للخطوط بعد.</p>
-                      <p className="text-sm mt-1">اذهب إلى استوديو التنقل لاقتراح خط حافلة جديد للمجتمع.</p>
-                    </div>
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      لم تقدّم أي مسودات لخطوط النقل بعد.
+                    </p>
                   ) : (
-                    <div className="space-y-4">
-                      {localMyDrafts.map(draft => (
-                        <div key={draft.id} className="p-4 bg-muted/40 rounded-lg border border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                          <div>
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <span className="text-foreground font-bold text-lg">{draft.name_ar}</span>
-                              {draft.name_en && <span className="text-xs text-muted-foreground font-mono">({draft.name_en})</span>}
-                              {statusBadge(draft.status)}
+                    <div className="space-y-3">
+                      {localMyDrafts.map((draft) => (
+                        <div
+                          key={draft.id}
+                          className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-muted/30 p-4 md:flex-row md:items-center"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-foreground">{draft.name_ar}</span>
+                              {draft.name_en && (
+                                <span className="font-mono text-xs text-muted-foreground" dir="ltr">
+                                  ({draft.name_en})
+                                </span>
+                              )}
+                              {renderStatusBadge(draft.status)}
                               {draft.route_id && (
-                                <Badge variant="outline" className="border-blue-500/40 text-blue-600 dark:text-blue-400">
-                                  تعديل مقترح لخط منشور
-                                </Badge>
+                                <Badge variant="outline">تعديل لخط منشور</Badge>
                               )}
                             </div>
-                            <p className="text-muted-foreground text-xs mt-1">
-                              المدينة: {draft.city?.name_ar ?? draft.city_id} · تاريخ التقديم: {formatGregorianSyrianShort(draft.created_at)}
+                            <p className="text-xs text-muted-foreground">
+                              المدينة: {draft.city?.name_ar ?? draft.city_id} · {formatGregorianSyrianShort(draft.created_at)}
                             </p>
                             {draft.status === 'rejected' && draft.rejection_reason && (
-                              <div className="mt-2 p-2 bg-destructive/10 border border-destructive/30 rounded text-destructive text-xs">
-                                <span className="font-bold">ملاحظات التدقيق:</span> {draft.rejection_reason}
+                              <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+                                <span className="font-bold">سبب الرفض:</span> {draft.rejection_reason}
                               </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex shrink-0 flex-wrap items-center gap-2">
                             {draft.status === 'pending' && (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleCancelMySubmission(draft.id)}
-                                className="text-destructive hover:text-destructive border-destructive/40"
+                                className="border-destructive/40 text-destructive hover:text-destructive"
                               >
                                 سحب الاقتراح
                               </Button>
@@ -684,10 +631,8 @@ export default function Dashboard({
                               </Button>
                             )}
                             {draft.status === 'approved' && draft.route_id && (
-                              <Button asChild variant="outline" size="sm" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-emerald-600">
-                                <a href={`/transit/city/${draft.city_id}?route=${draft.route_id}`}>
-                                  عرض الخط المنشور
-                                </a>
+                              <Button asChild variant="outline" size="sm">
+                                <a href={`/transit/city/${draft.city_id}?route=${draft.route_id}`}>عرض الخط</a>
                               </Button>
                             )}
                           </div>
@@ -695,390 +640,384 @@ export default function Dashboard({
                       ))}
                     </div>
                   )}
-                </div>
-              )}
+                </CardContent>
+              </Card>
 
-              {activeTab === 'polls' && canManagePolls && (
-                <div>
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                      <TierlistIcon className="h-6 w-6" />
-                      إدارة استبيانات التقييم
-                    </h2>
-                    <Button aria-label={canCreatePolls ? undefined : 'يحتاج صلاحية polls.create'}
-                      onClick={() => setCreateOpen(true)}
-                      className="w-fit"
-                      disabled={!canCreatePolls}
-                      title={canCreatePolls ? undefined : 'يحتاج صلاحية polls.create'}
-                    >
-                      <Plus className="h-4 w-4" />
-                      إنشاء استبيان جديد
-                    </Button>
+              <Card>
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <MapPin className="h-5 w-5 text-primary" aria-hidden="true" />
+                      أماكن مشوار المقترحة
+                    </CardTitle>
+                    <CardDescription>الأماكن التي أضفتها إلى دليل مشوار وحالة مراجعتها.</CardDescription>
                   </div>
-
-                  {localPolls.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <AlertCircle className="h-16 w-16 mx-auto mb-4 opacity-25" />
-                      <p className="text-lg">لا توجد استبيانات مسجلة في الوقت الحالي.</p>
-                    </div>
+                  <Button asChild variant="outline" size="sm" className="w-fit">
+                    <Link href="/mishwar">تصفّح مشوار</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {myPlaces.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      لم تضف أي أماكن في مشوار بعد.
+                    </p>
                   ) : (
-                    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="الاستبيانات">
-                      <table className="w-full text-start border-collapse">
-                        <caption className="sr-only">الاستبيانات وحالتها وخيارات إدارتها</caption>
-                        <thead>
-                          <tr className="border-b border-border text-muted-foreground text-xs">
-                            <th className="pb-3 font-bold">اسم الاستبيان</th>
-                            <th className="pb-3 font-bold">الرابط الفرعي (Slug)</th>
-                            <th className="pb-3 font-bold text-center">المرشحين</th>
-                            <th className="pb-3 font-bold text-center">الحالة</th>
-                            <th className="pb-3 font-bold text-end">خيارات</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {localPolls.map(poll => {
-                            const isEditing = editingId === poll.id;
-                            return (
-                            <tr key={poll.id} className={cn("border-b border-border/60 hover:bg-muted/40 text-sm", isEditing && "bg-primary/5")}>
-                              <td className="py-4 text-foreground font-bold">{poll.title}</td>
-                              <td className="py-4 font-mono text-muted-foreground text-xs">{poll.slug}</td>
-                              <td className="py-4 text-center">{poll.candidates_count} مرشحين</td>
-                              <td className="py-4 text-center">
-                                <Badge variant={poll.is_active ? 'default' : 'secondary'} className={poll.is_active ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' : ''}>
-                                  {poll.is_active ? 'نشط' : 'معطل'}
-                                </Badge>
-                              </td>
-                              <td className="py-4 text-end">
-                                <div className="flex justify-end gap-2">
-                                  <a
-                                    href={pollPublicUrl(poll.slug)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="p-1.5 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded border border-border transition-colors"
-                                    title="عرض صفحة التصويت"
-                                    aria-label={`عرض صفحة التصويت: ${poll.title}`}
-                                  >
-                                    <Eye className="h-4 w-4" aria-hidden="true" />
-                                  </a>
-                                  <a
-                                    href={pollLeaderboardUrl(poll.slug)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="p-1.5 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded border border-border transition-colors"
-                                    title="عرض النتائج"
-                                    aria-label={`عرض النتائج: ${poll.title}`}
-                                  >
-                                    <BarChart3 className="h-4 w-4" aria-hidden="true" />
-                                  </a>
-                                  <button aria-label={
-                                      !canEditPolls
-                                        ? 'يحتاج صلاحية polls.edit'
-                                        : isEditing
-                                          ? 'إغلاق المحرر'
-                                          : 'تعديل'
-                                    }
-                                    onClick={() => (isEditing ? closePollEditor() : openPollEditor(poll))}
-                                    className={cn(
-                                      "p-1.5 rounded border border-border transition-colors",
-                                      isEditing
-                                        ? "bg-primary text-primary-foreground border-primary"
-                                        : "bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground"
-                                    )}
-                                    title={
-                                      !canEditPolls
-                                        ? 'يحتاج صلاحية polls.edit'
-                                        : isEditing
-                                          ? 'إغلاق المحرر'
-                                          : 'تعديل'
-                                    }
-                                  >
-                                    {isEditing ? <X className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
-                                  </button>
-                                  {!isCorePollSlug(poll.slug) ? (
-                                    <button aria-label={canDeletePolls ? 'حذف' : 'يحتاج صلاحية polls.delete'}
-                                      onClick={() => handleDeletePoll(poll.id, poll.slug)}
-                                      className="p-1.5 bg-muted hover:bg-destructive/15 text-muted-foreground hover:text-destructive rounded border border-border hover:border-destructive/40 transition-colors"
-                                      title={canDeletePolls ? 'حذف' : 'يحتاج صلاحية polls.delete'}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  ) : (
-                                    <span className="p-1.5 bg-muted text-muted-foreground/50 rounded border border-border cursor-not-allowed" title="استبيان غير قابل للحذف">
-                                      <Ban className="h-4 w-4" />
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                    <div className="space-y-3">
+                      {myPlaces.map((place) => (
+                        <div
+                          key={place.id}
+                          className="flex flex-col justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4 sm:flex-row sm:items-center"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-foreground">{place.name}</span>
+                              {renderStatusBadge(place.status)}
+                              {place.category && (
+                                <Badge variant="outline">{place.category}</Badge>
+                              )}
+                            </div>
+                            {place.created_at && (
+                              <p className="text-xs text-muted-foreground">
+                                تاريخ الإضافة: {formatGregorianSyrianShort(place.created_at)}
+                              </p>
+                            )}
+                            {place.status === 'rejected' && place.rejection_reason && (
+                              <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+                                <span className="font-bold">سبب الرفض:</span> {place.rejection_reason}
+                              </div>
+                            )}
+                          </div>
+                          {place.public_path && (
+                            <Button asChild variant="outline" size="sm" className="w-fit shrink-0">
+                              <Link href={place.public_path}>عرض المكان</Link>
+                            </Button>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
+                </CardContent>
+              </Card>
 
-                  {editingId && (
-                    <Card className="mt-6 border-primary/30">
-                      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Edit className="h-5 w-5 text-primary" />
-                          {editingLoading ? 'جارٍ تحميل الاستبيان…' : `تحرير: ${editingPoll?.title ?? ''}`}
-                        </CardTitle>
-                        <div className="flex items-center gap-2">
-                          {editingPoll && (
-                            <>
-                              <Button asChild variant="outline" size="sm">
-                                <a href={pollPublicUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
-                                  <Eye className="h-4 w-4 me-1" aria-hidden="true" />
-                                  عرض
-                                </a>
-                              </Button>
-                              <Button asChild variant="outline" size="sm">
-                                <a href={pollLeaderboardUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
-                                  <BarChart3 className="h-4 w-4 me-1" aria-hidden="true" />
-                                  النتائج
-                                </a>
-                              </Button>
-                            </>
-                          )}
-                          <Button variant="ghost" size="icon" onClick={closePollEditor} title="إغلاق" aria-label="إغلاق">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                        {editingLoading || !editingPoll ? (
-                          <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                            جارٍ تحميل بيانات الاستبيان…
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <MessageSquarePlus className="h-5 w-5 text-primary" aria-hidden="true" />
+                    اقتراحات الأدلة
+                  </CardTitle>
+                  <CardDescription>اقتراحات الإضافة والتعديل التي أرسلتها لأدلة المساحة السورية.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {mySuggestions.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      لم ترسل أي اقتراحات للأدلة بعد.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {mySuggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.id}
+                          className="space-y-1.5 rounded-xl border border-border bg-muted/30 p-4"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-foreground">
+                              {suggestion.title || suggestion.target_label || `اقتراح #${suggestion.id}`}
+                            </span>
+                            {renderStatusBadge(suggestion.status)}
+                            <Badge variant="outline">
+                              {MODULE_LABELS[suggestion.module] ?? suggestion.module}
+                            </Badge>
+                            <Badge variant="secondary">
+                              {KIND_LABELS[suggestion.kind] ?? suggestion.kind}
+                            </Badge>
                           </div>
-                        ) : (
-                          <>
-                            <div className="grid gap-4 md:grid-cols-2">
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-poll-title">العنوان</Label>
-                                <Input
-                                  id="edit-poll-title"
-                                  value={editingPoll.title}
-                                  onChange={e => setEditingPoll({ ...editingPoll, title: e.target.value })}
-                                />
-                              </div>
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-poll-slug">المعرف (Slug)</Label>
-                                <Input
-                                  id="edit-poll-slug"
-                                  value={editingPoll.slug}
-                                  onChange={e => setEditingPoll({ ...editingPoll, slug: e.target.value })}
-                                  className="text-left font-mono"
-                                  dir="ltr"
-                                />
-                              </div>
+                          {suggestion.created_at && (
+                            <p className="text-xs text-muted-foreground">
+                              تاريخ الإرسال: {formatGregorianSyrianShort(suggestion.created_at)}
+                            </p>
+                          )}
+                          {suggestion.resolution_note && (
+                            <div className="mt-2 rounded-lg border border-border bg-background/70 p-2 text-xs text-muted-foreground">
+                              <span className="font-semibold text-foreground">ملاحظة المراجعة:</span>{' '}
+                              {suggestion.resolution_note}
                             </div>
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  id="edit-poll-active"
-                                  checked={Boolean(editingPoll.is_active)}
-                                  onCheckedChange={checked => setEditingPoll({ ...editingPoll, is_active: checked })}
-                                />
-                                <Label htmlFor="edit-poll-active">التصويت نشط</Label>
-                              </div>
-                              <Button aria-label={canEditPolls ? undefined : 'يحتاج صلاحية polls.edit'}
-                                onClick={handleSavePollMetadata}
-                                disabled={editingSaving || !canEditPolls}
-                                title={canEditPolls ? undefined : 'يحتاج صلاحية polls.edit'}
-                              >
-                                <Save className="h-4 w-4 me-2" />
-                                {editingSaving ? 'جاري الحفظ…' : 'حفظ الإعدادات'}
-                              </Button>
-                            </div>
-                            <div className="border-t border-border pt-6">
-                              <h3 className="font-bold mb-4">إدارة المجموعات والمرشحين</h3>
-                              <AdminPollManager
-                                pollId={editingId}
-                                initialData={{ id: editingId, candidates: editingCandidates as any, groups: editingGroups as any }}
-                                onRefresh={handleRefreshEditor}
-                              />
-                            </div>
-                          </>
-                        )}
-                      </CardContent>
-                    </Card>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-                  <Dialog open={createOpen} onOpenChange={(open) => {
-                    setCreateOpen(open);
-                    if (!open) {
-                      const url = new URL(window.location.href);
-                      url.searchParams.delete('create-poll');
-                      url.searchParams.delete('create');
-                      window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
-                    }
-                  }}>
-                    <DialogContent dir="rtl" className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>إنشاء استبيان جديد</DialogTitle>
-                        <DialogDescription>
-                          أنشئ الاستبيان هنا، ثم أضف المجموعات والمرشحين من نفس اللوحة.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <form onSubmit={handleCreatePoll} className="space-y-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="create-poll-title">العنوان</Label>
-                          <Input
-                            id="create-poll-title"
-                            placeholder="مثال: تقييم الأداء الحكومي"
-                            value={createTitle}
-                            onChange={e => setCreateTitle(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="create-poll-slug">المعرف (Slug)</Label>
-                          <Input
-                            id="create-poll-slug"
-                            placeholder="مثال: govt-2025"
-                            value={createSlug}
-                            onChange={e => setCreateSlug(e.target.value)}
-                            className="text-left font-mono"
-                            dir="ltr"
-                            required
-                          />
-                          <p className="text-[11px] text-muted-foreground">أحرف لاتينية صغيرة وأرقام وشرطات فقط. يُستخدم في رابط صفحة التصويت.</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            id="create-poll-active"
-                            checked={createActive}
-                            onCheckedChange={setCreateActive}
-                          />
-                          <Label htmlFor="create-poll-active">تفعيل الاستبيان فور الإنشاء</Label>
-                        </div>
-                        <DialogFooter className="flex-row-reverse gap-2">
-                          <Button type="button" variant="outline" size="sm" onClick={() => setCreateOpen(false)}>إلغاء</Button>
-                          <Button type="submit" size="sm" disabled={creating}>
-                            {creating ? 'جاري الإنشاء…' : 'إنشاء ومتابعة التحرير'}
-                          </Button>
-                        </DialogFooter>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              )}
+          {activeTab === 'saved' && (
+            <div {...tabs.panelProps('saved')} className="space-y-6">
+              <Card>
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Bookmark className="h-5 w-5 text-primary" aria-hidden="true" />
+                      الأماكن المحفوظة
+                    </CardTitle>
+                    <CardDescription>الأماكن التي حفظتها للعودة إليها في مشوار.</CardDescription>
+                  </div>
+                  <Button asChild variant="outline" size="sm" className="w-fit">
+                    <Link href="/mishwar">استكشاف مشوار</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {savedPlaces.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      لا توجد أماكن محفوظة حالياً.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {savedPlaces.map((save) => (
+                        <Link
+                          key={save.id}
+                          href={save.place.public_path}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4 transition-colors hover:border-primary/40 hover:bg-muted/60"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <p className="truncate font-semibold text-foreground">{save.place.name}</p>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              {save.place.category && <span>{save.place.category}</span>}
+                              {save.created_at && (
+                                <span>· حفظ بتاريخ {formatGregorianSyrianShort(save.created_at)}</span>
+                              )}
+                            </div>
+                          </div>
+                          <ArrowUpLeft className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-              {activeTab === 'profile' && (
-                <div>
-                  <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-                    <Settings className="text-primary h-6 w-6" />
-                    إعدادات الحساب الشخصي
-                  </h2>
+              <Card>
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <BookOpen className="h-5 w-5 text-primary" aria-hidden="true" />
+                      علامات القرآن الكريم
+                    </CardTitle>
+                    <CardDescription>الآيات والمواضع التي حفظتها أثناء القراءة.</CardDescription>
+                  </div>
+                  <Button asChild variant="outline" size="sm" className="w-fit">
+                    <Link href="/muslim/quran">فتح المصحف</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {quranBookmarks.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      لم تحفظ أي علامات تلاوة بعد.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {quranBookmarks.map((bookmark) => (
+                        <Link
+                          key={bookmark.id}
+                          href="/muslim/quran"
+                          className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-4 transition-colors hover:border-primary/40 hover:bg-muted/60"
+                        >
+                          <div className="space-y-1">
+                            <p className="font-semibold text-foreground">
+                              سورة {bookmark.surah} — آية {bookmark.ayah}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {[
+                                bookmark.page ? `صفحة ${bookmark.page}` : null,
+                                bookmark.juz ? `الجزء ${bookmark.juz}` : null,
+                                bookmark.created_at ? formatGregorianSyrianShort(bookmark.created_at) : null,
+                              ]
+                                .filter(Boolean)
+                                .join(' · ')}
+                            </p>
+                          </div>
+                          <ArrowUpLeft className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-                  <form ref={profileFormRef} onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg mb-8 pb-8 border-b border-border" noValidate>
-                    <AvatarUploader user={auth.user} />
+              <Card>
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Compass className="h-5 w-5 text-primary" aria-hidden="true" />
+                      نتائج بوصلة سوريا
+                    </CardTitle>
+                    <CardDescription>سجل نتائجك المحفوظة في اختبار بوصلة سوريا.</CardDescription>
+                  </div>
+                  <Button asChild variant="outline" size="sm" className="w-fit">
+                    <Link href="/compass">فتح البوصلة</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {compassResults.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      لا توجد نتائج محفوظة في بوصلة سوريا بعد.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {compassResults.map((result) => (
+                        <Link
+                          key={result.id}
+                          href={result.share_id ? `/compass/s/${result.share_id}` : '/compass'}
+                          className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/30 p-4 transition-colors hover:border-primary/40 hover:bg-muted/60"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-foreground">
+                                {result.top_figure || result.spectrum || `نتيجة #${result.id}`}
+                              </span>
+                              {typeof result.top_score === 'number' && (
+                                <Badge variant="secondary" className="tabular-nums" dir="ltr">
+                                  {Math.round(result.top_score)}%
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {[
+                                typeof result.answered === 'number' ? `${result.answered} إجابة` : null,
+                                result.created_at ? formatGregorianSyrianShort(result.created_at) : null,
+                              ]
+                                .filter(Boolean)
+                                .join(' · ')}
+                            </p>
+                          </div>
+                          <ArrowUpLeft className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === 'account' && (
+            <div {...tabs.panelProps('account')} className="max-w-2xl space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">الصورة الشخصية</CardTitle>
+                  <CardDescription>تظهر صورتك بجانب اسمك في حسابك ومشاركاتك.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AvatarUploader user={auth.user} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">معلومات الحساب</CardTitle>
+                  <CardDescription>يمكنك تعديل اسم العرض الخاص بك في أي وقت.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form ref={profileFormRef} onSubmit={handleUpdateProfile} noValidate className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-name">الاسم</Label>
+                      <Input
+                        id="profile-name"
+                        type="text"
+                        value={profileName}
+                        onChange={(e) => {
+                          setProfileName(e.target.value);
+                          setProfileErrors((prev) => {
+                            if (!prev.name) return prev;
+                            const next = { ...prev };
+                            delete next.name;
+                            return next;
+                          });
+                        }}
+                        {...fieldA11y('profile-name', profileErrors.name)}
+                        required
+                      />
+                      <FieldError id="profile-name-error" message={profileErrors.name} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-email">البريد الإلكتروني</Label>
+                      <Input
+                        id="profile-email"
+                        type="email"
+                        value={auth.user.email}
+                        readOnly
+                        disabled
+                        dir="ltr"
+                        className="text-start opacity-80"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        البريد الإلكتروني مرتبط بحساب Google المستخدم لتسجيل الدخول ولا يمكن تغييره.
+                      </p>
+                    </div>
 
                     {profileMessage && (
                       <div
                         role={profileMessage.type === 'error' ? 'alert' : 'status'}
                         className={cn(
-                          'p-4 rounded-lg text-sm',
-                          profileMessage.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/15 text-destructive'
+                          'rounded-lg p-3 text-sm',
+                          profileMessage.type === 'success'
+                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                            : 'bg-destructive/15 text-destructive',
                         )}
                       >
                         {profileMessage.text}
                       </div>
                     )}
 
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="profile-name" className="text-sm font-bold text-muted-foreground">اسم المستخدم</Label>
-                      <Input
-                        id="profile-name"
-                        type="text"
-                        autoComplete="name"
-                        value={profileName}
-                        onChange={e => setProfileName(e.target.value)}
-                        required
-                        {...fieldA11y('profile-name-error', profileErrors.name)}
-                      />
-                      <FieldError id="profile-name-error" message={profileErrors.name} />
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="profile-email" className="text-sm font-bold text-muted-foreground">البريد الإلكتروني</Label>
-                      <Input
-                        id="profile-email"
-                        type="email"
-                        autoComplete="email"
-                        value={profileEmail}
-                        onChange={e => setProfileEmail(e.target.value)}
-                        required
-                        {...fieldA11y('profile-email-error', profileErrors.email)}
-                      />
-                      <FieldError id="profile-email-error" message={profileErrors.email} />
-                    </div>
-
                     <Button type="submit" disabled={profileLoading}>
-                      {profileLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                      {profileLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          جارٍ الحفظ...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" aria-hidden="true" />
+                          حفظ التغييرات
+                        </>
+                      )}
                     </Button>
                   </form>
+                </CardContent>
+              </Card>
 
-                  <div className="bg-destructive/10 border border-destructive/40 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-destructive mb-2">منطقة الخطر - حذف الحساب نهائياً</h3>
-                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                      حذف حسابك سيمسح هويتك من المنصة تماماً.{' '}
-                      <span className="font-bold text-destructive">ولكن، لن يتم مسح اقتراحات مسارات خطوط النقل أو الاستبيانات التي قمت بإنشائها</span>؛ حيث سيتم تفويضها فوراً وبشكل آمن إلى حساب الإدارة العامة (Superadmin) كأرشيف عام لتجنب تعطيل الخدمة للمواطنين.
-                    </p>
-                    <Button variant="destructive" onClick={() => setDeleteConfirmOpen(true)}>
-                      حذف الحساب نهائياً
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle className="text-lg text-destructive">حذف الحساب</CardTitle>
+                  <CardDescription>
+                    يؤدي حذف الحساب إلى تعطيله وإزالة صورتك الشخصية وتسجيل خروجك فوراً.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={handleDeleteAccount}
+                    disabled={deleteLoading}
+                  >
+                    {deleteLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        جارٍ الحذف...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        حذف الحساب نهائياً
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
-          </div>
-        </div>
-
-        <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-          <DialogContent dir="rtl" className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>إضافة سبب الرفض الاقتراح</DialogTitle>
-              <DialogDescription>
-                يرجى كتابة شرح توضيحي لسبب رفض هذا المسار لمساعدة المساهم على تصحيحه وإعادة اقتراحه.
-              </DialogDescription>
-            </DialogHeader>
-            <Textarea aria-label="اكتب سبب الرفض هنا..."
-              value={rejectReason}
-              onChange={e => setRejectReason(e.target.value)}
-              placeholder="اكتب سبب الرفض هنا..."
-              rows={4}
-            />
-            <DialogFooter className="flex-row-reverse gap-2">
-              <Button variant="outline" size="sm" onClick={() => setRejectOpen(false)}>إلغاء</Button>
-              <Button variant="destructive" size="sm" disabled={rejectLoading} onClick={handleConfirmReject}>
-                {rejectLoading ? 'جاري التحديث...' : 'تأكيد الرفض'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-          <DialogContent dir="rtl" className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-destructive">
-                <AlertCircle className="h-6 w-6" />
-                تأكيد حذف الحساب نهائياً؟
-              </DialogTitle>
-              <DialogDescription>
-                أنت على وشك تعطيل وحذف حسابك من Syrian Zone. سيتم إخفاء جميع بياناتك الشخصية من العلن. كما سيتم تفويض كافة استبياناتك ومساراتك المنشورة إلى المدير العام (Superadmin) بشكل آمن.
-              </DialogDescription>
-            </DialogHeader>
-            <p className="text-xs text-destructive font-bold">لا يمكن التراجع عن هذا الإجراء بمجرد تأكيده.</p>
-            <DialogFooter className="flex-row-reverse gap-2">
-              <Button variant="outline" size="sm" onClick={() => setDeleteConfirmOpen(false)}>إلغاء وتراجع</Button>
-              <Button variant="destructive" size="sm" disabled={deleteLoading} onClick={handleDeleteAccount}>
-                {deleteLoading ? 'جاري حذف الحساب...' : 'تأكيد الحذف نهائياً'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          )}
+        </PageBody>
       </div>
     </MainLayout>
   );

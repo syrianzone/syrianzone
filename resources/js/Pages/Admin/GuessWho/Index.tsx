@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
@@ -67,23 +67,38 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
     };
 
     return (
-        <MainLayout>
-            
-
-            <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6" dir="rtl">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-2xl border shadow-xs">
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                            <HelpCircle className="w-7 h-7 text-primary" />
-                            <span>إدارة لعبة من هو</span>
-                        </h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            تحكم كامل في فئات اللعبة وشخصياتها وصورها.
-                        </p>
-                    </div>
-
+        <AdminLayout
+            title="إدارة لعبة من هو"
+            subtitle="تحكم كامل في فئات اللعبة وشخصياتها وصورها."
+            activeSection="guesswho"
+            publicHref="/guesswho"
+            publicLabel="عرض من هو؟"
+            actions={(
+                <>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setSelectedCategory(null); setCategoryDialogOpen(true); }}
+                        className="gap-2"
+                    >
+                        <Plus className="w-4 h-4" aria-hidden="true" />
+                        <span>إضافة فئة</span>
+                    </Button>
+                    <Button
+                        size="sm"
+                        onClick={() => { setSelectedCharacter(null); setCharacterDialogOpen(true); }}
+                        className="gap-2"
+                        disabled={categories.length === 0}
+                    >
+                        <Plus className="w-4 h-4" aria-hidden="true" />
+                        <span>إضافة شخصية</span>
+                    </Button>
+                </>
+            )}
+        >
+                <div className="flex justify-end">
                     <DirectorySearch
-                        className="w-full md:w-64"
+                        className="w-full md:w-72"
                         value={characterList.query}
                         onChange={setSearch}
                         placeholder="بحث..."
@@ -105,18 +120,9 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
 
                     <TabsContent value="categories">
                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle>الفئات</CardTitle>
-                                    <CardDescription>تحتاج الفئة 12 شخصية مفعّلة على الأقل لتظهر في اللعبة.</CardDescription>
-                                </div>
-                                <Button
-                                    onClick={() => { setSelectedCategory(null); setCategoryDialogOpen(true); }}
-                                    className="gap-2 font-bold"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    <span>إضافة فئة</span>
-                                </Button>
+                            <CardHeader>
+                                <CardTitle>الفئات</CardTitle>
+                                <CardDescription>تحتاج الفئة 12 شخصية مفعّلة على الأقل لتظهر في اللعبة.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <DirectoryResultCount className="mb-3 text-xs">
@@ -125,11 +131,11 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="text-right">الاسم (عربي)</TableHead>
-                                            <TableHead className="text-right">الاسم (إنكليزي)</TableHead>
-                                            <TableHead className="text-right">الشخصيات</TableHead>
-                                            <TableHead className="text-right">الحالة</TableHead>
-                                            <TableHead className="text-right">إجراءات</TableHead>
+                                            <TableHead className="text-start">الاسم (عربي)</TableHead>
+                                            <TableHead className="text-start">الاسم (إنكليزي)</TableHead>
+                                            <TableHead className="text-start">الشخصيات</TableHead>
+                                            <TableHead className="text-start">الحالة</TableHead>
+                                            <TableHead className="text-start">إجراءات</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -183,19 +189,9 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
 
                     <TabsContent value="characters">
                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle>الشخصيات</CardTitle>
-                                    <CardDescription>الصور والسمات المستخدمة داخل غرف اللعب.</CardDescription>
-                                </div>
-                                <Button
-                                    onClick={() => { setSelectedCharacter(null); setCharacterDialogOpen(true); }}
-                                    className="gap-2 font-bold"
-                                    disabled={categories.length === 0}
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    <span>إضافة شخصية</span>
-                                </Button>
+                            <CardHeader>
+                                <CardTitle>الشخصيات</CardTitle>
+                                <CardDescription>الصور والسمات المستخدمة داخل غرف اللعب.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <DirectoryResultCount className="mb-3 text-xs">
@@ -204,11 +200,11 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="text-right">الصورة</TableHead>
-                                            <TableHead className="text-right">الاسم (عربي)</TableHead>
-                                            <TableHead className="text-right">الفئة</TableHead>
-                                            <TableHead className="text-right">الحالة</TableHead>
-                                            <TableHead className="text-right">إجراءات</TableHead>
+                                            <TableHead className="text-start">الصورة</TableHead>
+                                            <TableHead className="text-start">الاسم (عربي)</TableHead>
+                                            <TableHead className="text-start">الفئة</TableHead>
+                                            <TableHead className="text-start">الحالة</TableHead>
+                                            <TableHead className="text-start">إجراءات</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -282,7 +278,6 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
                     character={selectedCharacter}
                     categories={categories}
                 />
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

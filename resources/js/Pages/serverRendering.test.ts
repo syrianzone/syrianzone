@@ -298,7 +298,7 @@ describe('pages render their content on the server', () => {
         expect(cleanHtml).toContain('href="/transit/city/damascus?route=damascus-001"');
         expect(cleanHtml).toContain('href="/transit/city/damascus?route=rif-001"');
         expect(cleanHtml).toContain('برزة البلد - شارع الثورة');
-        expect(cleanHtml).toContain('٢٥ ل.س');
+        expect(cleanHtml).toContain('25 ل.س');
     });
 
     it('renders house members grouped by governorate with member page links and member detail page without raw gender codes', async () => {

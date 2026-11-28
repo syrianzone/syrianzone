@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { Head, Link, router } from '@inertiajs/react';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -71,7 +71,7 @@ import {
     type GovtTenureItem,
     type InstitutionOption,
 } from '@/Domain/govtcvs/types';
-import AdminHeader from './_components/AdminHeader';
+import AdminNav from './_components/AdminNav';
 
 const NONE = '__none';
 
@@ -712,40 +712,41 @@ export default function GovtCvsAdminEdit({
     ];
 
     const identityErrorList = Object.values(identityErrors);
+    const pageTitle = official
+        ? `تعديل: ${official.display_name_ar || official.full_name_ar}`
+        : 'إضافة مسؤول جديد';
 
     return (
-        <MainLayout>
-            <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8" dir="rtl">
-                <AdminHeader
-                    title={
-                        official
-                            ? `تعديل: ${official.display_name_ar || official.full_name_ar}`
-                            : 'إضافة مسؤول جديد'
-                    }
-                    current="officials"
-                    actions={
-                        <div className="flex flex-wrap items-center gap-2">
-                            {official && official.publish_status === 'published' && (
-                                <Button asChild variant="outline" size="sm" className="gap-1.5">
-                                    <a
-                                        href={`/govtcvs/${official.slug}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                                        عرض الملف العام
-                                    </a>
-                                </Button>
-                            )}
-                            <Button asChild variant="ghost" size="sm" className="gap-1">
-                                <Link href="/admin/govtcvs">
-                                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                                    كل المسؤولين
-                                </Link>
-                            </Button>
-                        </div>
-                    }
-                />
+        <AdminLayout
+            title={pageTitle}
+            activeSection="govtcvs"
+            publicHref="/govtcvs"
+            publicLabel="عرض السير الذاتية"
+            actions={
+                <div className="flex flex-wrap items-center gap-2">
+                    {official && official.publish_status === 'published' && (
+                        <Button asChild variant="outline" size="sm" className="gap-1.5">
+                            <a
+                                href={`/govtcvs/${official.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                                عرض الملف العام
+                            </a>
+                        </Button>
+                    )}
+                    <Button asChild variant="ghost" size="sm" className="gap-1">
+                        <Link href="/admin/govtcvs">
+                            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                            كل المسؤولين
+                        </Link>
+                    </Button>
+                </div>
+            }
+        >
+            <Head title={pageTitle} />
+            <AdminNav current="officials" />
 
                 {official && (
                     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3.5">
@@ -2740,7 +2741,6 @@ export default function GovtCvsAdminEdit({
                         </Card>
                     )}
                 </div>
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

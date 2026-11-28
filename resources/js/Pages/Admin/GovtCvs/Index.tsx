@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { Head, Link, router } from '@inertiajs/react';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import SuggestionsReviewPanel from '@/Domain/suggestions/SuggestionsReviewPanel';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -41,7 +41,7 @@ import {
     TIER_META,
 } from '@/Domain/govtcvs/constants';
 import type { GovtOfficialAdminSummary } from '@/Domain/govtcvs/types';
-import AdminHeader from './_components/AdminHeader';
+import AdminNav from './_components/AdminNav';
 
 const ALL = 'all';
 
@@ -161,22 +161,24 @@ export default function GovtCvsAdminIndex({
     };
 
     return (
-        <MainLayout>
-            <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8" dir="rtl">
-                <AdminHeader
-                    title="إدارة السير الذاتية للمسؤولين"
-                    current="officials"
-                    actions={
-                        canCreate && (
-                            <Button asChild className="gap-2">
-                                <Link href="/admin/govtcvs/new">
-                                    <Plus className="h-4 w-4" aria-hidden="true" />
-                                    إضافة مسؤول
-                                </Link>
-                            </Button>
-                        )
-                    }
-                />
+        <AdminLayout
+            title="إدارة السير الذاتية للمسؤولين"
+            activeSection="govtcvs"
+            publicHref="/govtcvs"
+            publicLabel="عرض السير الذاتية"
+            actions={
+                canCreate ? (
+                    <Button asChild size="sm" className="gap-2">
+                        <Link href="/admin/govtcvs/new">
+                            <Plus className="h-4 w-4" aria-hidden="true" />
+                            إضافة مسؤول
+                        </Link>
+                    </Button>
+                ) : undefined
+            }
+        >
+            <Head title="إدارة السير الذاتية للمسؤولين" />
+            <AdminNav current="officials" />
 
                 <Tabs
                     value={activeTab}
@@ -514,7 +516,6 @@ export default function GovtCvsAdminIndex({
                         />
                     </TabsContent>
                 </Tabs>
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

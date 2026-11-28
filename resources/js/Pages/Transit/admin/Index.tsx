@@ -854,7 +854,7 @@ function TransitAdminPageContent() {
                           <LogIcon action={log.action} />
                           <Badge variant="outline" className="text-[10px]">{LOG_ACTION_LABELS[log.action] ?? log.action}</Badge>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{new Date(log.created_at).toLocaleString('ar-SY')}</span>
+                        <span className="text-[10px] text-muted-foreground">{new Date(log.created_at).toLocaleString('ar-SY-u-nu-latn')}</span>
                       </div>
                       <p className="text-xs mt-1.5 leading-relaxed">{log.description}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">المسؤول: {log.user?.name ?? 'مجهول'}</p>

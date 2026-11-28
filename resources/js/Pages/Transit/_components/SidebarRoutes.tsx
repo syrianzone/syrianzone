@@ -99,7 +99,7 @@ export function SidebarRoutes({ city, cities, routes, lastUpdated = null, return
           {hasStopsCount && (
             <span className="flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5 opacity-65" />
-              <span>{(stopsCount as number).toLocaleString('ar-SY')} موقف</span>
+              <span>{(stopsCount as number).toLocaleString('ar-SY-u-nu-latn')} موقف</span>
             </span>
           )}
           {hasStopsCount && hasPrice && (
@@ -107,7 +107,7 @@ export function SidebarRoutes({ city, cities, routes, lastUpdated = null, return
           )}
           {hasPrice && (
             <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-bold text-primary">
-              <span>{(priceNew as number).toLocaleString('ar-SY')} ل.س</span>
+              <span>{(priceNew as number).toLocaleString('ar-SY-u-nu-latn')} ل.س</span>
             </span>
           )}
         </div>

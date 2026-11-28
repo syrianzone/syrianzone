@@ -111,7 +111,7 @@ function MuslimNotFound({ path, onBack }: { path: string; onBack: () => void }) 
         <div className="container mx-auto max-w-3xl px-4 py-10">
             <div className="mb-6 flex flex-col items-center text-center">
                 <div className="mb-2 text-primary">
-                    <AyahMark digits="٤٠٤" width={68} />
+                    <AyahMark digits="404" width={68} />
                 </div>
                 <h1 className="mb-1 text-2xl font-bold md:text-3xl">الصفحة غير موجودة</h1>
                 <p className="text-sm text-muted-foreground">

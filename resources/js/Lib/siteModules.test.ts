@@ -105,6 +105,12 @@ describe('the admin cards', () => {
             if (section.gate.kind === 'module') {
                 expect(isCapabilityModule(section.gate.module), `${section.id} -> ${section.gate.module}`).toBe(true);
             }
+            if (section.gate.kind === 'anyOf') {
+                expect(section.gate.capabilities.length, section.id).toBeGreaterThan(0);
+                for (const capability of section.gate.capabilities) {
+                    expect(all.has(capability), `${section.id} -> ${capability}`).toBe(true);
+                }
+            }
         }
     });
 
@@ -124,5 +130,33 @@ describe('the admin cards', () => {
 
         expect(adminSectionAllowed(tokens, () => false, () => false)).toBe(false);
         expect(adminSectionAllowed(tokens, (capability) => capability === 'site.navigation', () => false)).toBe(true);
+    });
+
+    it('restricts superadmin sections to superadmin accounts and assigns every section to a group', () => {
+        const validGroups = new Set(['moderation', 'directories', 'interactive', 'system']);
+        for (const section of ADMIN_SECTIONS) {
+            expect(section.group && validGroups.has(section.group), `${section.id} -> ${section.group}`).toBe(true);
+        }
+
+        const crossings = ADMIN_SECTIONS.find((section) => section.id === 'crossings');
+        expect(crossings).toBeDefined();
+        if (!crossings) return;
+
+        expect(adminSectionAllowed(crossings, () => true, () => true)).toBe(false);
+        expect(adminSectionAllowed(crossings, () => false, () => false, false)).toBe(false);
+        expect(adminSectionAllowed(crossings, () => false, () => false, true)).toBe(true);
+    });
+
+    it('opens an anyOf card when any listed capability is granted or for superadmin', () => {
+        const suggestions = ADMIN_SECTIONS.find((section) => section.id === 'suggestions');
+        expect(suggestions).toBeDefined();
+        if (!suggestions) return;
+
+        expect(suggestions.gate.kind).toBe('anyOf');
+        expect(adminSectionAllowed(suggestions, () => false, () => false, false)).toBe(false);
+        expect(adminSectionAllowed(suggestions, (capability) => capability === 'polls.create', () => false, false)).toBe(false);
+        expect(adminSectionAllowed(suggestions, (capability) => capability === 'places.review', () => false, false)).toBe(true);
+        expect(adminSectionAllowed(suggestions, (capability) => capability === 'transit.review_drafts', () => false, false)).toBe(true);
+        expect(adminSectionAllowed(suggestions, () => false, () => false, true)).toBe(true);
     });
 });

@@ -56,15 +56,20 @@ export interface SiteModule {
     navbarSticky: boolean;
 }
 
+export type AdminSectionGroup = 'moderation' | 'directories' | 'interactive' | 'system';
+
 export type AdminGate =
     | { kind: 'capability'; capability: Capability }
     | { kind: 'module'; module: CapabilityModule }
-    | { kind: 'anyCapability' };
+    | { kind: 'anyOf'; capabilities: Capability[] }
+    | { kind: 'anyCapability' }
+    | { kind: 'superadmin' };
 
 export interface AdminSection {
     id: string;
     label: string;
     href: string;
+    group?: AdminSectionGroup;
     gate: AdminGate;
 }
 
@@ -137,6 +142,14 @@ function capabilityOf(value: string): Capability {
     return known;
 }
 
+function adminSectionGroupOf(value: unknown): AdminSectionGroup | undefined {
+    if (value === 'moderation' || value === 'directories' || value === 'interactive' || value === 'system') {
+        return value;
+    }
+
+    return undefined;
+}
+
 function gateOf(raw: Record<string, unknown>): AdminGate {
     if (typeof raw.capability === 'string') {
         return { kind: 'capability', capability: capabilityOf(raw.capability) };
@@ -148,8 +161,22 @@ function gateOf(raw: Record<string, unknown>): AdminGate {
 
         return { kind: 'module', module: raw.module };
     }
+    if (Array.isArray(raw.anyOf) && raw.anyOf.length > 0) {
+        const capabilities = raw.anyOf.map((entry) => {
+            if (typeof entry !== 'string') {
+                throw new Error('site-modules.json: anyOf gate entries must be strings');
+            }
+
+            return capabilityOf(entry);
+        });
+
+        return { kind: 'anyOf', capabilities };
+    }
     if (raw.anyCapability === true) {
         return { kind: 'anyCapability' };
+    }
+    if (raw.superadmin === true) {
+        return { kind: 'superadmin' };
     }
 
     throw new Error('site-modules.json: admin section without a usable gate');
@@ -167,12 +194,18 @@ export const SITE_MODULE_GROUPS: readonly SiteModuleGroup[] = (catalogue.groups 
 
 export const SITE_MODULES: readonly SiteModule[] = catalogue.modules.map((module) => moduleOf(module));
 
-export const ADMIN_SECTIONS: readonly AdminSection[] = catalogue.adminSections.map((section) => ({
-    id: text(section.id, 'adminSections[].id'),
-    label: text(section.label, 'adminSections[].label'),
-    href: text(section.href, 'adminSections[].href'),
-    gate: gateOf(section.gate),
-}));
+export const ADMIN_SECTIONS: readonly AdminSection[] = catalogue.adminSections.map((section) => {
+    const raw = section as Record<string, unknown>;
+    const group = adminSectionGroupOf(raw.group);
+
+    return {
+        id: text(section.id, 'adminSections[].id'),
+        label: text(section.label, 'adminSections[].label'),
+        href: text(section.href, 'adminSections[].href'),
+        ...(group ? { group } : {}),
+        gate: gateOf(section.gate),
+    };
+});
 
 /** How many of the navbar's items are shown before the "more" panel. */
 export const NAVBAR_TOP_COUNT = catalogue.navbar.topCount;
@@ -191,13 +224,18 @@ export function adminSectionAllowed(
     section: AdminSection,
     can: (capability: Capability) => boolean,
     canModule: (module: CapabilityModule) => boolean,
+    isSuperAdmin = false,
 ): boolean {
     switch (section.gate.kind) {
         case 'capability':
             return can(section.gate.capability);
         case 'module':
             return canModule(section.gate.module);
+        case 'anyOf':
+            return isSuperAdmin || section.gate.capabilities.some((capability) => can(capability));
         case 'anyCapability':
             return CAPABILITIES.some((capability) => can(capability));
+        case 'superadmin':
+            return isSuperAdmin;
     }
 }

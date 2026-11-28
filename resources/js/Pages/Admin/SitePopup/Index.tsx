@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -31,15 +31,19 @@ export default function SitePopupAdminIndex({ popup }: { popup: SitePopup }) {
     };
 
     return (
-        <MainLayout>
-            
-      <h1 className="sr-only">إدارة النافذة المنبثقة</h1>
-            <div className="container mx-auto px-4 py-8 max-w-3xl space-y-6" dir="rtl">
+        <AdminLayout
+            title="إدارة النافذة المنبثقة"
+            subtitle={`إعدادات النافذة المنبثقة في الصفحة الرئيسية (النسخة الحالية: ${popup.version}).`}
+            activeSection="site_popup"
+            publicHref="/"
+            publicLabel="الصفحة الرئيسية"
+        >
+            <div className="max-w-3xl">
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Megaphone className="w-6 h-6 text-primary" />
-                            إدارة النافذة المنبثقة للصفحة الرئيسية
+                            <Megaphone className="w-5 h-5 text-primary" />
+                            محتوى النافذة المنبثقة
                         </CardTitle>
                         <CardDescription>
                             النصوص والرابط هنا تظهر للزوار في النافذة المنبثقة. رفع نسخة جديدة يعيد إظهارها لمن أغلقها سابقاً. النسخة الحالية: {popup.version}
@@ -84,6 +88,6 @@ export default function SitePopupAdminIndex({ popup }: { popup: SitePopup }) {
                     </CardContent>
                 </Card>
             </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 import {
-    Plus, Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Settings, Check, X, Phone, MessageSquare, ExternalLink, ArrowRight, Inbox
+    Plus, Edit, Trash2, Eye, EyeOff, Phone, ExternalLink, Inbox
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Badge } from "@/Components/ui/badge";
@@ -18,7 +17,7 @@ import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDir
 import { Label } from "@/Components/ui/label";
 import { Switch } from "@/Components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
-import MainLayout from '@/Layouts/MainLayout';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { useCan } from '@/Lib/useCan';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
@@ -203,41 +202,25 @@ export default function PhonebookAdminIndex({
     };
 
     return (
-        <MainLayout>
-            
-
-            <div className="min-h-screen bg-background py-8" dir="rtl">
-                <div className="container mx-auto px-4 max-w-7xl space-y-6">
-
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-6 rounded-2xl border border-border shadow-xs">
-                        <div className="flex items-center gap-3">
-                            <Button variant="outline" size="icon" asChild className="rounded-xl">
-                                <a href="/phonebook" aria-label="العودة إلى دليل الهاتف">
-                                    <ArrowRight className="h-4 w-4" />
-                                </a>
-                            </Button>
-                            <div>
-                                <h1 className="text-2xl font-bold text-foreground">لوحة إدارة دليل الهاتف والواتساب</h1>
-                                <p className="text-sm text-muted-foreground">إضافة، تعديل، ترتيب، وإخفاء أرقام الطوارئ والجهات الرسمية.</p>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-2 flex-wrap">
-                            {canCreate && (
-                                <>
-                                    <Button onClick={openCreateCategory} variant="outline" className="gap-2 rounded-xl">
-                                        <Plus className="h-4 w-4" />
-                                        <span>إضافة فئة جديدة</span>
-                                    </Button>
-                                    <Button onClick={openCreateEntry} className="gap-2 rounded-xl">
-                                        <Plus className="h-4 w-4" />
-                                        <span>إضافة رقم جديد</span>
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
+        <AdminLayout
+            title="لوحة إدارة دليل الهاتف والواتساب"
+            subtitle="إضافة، تعديل، ترتيب، وإخفاء أرقام الطوارئ والجهات الرسمية."
+            activeSection="phonebook"
+            publicHref="/phonebook"
+            publicLabel="عرض دليل الهاتف"
+            actions={canCreate ? (
+                <>
+                    <Button onClick={openCreateCategory} variant="outline" size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        <span>إضافة فئة جديدة</span>
+                    </Button>
+                    <Button onClick={openCreateEntry} size="sm" className="gap-2">
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        <span>إضافة رقم جديد</span>
+                    </Button>
+                </>
+            ) : undefined}
+        >
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                         <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-wrap h-auto w-fit max-w-full">
                             <TabsTrigger value="entries" className="gap-2 text-sm">
@@ -555,9 +538,6 @@ export default function PhonebookAdminIndex({
                         activeLabel="الفئة مفعّلة في الواجهة العامة"
                         onDelete={canDelete && editingCategory ? () => handleDeleteCategory(editingCategory.id) : undefined}
                     />
-
-                </div>
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

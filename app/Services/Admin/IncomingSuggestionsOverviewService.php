@@ -50,13 +50,61 @@ final class IncomingSuggestionsOverviewService
         ],
         'transit' => [
             'label' => 'ترانزيت',
-            'admin_url' => '/transit/admin',
+            'admin_url' => '/admin/transit',
         ],
+    ];
+
+    /**
+     * Capabilities that grant moderation access to each inbox section.
+     * Holding any single listed capability grants access to that section.
+     *
+     * @var array<string, list<string>>
+     */
+    private const SECTION_CAPABILITIES = [
+        'govtcvs' => ['govtcvs.edit'],
+        'syofficial' => ['syofficial.edit'],
+        'govapps' => ['govapps.edit'],
+        'phonebook' => ['phonebook.edit'],
+        'promises' => ['promises.review'],
+        'places' => ['places.review', 'places.approve'],
+        'transit' => ['transit.review_drafts'],
     ];
 
     public function __construct(
         private readonly DirectorySuggestionService $directorySuggestions,
     ) {}
+
+    /**
+     * Ordered section IDs this user is allowed to moderate in the inbox.
+     *
+     * @return list<string>
+     */
+    public function allowedSectionsFor(User $user): array
+    {
+        if ($user->isSuperAdmin()) {
+            return array_keys(self::SECTIONS);
+        }
+
+        $allowed = [];
+        foreach (self::SECTION_CAPABILITIES as $section => $capabilities) {
+            foreach ($capabilities as $capability) {
+                if ($user->hasPermission($capability)) {
+                    $allowed[] = $section;
+                    break;
+                }
+            }
+        }
+
+        return $allowed;
+    }
+
+    /**
+     * Whether the user can access the cross-section incoming suggestions inbox.
+     */
+    public function canAccess(User $user): bool
+    {
+        return $this->allowedSectionsFor($user) !== [];
+    }
 
     /**
      * Total count of pending incoming items across all sections (lightweight
@@ -74,6 +122,53 @@ final class IncomingSuggestionsOverviewService
     }
 
     /**
+     * Total count of pending incoming items scoped to the sections (and transit
+     * cities) this user is allowed to moderate.
+     */
+    public function totalPendingCountFor(User $user): int
+    {
+        if ($user->isSuperAdmin()) {
+            return $this->totalPendingCount();
+        }
+
+        $allowed = $this->allowedSectionsFor($user);
+        if ($allowed === []) {
+            return 0;
+        }
+
+        $total = 0;
+
+        $allowedDirectoryModules = array_values(array_intersect(DirectorySuggestion::MODULES, $allowed));
+        if ($allowedDirectoryModules !== []) {
+            $total += DirectorySuggestion::pending()
+                ->whereIn('module', $allowedDirectoryModules)
+                ->count();
+        }
+
+        if (in_array('promises', $allowed, true)) {
+            $total += Promise::inReviewQueue()->count()
+                + PromiseSpeaker::inReviewQueue()->count()
+                + PromiseReport::inReviewQueue()->count();
+        }
+
+        if (in_array('places', $allowed, true)) {
+            $total += Place::where('status', 'pending')->count()
+                + PlaceReport::where('status', 'open')->whereHas('place')->count();
+        }
+
+        if (in_array('transit', $allowed, true)) {
+            $draftQuery = RouteDraft::where('status', 'pending');
+            $allowedCities = $user->allowedTransitCities();
+            if ($allowedCities !== null) {
+                $draftQuery->whereIn('city_id', $allowedCities);
+            }
+            $total += $draftQuery->count();
+        }
+
+        return $total;
+    }
+
+    /**
      * Full cross-section overview: per-section pending summaries + unified
      * newest-first feed of incoming items.
      *
@@ -86,313 +181,362 @@ final class IncomingSuggestionsOverviewService
      */
     public function overview(int $perQueueLimit = 60): array
     {
+        return $this->buildOverview(array_keys(self::SECTIONS), null, $perQueueLimit);
+    }
+
+    /**
+     * Cross-section overview filtered to the sections (and transit cities) the
+     * user is allowed to moderate.
+     *
+     * @return array{
+     *   total_pending: int,
+     *   sections: array<int, array<string, mixed>>,
+     *   items: array<int, array<string, mixed>>,
+     *   generated_at: string
+     * }
+     */
+    public function overviewFor(User $user, int $perQueueLimit = 60): array
+    {
+        $allowedSections = $this->allowedSectionsFor($user);
+        $allowedCities = $user->isSuperAdmin() ? null : $user->allowedTransitCities();
+
+        return $this->buildOverview($allowedSections, $allowedCities, $perQueueLimit);
+    }
+
+    /**
+     * @param  list<string>  $allowedSections
+     * @param  list<string>|null  $allowedTransitCities
+     * @return array{
+     *   total_pending: int,
+     *   sections: array<int, array<string, mixed>>,
+     *   items: array<int, array<string, mixed>>,
+     *   generated_at: string
+     * }
+     */
+    private function buildOverview(array $allowedSections, ?array $allowedTransitCities, int $perQueueLimit): array
+    {
         $items = [];
         $sectionSummaries = [];
 
         // 1. Directory suggestions (govtcvs, syofficial, govapps, phonebook)
-        $dirCountsRaw = DirectorySuggestion::pending()
-            ->selectRaw('module, kind, count(*) as aggregate')
-            ->groupBy('module', 'kind')
-            ->get();
+        $allowedDirectoryModules = array_values(array_intersect(DirectorySuggestion::MODULES, $allowedSections));
+        if ($allowedDirectoryModules !== []) {
+            $dirCountsRaw = DirectorySuggestion::pending()
+                ->whereIn('module', $allowedDirectoryModules)
+                ->selectRaw('module, kind, count(*) as aggregate')
+                ->groupBy('module', 'kind')
+                ->get();
 
-        $dirCounts = [];
-        foreach (DirectorySuggestion::MODULES as $module) {
-            $dirCounts[$module] = ['add' => 0, 'edit' => 0];
-        }
-        foreach ($dirCountsRaw as $row) {
-            $mod = (string) $row->module;
-            $kind = (string) $row->kind;
-            if (isset($dirCounts[$mod][$kind])) {
-                $dirCounts[$mod][$kind] = (int) $row->aggregate;
+            $dirCounts = [];
+            foreach ($allowedDirectoryModules as $module) {
+                $dirCounts[$module] = ['add' => 0, 'edit' => 0];
+            }
+            foreach ($dirCountsRaw as $row) {
+                $mod = (string) $row->module;
+                $kind = (string) $row->kind;
+                if (isset($dirCounts[$mod][$kind])) {
+                    $dirCounts[$mod][$kind] = (int) $row->aggregate;
+                }
+            }
+
+            foreach ($allowedDirectoryModules as $module) {
+                $pendingAdd = $dirCounts[$module]['add'];
+                $pendingEdit = $dirCounts[$module]['edit'];
+                $meta = self::SECTIONS[$module];
+
+                $sectionSummaries[$module] = [
+                    'id' => $module,
+                    'label' => $meta['label'],
+                    'admin_url' => $meta['admin_url'],
+                    'pending_count' => $pendingAdd + $pendingEdit,
+                    'breakdown' => array_values(array_filter([
+                        $pendingAdd > 0 ? ['label' => 'إضافة', 'count' => $pendingAdd] : null,
+                        $pendingEdit > 0 ? ['label' => 'تعديل', 'count' => $pendingEdit] : null,
+                    ])),
+                ];
+
+                $rows = DirectorySuggestion::forModule($module)
+                    ->pending()
+                    ->with('user:id,name')
+                    ->latest('created_at')
+                    ->limit($perQueueLimit)
+                    ->get();
+
+                foreach ($rows as $suggestion) {
+                    $presented = $this->directorySuggestions->present($suggestion);
+                    $items[] = [
+                        'uid' => 'dir:'.$suggestion->id,
+                        'section' => $module,
+                        'item_type' => $suggestion->kind === 'add' ? 'directory_add' : 'directory_edit',
+                        'record_id' => $suggestion->id,
+                        'title' => $suggestion->title,
+                        'subtitle' => $suggestion->target_label,
+                        'details' => $suggestion->details,
+                        'payload' => $presented['payload'],
+                        'source_url' => $suggestion->source_url,
+                        'submitter_name' => $presented['submitter_name'],
+                        'created_at' => $presented['created_at'],
+                        'section_admin_url' => $meta['admin_url'],
+                        'item_admin_url' => $presented['target_edit_url'],
+                        'action_meta' => [
+                            'module' => $module,
+                        ],
+                    ];
+                }
             }
         }
 
-        foreach (DirectorySuggestion::MODULES as $module) {
-            $pendingAdd = $dirCounts[$module]['add'];
-            $pendingEdit = $dirCounts[$module]['edit'];
-            $meta = self::SECTIONS[$module];
+        // 2. Promises (pending promises, proposed speakers, visitor reports)
+        if (in_array('promises', $allowedSections, true)) {
+            $pendingPromisesCount = Promise::inReviewQueue()->count();
+            $pendingSpeakersCount = PromiseSpeaker::inReviewQueue()->count();
+            $pendingPromiseReportsCount = PromiseReport::inReviewQueue()->count();
 
-            $sectionSummaries[$module] = [
-                'id' => $module,
-                'label' => $meta['label'],
-                'admin_url' => $meta['admin_url'],
-                'pending_count' => $pendingAdd + $pendingEdit,
+            $sectionSummaries['promises'] = [
+                'id' => 'promises',
+                'label' => self::SECTIONS['promises']['label'],
+                'admin_url' => self::SECTIONS['promises']['admin_url'],
+                'pending_count' => $pendingPromisesCount + $pendingSpeakersCount + $pendingPromiseReportsCount,
                 'breakdown' => array_values(array_filter([
-                    $pendingAdd > 0 ? ['label' => 'إضافة', 'count' => $pendingAdd] : null,
-                    $pendingEdit > 0 ? ['label' => 'تعديل', 'count' => $pendingEdit] : null,
+                    $pendingPromisesCount > 0 ? ['label' => 'وعود', 'count' => $pendingPromisesCount] : null,
+                    $pendingSpeakersCount > 0 ? ['label' => 'أشخاص', 'count' => $pendingSpeakersCount] : null,
+                    $pendingPromiseReportsCount > 0 ? ['label' => 'بلاغات وتحديثات', 'count' => $pendingPromiseReportsCount] : null,
                 ])),
             ];
 
-            $rows = DirectorySuggestion::forModule($module)
-                ->pending()
-                ->with('user:id,name')
+            $pendingPromises = Promise::inReviewQueue()
+                ->with(['speaker:id,name,status', 'submitter:id,name'])
+                ->withCount('sources')
                 ->latest('created_at')
                 ->limit($perQueueLimit)
                 ->get();
 
-            foreach ($rows as $suggestion) {
-                $presented = $this->directorySuggestions->present($suggestion);
+            foreach ($pendingPromises as $promise) {
                 $items[] = [
-                    'uid' => 'dir:'.$suggestion->id,
-                    'section' => $module,
-                    'item_type' => $suggestion->kind === 'add' ? 'directory_add' : 'directory_edit',
-                    'record_id' => $suggestion->id,
-                    'title' => $suggestion->title,
-                    'subtitle' => $suggestion->target_label,
-                    'details' => $suggestion->details,
-                    'payload' => $presented['payload'],
-                    'source_url' => $suggestion->source_url,
-                    'submitter_name' => $presented['submitter_name'],
-                    'created_at' => $presented['created_at'],
-                    'section_admin_url' => $meta['admin_url'],
-                    'item_admin_url' => $presented['target_edit_url'],
+                    'uid' => 'promise:'.$promise->id,
+                    'section' => 'promises',
+                    'item_type' => 'promise_suggestion',
+                    'record_id' => $promise->id,
+                    'title' => $promise->title,
+                    'subtitle' => $promise->speaker?->name,
+                    'details' => $promise->submitter_note ?: ($promise->summary ?: $promise->quote),
+                    'payload' => array_filter([
+                        'sources_count' => (int) ($promise->sources_count ?? 0),
+                        'statement_date' => $promise->statement_date?->format('Y-m-d'),
+                        'origin' => $promise->origin,
+                    ], fn ($v) => $v !== null && $v !== ''),
+                    'source_url' => null,
+                    'submitter_name' => $promise->submitter?->name ?? 'مستخدم',
+                    'created_at' => $promise->created_at?->toIso8601String(),
+                    'section_admin_url' => '/admin/promises/review',
+                    'item_admin_url' => "/admin/promises/{$promise->id}/edit",
                     'action_meta' => [
-                        'module' => $module,
+                        'sources_count' => (int) ($promise->sources_count ?? 0),
+                        'speaker_pending' => $promise->speaker?->status === 'pending',
+                    ],
+                ];
+            }
+
+            $pendingSpeakers = PromiseSpeaker::inReviewQueue()
+                ->withCount('promises')
+                ->latest('created_at')
+                ->limit($perQueueLimit)
+                ->get();
+
+            $speakerSubmitterIds = $pendingSpeakers->pluck('submitted_by')->filter()->unique()->values()->all();
+            $speakerSubmitters = $speakerSubmitterIds !== []
+                ? User::withTrashed()->whereIn('id', $speakerSubmitterIds)->pluck('name', 'id')
+                : collect();
+
+            foreach ($pendingSpeakers as $speaker) {
+                $items[] = [
+                    'uid' => 'promise_speaker:'.$speaker->id,
+                    'section' => 'promises',
+                    'item_type' => 'promise_speaker',
+                    'record_id' => $speaker->id,
+                    'title' => $speaker->name,
+                    'subtitle' => $speaker->title ?: 'بلا منصب محدد',
+                    'details' => null,
+                    'payload' => [
+                        'promises_count' => (int) ($speaker->promises_count ?? 0),
+                    ],
+                    'source_url' => null,
+                    'submitter_name' => $speaker->submitted_by ? ($speakerSubmitters[$speaker->submitted_by] ?? 'مستخدم') : 'زائر',
+                    'created_at' => $speaker->created_at?->toIso8601String(),
+                    'section_admin_url' => '/admin/promises/review',
+                    'item_admin_url' => '/admin/promises/review',
+                    'action_meta' => [],
+                ];
+            }
+
+            $pendingPromiseReports = PromiseReport::inReviewQueue()
+                ->with(['promise:id,number,title', 'user:id,name'])
+                ->latest('created_at')
+                ->limit($perQueueLimit)
+                ->get();
+
+            foreach ($pendingPromiseReports as $report) {
+                $promiseLabel = $report->promise
+                    ? ($report->promise->number !== null ? "#{$report->promise->number} — {$report->promise->title}" : $report->promise->title)
+                    : null;
+
+                $items[] = [
+                    'uid' => 'promise_report:'.$report->id,
+                    'section' => 'promises',
+                    'item_type' => $report->kind === 'error' ? 'promise_report_error' : 'promise_report_progress',
+                    'record_id' => $report->id,
+                    'title' => $promiseLabel ?? 'بلاغ على وعد',
+                    'subtitle' => $report->kind === 'error' ? 'بلاغ خطأ' : 'تحديث تقدّم',
+                    'details' => $report->body,
+                    'payload' => [],
+                    'source_url' => $report->source_url,
+                    'submitter_name' => $report->user?->name ?? 'مستخدم محذوف',
+                    'created_at' => $report->created_at?->toIso8601String(),
+                    'section_admin_url' => '/admin/promises/review',
+                    'item_admin_url' => $report->promise ? "/admin/promises/{$report->promise->id}/edit" : '/admin/promises/review',
+                    'action_meta' => [
+                        'report_kind' => $report->kind,
                     ],
                 ];
             }
         }
 
-        // 2. Promises (pending promises, proposed speakers, visitor reports)
-        $pendingPromisesCount = Promise::inReviewQueue()->count();
-        $pendingSpeakersCount = PromiseSpeaker::inReviewQueue()->count();
-        $pendingPromiseReportsCount = PromiseReport::inReviewQueue()->count();
-
-        $sectionSummaries['promises'] = [
-            'id' => 'promises',
-            'label' => self::SECTIONS['promises']['label'],
-            'admin_url' => self::SECTIONS['promises']['admin_url'],
-            'pending_count' => $pendingPromisesCount + $pendingSpeakersCount + $pendingPromiseReportsCount,
-            'breakdown' => array_values(array_filter([
-                $pendingPromisesCount > 0 ? ['label' => 'وعود', 'count' => $pendingPromisesCount] : null,
-                $pendingSpeakersCount > 0 ? ['label' => 'أشخاص', 'count' => $pendingSpeakersCount] : null,
-                $pendingPromiseReportsCount > 0 ? ['label' => 'بلاغات وتحديثات', 'count' => $pendingPromiseReportsCount] : null,
-            ])),
-        ];
-
-        $pendingPromises = Promise::inReviewQueue()
-            ->with(['speaker:id,name,status', 'submitter:id,name'])
-            ->withCount('sources')
-            ->latest('created_at')
-            ->limit($perQueueLimit)
-            ->get();
-
-        foreach ($pendingPromises as $promise) {
-            $items[] = [
-                'uid' => 'promise:'.$promise->id,
-                'section' => 'promises',
-                'item_type' => 'promise_suggestion',
-                'record_id' => $promise->id,
-                'title' => $promise->title,
-                'subtitle' => $promise->speaker?->name,
-                'details' => $promise->submitter_note ?: ($promise->summary ?: $promise->quote),
-                'payload' => array_filter([
-                    'sources_count' => (int) ($promise->sources_count ?? 0),
-                    'statement_date' => $promise->statement_date?->format('Y-m-d'),
-                    'origin' => $promise->origin,
-                ], fn ($v) => $v !== null && $v !== ''),
-                'source_url' => null,
-                'submitter_name' => $promise->submitter?->name ?? 'مستخدم',
-                'created_at' => $promise->created_at?->toIso8601String(),
-                'section_admin_url' => '/admin/promises/review',
-                'item_admin_url' => "/admin/promises/{$promise->id}/edit",
-                'action_meta' => [
-                    'sources_count' => (int) ($promise->sources_count ?? 0),
-                    'speaker_pending' => $promise->speaker?->status === 'pending',
-                ],
-            ];
-        }
-
-        $pendingSpeakers = PromiseSpeaker::inReviewQueue()
-            ->withCount('promises')
-            ->latest('created_at')
-            ->limit($perQueueLimit)
-            ->get();
-
-        $speakerSubmitterIds = $pendingSpeakers->pluck('submitted_by')->filter()->unique()->values()->all();
-        $speakerSubmitters = $speakerSubmitterIds !== []
-            ? User::withTrashed()->whereIn('id', $speakerSubmitterIds)->pluck('name', 'id')
-            : collect();
-
-        foreach ($pendingSpeakers as $speaker) {
-            $items[] = [
-                'uid' => 'promise_speaker:'.$speaker->id,
-                'section' => 'promises',
-                'item_type' => 'promise_speaker',
-                'record_id' => $speaker->id,
-                'title' => $speaker->name,
-                'subtitle' => $speaker->title ?: 'بلا منصب محدد',
-                'details' => null,
-                'payload' => [
-                    'promises_count' => (int) ($speaker->promises_count ?? 0),
-                ],
-                'source_url' => null,
-                'submitter_name' => $speaker->submitted_by ? ($speakerSubmitters[$speaker->submitted_by] ?? 'مستخدم') : 'زائر',
-                'created_at' => $speaker->created_at?->toIso8601String(),
-                'section_admin_url' => '/admin/promises/review',
-                'item_admin_url' => '/admin/promises/review',
-                'action_meta' => [],
-            ];
-        }
-
-        $pendingPromiseReports = PromiseReport::inReviewQueue()
-            ->with(['promise:id,number,title', 'user:id,name'])
-            ->latest('created_at')
-            ->limit($perQueueLimit)
-            ->get();
-
-        foreach ($pendingPromiseReports as $report) {
-            $promiseLabel = $report->promise
-                ? ($report->promise->number !== null ? "#{$report->promise->number} — {$report->promise->title}" : $report->promise->title)
-                : null;
-
-            $items[] = [
-                'uid' => 'promise_report:'.$report->id,
-                'section' => 'promises',
-                'item_type' => $report->kind === 'error' ? 'promise_report_error' : 'promise_report_progress',
-                'record_id' => $report->id,
-                'title' => $promiseLabel ?? 'بلاغ على وعد',
-                'subtitle' => $report->kind === 'error' ? 'بلاغ خطأ' : 'تحديث تقدّم',
-                'details' => $report->body,
-                'payload' => [],
-                'source_url' => $report->source_url,
-                'submitter_name' => $report->user?->name ?? 'مستخدم محذوف',
-                'created_at' => $report->created_at?->toIso8601String(),
-                'section_admin_url' => '/admin/promises/review',
-                'item_admin_url' => $report->promise ? "/admin/promises/{$report->promise->id}/edit" : '/admin/promises/review',
-                'action_meta' => [
-                    'report_kind' => $report->kind,
-                ],
-            ];
-        }
-
         // 3. Mishwar / Places (pending place submissions + open place reports)
-        $pendingPlacesCount = Place::where('status', 'pending')->count();
-        $openPlaceReportsCount = PlaceReport::where('status', 'open')->whereHas('place')->count();
+        if (in_array('places', $allowedSections, true)) {
+            $pendingPlacesCount = Place::where('status', 'pending')->count();
+            $openPlaceReportsCount = PlaceReport::where('status', 'open')->whereHas('place')->count();
 
-        $sectionSummaries['places'] = [
-            'id' => 'places',
-            'label' => self::SECTIONS['places']['label'],
-            'admin_url' => self::SECTIONS['places']['admin_url'],
-            'pending_count' => $pendingPlacesCount + $openPlaceReportsCount,
-            'breakdown' => array_values(array_filter([
-                $pendingPlacesCount > 0 ? ['label' => 'أماكن جديدة', 'count' => $pendingPlacesCount] : null,
-                $openPlaceReportsCount > 0 ? ['label' => 'بلاغات', 'count' => $openPlaceReportsCount] : null,
-            ])),
-        ];
-
-        $pendingPlaces = Place::where('status', 'pending')
-            ->with(['user:id,name'])
-            ->withCount('photos')
-            ->latest('created_at')
-            ->limit($perQueueLimit)
-            ->get();
-
-        foreach ($pendingPlaces as $place) {
-            $items[] = [
-                'uid' => 'place:'.$place->id,
-                'section' => 'places',
-                'item_type' => 'place_submission',
-                'record_id' => $place->id,
-                'title' => $place->name,
-                'subtitle' => null,
-                'details' => $place->description,
-                'payload' => array_filter([
-                    'place_category' => $place->category,
-                    'photos_count' => (int) ($place->photos_count ?? 0),
-                ], fn ($v) => $v !== null && $v !== ''),
-                'source_url' => null,
-                'submitter_name' => $place->user?->name ?? 'مستخدم محذوف',
-                'created_at' => $place->created_at?->toIso8601String(),
-                'section_admin_url' => '/admin/places',
-                'item_admin_url' => '/admin/places',
-                'action_meta' => [
-                    'place_category' => $place->category,
-                ],
+            $sectionSummaries['places'] = [
+                'id' => 'places',
+                'label' => self::SECTIONS['places']['label'],
+                'admin_url' => self::SECTIONS['places']['admin_url'],
+                'pending_count' => $pendingPlacesCount + $openPlaceReportsCount,
+                'breakdown' => array_values(array_filter([
+                    $pendingPlacesCount > 0 ? ['label' => 'أماكن جديدة', 'count' => $pendingPlacesCount] : null,
+                    $openPlaceReportsCount > 0 ? ['label' => 'بلاغات', 'count' => $openPlaceReportsCount] : null,
+                ])),
             ];
-        }
 
-        $openPlaceReports = PlaceReport::where('status', 'open')
-            ->whereHas('place')
-            ->with(['user:id,name', 'place:id,name,status'])
-            ->latest('created_at')
-            ->limit($perQueueLimit)
-            ->get();
+            $pendingPlaces = Place::where('status', 'pending')
+                ->with(['user:id,name'])
+                ->withCount('photos')
+                ->latest('created_at')
+                ->limit($perQueueLimit)
+                ->get();
 
-        foreach ($openPlaceReports as $report) {
-            $items[] = [
-                'uid' => 'place_report:'.$report->id,
-                'section' => 'places',
-                'item_type' => 'place_report',
-                'record_id' => $report->id,
-                'title' => $report->place?->name ?? 'مكان في مشوار',
-                'subtitle' => null,
-                'details' => $report->details,
-                'payload' => [
-                    'report_reason' => $report->reason,
-                ],
-                'source_url' => null,
-                'submitter_name' => $report->user?->name ?? 'مستخدم محذوف',
-                'created_at' => $report->created_at?->toIso8601String(),
-                'section_admin_url' => '/admin/places',
-                'item_admin_url' => '/admin/places',
-                'action_meta' => [
-                    'report_reason' => $report->reason,
-                    'place_status' => $report->place?->status ?? 'approved',
-                ],
-            ];
+            foreach ($pendingPlaces as $place) {
+                $items[] = [
+                    'uid' => 'place:'.$place->id,
+                    'section' => 'places',
+                    'item_type' => 'place_submission',
+                    'record_id' => $place->id,
+                    'title' => $place->name,
+                    'subtitle' => null,
+                    'details' => $place->description,
+                    'payload' => array_filter([
+                        'place_category' => $place->category,
+                        'photos_count' => (int) ($place->photos_count ?? 0),
+                    ], fn ($v) => $v !== null && $v !== ''),
+                    'source_url' => null,
+                    'submitter_name' => $place->user?->name ?? 'مستخدم محذوف',
+                    'created_at' => $place->created_at?->toIso8601String(),
+                    'section_admin_url' => '/admin/places',
+                    'item_admin_url' => '/admin/places',
+                    'action_meta' => [
+                        'place_category' => $place->category,
+                    ],
+                ];
+            }
+
+            $openPlaceReports = PlaceReport::where('status', 'open')
+                ->whereHas('place')
+                ->with(['user:id,name', 'place:id,name,status'])
+                ->latest('created_at')
+                ->limit($perQueueLimit)
+                ->get();
+
+            foreach ($openPlaceReports as $report) {
+                $items[] = [
+                    'uid' => 'place_report:'.$report->id,
+                    'section' => 'places',
+                    'item_type' => 'place_report',
+                    'record_id' => $report->id,
+                    'title' => $report->place?->name ?? 'مكان في مشوار',
+                    'subtitle' => null,
+                    'details' => $report->details,
+                    'payload' => [
+                        'report_reason' => $report->reason,
+                    ],
+                    'source_url' => null,
+                    'submitter_name' => $report->user?->name ?? 'مستخدم محذوف',
+                    'created_at' => $report->created_at?->toIso8601String(),
+                    'section_admin_url' => '/admin/places',
+                    'item_admin_url' => '/admin/places',
+                    'action_meta' => [
+                        'report_reason' => $report->reason,
+                        'place_status' => $report->place?->status ?? 'approved',
+                    ],
+                ];
+            }
         }
 
         // 4. Transit (pending route drafts: new routes + edits to existing routes)
-        $pendingTransitNewCount = RouteDraft::where('status', 'pending')->whereNull('route_id')->count();
-        $pendingTransitEditCount = RouteDraft::where('status', 'pending')->whereNotNull('route_id')->count();
+        if (in_array('transit', $allowedSections, true)) {
+            $baseDraftQuery = RouteDraft::where('status', 'pending');
+            if ($allowedTransitCities !== null) {
+                $baseDraftQuery->whereIn('city_id', $allowedTransitCities);
+            }
 
-        $sectionSummaries['transit'] = [
-            'id' => 'transit',
-            'label' => self::SECTIONS['transit']['label'],
-            'admin_url' => self::SECTIONS['transit']['admin_url'],
-            'pending_count' => $pendingTransitNewCount + $pendingTransitEditCount,
-            'breakdown' => array_values(array_filter([
-                $pendingTransitNewCount > 0 ? ['label' => 'مسار جديد', 'count' => $pendingTransitNewCount] : null,
-                $pendingTransitEditCount > 0 ? ['label' => 'تعديل مسار', 'count' => $pendingTransitEditCount] : null,
-            ])),
-        ];
+            $pendingTransitNewCount = (clone $baseDraftQuery)->whereNull('route_id')->count();
+            $pendingTransitEditCount = (clone $baseDraftQuery)->whereNotNull('route_id')->count();
 
-        $pendingDrafts = RouteDraft::where('status', 'pending')
-            ->select([
-                'id', 'user_id', 'city_id', 'route_id', 'name_ar', 'name_en',
-                'price', 'notes', 'status', 'created_at',
-            ])
-            ->with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar'])
-            ->latest('created_at')
-            ->limit($perQueueLimit)
-            ->get();
-
-        foreach ($pendingDrafts as $draft) {
-            $isEdit = $draft->route_id !== null;
-            $items[] = [
-                'uid' => 'transit_draft:'.$draft->id,
-                'section' => 'transit',
-                'item_type' => $isEdit ? 'transit_route_edit' : 'transit_new_route',
-                'record_id' => $draft->id,
-                'title' => $draft->name_ar ?: ($draft->name_en ?: "مسودة رقم #{$draft->id}"),
-                'subtitle' => $draft->city?->name_ar ?: $draft->city_id,
-                'details' => $draft->notes,
-                'payload' => array_filter([
-                    'city' => $draft->city?->name_ar ?: $draft->city_id,
-                    'price' => $draft->price !== null ? (string) $draft->price : null,
-                    'linked_route' => $draft->linkedRoute?->name_ar,
-                ], fn ($v) => $v !== null && $v !== ''),
-                'source_url' => null,
-                'submitter_name' => $draft->user?->name ?? 'مساهم مجهول',
-                'created_at' => $draft->created_at?->toIso8601String(),
-                'section_admin_url' => '/transit/admin',
-                'item_admin_url' => "/transit/studio?edit={$draft->id}",
-                'action_meta' => [
-                    'city_id' => $draft->city_id,
-                    'is_edit' => $isEdit,
-                ],
+            $sectionSummaries['transit'] = [
+                'id' => 'transit',
+                'label' => self::SECTIONS['transit']['label'],
+                'admin_url' => self::SECTIONS['transit']['admin_url'],
+                'pending_count' => $pendingTransitNewCount + $pendingTransitEditCount,
+                'breakdown' => array_values(array_filter([
+                    $pendingTransitNewCount > 0 ? ['label' => 'مسار جديد', 'count' => $pendingTransitNewCount] : null,
+                    $pendingTransitEditCount > 0 ? ['label' => 'تعديل مسار', 'count' => $pendingTransitEditCount] : null,
+                ])),
             ];
+
+            $pendingDrafts = (clone $baseDraftQuery)
+                ->select([
+                    'id', 'user_id', 'city_id', 'route_id', 'name_ar', 'name_en',
+                    'price', 'notes', 'status', 'created_at',
+                ])
+                ->with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar'])
+                ->latest('created_at')
+                ->limit($perQueueLimit)
+                ->get();
+
+            foreach ($pendingDrafts as $draft) {
+                $isEdit = $draft->route_id !== null;
+                $items[] = [
+                    'uid' => 'transit_draft:'.$draft->id,
+                    'section' => 'transit',
+                    'item_type' => $isEdit ? 'transit_route_edit' : 'transit_new_route',
+                    'record_id' => $draft->id,
+                    'title' => $draft->name_ar ?: ($draft->name_en ?: "مسودة رقم #{$draft->id}"),
+                    'subtitle' => $draft->city?->name_ar ?: $draft->city_id,
+                    'details' => $draft->notes,
+                    'payload' => array_filter([
+                        'city' => $draft->city?->name_ar ?: $draft->city_id,
+                        'price' => $draft->price !== null ? (string) $draft->price : null,
+                        'linked_route' => $draft->linkedRoute?->name_ar,
+                    ], fn ($v) => $v !== null && $v !== ''),
+                    'source_url' => null,
+                    'submitter_name' => $draft->user?->name ?? 'مساهم مجهول',
+                    'created_at' => $draft->created_at?->toIso8601String(),
+                    'section_admin_url' => self::SECTIONS['transit']['admin_url'],
+                    'item_admin_url' => "/transit/studio?edit={$draft->id}",
+                    'action_meta' => [
+                        'city_id' => $draft->city_id,
+                        'is_edit' => $isEdit,
+                    ],
+                ];
+            }
         }
 
         // Unified chronological sort: newest first

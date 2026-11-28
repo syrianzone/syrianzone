@@ -33,8 +33,8 @@ export function toArabicDigits(n: number | string): string {
 }
 
 /**
- * Which digits a date prints in: Arabic-Indic (`arab`, the default) or Western
- * (`latn`), for pages that standardise on 0-9 such as `/roznama` and `/currency`.
+ * Which digits a date prints in: Western (`latn`, the default) or
+ * Arabic-Indic (`arab`).
  */
 export type DateDigits = 'arab' | 'latn';
 
@@ -42,8 +42,8 @@ function digitsOf(n: number | string, digits: DateDigits): string {
   return digits === 'latn' ? String(n) : toArabicDigits(n);
 }
 
-/** e.g. "الخميس، ١٠ أيلول ٢٠٢٦" (or "الخميس، 10 أيلول 2026" with `latn`). */
-export function formatGregorianSyrian(date: Date | null, digits: DateDigits = 'arab'): string {
+/** e.g. "الخميس، 10 أيلول 2026". */
+export function formatGregorianSyrian(date: Date | null, digits: DateDigits = 'latn'): string {
   if (!date) return '';
   return `${SYRIAN_WEEKDAYS_AR[date.getDay()]}، ${digitsOf(date.getDate(), digits)} ${SYRIAN_MONTHS_AR[date.getMonth()]} ${digitsOf(date.getFullYear(), digits)}`;
 }
@@ -120,17 +120,17 @@ function parseParts(value: Date | string | number): DateParts | null {
   return instant ? damascusParts(date) : localParts(date);
 }
 
-/** e.g. "١٠ أيلول ٢٠٢٦" (no weekday, for compact event rows). */
-export function formatGregorianSyrianShort(value: Date | string, digits: DateDigits = 'arab'): string {
+/** e.g. "10 أيلول 2026" (no weekday, for compact event rows). */
+export function formatGregorianSyrianShort(value: Date | string, digits: DateDigits = 'latn'): string {
   const parts = parseParts(value);
   if (!parts) return typeof value === 'string' ? value : '';
   return `${digitsOf(parts.day, digits)} ${SYRIAN_MONTHS_AR[parts.month]} ${digitsOf(parts.year, digits)}`;
 }
 
-/** e.g. "١٠ أيلول ٢٠٢٦، ١٤:٣٠" — a timestamp, 24-hour, no weekday. */
-export function formatSyrianDateTime(value: string | number | Date): string {
+/** e.g. "10 أيلول 2026، 14:30" — a timestamp, 24-hour, no weekday. */
+export function formatSyrianDateTime(value: string | number | Date, digits: DateDigits = 'latn'): string {
   const parts = parseParts(value);
   if (!parts) return '';
   const time = `${String(parts.hour).padStart(2, '0')}:${String(parts.minute).padStart(2, '0')}`;
-  return `${toArabicDigits(parts.day)} ${SYRIAN_MONTHS_AR[parts.month]} ${toArabicDigits(parts.year)}، ${toArabicDigits(time)}`;
+  return `${digitsOf(parts.day, digits)} ${SYRIAN_MONTHS_AR[parts.month]} ${digitsOf(parts.year, digits)}، ${digitsOf(time, digits)}`;
 }

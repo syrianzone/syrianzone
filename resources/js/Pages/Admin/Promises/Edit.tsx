@@ -1,7 +1,7 @@
 import { promisesApi } from '@/Domain/promises/api';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { Head, Link, router } from '@inertiajs/react';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -21,7 +21,7 @@ import SpeakerPicker from '@/Domain/promises/SpeakerPicker';
 import StateBadge from '@/Domain/promises/StateBadge';
 import { VENUE_LABEL } from '@/Domain/promises/status';
 import type { SpeakerOption } from '@/Domain/promises/types';
-import AdminHeader from './_components/AdminHeader';
+import AdminNav from './_components/AdminNav';
 import RescheduleDialog from './_components/RescheduleDialog';
 import SourcesEditor, { emptySource, sourceKey, type SourceForm } from './_components/SourcesEditor';
 import StatusDialog from './_components/StatusDialog';
@@ -264,20 +264,22 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
     };
 
     const errorList = Object.values(errors);
+    const pageTitle = promise ? (promise.number ? `الوعد رقم ${promise.number}` : 'وعد غير منشور') : 'إضافة وعد';
 
     return (
-        <MainLayout>
-            <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8" dir="rtl">
-                <AdminHeader
-                    title={promise ? (promise.number ? `الوعد رقم ${promise.number}` : 'وعد غير منشور') : 'إضافة وعد'}
-                    current="promises"
-                    queueCount={queueCount}
-                    actions={
-                        <Button asChild variant="ghost" className="gap-1">
-                            <Link href="/admin/promises"><ArrowRight className="h-4 w-4" aria-hidden="true" />كل الوعود</Link>
-                        </Button>
-                    }
-                />
+        <AdminLayout
+            title={pageTitle}
+            activeSection="promises"
+            publicHref="/promises"
+            publicLabel="عرض عداد الوعود"
+            actions={
+                <Button asChild variant="ghost" size="sm" className="gap-1">
+                    <Link href="/admin/promises"><ArrowRight className="h-4 w-4" aria-hidden="true" />كل الوعود</Link>
+                </Button>
+            }
+        >
+            <Head title={pageTitle} />
+            <AdminNav current="promises" queueCount={queueCount} />
 
                 {errorList.length > 0 && (
                     <Alert
@@ -698,7 +700,6 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                         </aside>
                     )}
                 </div>
-            </div>
 
             {promise && canRule && (
                 <>
@@ -720,6 +721,6 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                     />
                 </>
             )}
-        </MainLayout>
+        </AdminLayout>
     );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Suspense, useEffect } from 'react';
+import React, { useState, useMemo, Suspense, useEffect, useRef } from 'react';
 import { Link } from '@inertiajs/react';
 import {
     ArrowLeft, Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Tag, Eye
@@ -124,8 +124,32 @@ export default function SyidClient({ syid }: SyidClientProps) {
     const [loadFontPreview, setLoadFontPreview] = useState(false);
     const [activePosterTheme, setActivePosterTheme] = useState<string>('default');
     const [svgContents, setSvgContents] = useState<Record<string, string>>({});
+    const [posterSectionVisible, setPosterSectionVisible] = useState(false);
+    const posterGridRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
+        if (posterSectionVisible) return;
+        const el = posterGridRef.current;
+        if (!el || typeof IntersectionObserver === 'undefined') {
+            setPosterSectionVisible(true);
+            return;
+        }
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    setPosterSectionVisible(true);
+                    observer.disconnect();
+                }
+            },
+            { rootMargin: '300px 0px' },
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [posterSectionVisible]);
+
+    useEffect(() => {
+        if (!posterSectionVisible) return;
+        let cancelled = false;
         const loadSvgs = async () => {
             const loaded: Record<string, string> = {};
             let failed = 0;
@@ -144,6 +168,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                     }
                 })
             );
+            if (cancelled) return;
             setSvgContents(loaded);
             // The icons are the poster's artwork: a failed load draws a hole in it,
             // which the visitor only notices after downloading.
@@ -152,7 +177,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
             }
         };
         loadSvgs();
-    }, []);
+        return () => { cancelled = true; };
+    }, [posterSectionVisible]);
 
 
 
@@ -843,7 +869,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                     </div>
 
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">
+                    <div ref={posterGridRef} className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">
                         {GOVERNORATE_ICONS.map((icon) => {
                             const rawSvg = svgContents[icon.file];
                             const currentTheme = POSTER_THEMES.find(t => t.id === activePosterTheme) || POSTER_THEMES[0];

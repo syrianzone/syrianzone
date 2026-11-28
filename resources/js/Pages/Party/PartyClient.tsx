@@ -115,7 +115,7 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                     const manifesto = safeHttpUrl(org.manifesto);
 
                                     return (
-                                        <Card key={org.id} className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
+                                        <Card key={org.id} className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:border-primary/40 hover:shadow-sm transition-all duration-200 flex flex-col justify-between h-full">
                                             <CardContent className="p-4 flex flex-col justify-between h-full">
                                                 <div>
                                                     <div className="mb-3">

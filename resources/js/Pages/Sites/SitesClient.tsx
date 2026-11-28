@@ -146,7 +146,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                         {...(href ? { href, target: '_blank', rel: 'noopener noreferrer' } : {})}
                                         className="block h-full group"
                                     >
-                                        <Card className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full text-center">
+                                        <Card className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:border-primary/40 hover:shadow-sm transition-all duration-200 flex flex-col justify-between h-full text-center">
                                             <CardContent className="p-4 flex flex-col items-center h-full w-full justify-between">
                                                 <div className="flex flex-col items-center w-full">
                                                     {/* Light-shaded icon frame for optimal icon contrast even in dark mode */}

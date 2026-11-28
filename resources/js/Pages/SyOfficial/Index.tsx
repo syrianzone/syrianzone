@@ -376,7 +376,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                             {items.map(item => (
                                                 <Card
                                                     key={item.id}
-                                                    className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                                                    className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:border-primary/40 hover:shadow-sm transition-all duration-200 flex flex-col justify-between"
                                                 >
                                                     <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
                                                         {canEditEntries && (
@@ -395,7 +395,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                             onClick={() => openEditSuggestion(item)}
                                                             aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
                                                             title="اقتراح تعديل"
-                                                            className="absolute top-2 end-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-background/85 text-muted-foreground backdrop-blur-md border border-border/60 shadow-xs transition-all duration-200 opacity-80 hover:opacity-100 hover:bg-background hover:text-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                            className="absolute top-2 end-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-background/85 text-muted-foreground backdrop-blur-md border border-border/60 shadow-xs transition-all duration-200 opacity-80 hover:opacity-100 hover:bg-background hover:text-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                         >
                                                             <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
                                                         </button>

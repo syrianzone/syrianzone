@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -30,7 +30,7 @@ import type {
 import { formatEntityImage } from '@/Lib/entityImage';
 import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import { useCanAny } from '@/Lib/useCan';
-import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
+const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 
 interface GovAppShowProps {
     app: GovAppDetail;
@@ -533,13 +533,17 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                 </div>
             </div>
 
-            <DirectorySuggestionDialog
-                module="govapps"
-                open={suggestionOpen}
-                onOpenChange={setSuggestionOpen}
-                defaultKind="edit"
-                fixedTarget={suggestionTarget}
-            />
+            {suggestionOpen && (
+                <Suspense fallback={null}>
+                    <DirectorySuggestionDialog
+                        module="govapps"
+                        open={suggestionOpen}
+                        onOpenChange={setSuggestionOpen}
+                        defaultKind="edit"
+                        fixedTarget={suggestionTarget}
+                    />
+                </Suspense>
+            )}
         </MainLayout>
     );
 }

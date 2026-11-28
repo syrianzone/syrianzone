@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
-import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
+
+const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader } from '@/Components/ui/card';
@@ -607,13 +608,17 @@ export default function GovtCvsShow({
                 </div>
             </div>
 
-            <DirectorySuggestionDialog
-                module="govtcvs"
-                open={suggestOpen}
-                onOpenChange={setSuggestOpen}
-                defaultKind="edit"
-                fixedTarget={suggestionTarget}
-            />
+            {suggestOpen && (
+                <Suspense fallback={null}>
+                    <DirectorySuggestionDialog
+                        module="govtcvs"
+                        open={suggestOpen}
+                        onOpenChange={setSuggestOpen}
+                        defaultKind="edit"
+                        fixedTarget={suggestionTarget}
+                    />
+                </Suspense>
+            )}
         </MainLayout>
     );
 }

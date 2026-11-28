@@ -264,7 +264,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                 onClick={() => openEditSuggestion(item)}
                                                 aria-label={`اقتراح تعديل — ${item.name_ar}`}
                                                 title="اقتراح تعديل"
-                                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-primary"
+                                                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary"
                                             >
                                                 <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
                                             </Button>

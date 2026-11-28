@@ -31,10 +31,10 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                 <div className="space-y-6" dir="rtl">
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Sparkles className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 text-primary" aria-hidden="true" />
                                     عن المساحة السورية (Syrian Zone)
-                                </CardTitle>
+                                </h2>
                                 <CardDescription>مبادرة تفاعلية مفتوحة وغير تجارية</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
@@ -58,10 +58,10 @@ export default function About({ contributors = [] }: { contributors?: Contributo
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-primary" aria-hidden="true" />
                                     الفريق المؤسس
-                                </CardTitle>
+                                </h2>
                                 <CardDescription>بدأ المشروع بمبادرة وتطوير شخصي من</CardDescription>
                             </CardHeader>
                             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -74,7 +74,7 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                                             className="h-14 w-14 shrink-0 rounded-full border border-border bg-muted object-cover"
                                         />
                                         <div>
-                                            <h2 className="font-bold text-foreground text-base">هادي الأحمد</h2>
+                                            <h3 className="font-bold text-foreground text-base">هادي الأحمد</h3>
                                             <p className="text-xs text-muted-foreground mt-1">مؤسس ومطور رئيسي</p>
                                         </div>
                                     </div>
@@ -82,18 +82,18 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                                         <a
                                             href="https://github.com/hadealahmad"
                                             target="_blank"
-                                            rel="noreferrer"
+                                            rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
                                         >
-                                            <Github className="w-3.5 h-3.5" /> hadealahmad
+                                            <Github className="w-3.5 h-3.5" aria-hidden="true" /> hadealahmad
                                         </a>
                                         <a
                                             href="https://twitter.com/hadealahmad"
                                             target="_blank"
-                                            rel="noreferrer"
+                                            rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-semibold hover:text-primary"
                                         >
-                                            @hadealahmad <ExternalLink className="w-3 h-3" />
+                                            @hadealahmad <ExternalLink className="w-3 h-3" aria-hidden="true" />
                                         </a>
                                     </div>
                                 </div>
@@ -107,7 +107,7 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                                             className="h-14 w-14 shrink-0 rounded-full border border-border bg-muted object-cover"
                                         />
                                         <div>
-                                            <h2 className="font-bold text-foreground text-base">نور صوفناتي</h2>
+                                            <h3 className="font-bold text-foreground text-base">نور صوفناتي</h3>
                                             <p className="text-xs text-muted-foreground mt-1">مؤسس ومطور رئيسي</p>
                                         </div>
                                     </div>
@@ -115,18 +115,18 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                                         <a
                                             href="https://github.com/sb-nour"
                                             target="_blank"
-                                            rel="noreferrer"
+                                            rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
                                         >
-                                            <Github className="w-3.5 h-3.5" /> sb-nour
+                                            <Github className="w-3.5 h-3.5" aria-hidden="true" /> sb-nour
                                         </a>
                                         <a
                                             href="https://twitter.com/Nour_Sofanati"
                                             target="_blank"
-                                            rel="noreferrer"
+                                            rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-semibold hover:text-primary"
                                         >
-                                            @Nour_Sofanati <ExternalLink className="w-3 h-3" />
+                                            @Nour_Sofanati <ExternalLink className="w-3 h-3" aria-hidden="true" />
                                         </a>
                                     </div>
                                 </div>
@@ -135,10 +135,10 @@ export default function About({ contributors = [] }: { contributors?: Contributo
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Heart className="w-5 h-5 text-rose-500 fill-rose-500/20" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <Heart className="w-5 h-5 text-rose-500 fill-rose-500/20" aria-hidden="true" />
                                     المساهمون والإسنادات (Contributors)
-                                </CardTitle>
+                                </h2>
                                 <CardDescription>نخص بالذكر والشكر جميع المساهمين الرائعين في هذا المشروع</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
@@ -218,10 +218,10 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                         {contributors.length > 0 && (
                             <Card className="border-border bg-card/50 backdrop-blur-sm">
                                 <CardHeader>
-                                    <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                        <Github className="w-5 h-5 text-primary" />
+                                    <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                        <Github className="w-5 h-5 text-primary" aria-hidden="true" />
                                         مساهمو GitHub
-                                    </CardTitle>
+                                    </h2>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex flex-wrap gap-3">
@@ -230,7 +230,7 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                                                 key={c.login}
                                                 href={c.url}
                                                 target="_blank"
-                                                rel="noreferrer"
+                                                rel="noopener noreferrer"
                                                 title={`${c.login} — ${c.contributions} مساهمة`}
                                                 className="group flex items-center gap-2.5 rounded-full border border-border/50 bg-muted/20 py-1.5 pe-3 ps-1.5 transition-colors hover:border-primary/40 hover:bg-muted/40"
                                             >
@@ -253,10 +253,10 @@ export default function About({ contributors = [] }: { contributors?: Contributo
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Code2 className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <Code2 className="w-5 h-5 text-primary" aria-hidden="true" />
                                     مشروع مفتوح المصدر (MIT License)
-                                </CardTitle>
+                                </h2>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
                                 <p>
@@ -264,14 +264,14 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                                 </p>
                                 <div className="flex flex-wrap gap-3 pt-2">
                                     <Button variant="outline" asChild size="sm" className="gap-2">
-                                        <a href="https://github.com/syrianzone/syrianzone" target="_blank" rel="noreferrer">
-                                            <Github className="w-4 h-4" />
+                                        <a href="https://github.com/syrianzone/syrianzone" target="_blank" rel="noopener noreferrer">
+                                            <Github className="w-4 h-4" aria-hidden="true" />
                                             المستودع على GitHub
                                         </a>
                                     </Button>
                                     <Button variant="outline" asChild size="sm" className="gap-2">
-                                        <a href={`${MEDIA_BASE}/downloads/brandkit-y5sZMu.zip`} target="_blank" rel="noreferrer">
-                                            <Download className="w-4 h-4" />
+                                        <a href={`${MEDIA_BASE}/downloads/brandkit-y5sZMu.zip`} target="_blank" rel="noopener noreferrer">
+                                            <Download className="w-4 h-4" aria-hidden="true" />
                                             تحميل الهوية البصرية (Brand Kit)
                                         </a>
                                     </Button>
@@ -281,10 +281,10 @@ export default function About({ contributors = [] }: { contributors?: Contributo
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Layers className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <Layers className="w-5 h-5 text-primary" aria-hidden="true" />
                                     حقوق الموارد والأيقونات (Attributions)
-                                </CardTitle>
+                                </h2>
                             </CardHeader>
                             <CardContent className="text-xs leading-relaxed text-muted-foreground space-y-2">
                                 <p>الأيقونات المستعملة في أدوات ومشاريع المنصة مأخوذة من مجموعات Streamline Icons ومتاحة بموجب رخصة Creative Commons Attribution 4.0 International (CC BY 4.0).</p>

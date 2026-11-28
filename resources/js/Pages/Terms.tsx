@@ -20,10 +20,10 @@ export default function Terms() {
                 <div className="space-y-6" dir="rtl">
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Scale className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <Scale className="w-5 h-5 text-primary" aria-hidden="true" />
                                     قبول الشروط والاستخدام العام
-                                </CardTitle>
+                                </h2>
                                 <CardDescription>شروط تصفح واستخدام منصة المساحة السورية</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
@@ -38,10 +38,10 @@ export default function Terms() {
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <UserX className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <UserX className="w-5 h-5 text-primary" aria-hidden="true" />
                                     حسابات المستخدمين والسلوك المقبول
-                                </CardTitle>
+                                </h2>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
                                 <p>
@@ -57,10 +57,10 @@ export default function Terms() {
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Map className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <Map className="w-5 h-5 text-primary" aria-hidden="true" />
                                     استوديو الترانزيت وحقوق المساهمة
-                                </CardTitle>
+                                </h2>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
                                 <p>
@@ -74,10 +74,10 @@ export default function Terms() {
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Info className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <Info className="w-5 h-5 text-primary" aria-hidden="true" />
                                     دليل "مشوار" ومساهمات الأماكن والفنادق
-                                </CardTitle>
+                                </h2>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
                                 <p>
@@ -91,10 +91,10 @@ export default function Terms() {
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <HelpCircle className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <HelpCircle className="w-5 h-5 text-primary" aria-hidden="true" />
                                     الألعاب والسلوك فيها
-                                </CardTitle>
+                                </h2>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
                                 <p>
@@ -108,10 +108,10 @@ export default function Terms() {
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Compass className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <Compass className="w-5 h-5 text-primary" aria-hidden="true" />
                                     بوصلة سوريا والنتائج المشتركة
-                                </CardTitle>
+                                </h2>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
                                 <p>
@@ -125,10 +125,10 @@ export default function Terms() {
 
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <AlertTriangle className="w-5 h-5 text-primary" />
+                                <h2 className="text-xl font-bold leading-none tracking-tight flex items-center gap-2">
+                                    <AlertTriangle className="w-5 h-5 text-primary" aria-hidden="true" />
                                     إخلاء المسؤولية وحدودها
-                                </CardTitle>
+                                </h2>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
                                 <p>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router, usePage, useRemember } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { PageBody, PageHeader } from '@/Components/layout';
@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/Components/ui/card';
 import { FilterChip } from '@/Components/ui/filter-chip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import SmartFilterSearch from '@/Components/SmartFilterSearch';
-import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
+const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 import {
     ArrowLeftRight,
     ExternalLink,
@@ -438,12 +438,16 @@ export default function GovtCvsIndex({
                 )}
             </div>
 
-            <DirectorySuggestionDialog
-                module="govtcvs"
-                open={suggestOpen}
-                onOpenChange={setSuggestOpen}
-                targets={suggestionTargets}
-            />
+            {suggestOpen && (
+                <Suspense fallback={null}>
+                    <DirectorySuggestionDialog
+                        module="govtcvs"
+                        open={suggestOpen}
+                        onOpenChange={setSuggestOpen}
+                        targets={suggestionTargets}
+                    />
+                </Suspense>
+            )}
         </MainLayout>
     );
 }

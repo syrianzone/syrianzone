@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   BarChart3,
   Check,
@@ -7,7 +7,6 @@ import {
   Image as ImageIcon,
   Landmark,
   Lightbulb,
-  Loader2,
   Quote,
   RotateCcw,
   Share2,
@@ -26,6 +25,7 @@ import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Separator } from '@/Components/ui/separator';
+import ShareImageDialog from '@/Components/share/ShareImageDialog';
 import {
   buildShareText,
   FACT_CHECK_TIPS,
@@ -33,7 +33,6 @@ import {
 } from '@/Domain/fakenewstest/claims';
 import type { ClaimKind, FakeNewsStats, RoundSummary } from '@/Domain/fakenewstest/types';
 import { notify } from '@/Lib/notify';
-import { useThemeId } from '@/Lib/theme';
 import { cn } from '@/Lib/utils';
 import BdiText from './BdiText';
 import FakeNewsShareCard from './FakeNewsShareCard';
@@ -54,9 +53,7 @@ const KIND_ICONS: Record<ClaimKind, React.ComponentType<{ className?: string }>>
 };
 
 export default function ResultsView({ summary, stats, onPlayAgain, onOpenStats }: ResultsViewProps) {
-  const themeKey = useThemeId();
-  const shareCardRef = useRef<HTMLDivElement>(null);
-  const [imageBusy, setImageBusy] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const hardestClaims = useMemo(() => getHardestClaims(stats, 2), [stats]);
 
@@ -67,38 +64,6 @@ export default function ResultsView({ summary, stats, onPlayAgain, onOpenStats }
       notify.copy('تم نسخ النتيجة');
     } catch {
       notify.error('تعذّر نسخ النتيجة، حاول مجدداً');
-    }
-  };
-
-  const handleDownloadCard = async () => {
-    if (!shareCardRef.current) return;
-    setImageBusy(true);
-    const filename = `syrianzone-fakenews-${summary.score}-of-${summary.total}.png`;
-    try {
-      // html2canvas is heavy and most players never share: load it on demand.
-      const { exportElementAsPng, renderElementAsPngFile } = await import('@/Lib/exportElementAsPng');
-      const file = await renderElementAsPngFile(shareCardRef.current, filename);
-      const nav = navigator as Navigator & {
-        canShare?: (data: ShareData) => boolean;
-      };
-      if (typeof nav.share === 'function' && nav.canShare?.({ files: [file] })) {
-        try {
-          await nav.share({
-            files: [file],
-            title: 'هل تميّزها؟ نسخة سوريا',
-            text: buildShareText(summary),
-          });
-          return;
-        } catch (err) {
-          if (err instanceof DOMException && err.name === 'AbortError') return;
-        }
-      }
-      await exportElementAsPng(file, filename);
-      notify.success('تم تحميل بطاقة النتيجة');
-    } catch {
-      notify.error('تعذّر إنشاء بطاقة النتيجة، حاول مرة أخرى');
-    } finally {
-      setImageBusy(false);
     }
   };
 
@@ -185,15 +150,10 @@ export default function ResultsView({ summary, stats, onPlayAgain, onOpenStats }
             <Button
               type="button"
               size="lg"
-              onClick={handleDownloadCard}
-              disabled={imageBusy}
+              onClick={() => setShareOpen(true)}
               className="w-full gap-2 font-bold"
             >
-              {imageBusy ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Share2 className="h-4 w-4" aria-hidden="true" />
-              )}
+              <Share2 className="h-4 w-4" aria-hidden="true" />
               <span>مشاركة بطاقة النتيجة</span>
             </Button>
 
@@ -457,18 +417,26 @@ export default function ResultsView({ summary, stats, onPlayAgain, onOpenStats }
         ومصادر رسمية.
       </footer>
 
-      {/* Off-screen 360x640 story card captured by html2canvas-pro */}
-      <div
-        aria-hidden="true"
-        style={{ position: 'fixed', top: 0, left: -10000, pointerEvents: 'none', zIndex: -1 }}
-      >
-        <FakeNewsShareCard
-          ref={shareCardRef}
-          summary={summary}
-          stats={stats}
-          themeKey={themeKey}
-        />
-      </div>
+      <ShareImageDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        title="مشاركة بطاقة النتيجة"
+        description="معاينة بطاقة نتيجتك في اختبار التحقّق من الأخبار."
+        filename={`syrianzone-fakenews-${summary.score}-of-${summary.total}.png`}
+        shareTitle="هل تميّزها؟ نسخة سوريا"
+        shareText={buildShareText(summary)}
+        allowFormatToggle
+        defaultFormat="story"
+        renderCard={({ themeId, format, cardRef }) => (
+          <FakeNewsShareCard
+            ref={cardRef}
+            summary={summary}
+            stats={stats}
+            themeKey={themeId}
+            format={format}
+          />
+        )}
+      />
     </section>
   );
 }

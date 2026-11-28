@@ -613,7 +613,8 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
 
   const toggleMenu = (id: string) => setOpenMenuId((cur) => (cur === id ? null : id));
 
-  // Navbar hidden on homepage (Startpage) on desktop; on mobile it stays fixed at the top
+  // The homepage renders its own unified startpage header; skip Navbar and its
+  // hidden DomainPanels completely on `/`.
   const isHomepage = pathname === '/';
 
   // The buttons the navbar carries for one page's own dialog. The page owns the
@@ -647,9 +648,12 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
     },
   ].filter((action) => isActive(action.href, pathname));
 
+  if (isHomepage || (quranFocus && isActive('/muslim/quran', pathname))) {
+    return null;
+  }
+
   return (
-    quranFocus && isActive('/muslim/quran', pathname) ? null :
-    <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
+    <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}>
       {/* This row plus the border of the header is `--sz-navbar-h`
           (resources/css/app.css), which the full-viewport pages subtract. */}
       <div className="container relative flex h-16 max-w-[76rem] mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">

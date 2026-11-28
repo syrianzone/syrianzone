@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Calendar, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
-import { Card, CardContent } from "@/Components/ui/card";
-import { Button } from "@/Components/ui/button";
-import { Alert } from "@/Components/ui/alert";
-import { formatGregorianSyrianShort } from "@/Lib/syrian-date";
-import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
-import { getGovernorateNameAr, governorateNameForF3aliaProvince } from '@/Domain/geography/governorates';
+import { Calendar, ExternalLink } from 'lucide-react';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
+import { api, API_ROOT } from '@/Lib/api';
+import { governorateNameForF3aliaProvince } from '@/Domain/geography/governorates';
 
 /** Upstream event links reach an href: only http(s) passes, else the platform. */
 const F3ALIA_HOME = 'https://app.f3alia.com';
@@ -41,126 +38,84 @@ interface EventsPayload {
     events: ProxiedEvent[];
 }
 
+/**
+ * Compact single-line upcoming event ticker for the homepage.
+ * Renders null while loading, on error, or when no upcoming events exist so it
+ * never adds empty cards or causes layout shift above the tool grid.
+ */
 export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
-    const [events, setEvents] = useState<ProxiedEvent[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isShowingFallbackEvents, setIsShowingFallbackEvents] = useState(false);
-
-    const loadEventsData = async (signal?: AbortSignal) => {
-        setLoading(true);
-        setError(null);
-        try {
-            // `upcoming`, not the default `today`: the homepage spotlight shows
-            // the next event. The query, the province map and the all-Syria
-            // fallback live in EventsController, never in the browser.
-            const payload = await api.get<EventsPayload>(`${API_ROOT}/events/today`, {
-                params: { governorate, scope: 'upcoming' },
-                signal,
-            });
-            if (signal?.aborted) return;
-            setEvents(payload.events ?? []);
-            setIsShowingFallbackEvents(Boolean(payload.is_fallback));
-        } catch (err) {
-            // A superseded request (governorate changed) is not an error.
-            if (signal?.aborted) return;
-            setError(apiErrorMessage(err, 'فشل تحميل الفعاليات حالياً'));
-        } finally {
-            if (!signal?.aborted) setLoading(false);
-        }
-    };
+    const [event, setEvent] = useState<ProxiedEvent | null>(null);
 
     useEffect(() => {
         const ctrl = new AbortController();
-        void loadEventsData(ctrl.signal);
+        void (async () => {
+            try {
+                const payload = await api.get<EventsPayload>(`${API_ROOT}/events/today`, {
+                    params: { governorate, scope: 'upcoming' },
+                    signal: ctrl.signal,
+                });
+                if (ctrl.signal.aborted) return;
+                setEvent(payload.events?.[0] ?? null);
+            } catch {
+                if (ctrl.signal.aborted) return;
+                setEvent(null);
+            }
+        })();
         return () => ctrl.abort();
     }, [governorate]);
 
-    // Only the very first next upcoming event is shown (homepage spotlight).
-    const displayedEvents = events.slice(0, 1);
+    if (!event) return null;
 
-    const currentGovName = getGovernorateNameAr(governorate);
+    const provinceLabel = governorateNameForF3aliaProvince(event.province) || event.provinceName;
 
     return (
-        <div className="w-full" dir="rtl">
-            {/* Notification when showing fallback events */}
-            {isShowingFallbackEvents && !loading && !error && displayedEvents.length > 0 && (
-                <Alert variant="warning" role="status" className="mb-6 rounded-xl text-xs">
-                    <AlertCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" aria-hidden="true" />
-                    <div>
-                        <span className="font-semibold block mb-0.5">
-                            {`لا توجد فعاليات قادمة مسجلة حالياً في ${currentGovName}`}
+        <aside
+            aria-label="فعالية قادمة"
+            className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 rounded-lg border border-border/60 bg-muted/20 px-3.5 py-2 text-xs"
+            dir="rtl"
+        >
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                <Calendar className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                {provinceLabel && (
+                    <span className="shrink-0 font-semibold text-primary">
+                        {provinceLabel}
+                    </span>
+                )}
+                <span className="min-w-0 truncate font-medium text-foreground">
+                    {event.name}
+                </span>
+                <span aria-hidden="true" className="text-border">·</span>
+                <span className="shrink-0 text-muted-foreground">
+                    {formatGregorianSyrianShort(event.event_date)}
+                </span>
+                {event.event_time && (
+                    <>
+                        <span aria-hidden="true" className="text-border">·</span>
+                        <span dir="ltr" className="shrink-0 font-mono tabular-nums text-muted-foreground">
+                            {event.event_time}
                         </span>
-                        نعرض لك الفعاليات القادمة في باقي المحافظات السورية.
-                    </div>
-                </Alert>
-            )}
-
-            {/* Content Area */}
-            {loading ? (
-                <div className="w-full min-h-[72px]" aria-hidden="true" />
-            ) : error ? (
-                <Card className="border-destructive/20 bg-destructive/5 text-center p-8">
-                    <CardContent className="flex flex-col items-center gap-3">
-                        <AlertCircle className="h-10 w-10 text-destructive" />
-                        <p className="text-sm font-medium">{error}</p>
-                        <Button variant="outline" size="sm" onClick={() => void loadEventsData()} className="mt-2">
-                            <RefreshCw className="h-4 w-4 ms-2" />
-                            إعادة المحاولة
-                        </Button>
-                    </CardContent>
-                </Card>
-            ) : displayedEvents.length === 0 ? (
-                <Card className="border-dashed border-2 border-border bg-transparent p-12 text-center">
-                    <CardContent className="flex flex-col items-center gap-2">
-                        <Calendar className="h-10 w-10 text-muted-foreground/60 mb-2" />
-                        <p className="text-sm font-medium text-muted-foreground">
-                            لا توجد فعاليات قادمة مسجلة حالياً في هذه المحافظة.
-                        </p>
-                    </CardContent>
-                </Card>
-            ) : (
-                (() => {
-                    const event = displayedEvents[0];
-                    return (
-                        <div className="w-full text-center" dir="rtl">
-                            <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1.5">
-                                <span className="text-sm font-bold text-primary">
-                                    {governorateNameForF3aliaProvince(event.province) || event.provinceName}
-                                </span>
-                                <span className="text-base font-bold text-foreground">{event.name}</span>
-                            </div>
-                            <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                                <span>{formatGregorianSyrianShort(event.event_date)}</span>
-                                {event.event_time && (
-                                    <>
-                                        <span aria-hidden="true">•</span>
-                                        <span className="font-mono">{event.event_time}</span>
-                                    </>
-                                )}
-                                <span aria-hidden="true">•</span>
-                                <a
-                                    href={safeEventUrl(event.url)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="font-bold text-primary hover:underline inline-flex items-center gap-1"
-                                >
-                                    <span>التفاصيل</span>
-                                    <ExternalLink className="h-3 w-3" />
-                                </a>
-                            </div>
-                            <a
-                                href="https://app.f3alia.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-2 inline-block text-[11px] font-semibold text-muted-foreground hover:text-primary hover:underline transition-colors"
-                            >
-                                عرض كل الفعاليات
-                            </a>
-                        </div>
-                    );
-                })()
-            )}
-        </div>
+                    </>
+                )}
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+                <a
+                    href={safeEventUrl(event.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                >
+                    <span>التفاصيل</span>
+                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                </a>
+                <a
+                    href={F3ALIA_HOME}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    كل الفعاليات
+                </a>
+            </div>
+        </aside>
     );
 }

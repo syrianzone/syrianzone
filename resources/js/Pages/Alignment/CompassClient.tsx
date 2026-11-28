@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowsUpFromLine, Palette, MapPin, Download, Info, Globe, Trash2, Edit2, Plus } from 'lucide-react';
+import { ArrowsUpFromLine, Palette, MapPin, Download, Info, Globe, Trash2, Plus, Share2 } from 'lucide-react';
 import { Twitter } from '@/Components/ui/icons';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
 import { Label } from "@/Components/ui/label";
 import { ScrollArea } from "@/Components/ui/scroll-area";
 import { confirmDialog } from '@/Lib/confirm';
+import BrandShareFrame, { MADAR_DISPLAY_FONT } from '@/Components/share/BrandShareFrame';
+import ShareImageDialog from '@/Components/share/ShareImageDialog';
 
 interface Dot {
     id: number;
@@ -101,6 +103,8 @@ export default function CompassClient() {
     const [dots, setDots] = useState<Dot[]>([]);
     const [selectedDotId, setSelectedDotId] = useState<number | null>(null);
     const [exportFormat, setExportFormat] = useState<'png' | 'jpg' | 'svg'>('png');
+    const [shareOpen, setShareOpen] = useState(false);
+    const [compassSnapshotUrl, setCompassSnapshotUrl] = useState<string | null>(null);
 
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -315,52 +319,54 @@ export default function CompassClient() {
         setDots(prev => prev.map(d => d.id === id ? { ...d, name: newName } : d));
     };
 
+    const downloadSvg = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const { width, height } = canvas;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
+
+        svg += `<rect x="0" y="0" width="${centerX}" height="${centerY}" fill="${safeColor(colors.topLeft, DEFAULT_COLORS.topLeft)}"/>`;
+        svg += `<rect x="${centerX}" y="0" width="${centerX}" height="${centerY}" fill="${safeColor(colors.topRight, DEFAULT_COLORS.topRight)}"/>`;
+        svg += `<rect x="0" y="${centerY}" width="${centerX}" height="${centerY}" fill="${safeColor(colors.bottomLeft, DEFAULT_COLORS.bottomLeft)}"/>`;
+        svg += `<rect x="${centerX}" y="${centerY}" width="${centerX}" height="${centerY}" fill="${safeColor(colors.bottomRight, DEFAULT_COLORS.bottomRight)}"/>`;
+
+        svg += `<line x1="${centerX}" y1="0" x2="${centerX}" y2="${height}" stroke="#fff" stroke-width="2"/>`;
+        svg += `<line x1="0" y1="${centerY}" x2="${width}" y2="${centerY}" stroke="#fff" stroke-width="2"/>`;
+
+        const txtStyle = 'fill="#fff" font-family="IBM Plex Sans Arabic, sans-serif" font-weight="bold" font-size="16" text-anchor="middle"';
+        svg += `<text x="${centerX - 100}" y="${centerY - 10}" ${txtStyle}>${escapeXml(axes.left)}</text>`;
+        svg += `<text x="${centerX + 100}" y="${centerY - 10}" ${txtStyle}>${escapeXml(axes.right)}</text>`;
+        svg += `<text x="${centerX + 15}" y="${centerY - 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY - 100})">${escapeXml(axes.top)}</text>`;
+        svg += `<text x="${centerX + 15}" y="${centerY + 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY + 100})">${escapeXml(axes.bottom)}</text>`;
+
+        dots.forEach(dot => {
+            svg += `<circle cx="${dot.x}" cy="${dot.y}" r="8" fill="${safeColor(dot.color, DOT_COLORS[0])}" stroke="#fff" stroke-width="2"/>`;
+            if (dot.name) {
+                svg += `<text x="${dot.x}" y="${dot.y - 20}" fill="#fff" font-family="sans-serif" font-size="12" text-anchor="middle" style="text-shadow: 0px 1px 2px rgba(0,0,0,0.5);">${escapeXml(dot.name)}</text>`;
+            }
+        });
+        svg += '</svg>';
+
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = 'political-compass.svg';
+        link.href = url;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+    };
+
     const exportCompass = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
         if (exportFormat === 'svg') {
-            const { width, height } = canvas;
-            const centerX = width / 2;
-            const centerY = height / 2;
-            let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
-
-            svg += `<rect x="0" y="0" width="${centerX}" height="${centerY}" fill="${safeColor(colors.topLeft, DEFAULT_COLORS.topLeft)}"/>`;
-            svg += `<rect x="${centerX}" y="0" width="${centerX}" height="${centerY}" fill="${safeColor(colors.topRight, DEFAULT_COLORS.topRight)}"/>`;
-            svg += `<rect x="0" y="${centerY}" width="${centerX}" height="${centerY}" fill="${safeColor(colors.bottomLeft, DEFAULT_COLORS.bottomLeft)}"/>`;
-            svg += `<rect x="${centerX}" y="${centerY}" width="${centerX}" height="${centerY}" fill="${safeColor(colors.bottomRight, DEFAULT_COLORS.bottomRight)}"/>`;
-
-            svg += `<line x1="${centerX}" y1="0" x2="${centerX}" y2="${height}" stroke="#fff" stroke-width="2"/>`;
-            svg += `<line x1="0" y1="${centerY}" x2="${width}" y2="${centerY}" stroke="#fff" stroke-width="2"/>`;
-
-            // Labels with Arabic font assumption
-            const txtStyle = 'fill="#fff" font-family="IBM Plex Sans Arabic, sans-serif" font-weight="bold" font-size="16" text-anchor="middle"';
-            svg += `<text x="${centerX - 100}" y="${centerY - 10}" ${txtStyle}>${escapeXml(axes.left)}</text>`;
-            svg += `<text x="${centerX + 100}" y="${centerY - 10}" ${txtStyle}>${escapeXml(axes.right)}</text>`;
-            svg += `<text x="${centerX + 15}" y="${centerY - 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY - 100})">${escapeXml(axes.top)}</text>`;
-            svg += `<text x="${centerX + 15}" y="${centerY + 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY + 100})">${escapeXml(axes.bottom)}</text>`;
-
-            dots.forEach(dot => {
-                svg += `<circle cx="${dot.x}" cy="${dot.y}" r="8" fill="${safeColor(dot.color, DOT_COLORS[0])}" stroke="#fff" stroke-width="2"/>`;
-                if (dot.name) {
-                    svg += `<text x="${dot.x}" y="${dot.y - 20}" fill="#fff" font-family="sans-serif" font-size="12" text-anchor="middle" style="text-shadow: 0px 1px 2px rgba(0,0,0,0.5);">${escapeXml(dot.name)}</text>`;
-                }
-            });
-            svg += '</svg>';
-
-            const blob = new Blob([svg], { type: 'image/svg+xml' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = 'political-compass.svg';
-            link.href = url;
-            link.click();
-            // Revoking synchronously can cancel the download in some browsers.
-            setTimeout(() => URL.revokeObjectURL(url), 0);
+            downloadSvg();
         } else {
-            const link = document.createElement('a');
-            link.download = `political-compass.${exportFormat}`;
-            link.href = canvas.toDataURL(`image/${exportFormat}`, exportFormat === 'jpg' ? 0.9 : undefined);
-            link.click();
+            setCompassSnapshotUrl(canvas.toDataURL('image/png'));
+            setShareOpen(true);
         }
     };
 
@@ -524,9 +530,13 @@ export default function CompassClient() {
                                         </button>
                                     ))}
                                 </div>
-                                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={exportCompass}>
-                                    <Download className="me-2 w-4 h-4" />
-                                    تصدير
+                                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2" onClick={exportCompass}>
+                                    {exportFormat === 'svg' ? (
+                                        <Download className="w-4 h-4" aria-hidden="true" />
+                                    ) : (
+                                        <Share2 className="w-4 h-4" aria-hidden="true" />
+                                    )}
+                                    {exportFormat === 'svg' ? 'تحميل SVG' : 'معاينة ومشاركة الصورة'}
                                 </Button>
                             </CardContent>
                         </Card>
@@ -571,6 +581,70 @@ export default function CompassClient() {
                     </div>
                 </div>
             </footer>
+            <ShareImageDialog
+                open={shareOpen}
+                onOpenChange={setShareOpen}
+                title="مشاركة البوصلة السياسية"
+                description="معاينة البوصلة بإطار المساحة السورية قبل المشاركة أو التحميل."
+                filename="political-compass.png"
+                shareTitle="البوصلة السياسية المخصصة"
+                previewMaxWidth={460}
+                extraActions={
+                    <Button type="button" variant="outline" onClick={downloadSvg} className="gap-2">
+                        <Download className="h-4 w-4" aria-hidden="true" />
+                        تحميل SVG
+                    </Button>
+                }
+                renderCard={({ themeId, cardRef }) => (
+                    <BrandShareFrame
+                        ref={cardRef}
+                        id="alignment-share-card"
+                        themeId={themeId}
+                        moduleLabel="البوصلة المخصصة"
+                        shareUrl="syrian.zone/alignment"
+                        format="auto"
+                        width={460}
+                    >
+                        {(tokens) => (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                                    <div
+                                        style={{
+                                            fontFamily: MADAR_DISPLAY_FONT,
+                                            fontSize: 20,
+                                            fontWeight: 800,
+                                            color: tokens.ink,
+                                        }}
+                                    >
+                                        البوصلة السياسية
+                                    </div>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: tokens.muted }}>
+                                        {axes.top} / {axes.bottom}
+                                    </span>
+                                </div>
+
+                                <div
+                                    style={{
+                                        borderRadius: 12,
+                                        overflow: 'hidden',
+                                        border: `1px solid ${tokens.border}`,
+                                        backgroundColor: tokens.card,
+                                        padding: 8,
+                                    }}
+                                >
+                                    {compassSnapshotUrl && (
+                                        <img
+                                            src={compassSnapshotUrl}
+                                            alt="معاينة البوصلة السياسية"
+                                            style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 8 }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </BrandShareFrame>
+                )}
+            />
         </div>
     );
 }

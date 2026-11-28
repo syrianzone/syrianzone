@@ -114,6 +114,75 @@ export function shareCardPalette(themeId: string): ShareCardPalette {
       };
 }
 
+export interface ShareBrandTokens {
+  themeId: 'nili' | 'nili-night';
+  isDark: boolean;
+  ground: string;
+  card: string;
+  mutedSurface: string;
+  border: string;
+  ink: string;
+  muted: string;
+  primary: string;
+  primaryRgb: string;
+  primaryForeground: string;
+  node: string;
+  orbit: string;
+  bowl: string;
+  success: string;
+  destructive: string;
+}
+
+const MADAR_SHARE_LIGHT: ShareBrandTokens = {
+  themeId: 'nili',
+  isDark: false,
+  ground: '#F7F6F1',
+  card: '#FFFFFF',
+  mutedSurface: '#ECEAE1',
+  border: '#DFDDD4',
+  ink: '#171A2E',
+  muted: '#52587A',
+  primary: '#3443A3',
+  primaryRgb: '52, 67, 163',
+  primaryForeground: '#FFFFFF',
+  node: '#D4910A',
+  orbit: '#3443A3',
+  bowl: '#171A2E',
+  success: '#1F7A4D',
+  destructive: '#C93B3B',
+};
+
+const MADAR_SHARE_DARK: ShareBrandTokens = {
+  themeId: 'nili-night',
+  isDark: true,
+  ground: '#0E1129',
+  card: '#141838',
+  mutedSurface: '#181D42',
+  border: '#262E5E',
+  ink: '#EEF0FF',
+  muted: '#A2AADB',
+  primary: '#939FFF',
+  primaryRgb: '147, 159, 255',
+  primaryForeground: '#0E1129',
+  node: '#F2B53A',
+  orbit: '#939FFF',
+  bowl: '#EEF0FF',
+  success: '#4ADE80',
+  destructive: '#F87171',
+};
+
+/**
+ * Concrete hex/rgb tokens for the Madar share-image system (matching
+ * `resources/og/tokens.json`), safe for html2canvas-pro and 2D Canvas without
+ * relying on CSS custom properties.
+ */
+export function resolveShareBrandTokens(themeId?: string): ShareBrandTokens {
+  if (themeId === 'nili-night') return MADAR_SHARE_DARK;
+  if (themeId === 'nili') return MADAR_SHARE_LIGHT;
+  const theme = themeId ? getThemeById(themeId) : undefined;
+  return theme?.isDark ? MADAR_SHARE_DARK : MADAR_SHARE_LIGHT;
+}
+
 export type ColorScheme = 'light' | 'dark';
 
 function colorSchemeOf(themeId: string): ColorScheme {

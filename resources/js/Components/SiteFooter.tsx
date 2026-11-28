@@ -45,7 +45,51 @@ const FOOTER_COLUMNS = [
     },
 ] as const;
 
-const SiteFooter = React.memo(function SiteFooter() {
+const SLIM_FOOTER_LINKS = [
+    { href: '/about', label: 'عن المنصة' },
+    { href: '/stats', label: 'الإحصائيات' },
+    { href: '/syid', label: 'الهوية البصرية' },
+    { href: '/privacy', label: 'الخصوصية' },
+    { href: '/terms', label: 'الشروط' },
+] as const;
+
+const SiteFooter = React.memo(function SiteFooter({
+    variant = 'full',
+}: {
+    variant?: 'full' | 'slim';
+}) {
+    if (variant === 'slim') {
+        return (
+            <footer
+                className="border-t border-border/60 bg-background text-foreground"
+                dir="rtl"
+            >
+                <div className="mx-auto flex w-full max-w-[76rem] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3.5 text-xs text-muted-foreground md:px-8">
+                    <nav aria-label="روابط المنصة" className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                        {SLIM_FOOTER_LINKS.map((item, idx) => (
+                            <React.Fragment key={item.href}>
+                                {idx > 0 && (
+                                    <span aria-hidden="true" className="text-border">
+                                        ·
+                                    </span>
+                                )}
+                                <Link
+                                    href={item.href}
+                                    className="transition-colors hover:text-foreground"
+                                >
+                                    {item.label}
+                                </Link>
+                            </React.Fragment>
+                        ))}
+                    </nav>
+                    <span dir="ltr" className="font-mono text-[11px] tabular-nums">
+                        syrian.zone
+                    </span>
+                </div>
+            </footer>
+        );
+    }
+
     return (
         <footer
             className="border-t border-border bg-background text-foreground"

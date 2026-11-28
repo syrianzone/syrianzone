@@ -13,17 +13,27 @@ const LOGO = {
 
 export type LogoVariant = keyof typeof LOGO;
 
+export type LogoColors = {
+    ink?: string;
+    orbit?: string;
+    bowl?: string;
+    node?: string;
+};
+
 type LogoProps = Omit<SVGProps<SVGSVGElement>, 'viewBox'> & {
     variant?: LogoVariant;
     /** Accessible name; pass an empty string when the logo sits next to visible text that names the site. */
     title?: string;
     /** One colour for everything (e.g. 'currentColor' for monochrome placements). */
     mono?: string;
+    /** Explicit hex/rgb fills for renderers (such as html2canvas) that cannot resolve CSS custom properties. */
+    colors?: LogoColors;
 };
 
-export function Logo({ variant = 'lockup', title = 'المساحة السورية', mono, ...props }: LogoProps) {
+export function Logo({ variant = 'lockup', title = 'المساحة السورية', mono, colors, ...props }: LogoProps) {
     const part: Part = LOGO[variant];
-    const fill = (v: string) => mono ?? `hsl(var(${v}))`;
+    const fill = (key: keyof LogoColors, v: string) => mono ?? colors?.[key] ?? `hsl(var(${v}))`;
+    const explicitFill = (key: keyof LogoColors) => mono ?? colors?.[key];
     const decorative = title === '';
     return (
         <svg
@@ -33,10 +43,10 @@ export function Logo({ variant = 'lockup', title = 'المساحة السوري�
             aria-label={decorative ? undefined : title}
             {...props}
         >
-            {part.ink && <path d={part.ink} style={{ fill: fill('--foreground') }} />}
-            {part.orbit && <path d={part.orbit} style={{ fill: fill('--sz-orbit') }} />}
-            {part.bowl && <path d={part.bowl} style={{ fill: fill('--sz-bowl') }} />}
-            {part.node && <path d={part.node} style={{ fill: fill('--sz-node') }} />}
+            {part.ink && <path d={part.ink} fill={explicitFill('ink')} style={{ fill: fill('ink', '--foreground') }} />}
+            {part.orbit && <path d={part.orbit} fill={explicitFill('orbit')} style={{ fill: fill('orbit', '--sz-orbit') }} />}
+            {part.bowl && <path d={part.bowl} fill={explicitFill('bowl')} style={{ fill: fill('bowl', '--sz-bowl') }} />}
+            {part.node && <path d={part.node} fill={explicitFill('node')} style={{ fill: fill('node', '--sz-node') }} />}
         </svg>
     );
 }

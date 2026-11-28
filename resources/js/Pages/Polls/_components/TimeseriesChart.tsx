@@ -1,37 +1,18 @@
-import { lazy, Suspense, useCallback, useId, useMemo, useState, useRef } from "react"
+import { lazy, Suspense, useCallback, useId, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
 import { Button } from "@/Components/ui/button"
 import { cn } from "@/Lib/utils"
-import { Download } from "lucide-react"
-import { notify } from "@/Lib/notify"
-import type { PngDeclarations } from "@/Lib/exportElementAsPng"
+import { Share2 } from "lucide-react"
+import BrandShareFrame, { MADAR_DISPLAY_FONT } from "@/Components/share/BrandShareFrame"
+import ShareImageDialog from "@/Components/share/ShareImageDialog"
 
 // recharts is the heaviest dependency of the leaderboard and draws nothing on
 // the server (ResponsiveContainer has no size there), so only the drawing is
 // loaded on demand; the fixed-height box around it keeps the layout still.
 const TimeseriesLines = lazy(() => import("./TimeseriesLines"))
 
-/** The card paints its own fixed dark palette so the export never depends on the theme. */
 const CHART_BACKGROUND = '#020817'
 const CHART_FOREGROUND = '#f8fafc'
-const CHART_BORDER = '#1e293b'
-
-/** html2canvas cannot parse oklch/oklab/color-mix: keep the card's own tones instead. */
-const CHART_PNG_OPTIONS = {
-    scale: 2,
-    backgroundColor: CHART_BACKGROUND,
-    removeSelectors: ['[data-chart-controls]'],
-    colorPolicy: (node: HTMLElement, style: CSSStyleDeclaration): PngDeclarations => {
-        const modern = (value: string | undefined): value is string =>
-            !!value && (value.includes('oklch') || value.includes('oklab') || value.includes('color-mix'))
-        const declarations: PngDeclarations = {}
-        if (modern(style.backgroundColor)) declarations['background-color'] = CHART_BACKGROUND
-        if (modern(style.color)) declarations.color = CHART_FOREGROUND
-        if (modern(style.borderColor)) declarations['border-color'] = CHART_BORDER
-        if (modern(style.backgroundImage)) declarations['background-image'] = 'none'
-        return declarations
-    },
-}
 
 interface HistoryPoint {
     date: string
@@ -261,27 +242,30 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
         return colors[idx % colors.length]
     }
 
-    const chartRef = useRef<HTMLDivElement>(null)
-    // The exporter keeps only the captured node when it has an id, which is how
-    // the controls below stay out of the image.
     const chartId = useId()
-    // The drawing loads on demand; until it has mounted, a download would
+    // The drawing loads on demand; until it has mounted, a share preview would
     // capture the empty placeholder.
     const [chartReady, setChartReady] = useState(false)
+    const [shareOpen, setShareOpen] = useState(false)
     const markChartReady = useCallback(() => setChartReady(true), [])
 
-    const handleDownload = async () => {
-        const chart = chartRef.current
-        if (!chart || !chartReady) return
+    const chartLines = useMemo(
+        () =>
+            displayCandidates.map((candidate) => ({
+                key: candidate.candidateId,
+                name: candidate.name,
+                color: getCandidateColor(candidate.candidateId),
+            })),
+        [displayCandidates, candidates],
+    )
 
-        try {
-            // Loaded on demand: html2canvas is heavy and only this button needs it.
-            const { exportElementAsPng } = await import("@/Lib/exportElementAsPng")
-            await exportElementAsPng(chart, `chart-${Date.now()}.png`, CHART_PNG_OPTIONS)
-        } catch {
-            notify.error('تعذّر إنشاء صورة المخطط، حاول مرة أخرى')
-        }
-    }
+    const subtitleText = [
+        METRICS.find((m) => m.value === metric)?.label,
+        VIEW_MODES.find((v) => v.value === viewMode)?.label,
+        TIMEFRAMES.find((t) => t.value === timeframe)?.label,
+    ]
+        .filter(Boolean)
+        .join(' · ')
 
     return (
         <Card className="mb-8">
@@ -325,23 +309,19 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                     Inline styles for backgroundColor and color keep the card's own
                     palette, so 'lab()' colours never reach html2canvas.
                 */}
-                <div id={chartId} ref={chartRef} style={{ backgroundColor: CHART_BACKGROUND, color: CHART_FOREGROUND, padding: '16px', borderRadius: '8px' }}>
+                <div id={chartId} style={{ backgroundColor: CHART_BACKGROUND, color: CHART_FOREGROUND, padding: '16px', borderRadius: '8px' }}>
                     <div className="h-[300px] w-full" dir="ltr">
                         <Suspense fallback={null}>
                             <TimeseriesLines
                                 data={chartData}
-                                lines={displayCandidates.map((candidate) => ({
-                                    key: candidate.candidateId,
-                                    name: candidate.name,
-                                    color: getCandidateColor(candidate.candidateId),
-                                }))}
+                                lines={chartLines}
                                 onReady={markChartReady}
                             />
                         </Suspense>
                     </div>
 
                     {/* Candidate Selector Pills */}
-                    <div className="mt-6" data-chart-controls>
+                    <div className="mt-6" data-chart-controls data-share-exclude>
                         <div className="text-sm font-semibold mb-3 text-gray-400">اختر للعرض:</div>
                         <div role="group" aria-label="المرشحون المعروضون في المخطط" className="flex flex-wrap gap-2">
                             <button
@@ -398,11 +378,108 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                 </table></div>
 
                 <div className="mt-4 flex justify-end">
-                    <Button variant="outline" size="sm" onClick={handleDownload} disabled={!chartReady} className="gap-2">
-                        <Download className="w-4 h-4" />
-                        تحميل الصورة
+                    <Button variant="outline" size="sm" onClick={() => setShareOpen(true)} disabled={!chartReady} className="gap-2">
+                        <Share2 className="w-4 h-4" aria-hidden="true" />
+                        مشاركة صورة المخطط
                     </Button>
                 </div>
+
+                <ShareImageDialog
+                    open={shareOpen}
+                    onOpenChange={setShareOpen}
+                    title="مشاركة صورة المخطط"
+                    description="معاينة مخطط تقدم المرشحين بهوية المساحة السورية."
+                    filename={`syrianzone-polls-chart-${Date.now()}.png`}
+                    shareTitle={title}
+                    previewMaxWidth={520}
+                    exportOptions={{ scale: 2 }}
+                    renderCard={({ themeId, cardRef }) => (
+                        <BrandShareFrame
+                            ref={cardRef}
+                            id={`${chartId}-share`}
+                            themeId={themeId}
+                            moduleLabel="تقدم المرشحين"
+                            shareUrl="syrian.zone/polls"
+                            format="landscape"
+                            width={680}
+                        >
+                            {(tokens) => (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+                                        <div
+                                            style={{
+                                                fontFamily: MADAR_DISPLAY_FONT,
+                                                fontSize: 22,
+                                                fontWeight: 800,
+                                                color: tokens.ink,
+                                                lineHeight: 1.3,
+                                            }}
+                                        >
+                                            {title}
+                                        </div>
+                                        <span
+                                            style={{
+                                                fontSize: 11,
+                                                fontWeight: 700,
+                                                color: tokens.muted,
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {subtitleText}
+                                        </span>
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            borderRadius: 12,
+                                            backgroundColor: tokens.card,
+                                            border: `1px solid ${tokens.border}`,
+                                            padding: '14px 12px 10px',
+                                        }}
+                                    >
+                                        <div style={{ height: 270, width: '100%' }} dir="ltr">
+                                            <Suspense fallback={null}>
+                                                <TimeseriesLines data={chartData} lines={chartLines} />
+                                            </Suspense>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                        {chartLines.map((line) => (
+                                            <span
+                                                key={line.key}
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 6,
+                                                    fontSize: 11,
+                                                    fontWeight: 700,
+                                                    padding: '3px 9px',
+                                                    borderRadius: 999,
+                                                    backgroundColor: tokens.card,
+                                                    border: `1px solid ${tokens.border}`,
+                                                    color: tokens.ink,
+                                                }}
+                                            >
+                                                <span
+                                                    aria-hidden="true"
+                                                    style={{
+                                                        width: 8,
+                                                        height: 8,
+                                                        borderRadius: '50%',
+                                                        backgroundColor: line.color,
+                                                        display: 'inline-block',
+                                                    }}
+                                                />
+                                                {line.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </BrandShareFrame>
+                    )}
+                />
             </CardContent>
         </Card>
     )

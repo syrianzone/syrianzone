@@ -23,8 +23,9 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   useEffect(() => { recordVisit(path); }, [path])
   // The catalogue decides which pages take the full viewport and which keep
   // the navbar in the flow; the shell only knows its own homepage rule.
+  const isHome = path === '/'
   const fullBleed = isFullBleed(path)
-  const sticky = path !== '/' && !fullBleed && isNavbarSticky(path)
+  const sticky = !isHome && !fullBleed && isNavbarSticky(path)
 
   return (
     <FocusModeProvider value={focusValue}>
@@ -37,7 +38,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
             تجاوز إلى المحتوى
           </a>
         )}
-        {!focus && <Navbar sticky={sticky} />}
+        {!focus && !isHome && <Navbar sticky={sticky} />}
         <main
           id="main-content"
           tabIndex={-1}
@@ -47,7 +48,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
         >
           {children}
         </main>
-        {!focus && !fullBleed && <SiteFooter />}
+        {!focus && !fullBleed && <SiteFooter variant={isHome ? 'slim' : 'full'} />}
         {/* The popup is suppressed for the whole transit section. */}
         {routeFamily(path) !== 'transit' && <UnblockSyriaNotification />}
         {DevRoleSwitcher && (

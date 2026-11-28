@@ -6,12 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/Components/ui/badge";
 import type { Website } from './types';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
-import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';
+import { DirectoryFacetFilter } from '@/Components/directory/DirectoryFacetFilter';
 import DirectoryLoadMore from '@/Components/directory/DirectoryLoadMore';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
 import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
+import { PageBody, PageHeader } from '@/Components/layout';
 
 interface SitesClientProps {
     initialWebsites: Website[];
@@ -74,49 +75,41 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
 
     return (
         <div className="min-h-screen transition-colors" dir="rtl">
-            <section className="bg-card py-10 shadow-xs border-b border-border">
-                <div className="container mx-auto px-4 text-center max-w-4xl space-y-6">
-                    <div className="relative">
-                        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">المواقع السورية</h1>
-                        <p className="text-lg text-muted-foreground">قاعدة بيانات المواقع السورية مصنفة حسب القطاعات</p>
+            <PageHeader
+                title="المواقع السورية"
+                description="قاعدة بيانات المواقع السورية مصنفة حسب القطاعات."
+                actions={
+                    <Button asChild variant="outline" size="sm" className="h-9 bg-card shadow-none">
+                        <a
+                            href="https://docs.google.com/forms/d/e/1FAIpQLSdIu8TFwSmT7fHxzsVlOwt35X9Myfhg0RZ6jwEkIMxxvyctqA/viewform"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <Plus size={16} aria-hidden="true" />
+                            <span>إضافة موقع</span>
+                        </a>
+                    </Button>
+                }
+            />
 
-                        <div className="mt-4 flex justify-center">
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="gap-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary"
-                            >
-                                <a
-                                    href="https://docs.google.com/forms/d/e/1FAIpQLSdIu8TFwSmT7fHxzsVlOwt35X9Myfhg0RZ6jwEkIMxxvyctqA/viewform"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <Plus size={16} />
-                                    إضافة موقع جديد
-                                </a>
-                            </Button>
-                        </div>
-                    </div>
-
+            <PageBody>
+                <div className="mb-4 flex flex-col gap-2.5 sm:flex-row sm:items-center">
                     <DirectorySearch
-                        size="default"
-                        className="mx-auto max-w-2xl"
+                        className="sm:max-w-xs"
                         value={directory.query}
                         onChange={directory.setQuery}
                         placeholder="ابحث في المواقع السورية..."
                         ariaLabel="ابحث في المواقع السورية"
                     />
-
-                    <DirectoryFilterChips
-                        label="النوع"
-                        options={facets[0].options}
-                        value={directory.filters.type ?? []}
-                        onChange={(next) => directory.setFilters({ ...directory.filters, type: next })}
-                    />
+                    <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-1">
+                        <DirectoryFacetFilter
+                            label="النوع"
+                            options={facets[0].options}
+                            value={directory.filters.type ?? []}
+                            onChange={(next) => directory.setFilters({ ...directory.filters, type: next })}
+                        />
+                    </div>
                 </div>
-            </section>
-
-            <div className="container mx-auto px-4 py-8">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <DirectoryResultCount>
                         {directory.results.length === 0
@@ -195,23 +188,15 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                 })}
                             </div>
                         ) : (
-                            <div className="bg-card rounded-2xl shadow-xs border border-border overflow-hidden">
-                                <Table>
-                                    <TableHeader className="bg-muted">
-                                        <TableRow>
-                                            <TableHead className="text-start font-bold">الموقع</TableHead>
-                                            <TableHead className="text-start font-bold">النوع</TableHead>
-                                            <TableHead className="text-start font-bold w-1/3">الوصف</TableHead>
-                                            <TableHead className="text-start font-bold">الرابط</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {directory.visible.map(site => {
-                                            const href = safeSiteUrl(site.url);
-                                            return (
-                                            <TableRow key={site.id} className="hover:bg-muted/50 transition-colors">
-                                                <TableCell className="font-medium">
-                                                    <div className="flex items-center gap-3">
+                            <div className="bg-card rounded-lg border border-border overflow-hidden">
+                                {/* Mobile 2-row-per-item list */}
+                                <ul className="md:hidden divide-y divide-border" aria-label="قائمة المواقع">
+                                    {directory.visible.map(site => {
+                                        const href = safeSiteUrl(site.url);
+                                        return (
+                                            <li key={site.id} className="px-3.5 py-3 space-y-2">
+                                                <div className="flex items-center justify-between gap-2.5">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
                                                         <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-100 border border-border/80 flex items-center justify-center shrink-0 p-1">
                                                             <img
                                                                 src={getFaviconUrl(site.url)}
@@ -229,43 +214,99 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                             />
                                                             <Globe className="w-4 h-4 text-zinc-700 hidden" aria-hidden="true" />
                                                         </div>
-                                                        <span className="text-foreground font-semibold">{site.name}</span>
+                                                        <span className="text-foreground font-semibold text-sm truncate">{site.name}</span>
                                                     </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="outline" className="font-normal text-[11px]">
-                                                        {getTypeDisplayName(site.type)}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground text-sm max-w-xs truncate" title={site.description}>
-                                                    {site.description}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {href ? (
-                                                    <Button variant="link" asChild className="h-auto p-0 text-primary font-semibold">
-                                                        <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
-                                                            <span className="text-xs">زيارة<span className="sr-only"> {site.name} (يفتح في نافذة جديدة)</span></span>
+                                                    {href && (
+                                                        <a href={href} target="_blank" rel="noopener noreferrer" className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                                                            <span>زيارة<span className="sr-only"> {site.name} (يفتح في نافذة جديدة)</span></span>
                                                             <ExternalLink size={12} aria-hidden="true" />
                                                         </a>
-                                                    </Button>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground">-</span>
                                                     )}
-                                                </TableCell>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="text-xs text-muted-foreground truncate flex-1">{site.description}</p>
+                                                    <Badge variant="outline" className="font-normal text-[10px] shrink-0 whitespace-nowrap">
+                                                        {getTypeDisplayName(site.type)}
+                                                    </Badge>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+
+                                {/* Desktop table */}
+                                <div className="hidden md:block">
+                                    <Table>
+                                        <TableHeader className="bg-muted">
+                                            <TableRow>
+                                                <TableHead className="text-start font-bold">الموقع</TableHead>
+                                                <TableHead className="text-start font-bold">النوع</TableHead>
+                                                <TableHead className="text-start font-bold w-1/3">الوصف</TableHead>
+                                                <TableHead className="text-start font-bold">الرابط</TableHead>
                                             </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {directory.visible.map(site => {
+                                                const href = safeSiteUrl(site.url);
+                                                return (
+                                                <TableRow key={site.id} className="hover:bg-muted/50 transition-colors">
+                                                    <TableCell className="font-medium">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-100 border border-border/80 flex items-center justify-center shrink-0 p-1">
+                                                                <img
+                                                                    src={getFaviconUrl(site.url)}
+                                                                    alt=""
+                                                                    width={20}
+                                                                    height={20}
+                                                                    loading="lazy"
+                                                                    decoding="async"
+                                                                    referrerPolicy="no-referrer"
+                                                                    className="w-5 h-5 object-contain"
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.style.display = 'none';
+                                                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                    }}
+                                                                />
+                                                                <Globe className="w-4 h-4 text-zinc-700 hidden" aria-hidden="true" />
+                                                            </div>
+                                                            <span className="text-foreground font-semibold">{site.name}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className="font-normal text-[11px]">
+                                                            {getTypeDisplayName(site.type)}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground text-sm max-w-xs truncate" title={site.description}>
+                                                        {site.description}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {href ? (
+                                                        <Button variant="link" asChild className="h-auto p-0 text-primary font-semibold">
+                                                            <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                                                                <span className="text-xs">زيارة<span className="sr-only"> {site.name} (يفتح في نافذة جديدة)</span></span>
+                                                                <ExternalLink size={12} aria-hidden="true" />
+                                                            </a>
+                                                        </Button>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">-</span>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
                         )}
 
                         {directory.hasMore && <DirectoryLoadMore onClick={directory.loadMore} />}
                     </>
                 )}
-            </div>
+            </PageBody>
 
-            <section className="bg-card py-16 px-4 border-t border-border mt-12">
+            <section className="bg-card py-12 px-4 border-t border-border">
                 <div className="max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl font-bold mb-6 text-foreground">حول المواقع السورية</h2>
                     <p className="text-muted-foreground mb-8 leading-relaxed">

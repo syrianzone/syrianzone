@@ -12,6 +12,7 @@ import {
     useMeasurementId,
     usePrivacySignal,
 } from '@/Lib/analyticsConsent';
+import { PageHeader, ReaderLayout } from '@/Components/layout';
 
 export default function Privacy() {
     // Analytics controls only exist where analytics could run at all.
@@ -21,19 +22,14 @@ export default function Privacy() {
 
     return (
         <MainLayout>
-            
+            <PageHeader
+                width="narrow"
+                divider
+                title="سياسة الخصوصية"
+                description="آخر تحديث: 26 نوفمبر 2026"
+            />
 
-            <div className="container mx-auto px-4 py-12 max-w-4xl min-h-screen text-foreground">
-                <div className="text-center mb-10 space-y-4">
-                    <div className="inline-flex p-3 bg-primary/10 rounded-full text-primary mb-2">
-                        <Shield className="w-10 h-10" />
-                    </div>
-                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">سياسة الخصوصية</h1>
-                    <p className="text-muted-foreground max-w-xl mx-auto text-sm md:text-base">
-                        آخر تحديث: 26 نوفمبر 2026
-                    </p>
-                </div>
-
+            <ReaderLayout>
                 <div className="space-y-6" dir="rtl">
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
@@ -198,10 +194,10 @@ export default function Privacy() {
                         </Card>
                     </div>
 
-                <div className="mt-12 text-center text-xs text-muted-foreground">
+                <div className="mt-8 text-center text-xs text-muted-foreground">
                     <Separator className="my-6" />
                 </div>
-            </div>
+            </ReaderLayout>
         </MainLayout>
     );
 }

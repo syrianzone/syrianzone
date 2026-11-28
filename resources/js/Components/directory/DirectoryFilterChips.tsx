@@ -11,17 +11,26 @@ interface Props {
     /** «الكل» — the language may differ from the rest of the page. */
     allLabel?: string;
     multiple?: boolean;
+    /** Single-line horizontal scroll row instead of wrapping into multiple tall rows. */
+    scrollable?: boolean;
     className?: string;
 }
 
-const CHIP_CLASS = 'h-8 cursor-pointer rounded-full px-3 text-xs font-semibold sm:text-sm';
+const CHIP_CLASS = 'h-8 shrink-0 cursor-pointer rounded-full px-3 text-xs font-semibold sm:text-sm';
 
 /**
- * One facet as a row of chips. A single-select facet replaces the chosen value
- * and clicking it again clears the facet; a multi-select one toggles it.
+ * One facet as a start-aligned row of chips.
+ * Single-select replaces the chosen value and clicking again clears it; multi-select toggles.
  */
 export default function DirectoryFilterChips({
-    label, options, value, onChange, allLabel = 'الكل', multiple = false, className,
+    label,
+    options,
+    value,
+    onChange,
+    allLabel = 'الكل',
+    multiple = false,
+    scrollable = false,
+    className,
 }: Props) {
     const toggle = (option: string) => {
         if (!multiple) {
@@ -32,7 +41,15 @@ export default function DirectoryFilterChips({
     };
 
     return (
-        <div role="group" aria-label={label} className={cn('flex flex-wrap justify-center gap-2', className)}>
+        <div
+            role="group"
+            aria-label={label}
+            className={cn(
+                'flex justify-start gap-2',
+                scrollable ? 'flex-nowrap overflow-x-auto no-scrollbar pb-0.5' : 'flex-wrap',
+                className,
+            )}
+        >
             <FilterChip
                 active={value.length === 0}
                 onClick={() => onChange([])}

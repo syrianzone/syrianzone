@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Com
 import { Separator } from '@/Components/ui/separator';
 import { Button } from '@/Components/ui/button';
 import { MEDIA_BASE } from '@/Domain/govapps/media';
+import { PageHeader, ReaderLayout } from '@/Components/layout';
+import { Logo } from '@/Components/brand/Logo';
 
 interface Contributor {
     login: string;
@@ -18,19 +20,14 @@ interface Contributor {
 export default function About({ contributors = [] }: { contributors?: Contributor[] }) {
     return (
         <MainLayout>
-            
+            <PageHeader
+                width="narrow"
+                divider
+                title="عن المساحة السورية"
+                description="مبادرة مجتمعية مفتوحة المصدر وغير تجارية تجمع الأدوات والبيانات السورية في مكان واحد."
+            />
 
-            <div className="container mx-auto px-4 py-12 max-w-4xl min-h-screen text-foreground">
-                <div className="text-center mb-10 space-y-4">
-                    <div className="inline-flex p-3 bg-primary/10 rounded-full text-primary mb-2">
-                        <Info className="w-10 h-10" />
-                    </div>
-                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">عن المنصة</h1>
-                    <p className="text-muted-foreground max-w-xl mx-auto text-sm md:text-base">
-                        منصة تفاعلية مفتوحة المصدر للشعب السوري
-                    </p>
-                </div>
-
+            <ReaderLayout>
                 <div className="space-y-6" dir="rtl">
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
@@ -308,7 +305,7 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                         <Link href="/terms" className="hover:text-primary transition-colors">الشروط والأحكام</Link>
                     </div>
                 </div>
-            </div>
+            </ReaderLayout>
         </MainLayout>
     );
 }

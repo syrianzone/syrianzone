@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import { Button } from "@/Components/ui/button";
+import { Badge } from "@/Components/ui/badge";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Smartphone, Globe, MessageSquarePlus, Pencil, PencilLine, Settings } from "lucide-react";
 import { useCanAny, useCanModule } from '@/Lib/useCan';
@@ -8,9 +9,11 @@ import type { GovApp } from '@/Domain/govapps/types';
 import type { SuggestionTargetOption } from '@/Domain/suggestions/types';
 import { DEFAULT_GOVAPP_ICON } from '@/Domain/govapps/media';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
-import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { DirectoryUnderlineTabs } from '@/Components/directory/DirectoryUnderlineTabs';
 import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
+import { PageBody, PageHeader } from '@/Components/layout';
 
 const PLATFORMS = [
     { value: 'android', label: 'أندرويد' },
@@ -141,44 +144,51 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
 
     return (
         <div className="min-h-screen bg-background" dir="rtl">
-            <section className="bg-card py-10 shadow-sm border-b border-border">
-                <div className="container mx-auto px-4 text-center max-w-4xl">
-                    {canOpenPanel && (
-                        <div className="mb-4 flex justify-center">
-                            <a
-                                href="/admin/govapps"
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg hover:bg-primary/90 transition-all transform hover:-translate-y-0.5"
-                            >
-                                <Settings className="w-4 h-4" aria-hidden="true" />
-                                <span>لوحة تحكم إدارة التطبيقات (Admin Panel)</span>
-                            </a>
-                        </div>
-                    )}
-                    <h1 className="text-3xl md:text-4xl font-bold mb-3 text-foreground">تطبيقات حكومية</h1>
-                    <p className="text-lg text-muted-foreground">
-                        دليل التطبيقات والخدمات الحكومية الإلكترونية الرسمية
-                    </p>
-                    <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <PageHeader
+                title="تطبيقات حكومية"
+                description="دليل التطبيقات والخدمات الحكومية الإلكترونية الرسمية على أندرويد وآيفون والويب."
+                actions={
+                    <>
+                        {canOpenPanel && (
+                            <Button asChild variant="ghost" size="sm" className="h-9">
+                                <a href="/admin/govapps">
+                                    <Settings className="h-4 w-4" aria-hidden="true" />
+                                    <span>إدارة التطبيقات</span>
+                                </a>
+                            </Button>
+                        )}
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
+                            className="h-9 bg-card shadow-none"
                             onClick={openAddSuggestion}
-                            className="h-9 rounded-full gap-2 px-4 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
                         >
                             <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
-                            <span>إضافة / اقتراح تعديل</span>
+                            <span>اقتراح تطبيق</span>
                         </Button>
-                    </div>
-                </div>
-            </section>
+                    </>
+                }
+            />
 
-            <div className="container mx-auto px-4 py-8">
+            <PageBody>
                 {initialData.length > 0 && (
-                    <DirectorySmartSearch
+                    <DirectoryUnderlineTabs
                         className="mb-5"
-                        facets={directory.searchFacets} value={directory.value} onChange={directory.setValue}
-                        placeholder="ابحث بالاسم أو الوصف أو اختر تصفية..." ariaLabel="ابحث في التطبيقات الحكومية"
+                        label="متوفر على"
+                        allLabel="الكل"
+                        allCount={initialData.length}
+                        options={PLATFORMS}
+                        value={directory.filters.platform ?? []}
+                        onChange={(next) => directory.setFilters({ ...directory.filters, platform: next })}
+                        trailing={
+                            <DirectorySearch
+                                value={directory.query}
+                                onChange={directory.setQuery}
+                                placeholder="ابحث في التطبيقات..."
+                                ariaLabel="ابحث في التطبيقات الحكومية"
+                            />
+                        }
                     />
                 )}
                 {directory.results.length === 0 ? (
@@ -282,7 +292,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </PageBody>
 
             <DirectorySuggestionDialog
                 module="govapps"

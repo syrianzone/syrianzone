@@ -16,6 +16,8 @@ import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDir
 import { Card, CardContent } from "@/Components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
 import { Badge } from "@/Components/ui/badge";
+import { PageBody, PageHeader, PageToolbar } from '@/Components/layout';
+import { PartyIcon } from '@/Components/Icons/ProjectIcons';
 
 interface PartyClientProps {
     initialOrganizations: Organization[];
@@ -48,55 +50,46 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
 
     return (
         <div className="min-h-screen transition-colors font-sans" dir="rtl">
-            <section className="bg-card py-10 shadow-xs border-b border-border">
-                <div className="container mx-auto px-4 text-center max-w-4xl space-y-6">
-                    <div className="relative">
-                        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">دليل المنظمات السياسية السورية</h1>
-                        <p className="text-lg text-muted-foreground">تصفح واكتشف المنظمات والأحزاب والحركات السياسية السورية العاملة في مختلف أنحاء العالم</p>
+            <PageHeader
+                title="دليل المنظمات السياسية السورية"
+                description="تصفح واكتشف المنظمات والأحزاب والحركات السياسية السورية العاملة في مختلف أنحاء العالم."
+                actions={
+                    <Button asChild variant="outline" size="sm" className="h-9 bg-card shadow-none">
+                        <a
+                            href="https://forms.gle/vLAxoz5RNt6z6qyj9"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <Plus size={16} aria-hidden="true" />
+                            <span>إضافة منظمة</span>
+                        </a>
+                    </Button>
+                }
+            />
 
-                        <div className="mt-4 flex justify-center">
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="gap-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary"
-                            >
-                                <a
-                                    href="https://forms.gle/vLAxoz5RNt6z6qyj9"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <Plus size={16} />
-                                    إضافة منظمة جديدة
-                                </a>
-                            </Button>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <div className="container mx-auto px-4 py-8">
+            <PageBody>
                 {initialOrganizations.length > 0 && (
                     <DirectorySmartSearch
                         className="mb-5"
-                        facets={directory.searchFacets} value={directory.value} onChange={directory.setValue}
-                        placeholder="ابحث بالاسم أو النوع أو المكان أو اختر تصفية..." ariaLabel="ابحث في المنظمات السياسية"
+                        facets={directory.searchFacets}
+                        value={directory.value}
+                        onChange={directory.setValue}
+                        placeholder="ابحث بالاسم أو النوع أو المكان أو اختر تصفية..."
+                        ariaLabel="ابحث في المنظمات السياسية"
                     />
                 )}
-                <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                    <DirectoryResultCount>
-                        {directory.results.length === 0
-                            ? 'لم يتم العثور على نتائج'
-                            : `عرض ${directory.shown} من أصل ${directory.results.length} منظمة`}
-                    </DirectoryResultCount>
-
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">عرض:</span>
-                            <DirectoryViewToggle value={viewMode} onChange={setViewMode} className="shadow-xs" />
-                        </div>
-                    </div>
-                </div>
+                <PageToolbar
+                    count={
+                        <DirectoryResultCount>
+                            {directory.results.length === 0
+                                ? 'لم يتم العثور على نتائج'
+                                : `عرض ${directory.shown} من أصل ${directory.results.length} منظمة`}
+                        </DirectoryResultCount>
+                    }
+                >
+                    <span className="text-sm text-muted-foreground">عرض:</span>
+                    <DirectoryViewToggle value={viewMode} onChange={setViewMode} className="shadow-xs" />
+                </PageToolbar>
 
                 {directory.results.length === 0 ? (
                     <DirectoryEmptyState
@@ -207,73 +200,121 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                 })}
                             </div>
                         ) : (
-                            <div className="bg-card rounded-2xl shadow-xs border border-border overflow-hidden">
-                                <Table>
-                                    <TableHeader className="bg-muted">
-                                        <TableRow>
-                                            <TableHead className="text-start font-bold">المنظمة</TableHead>
-                                            <TableHead className="text-start font-bold">النوع</TableHead>
-                                            <TableHead className="text-start font-bold">الموقع</TableHead>
-                                            <TableHead className="text-start font-bold">تواصل</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {directory.visible.map(org => (
-                                            <TableRow key={org.id} className="hover:bg-muted/50 border-border transition-colors">
-                                                <TableCell className="font-medium align-top">
-                                                    <div className="text-base text-foreground font-semibold">{org.name}</div>
+                            <div className="bg-card rounded-lg border border-border overflow-hidden">
+                                {/* Mobile 2-row-per-item list */}
+                                <ul className="md:hidden divide-y divide-border" aria-label="قائمة المنظمات">
+                                    {directory.visible.map(org => (
+                                        <li key={org.id} className="px-3.5 py-3 space-y-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-sm font-semibold text-foreground leading-snug">{org.name}</div>
                                                     {org.description && (
-                                                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2 max-w-sm">
-                                                            {org.description}
-                                                        </div>
+                                                        <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{org.description}</div>
                                                     )}
-                                                </TableCell>
-                                                <TableCell className="whitespace-nowrap align-top">
-                                                    {org.type && <Badge variant="secondary" className="font-normal">{org.type}</Badge>}
-                                                </TableCell>
-                                                <TableCell className="whitespace-nowrap align-top text-muted-foreground">
-                                                    <div className="flex flex-col gap-1">
-                                                        {org.formattedLocation && <span>{org.formattedLocation}</span>}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="align-top">
-                                                    <div className="flex flex-wrap gap-2 text-muted-foreground">
-                                                        {safeHttpUrl(org.website) && (
-                                                            <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                                <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني" aria-label={`الموقع الإلكتروني — ${org.name}`}>
-                                                                    <Globe className="h-4 w-4" aria-hidden="true" />
-                                                                </a>
-                                                            </Button>
-                                                        )}
-                                                        {org.socialX && formatSocialUrl('x', org.socialX) && (
-                                                            <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                                                <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.x} aria-label={`${SOCIAL_LABEL.x} — ${org.name}`}>
-                                                                    <Twitter className="h-4 w-4" aria-hidden="true" />
-                                                                </a>
-                                                            </Button>
-                                                        )}
-                                                        {org.socialFb && formatSocialUrl('facebook', org.socialFb) && (
-                                                            <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
-                                                                <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.facebook} aria-label={`${SOCIAL_LABEL.facebook} — ${org.name}`}>
-                                                                    <Facebook className="h-4 w-4" aria-hidden="true" />
-                                                                </a>
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
+                                                </div>
+                                                {org.type && (
+                                                    <Badge variant="secondary" className="font-normal text-[10px] shrink-0 whitespace-nowrap">{org.type}</Badge>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs text-muted-foreground truncate">{org.formattedLocation || '—'}</span>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    {safeHttpUrl(org.website) && (
+                                                        <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                            <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني" aria-label={`الموقع الإلكتروني — ${org.name}`}>
+                                                                <Globe className="h-4 w-4" aria-hidden="true" />
+                                                            </a>
+                                                        </Button>
+                                                    )}
+                                                    {org.socialX && formatSocialUrl('x', org.socialX) && (
+                                                        <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                                            <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.x} aria-label={`${SOCIAL_LABEL.x} — ${org.name}`}>
+                                                                <Twitter className="h-4 w-4" aria-hidden="true" />
+                                                            </a>
+                                                        </Button>
+                                                    )}
+                                                    {org.socialFb && formatSocialUrl('facebook', org.socialFb) && (
+                                                        <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                            <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.facebook} aria-label={`${SOCIAL_LABEL.facebook} — ${org.name}`}>
+                                                                <Facebook className="h-4 w-4" aria-hidden="true" />
+                                                            </a>
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                {/* Desktop table */}
+                                <div className="hidden md:block">
+                                    <Table>
+                                        <TableHeader className="bg-muted">
+                                            <TableRow>
+                                                <TableHead className="text-start font-bold">المنظمة</TableHead>
+                                                <TableHead className="text-start font-bold">النوع</TableHead>
+                                                <TableHead className="text-start font-bold">الموقع</TableHead>
+                                                <TableHead className="text-start font-bold">تواصل</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {directory.visible.map(org => (
+                                                <TableRow key={org.id} className="hover:bg-muted/50 border-border transition-colors">
+                                                    <TableCell className="font-medium align-top">
+                                                        <div className="text-base text-foreground font-semibold">{org.name}</div>
+                                                        {org.description && (
+                                                            <div className="text-xs text-muted-foreground mt-1 line-clamp-2 max-w-sm">
+                                                                {org.description}
+                                                            </div>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-nowrap align-top">
+                                                        {org.type && <Badge variant="secondary" className="font-normal">{org.type}</Badge>}
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-nowrap align-top text-muted-foreground">
+                                                        <div className="flex flex-col gap-1">
+                                                            {org.formattedLocation && <span>{org.formattedLocation}</span>}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="align-top">
+                                                        <div className="flex flex-wrap gap-2 text-muted-foreground">
+                                                            {safeHttpUrl(org.website) && (
+                                                                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                                    <a href={safeHttpUrl(org.website)} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني" aria-label={`الموقع الإلكتروني — ${org.name}`}>
+                                                                        <Globe className="h-4 w-4" aria-hidden="true" />
+                                                                    </a>
+                                                                </Button>
+                                                            )}
+                                                            {org.socialX && formatSocialUrl('x', org.socialX) && (
+                                                                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                                                    <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.x} aria-label={`${SOCIAL_LABEL.x} — ${org.name}`}>
+                                                                        <Twitter className="h-4 w-4" aria-hidden="true" />
+                                                                    </a>
+                                                                </Button>
+                                                            )}
+                                                            {org.socialFb && formatSocialUrl('facebook', org.socialFb) && (
+                                                                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                                    <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title={SOCIAL_LABEL.facebook} aria-label={`${SOCIAL_LABEL.facebook} — ${org.name}`}>
+                                                                        <Facebook className="h-4 w-4" aria-hidden="true" />
+                                                                    </a>
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
                         )}
 
                         {directory.hasMore && <DirectoryLoadMore onClick={directory.loadMore} />}
                     </>
                 )}
-            </div>
+            </PageBody>
 
-            <section className="bg-card border-t border-border py-16 px-4 mt-12">
+            <section className="bg-card border-t border-border py-12 px-4">
                 <div className="max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl font-bold mb-6 text-foreground">حول دليل المنظمات السياسية السورية</h2>
                     <p className="text-muted-foreground mb-8 leading-relaxed">

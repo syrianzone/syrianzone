@@ -32,8 +32,8 @@ export function DirectorySearch({
                 <Search
                     aria-hidden="true"
                     className={cn(
-                        'pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-muted-foreground',
-                        large ? 'h-5 w-5' : 'start-3 h-4 w-4',
+                        'pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted-foreground',
+                        large ? 'start-3.5 h-4 w-4' : 'start-3 h-4 w-4',
                     )}
                 />
                 <Input
@@ -45,8 +45,8 @@ export function DirectorySearch({
                     placeholder={placeholder}
                     aria-label={ariaLabel}
                     className={cn(
-                        'w-full border-border bg-card shadow-sm',
-                        large ? 'h-14 rounded-xl pe-10 ps-12 text-lg' : 'pe-10 ps-10',
+                        'w-full border-input bg-card shadow-none',
+                        large ? 'h-11 rounded-lg pe-10 ps-10 text-sm' : 'h-9 rounded-lg pe-9 ps-9 text-sm',
                     )}
                 />
                 {value && (

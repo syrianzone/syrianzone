@@ -13,12 +13,13 @@ import { socialPlatformLabel, socialVisual } from '@/Domain/syofficial/social';
 import type { OfficialCategory, OfficialEntity } from '@/Domain/syofficial/types';
 import type { SuggestionCategoryOption, SuggestionTargetOption } from '@/Domain/suggestions/types';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
-import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';
+import { DirectoryFacetFilter } from '@/Components/directory/DirectoryFacetFilter';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
 import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
 import DirectoryViewToggle, { type DirectoryView } from '@/Components/directory/DirectoryViewToggle';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
+import { PageBody, PageHeader } from '@/Components/layout';
 
 interface SyOfficialClientProps {
     initialData: OfficialEntity[];
@@ -220,103 +221,88 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
 
     return (
         <MainLayout>
-            
-
-            <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background py-12 md:py-16 border-b border-border/40">
-                <div className="container mx-auto px-4 text-center relative z-10 max-w-4xl">
-
-                    <div className="flex items-center justify-center gap-3 mb-4">
-                        <h1 lang={ui.lang} dir={ui.dir} className="text-3xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
-                            {t.title}
-                        </h1>
+            <PageHeader
+                title={<span lang={ui.lang} dir={ui.dir}>{t.title}</span>}
+                description={<span lang={ui.lang} dir={ui.dir}>{t.description}</span>}
+                actions={
+                    <>
                         {canOpenPanel && (
-                            <a
-                                href="/admin/syofficial"
-                                className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md flex items-center gap-1 text-xs font-bold shrink-0"
-                                title="إدارة وإضافة وتعديل الحسابات الرسمية"
-                                aria-label="لوحة التحكم: إدارة الحسابات الرسمية"
-                            >
-                                <Settings className="w-4 h-4" aria-hidden="true" />
-                                <span className="hidden sm:inline">لوحة التحكم</span>
-                            </a>
-                        )}
-                    </div>
-
-                    <p lang={ui.lang} dir={ui.dir} className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto mb-8 leading-relaxed">
-                        {t.description}
-                    </p>
-
-                    <div className="flex justify-center gap-2 mb-6" role="group" aria-label="لغة العرض">
-                        {(['ar', 'en', 'tr', 'ku'] as Language[]).map(lang => (
-                            <Button
-                                key={lang}
-                                variant={language === lang ? "default" : "secondary"}
-                                size="sm"
-                                aria-pressed={language === lang}
-                                lang={LANGUAGE_META[lang].lang}
-                                title={LANGUAGE_META[lang].name}
-                                onClick={() => setLanguage(lang)}
-                                className="rounded-full gap-1.5 px-3"
-                            >
-                                <img src={`/assets/${lang}.svg`} alt="" className="w-4 h-3 object-cover rounded shadow-2xs" />
-                                <span className="uppercase text-xs font-semibold">{lang}</span>
+                            <Button asChild variant="ghost" size="sm" className="h-9">
+                                <a
+                                    href="/admin/syofficial"
+                                    title="إدارة وإضافة وتعديل الحسابات الرسمية"
+                                    aria-label="لوحة التحكم: إدارة الحسابات الرسمية"
+                                >
+                                    <Settings className="h-4 w-4" aria-hidden="true" />
+                                    <span>إدارة الدليل</span>
+                                </a>
                             </Button>
-                        ))}
-                    </div>
-
-                    <div className="flex flex-wrap justify-center gap-3 mb-8">
-                        <a
-                            href="https://x.com/i/lists/1906101934660174006"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 rounded-full gap-2 shadow-2xs"
-                        >
-                            <Twitter className="h-4 w-4 text-sky-400" />
-                            <span>قائمة تويتر</span>
-                        </a>
-                        <a
-                            href="https://t.me/addlist/fKrhEy2yNeEwODQ0"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 rounded-full gap-2 shadow-2xs"
-                        >
-                            <Send className="h-4 w-4 text-sky-500" />
-                            <span>قائمة تلغرام</span>
-                        </a>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={openAddSuggestion}
-                            className="h-9 rounded-full gap-2 px-3.5 shadow-2xs border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
-                        >
+                        )}
+                        <Button type="button" variant="outline" size="sm" className="h-9 bg-card shadow-none" onClick={openAddSuggestion}>
                             <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
-                            <span>إضافة / اقتراح تعديل</span>
+                            <span>اقتراح تعديل</span>
                         </Button>
-                    </div>
+                    </>
+                }
+            />
 
-                    <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
-                        <DirectorySearch
-                            size="lg"
-                            value={directory.query}
-                            onChange={directory.setQuery}
-                            placeholder={t.searchPlaceholder}
-                            ariaLabel={t.searchPlaceholder}
-                        />
-                    </div>
-
-                    <DirectoryFilterChips
-                        label="التصنيف"
-                        allLabel={language === 'ar' ? 'الكل' : 'All'}
-                        className="mt-6"
-                        options={facets[0].options}
-                        value={directory.filters.category ?? []}
-                        onChange={(next) => directory.setFilters({ ...directory.filters, category: next })}
+            <PageBody>
+                <div className="mb-4 flex flex-col gap-2.5 lg:flex-row lg:items-center">
+                    <DirectorySearch
+                        className="lg:max-w-xs"
+                        value={directory.query}
+                        onChange={directory.setQuery}
+                        placeholder={t.searchPlaceholder}
+                        ariaLabel={t.searchPlaceholder}
                     />
-                </div>
-            </section>
+                    <div className="flex flex-wrap items-center gap-2 lg:flex-1">
+                        <DirectoryFacetFilter
+                            label={language === 'ar' ? 'التصنيف' : 'Category'}
+                            options={facets[0].options}
+                            value={directory.filters.category ?? []}
+                            onChange={(next) => directory.setFilters({ ...directory.filters, category: next })}
+                        />
 
-            <div className="container mx-auto px-4 py-8">
+                        <div
+                            className="inline-flex h-9 items-center rounded-lg border border-border bg-muted/70 p-0.5"
+                            role="group"
+                            aria-label="لغة العرض"
+                        >
+                            {(['ar', 'en', 'tr', 'ku'] as Language[]).map(lang => (
+                                <button
+                                    key={lang}
+                                    type="button"
+                                    aria-pressed={language === lang}
+                                    lang={LANGUAGE_META[lang].lang}
+                                    title={LANGUAGE_META[lang].name}
+                                    onClick={() => setLanguage(lang)}
+                                    className={`inline-flex h-7 items-center rounded-md px-2 text-xs font-semibold uppercase transition-colors ${
+                                        language === lang
+                                            ? 'bg-card text-foreground'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    {lang}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center gap-2 lg:ms-auto">
+                            <Button asChild variant="ghost" size="sm" className="h-9 px-2.5 text-xs text-muted-foreground">
+                                <a href="https://x.com/i/lists/1906101934660174006" target="_blank" rel="noopener noreferrer" aria-label="قائمة الحسابات الرسمية على منصة إكس (يفتح في نافذة جديدة)">
+                                    <Twitter className="h-3.5 w-3.5" aria-hidden="true" />
+                                    <span className="hidden sm:inline">قائمة X</span>
+                                </a>
+                            </Button>
+                            <Button asChild variant="ghost" size="sm" className="h-9 px-2.5 text-xs text-muted-foreground">
+                                <a href="https://t.me/addlist/fKrhEy2yNeEwODQ0" target="_blank" rel="noopener noreferrer" aria-label="قائمة القنوات الرسمية على تلغرام (يفتح في نافذة جديدة)">
+                                    <Send className="h-3.5 w-3.5" aria-hidden="true" />
+                                    <span className="hidden sm:inline">تلغرام</span>
+                                </a>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
                 {/* Prominent link to the dedicated Syrian Ministries & Government Timeline hub */}
                 <div className="mb-8 rounded-2xl border border-primary/25 bg-primary/5 p-5 sm:p-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -464,100 +450,180 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-card/90 rounded-2xl shadow-sm border border-border/60 overflow-hidden backdrop-blur-sm">
-                                <Table>
-                                    <TableHeader className="bg-muted/60">
-                                        <TableRow lang={ui.lang} className="border-border/60">
-                                            <TableHead className="text-start font-bold">{t.tableName}</TableHead>
-                                            <TableHead className="text-start font-bold">{t.tableCategory}</TableHead>
-                                            <TableHead className="text-start font-bold">{t.tableDesc}</TableHead>
-                                            <TableHead className="text-start font-bold">{t.tableSocial}</TableHead>
-                                            <TableHead className="text-end font-bold">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {filteredData.map(item => (
-                                            <TableRow key={item.id} className="hover:bg-muted/40 transition-colors border-border/40">
-                                                <TableCell className="font-medium">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border/50 shadow-2xs">
-                                                            <img
-                                                                src={formatEntityImage(item.image)}
-                                                                alt=""
-                                                                loading="lazy"
-                                                                decoding="async"
-                                                                className="w-full h-full object-cover"
-                                                                onError={(e) => {
-                                                                    (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
-                                                                }}
-                                                            />
-                                                        </div>
-                                                        <span lang={contentLang} dir={contentDir} className="text-foreground font-semibold text-sm">{language === 'ar' ? item.name_ar : item.name}</span>
+                            <div className="bg-card rounded-lg border border-border overflow-hidden">
+                                {/* Mobile 2-row-per-item list */}
+                                <ul className="md:hidden divide-y divide-border" aria-label={t.tableName}>
+                                    {filteredData.map(item => (
+                                        <li key={item.id} className="px-3.5 py-3 space-y-2">
+                                            {/* Row 1: Avatar + Name + Category */}
+                                            <div className="flex items-start justify-between gap-2.5">
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <div className="w-9 h-9 rounded-lg overflow-hidden bg-muted shrink-0 ring-1 ring-border/50">
+                                                        <img
+                                                            src={formatEntityImage(item.image)}
+                                                            alt=""
+                                                            loading="lazy"
+                                                            decoding="async"
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
+                                                            }}
+                                                        />
                                                     </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="secondary" className="font-normal bg-accent/80 text-accent-foreground border-border/40 rounded-lg">
-                                                        {getCategoryLabel(item.category)}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground text-xs max-w-xs truncate">
-                                                    <span lang={contentLang} dir={contentDir}>
-                                                        {language === 'ar' ? (item.description_ar || item.description) : item.description}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                                        {nonEmptySocials(item).map(([plat, url]) => {
-                                                            const visual = socialVisual(plat);
-                                                            return (
-                                                                <a
-                                                                    key={plat}
-                                                                    href={url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${visual.hoverClass}`}
-                                                                    title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
-                                                                            aria-label={socialLinkLabel(plat, item)}
-                                                                >
-                                                                    <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} aria-hidden="true" />
-                                                                </a>
-                                                            );
-                                                        })}
+                                                    <div className="min-w-0">
+                                                        <span lang={contentLang} dir={contentDir} className="block text-foreground font-semibold text-sm leading-snug">
+                                                            {language === 'ar' ? item.name_ar : item.name}
+                                                        </span>
+                                                        <span className="block text-[11px] text-muted-foreground mt-0.5 truncate">
+                                                            {getCategoryLabel(item.category)}
+                                                        </span>
                                                     </div>
-                                                </TableCell>
-                                                <TableCell className="text-end">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => openEditSuggestion(item)}
-                                                            aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
-                                                            title="اقتراح تعديل"
-                                                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                                        >
-                                                            <PencilLine className="h-4 w-4" aria-hidden="true" />
-                                                        </Button>
-                                                        {canEditEntries && (
+                                                </div>
+                                            </div>
+
+                                            {/* Row 2: Social links | Actions */}
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                                    {nonEmptySocials(item).map(([plat, url]) => {
+                                                        const visual = socialVisual(plat);
+                                                        return (
                                                             <a
-                                                                href={`/admin/syofficial?edit=${item.id}`}
-                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-colors"
+                                                                key={plat}
+                                                                href={url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className={`p-1.5 rounded-lg border border-border/50 bg-muted/40 text-muted-foreground transition-colors ${visual.hoverClass}`}
+                                                                title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                                aria-label={socialLinkLabel(plat, item)}
                                                             >
-                                                                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-                                                                تعديل
+                                                                <visual.Icon className={`w-3.5 h-3.5 ${visual.iconClass}`} aria-hidden="true" />
                                                             </a>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => openEditSuggestion(item)}
+                                                        aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
+                                                        title="اقتراح تعديل"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                    >
+                                                        <PencilLine className="h-4 w-4" aria-hidden="true" />
+                                                    </Button>
+                                                    {canEditEntries && (
+                                                        <a
+                                                            href={`/admin/syofficial?edit=${item.id}`}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-semibold transition-colors"
+                                                        >
+                                                            <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                                                            تعديل
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                {/* Desktop table */}
+                                <div className="hidden md:block">
+                                    <Table>
+                                        <TableHeader className="bg-muted/60">
+                                            <TableRow lang={ui.lang} className="border-border/60">
+                                                <TableHead className="text-start font-bold">{t.tableName}</TableHead>
+                                                <TableHead className="text-start font-bold">{t.tableCategory}</TableHead>
+                                                <TableHead className="text-start font-bold">{t.tableDesc}</TableHead>
+                                                <TableHead className="text-start font-bold">{t.tableSocial}</TableHead>
+                                                <TableHead className="text-end font-bold">{language === 'ar' ? 'إجراءات' : 'Actions'}</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredData.map(item => (
+                                                <TableRow key={item.id} className="hover:bg-muted/40 transition-colors border-border/40">
+                                                    <TableCell className="font-medium">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border/50 shadow-2xs">
+                                                                <img
+                                                                    src={formatEntityImage(item.image)}
+                                                                    alt=""
+                                                                    loading="lazy"
+                                                                    decoding="async"
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e) => {
+                                                                        (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <span lang={contentLang} dir={contentDir} className="text-foreground font-semibold text-sm">{language === 'ar' ? item.name_ar : item.name}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="secondary" className="font-normal bg-accent/80 text-accent-foreground border-border/40 rounded-lg">
+                                                            {getCategoryLabel(item.category)}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground text-xs max-w-xs truncate">
+                                                        <span lang={contentLang} dir={contentDir}>
+                                                            {language === 'ar' ? (item.description_ar || item.description) : item.description}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            {nonEmptySocials(item).map(([plat, url]) => {
+                                                                const visual = socialVisual(plat);
+                                                                return (
+                                                                    <a
+                                                                        key={plat}
+                                                                        href={url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${visual.hoverClass}`}
+                                                                        title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                                                aria-label={socialLinkLabel(plat, item)}
+                                                                    >
+                                                                        <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} aria-hidden="true" />
+                                                                    </a>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-end">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => openEditSuggestion(item)}
+                                                                aria-label={`اقتراح تعديل — ${item.name_ar || item.name}`}
+                                                                title="اقتراح تعديل"
+                                                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                            >
+                                                                <PencilLine className="h-4 w-4" aria-hidden="true" />
+                                                            </Button>
+                                                            {canEditEntries && (
+                                                                <a
+                                                                    href={`/admin/syofficial?edit=${item.id}`}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-colors"
+                                                                >
+                                                                    <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                                                                    تعديل
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
                         )}
                     </>
                 )}
-            </div>
+            </PageBody>
 
             <DirectorySuggestionDialog
                 module="syofficial"

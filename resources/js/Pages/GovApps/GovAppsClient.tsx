@@ -5,6 +5,7 @@ import { Badge } from "@/Components/ui/badge";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Smartphone, Globe, MessageSquarePlus, Pencil, PencilLine, Settings } from "lucide-react";
 import { useCanAny, useCanModule } from '@/Lib/useCan';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import type { GovApp } from '@/Domain/govapps/types';
 import type { SuggestionTargetOption } from '@/Domain/suggestions/types';
 import { DEFAULT_GOVAPP_ICON } from '@/Domain/govapps/media';
@@ -255,6 +256,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                     href={app.links.android}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
+                                                    onClick={() => trackEvent('govapp_store_click', { slug: app.id, platform: 'android' })}
                                                     className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-success shadow-2xs"
                                                     title="تحميل لأندرويد"
                                                     aria-label={`تحميل ${app.name} لأندرويد`}
@@ -267,6 +269,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                     href={app.links.apple}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
+                                                    onClick={() => trackEvent('govapp_store_click', { slug: app.id, platform: 'apple' })}
                                                     className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-foreground shadow-2xs"
                                                     title="تحميل لآيفون"
                                                     aria-label={`تحميل ${app.name} لآيفون`}
@@ -279,6 +282,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                     href={app.links.official}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
+                                                    onClick={() => trackEvent('govapp_store_click', { slug: app.id, platform: 'official' })}
                                                     className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-primary shadow-2xs"
                                                     title="الموقع الرسمي"
                                                     aria-label={`الموقع الرسمي لـ ${app.name}`}

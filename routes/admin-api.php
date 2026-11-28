@@ -422,3 +422,5 @@ Route::middleware(['auth:sanctum', FirstPartyAdminTransport::class])->group(func
 
     Route::prefix('v1/admin')->middleware('polls_admin')->group((require __DIR__.'/poll-management.php')(true));
 });
+
+require __DIR__.'/admin-api-civic-crud.php';

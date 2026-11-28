@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import {
   fetchFakeNewsStats,
   recordFakeNewsAnswer,
@@ -85,7 +86,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
     return () => controller.abort();
   }, [initialStats]);
 
-  const startFreshRun = useCallback(() => {
+  const startFreshRun = useCallback((step: 'start' | 'replay' = 'start') => {
     const freshOrder = pickRoundClaimOrder(FAKE_NEWS_CLAIMS, ROUND_SIZE);
     submittedRunRef.current = false;
     setOrder(freshOrder);
@@ -101,7 +102,11 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
       phase: 'playing',
       resultSubmitted: false,
     });
+    trackEvent('fakenews_run_milestone', { step });
   }, []);
+
+  const handleStart = useCallback(() => startFreshRun('start'), [startFreshRun]);
+  const handleReplay = useCallback(() => startFreshRun('replay'), [startFreshRun]);
 
   const resumeSavedRun = useCallback(() => {
     if (!savedRun) return;
@@ -187,6 +192,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
     if (!submittedRunRef.current) {
       submittedRunRef.current = true;
       const finalScore = answers.filter((a) => a.correct).length;
+      trackEvent('fakenews_run_milestone', { step: 'complete', score: finalScore });
       recordFakeNewsResult(finalScore)
         .then((res) => {
           if (res?.stats) setStats(res.stats);
@@ -214,7 +220,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
           <OpeningView
             stats={stats}
             resumableCount={savedRun ? savedRun.answers.length : null}
-            onStart={startFreshRun}
+            onStart={handleStart}
             onResume={resumeSavedRun}
           />
         )}
@@ -247,7 +253,7 @@ export default function FakeNewsTestIndex({ initialStats = null }: FakeNewsTestP
           <ResultsView
             summary={summary}
             stats={stats}
-            onPlayAgain={startFreshRun}
+            onPlayAgain={handleReplay}
             onOpenStats={() => setStatsOpen(true)}
           />
         )}

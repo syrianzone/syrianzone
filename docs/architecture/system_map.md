@@ -124,14 +124,22 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Hotels (HalaSyria) | `/api/v1/hotels*` | HotelController, HalaSyriaService | Places/ hotel layer | [modules/directories.md](../modules/directories.md) |
 | Population atlas | `/atlas` (canonical; `/population` 301-redirects), `/api/v1/atlas*` | Api\PopulationAtlasController | Population/ | [modules/population-atlas.md](../modules/population-atlas.md) |
 | Widgets APIs | `/api/v1/weather`, `/answers`, `/recipes/today`, `/events/today`, `/feed`, `/prayer-times` | Weather/Answers/Recipe/Events/Feed/Prayer controllers | Board widgets consume these | [modules/board.md](../modules/board.md), [reference/api.md](../reference/api.md#8-atlas-contributors-widgets--utility-endpoints-apiv1) |
-| External data | `/syid`, `/sites`, `/party`, `/house`, `/alignment`, `/syrian-contributors` | ExternalDataController, ContributorController | SyId/, Sites/, Party/, House/, Alignment/, SyrianContributors/ | — |
-| Muslim Corner | `/muslim`, `/muslim/prayer`, `/muslim/quran`, `/muslim/radio`, `/roznama` | (Inertia closures) | Muslim/ (Index, Prayer, Quran, Radio), Roznama/ | [modules/muslim-corner.md](../modules/muslim-corner.md) |
-| Games | `/games`, `/games/{2048,solitare,tarneeb,trix}` | (Inertia closures) | Games/ | [modules/games.md](../modules/games.md) |
-| Promises tracker (عداد الوعود) | `/promises`, `/promises/{number}`, `/promises/suggest`, `/api/v1/promises*`; admin `/admin/promises*` + `/api/v1/admin/promises/*` | PromiseController, PromisesAdminController, `app/Services/Promises/*` | Promises/, Admin/Promises/ | [specs/promises.md](../specs/promises.md) |
+| External data | `/syid`, `/sites`, `/house`, `/alignment`, `/syrian-contributors` (`/party` 301-redirects to `/` — phased out) | ExternalDataController, ContributorController | SyId/, Sites/, House/, Alignment/, SyrianContributors/ | — |
+| Muslim Corner | `/muslim`, `/muslim/prayer`, `/muslim/quran`, `/muslim/radio`, `/muslim/ramadan/{city}`, `/roznama` | (Inertia closures) | Muslim/ (Index, Prayer, Quran, Radio, Ramadan), Roznama/ | [modules/muslim-corner.md](../modules/muslim-corner.md) |
+| Games | `/games`, `/games/{2048,solitare,tarneeb,trix}`, `/games/fakenews` | Inertia closures; `FakeNewsTestController` (`/games/fakenews`, `/api/v1/fakenews/*`) | Games/, FakeNewsTest/ | [modules/games.md](../modules/games.md) |
+| Promises tracker (عداد الوعود) | `/promises`, `/promises/{number}`, `/promises/suggest`, `/api/v1/promises*`; admin `/admin/promises*` + `/api/v1/admin/promises/*` | PromiseController, PromisesAdminController, `app/Services/Promises/*` | Promises/, Admin/Promises/ | [modules/promises.md](../modules/promises.md) |
+| Ministries (وزارات سوريا) | `/ministries`, `/ministries/{slug}` | MinistryController, `app/Services/Ministries/MinistryDirectoryService` | Ministries/ | — |
+| Govt CVs (السير الذاتية للمسؤولين) | `/govtcvs`, `/govtcvs/movements`, `/govtcvs/{slug}`; admin `/admin/govtcvs*` | GovtCvController, GovtCvAdminController, `app/Services/GovtCvs/*` | GovtCvs/, Admin/GovtCvs/ | [runbooks/govtcvs-official-updates.md](../runbooks/govtcvs-official-updates.md) |
+| Governorates (المحافظات السورية) | `/governorates`, `/governorates/{id}` | GovernorateController, `app/Services/Governorates/*` | Governorates/ | — |
+| Crossings (المعابر الحدودية) | `/crossings`, `/crossings/{slug}` | Inertia closures | Crossings/ | — |
+| Currency (الليرة السورية) | `/currency` | Inertia closure | Currency/ | — |
+| Wildlife (الحياة البرية) | `/wild`, `/wild/{slug}` | WildlifeController | Wild/ | [modules/wildlife.md](../modules/wildlife.md) |
 | Quizzes | `/compass`, `/compass/stats`, `/compass/s/{shareId}`, `/priorities` | CompassController; `/priorities` is a closure | Compass/, Priorities/ | — |
 | Legal & info | `/about`, `/stats`, `/privacy`, `/terms` | AboutController; the rest are closures | About.tsx, Stats.tsx, Privacy.tsx, Terms.tsx | — |
-| Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/crossings` | (Inertia closures) | Roznama/, Shawarma/, Justice/, Crossings/ | — |
+| Standalone pages | `/roznama`, `/shawarma`, `/justice` | (Inertia closures) | Roznama/, Shawarma/, Justice/ | — |
 | Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/api/v1/user` | AuthController, DashboardController | Dashboard/ | — |
+| Suggestions admin | `/admin/suggestions`, `/api/v1/admin/suggestions/overview` | IncomingSuggestionsAdminController, DirectorySuggestionAdminController | Admin/Suggestions/ | — |
+| Navigation admin | `/admin/navigation`, `/api/v1/admin/navigation`, `/api/v1/navigation` | SiteNavigationAdminController | Admin/Navigation/ | — |
 | Assets admin | `/admin/assets`, `/api/v1/admin/assets*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
 | Agent / MCP | `/mcp/admin` (bearer token; `MCP_ENABLED` flag), `/admin/api-tokens` | MCP tools in `app/Mcp/`, `ApiTokenAdminController`, `RequireApiToken` | Admin/ApiTokens/ | [modules/agent-mcp.md](../modules/agent-mcp.md) |
 | Site popup | `/admin/site-popup`, `/api/v1/admin/site-popup` (`site.popup`; shared as `sitePopup` prop, versioned dismiss) | SitePopupAdminController | Admin/SitePopup | — |

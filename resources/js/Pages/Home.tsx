@@ -40,6 +40,7 @@ import { useAppShell, usePageDialog } from '@/Lib/appShell';
 import { useIsMac } from '@/Lib/platform';
 import { formatGregorianSyrian } from '@/Lib/syrian-date';
 import { confirmDialog } from '@/Lib/confirm';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { groupSiteLinks, useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 
 const F3aliaEvents = React.lazy(() => import('@/Pages/Home/_components/F3aliaEvents'));
@@ -233,6 +234,15 @@ export default function Home() {
             </>
         );
 
+        const handleTileClick = () => {
+            const moduleSlug = link.id || link.href.replace(/^\/+/, '').split(/[?#]/)[0] || 'home';
+            trackEvent('nav_select', {
+                module: moduleSlug,
+                surface: 'home_grid',
+                is_external: Boolean(link.external),
+            });
+        };
+
         return (
             <li key={link.id || link.href}>
                 {link.external ? (
@@ -240,12 +250,13 @@ export default function Home() {
                         href={link.href}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={handleTileClick}
                         className={tileClass}
                     >
                         {body}
                     </a>
                 ) : (
-                    <Link href={link.href} className={tileClass}>
+                    <Link href={link.href} onClick={handleTileClick} className={tileClass}>
                         {body}
                     </Link>
                 )}

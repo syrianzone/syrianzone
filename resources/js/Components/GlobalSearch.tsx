@@ -42,6 +42,7 @@ import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { useIsMac } from '@/Lib/platform';
 import { siteModule } from '@/Lib/siteModules';
 import { isActive } from '@/Lib/routes';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { normalizeArabic } from '@/Lib/arabic';
 import { useAppShell } from '@/Lib/appShell';
 import { useQuranTarget } from '@/Domain/quran/targetAyah';
@@ -316,6 +317,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
         (showRemoteGovApps ? remote.govapps.length : 0);
 
     return {
+        scope,
         trimmedQuery,
         remote,
         loadingRemote,
@@ -425,7 +427,16 @@ export function SearchResultsContent({
 }) {
     const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
-    const navigateTo = (url: string, external = false) => {
+    const trackSelect = (resultKind: string) => {
+        trackEvent('global_search_select', {
+            scope: data.scope,
+            result_kind: resultKind,
+            has_query: data.trimmedQuery.length > 0,
+        });
+    };
+
+    const navigateTo = (url: string, external = false, resultKind = 'site_link') => {
+        trackSelect(resultKind);
         onClose();
         if (external) {
             window.open(url, '_blank', 'noopener,noreferrer');
@@ -435,6 +446,7 @@ export function SearchResultsContent({
     };
 
     const jumpToSurah = (surahNumber: number) => {
+        trackSelect('quran_surah');
         onClose();
         setTargetAyah(`${surahNumber}:1`);
         router.visit('/muslim/quran');
@@ -522,11 +534,14 @@ export function SearchResultsContent({
     };
 
     /** An ItemRow that opens `href`: a cmdk item navigates on select, a plain row is a real link. */
-    const linkTo = (href: string, external = false) => ({
+    const linkTo = (href: string, resultKind: string, external = false) => ({
         href,
         external,
-        onSelect: () => navigateTo(href, external),
-        onNavigate: onClose,
+        onSelect: () => navigateTo(href, external, resultKind),
+        onNavigate: () => {
+            trackSelect(resultKind);
+            onClose();
+        },
     });
 
     return (
@@ -590,7 +605,10 @@ export function SearchResultsContent({
                                             href={link.href}
                                             target="_blank"
                                             rel="noreferrer"
-                                            onClick={onClose}
+                                            onClick={() => {
+                                                trackSelect('site_link');
+                                                onClose();
+                                            }}
                                             className={tileClassName}
                                         >
                                             {siteLinkTile(link, isActive(link.href, pathname))}
@@ -598,7 +616,10 @@ export function SearchResultsContent({
                                     ) : (
                                         <Link
                                             href={link.href}
-                                            onClick={onClose}
+                                            onClick={() => {
+                                                trackSelect('site_link');
+                                                onClose();
+                                            }}
                                             className={tileClassName}
                                         >
                                             {siteLinkTile(link, isActive(link.href, pathname))}
@@ -620,6 +641,7 @@ export function SearchResultsContent({
                             value={`route-${route.id}-${route.nameAr}`}
                             {...linkTo(
                                 `/transit/city/${encodeURIComponent(route.cityId)}?route=${encodeURIComponent(route.id)}`,
+                                'transit_route',
                             )}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                         >
@@ -653,7 +675,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`city-${city.id}`}
                                 value={`city-${city.id}-${city.nameAr}`}
-                                {...linkTo(`/transit/city/${encodeURIComponent(city.id)}`)}
+                                {...linkTo(`/transit/city/${encodeURIComponent(city.id)}`, 'transit_city')}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -690,7 +712,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`muslim-${tool.slug}`}
                                 value={`muslim-${tool.slug}-${tool.title}`}
-                                {...linkTo(toolHref(tool.slug))}
+                                {...linkTo(toolHref(tool.slug), 'muslim_tool')}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -748,7 +770,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`game-${game.slug}`}
                                 value={`game-${game.slug}-${game.title}`}
-                                {...linkTo(gameEntryHref(game), game.external)}
+                                {...linkTo(gameEntryHref(game), 'game', game.external)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -777,7 +799,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`crossing-${crossing.n}`}
                                 value={`crossing-${crossing.n}-${crossing.name}`}
-                                {...linkTo(`/crossings?c=${encodeURIComponent(crossing.n)}`)}
+                                {...linkTo(`/crossings?c=${encodeURIComponent(crossing.n)}`, 'crossing')}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -816,7 +838,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`place-${place.id}`}
                             value={`place-${place.id}-${place.name}`}
-                            {...linkTo(`/mishwar?place=${encodeURIComponent(place.id)}`)}
+                            {...linkTo(`/mishwar?place=${encodeURIComponent(place.id)}`, 'mishwar_place')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -842,7 +864,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`phone-${entry.id}`}
                             value={`phone-${entry.id}-${entry.nameAr}-${entry.number}`}
-                            {...linkTo(`/phonebook?q=${encodeURIComponent(entry.nameAr)}`)}
+                            {...linkTo(`/phonebook?q=${encodeURIComponent(entry.nameAr)}`, 'phonebook')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -881,7 +903,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`govtcv-${person.id}`}
                                 value={`govtcv-${person.id}-${person.nameAr}-${person.roleTitleAr ?? ''}`}
-                                {...linkTo(`/govtcvs/${encodeURIComponent(person.slug)}`)}
+                                {...linkTo(`/govtcvs/${encodeURIComponent(person.slug)}`, 'govtcv')}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -923,7 +945,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`official-${official.id}`}
                             value={`official-${official.id}-${official.nameAr}`}
-                            {...linkTo(`/syofficial?q=${encodeURIComponent(official.nameAr)}`)}
+                            {...linkTo(`/syofficial?q=${encodeURIComponent(official.nameAr)}`, 'official')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -949,7 +971,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`govapp-${app.id}`}
                             value={`govapp-${app.id}-${app.nameAr}`}
-                            {...linkTo('/govapps')}
+                            {...linkTo('/govapps', 'govapp')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">

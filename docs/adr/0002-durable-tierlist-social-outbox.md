@@ -116,7 +116,7 @@ enabled.
 
 ## More information
 
-- Implements [FR-001 through FR-010](../specs/tierlist-x-automation.md#functional-requirements).
+- Implements [FR-001 through FR-010](../modules/tierlist-x-automation.md#functional-requirements).
 - Mitigates TM-X-001, TM-X-002, TM-X-003, and TM-X-004 in the
-  [feature threat model](../threat-models/tierlist-x-automation.md).
+  [feature threat model](../security/tierlist-x-automation-threat-model.md).
 - Uses the ADR process in [ADR-0001](0001-architecture-decision-records.md).

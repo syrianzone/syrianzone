@@ -19,9 +19,9 @@ renders on the server like any other Inertia page.
 | GET | `/games/solitare` | `Games/Solitare/Index` | Playable (Klondike) |
 | GET | `/games/tarneeb` | `Games/Tarneeb/Index` | Playable (Tarneeb vs three AI) |
 | GET | `/games/trix` | `Games/Trix/Index` | Playable (Trix vs three AI; single or coop) |
+| GET | `/games/fakenews` | `FakeNewsTest/Index` | Playable — media-literacy & fake-news verification quiz (`FakeNewsTestController`, backed by `resources/data/fake-news-claims.json` and `/api/v1/fakenews/{stats,answer,result}`) |
 
-All four are public closures in `routes/web.php` with no middleware, no
-throttle and no auth gate — they are static shells, exactly like `/muslim`.
+The four classic arcade routes (`2048`, `solitare`, `tarneeb`, `trix`) are public closures in `routes/web.php` with no middleware, no throttle and no auth gate — they are static shells, exactly like `/muslim`. `/games/fakenews` is served by `FakeNewsTestController@index` and records anonymous aggregate claim statistics via `/api/v1/fakenews/*`.
 
 The registry also carries `president`, which is `external` (hosted on another
 domain), so the hub opens it in a new tab and this app has no route for it.

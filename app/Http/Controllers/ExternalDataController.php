@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\HouseMember2026;
+use App\Models\SyrianSite;
 use App\Services\ExternalData\ExternalSheetCache;
 use App\Support\HouseMembers;
 use App\Support\Facts;
@@ -91,12 +92,65 @@ class ExternalDataController extends Controller
 
     public function houseMember(string $memberNumber)
     {
-        $member = HouseMembers::find($memberNumber);
-        abort_if($member === null, 404);
+        $member = null;
+        $sameGovernorateMembers = null;
+
+        try {
+            $row = HouseMember2026::query()
+                ->where('member_number', $memberNumber)
+                ->first();
+
+            if ($row !== null) {
+                $govRaw = trim((string) ($row->governorate_ar ?? ''));
+                $gov = $govRaw !== '' ? Facts::governorateByAnyName($govRaw) : null;
+
+                $member = [
+                    'name_ar' => (string) $row->name_ar,
+                    'governorate_ar' => $govRaw,
+                    'governorate_display_ar' => $gov !== null ? (string) $gov['name_ar'] : $govRaw,
+                    'governorate_id' => $gov !== null ? (string) $gov['id'] : null,
+                    'district' => (string) ($row->district ?? ''),
+                    'town' => (string) ($row->town ?? ''),
+                    'gender' => (string) ($row->gender ?? ''),
+                    'birth_year' => $row->birth_year !== null ? (string) $row->birth_year : '',
+                    'age' => $row->age !== null ? (string) $row->age : '',
+                    'selection_method' => (string) ($row->selection_method ?? ''),
+                    'category' => (string) ($row->category ?? ''),
+                    'status' => (string) ($row->status ?: 'active'),
+                    'member_number' => (string) $row->member_number,
+                    'management_position' => (string) ($row->management_position ?? ''),
+                    'facebook_url' => (string) ($row->facebook_url ?? ''),
+                    'twitter_url' => (string) ($row->twitter_url ?? ''),
+                    'source_url' => HouseMembers::sourceUrl(),
+                ];
+
+                $sameGovernorateMembers = HouseMember2026::query()
+                    ->where('governorate_ar', $govRaw)
+                    ->where('member_number', '!=', $memberNumber)
+                    ->orderBy('name_ar')
+                    ->get(['member_number', 'name_ar', 'district', 'management_position', 'selection_method'])
+                    ->map(fn (HouseMember2026 $peer) => [
+                        'member_number' => (string) ($peer->member_number ?? ''),
+                        'name_ar' => (string) $peer->name_ar,
+                        'district' => (string) ($peer->district ?? ''),
+                        'management_position' => (string) ($peer->management_position ?? ''),
+                        'selection_method' => (string) ($peer->selection_method ?? ''),
+                    ])
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('house_members_2026 member read failed, falling back to snapshot', ['error' => $e->getMessage()]);
+        }
+
+        if ($member === null) {
+            $member = HouseMembers::find($memberNumber);
+            abort_if($member === null, 404);
+            $sameGovernorateMembers = HouseMembers::sameGovernorate($member['member_number'], $member['governorate_ar']);
+        }
 
         return Inertia::render('House/Show', [
             'member' => $member,
-            'sameGovernorateMembers' => HouseMembers::sameGovernorate($member['member_number'], $member['governorate_ar']),
+            'sameGovernorateMembers' => $sameGovernorateMembers ?? [],
             'sourceUrl' => HouseMembers::sourceUrl(),
         ]);
     }
@@ -176,6 +230,20 @@ class ExternalDataController extends Controller
 
     public function sites()
     {
+        try {
+            $dbSites = SyrianSite::active()->ordered()->get();
+            if ($dbSites->isNotEmpty()) {
+                $latest = $dbSites->max('updated_at');
+
+                return Inertia::render('Sites/Index', [
+                    'initialWebsites' => $dbSites->map(fn (SyrianSite $site) => $site->toFrontendRow())->values()->all(),
+                    'fetchedAt' => $latest?->toIso8601String(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('syrian_sites DB read failed, falling back to external sheet', ['error' => $e->getMessage()]);
+        }
+
         $url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCrz7GpfTDmtgKipQd3IqyMPle1ehoG77VO2SQRDqKC9zRRKO3FDI60VoYhA_XqlzoKQ6gZDrIuIjL/pub?output=csv';
 
         [$cached, $fetchedAt] = ExternalSheetCache::read(ExternalSheetCache::SITES);

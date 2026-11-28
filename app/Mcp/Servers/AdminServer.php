@@ -4,8 +4,11 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Resources\AgentPermissionsResource;
 use App\Mcp\Resources\AgentTokenResource;
+use App\Mcp\Tools\Compass\CreateCompassFigureTool;
+use App\Mcp\Tools\Compass\DeleteCompassFigureTool;
 use App\Mcp\Tools\Compass\ListCompassFiguresTool;
 use App\Mcp\Tools\Compass\ListCompassPersonasTool;
+use App\Mcp\Tools\Compass\UpdateCompassFigureTool;
 use App\Mcp\Tools\GovApps\CreateGovAppTool;
 use App\Mcp\Tools\GovApps\DeleteGovAppTool;
 use App\Mcp\Tools\GovApps\ListGovAppsTool;
@@ -31,10 +34,16 @@ use App\Mcp\Tools\GovtCvs\SaveGovtSlotTool;
 use App\Mcp\Tools\GovtCvs\UpdateGovtEvidenceTool;
 use App\Mcp\Tools\GovtCvs\UpdateGovtOfficialTool;
 use App\Mcp\Tools\GovtCvs\UpdateGovtTenureTool;
+use App\Mcp\Tools\GuessWho\CreateGuessWhoCharacterTool;
+use App\Mcp\Tools\GuessWho\DeleteGuessWhoCharacterTool;
 use App\Mcp\Tools\GuessWho\ListGuessWhoCategoriesTool;
 use App\Mcp\Tools\GuessWho\ListGuessWhoCharactersTool;
+use App\Mcp\Tools\GuessWho\UpdateGuessWhoCharacterTool;
+use App\Mcp\Tools\Phonebook\CreatePhonebookEntryTool;
+use App\Mcp\Tools\Phonebook\DeletePhonebookEntryTool;
 use App\Mcp\Tools\Phonebook\ListPhonebookCategoriesTool;
 use App\Mcp\Tools\Phonebook\ListPhonebookEntriesTool;
+use App\Mcp\Tools\Phonebook\UpdatePhonebookEntryTool;
 use App\Mcp\Tools\Places\ApprovePlaceTool;
 use App\Mcp\Tools\Places\AuditPlacesTool;
 use App\Mcp\Tools\Places\DeletePlacePhotoTool;
@@ -326,6 +335,18 @@ class AdminServer extends Server
             UnpublishWildlifeSpeciesTool::class,
             MoveWildlifeSpeciesTool::class,
             DeleteWildlifeSpeciesTool::class,
+
+            CreatePhonebookEntryTool::class,
+            UpdatePhonebookEntryTool::class,
+            DeletePhonebookEntryTool::class,
+
+            CreateCompassFigureTool::class,
+            UpdateCompassFigureTool::class,
+            DeleteCompassFigureTool::class,
+
+            CreateGuessWhoCharacterTool::class,
+            UpdateGuessWhoCharacterTool::class,
+            DeleteGuessWhoCharacterTool::class,
 
             SetUserBanTool::class,
         ],

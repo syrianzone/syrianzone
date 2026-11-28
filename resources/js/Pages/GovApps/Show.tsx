@@ -29,6 +29,7 @@ import type {
 } from '@/Domain/govapps/types';
 import { formatEntityImage } from '@/Lib/entityImage';
 import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { useCanAny } from '@/Lib/useCan';
 const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 
@@ -191,7 +192,12 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                 <div className="flex flex-wrap items-center gap-2.5 pt-2">
                                     {androidLink && (
                                         <Button asChild size="default" className="gap-2 font-bold rounded-xl shadow-xs">
-                                            <a href={androidLink} target="_blank" rel="noopener noreferrer">
+                                            <a
+                                                href={androidLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={() => trackEvent('govapp_store_click', { slug: app.id, platform: 'android' })}
+                                            >
                                                 {ids.android_source === 'telegram' ? (
                                                     <TelegramGlyph className="w-4 h-4" />
                                                 ) : (
@@ -204,7 +210,12 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                     )}
                                     {appleLink && (
                                         <Button asChild variant={androidLink ? 'secondary' : 'default'} size="default" className="gap-2 font-bold rounded-xl shadow-xs">
-                                            <a href={appleLink} target="_blank" rel="noopener noreferrer">
+                                            <a
+                                                href={appleLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={() => trackEvent('govapp_store_click', { slug: app.id, platform: 'apple' })}
+                                            >
                                                 {ids.apple_source === 'telegram' ? (
                                                     <TelegramGlyph className="w-4 h-4" />
                                                 ) : (
@@ -217,7 +228,12 @@ export default function GovAppShow({ app, relatedApps }: GovAppShowProps) {
                                     )}
                                     {officialLink && (
                                         <Button asChild variant="outline" size="default" className="gap-2 font-semibold rounded-xl">
-                                            <a href={officialLink} target="_blank" rel="noopener noreferrer">
+                                            <a
+                                                href={officialLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={() => trackEvent('govapp_store_click', { slug: app.id, platform: 'official' })}
+                                            >
                                                 <Globe className="w-4 h-4" aria-hidden="true" />
                                                 <span>الموقع الرسمي</span>
                                                 <ExternalLink className="w-3.5 h-3.5 opacity-70" aria-hidden="true" />

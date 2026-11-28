@@ -8,6 +8,7 @@ import {
 import { useAuth } from '@/Contexts/AuthContext';
 import { applyTheme, THEME_REGISTRY, useThemePreference } from '@/Lib/theme';
 import { applyFont, useFontPreference, type FontPreference } from '@/Lib/font';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { saveAccountSettings, type AccountSettingsPatch } from '@/Domain/settings/accountSettings';
 
 const FONT_OPTIONS: Array<[FontPreference, string]> = [
@@ -30,11 +31,13 @@ export default function AppearanceMenu({ className }: { className?: string }) {
     const handleThemeChange = (themeId: string) => {
         applyTheme(themeId);
         saveSetting({ theme: themeId });
+        trackEvent('appearance_change', { kind: 'theme', theme_id: themeId });
     };
 
     const handleFontChange = (font: FontPreference) => {
         applyFont(font);
         saveSetting({ fontFamily: font });
+        trackEvent('appearance_change', { kind: 'font', font_family: font });
     };
 
     const madarThemes = THEME_REGISTRY.filter((t) => t.group === 'madar');

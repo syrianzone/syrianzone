@@ -110,7 +110,7 @@ Full contract: [modules/mishwar-places.md](../modules/mishwar-places.md).
 
 ## Promises tracker (عداد الوعود)
 
-Full contract: [specs/promises.md](../specs/promises.md).
+Full contract: [modules/promises.md](../modules/promises.md).
 
 - **promise_sectors** — string id key (`electricity`, …), label, icon (lucide key), order_column, is_active. Seeded by the create migration.
 - **promise_speakers** — uuid; name, title, institution_id → official_entities, image_url, x_handle; optional unique links `candidate_id` → candidates, `official_entity_id` → official_entities, `house_member_id` → house_members_2026; status approved|pending|rejected + moderation columns.

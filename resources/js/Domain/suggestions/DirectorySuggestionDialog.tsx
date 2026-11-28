@@ -24,6 +24,7 @@ import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { CheckCircle2, Loader2, LogIn, PencilLine, PlusCircle, Search, X } from 'lucide-react';
 import { normalizeArabic } from '@/Lib/arabic';
 import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { notify } from '@/Lib/notify';
 import { cn } from '@/Lib/utils';
 import { suggestionsApi } from '@/Domain/suggestions/api';
@@ -292,6 +293,7 @@ export default function DirectorySuggestionDialog({
                 payload: buildPayload(),
             });
             notify.success(res.message);
+            trackEvent('directory_suggestion_submit', { module, kind: effectiveKind });
             setSubmittedMessage(res.message);
         } catch (err) {
             setErrors(apiFieldErrors(err));

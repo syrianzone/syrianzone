@@ -12,6 +12,7 @@ import { renderTierListFile } from "./exportTierList";
 import ShareImageDialog, { type ShareThemeChoice } from "@/Components/share/ShareImageDialog";
 import { getDeviceId } from "@/Lib/deviceId";
 import { apiErrorMessage } from '@/Lib/api';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 
@@ -326,6 +327,7 @@ export default function TierBoard({
         };
         try {
             await pollsApi.submit(payload);
+            trackEvent('poll_vote_submit', { slug: pollSlug, count: totalAssigned });
             setSubmitStatus({ ok: true, message: "تم تسجيل التصويت" });
             const ts = Date.now() + 1 * 60 * 1000;
             setNextSubmitAt(ts);
@@ -833,6 +835,7 @@ export default function TierBoard({
             <ShareImageDialog
                 open={shareOpen}
                 onOpenChange={setShareOpen}
+                analyticsModule="tierlist"
                 title="مشاركة قائمة التقييم"
                 description="معاينة قائمة التقييم بهوية المساحة السورية قبل المشاركة أو التحميل."
                 filename="tier-list.png"

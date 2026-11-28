@@ -21,7 +21,7 @@ edits UI is expected to follow these. The automated gate is
 3. **No native `alert()` / `confirm()`.** Use `Lib/notify.ts` and
    `Lib/confirm.ts` (`confirmDialog()`).
 4. **Colour comes from tokens, never hardcoded.** A literal hex is a bug: it
-   breaks the nine themes and the contrast guarantees.
+   breaks the 14 concrete themes and the contrast guarantees.
 5. **RTL uses logical utilities.** `ms/me/ps/pe`, `start/end`, `border-s/e` —
    never `ml/mr/pl/pr`, `left/right`, `text-left/right` outside a deliberate
    `dir="ltr"` island.
@@ -96,8 +96,9 @@ role (`role="region"` + `aria-label`) or it counts as "content outside landmarks
 
 ## Theming & contrast
 
-- Nine themes are attributes (`data-theme` for which theme, `data-scheme` for
-  `light`/`dark`), not classes. Tokens are HSL CSS
+- 14 concrete themes (plus `system`, which resolves to `nili` in light mode and
+  `nili-night` in dark mode) are attributes (`data-theme` for which theme,
+  `data-scheme` for `light`/`dark`), not classes. Tokens are HSL CSS
   variables (`--background`, `--primary`, `--primary-foreground`, …).
 - **`--primary-foreground` must contrast with `--primary` in every theme.** The
   `damascus-rose` theme shipped white-on-rose at 3.9:1 (fails AA); the fix was a
@@ -126,7 +127,7 @@ python3 scripts/a11y_axe_audit.py --base http://localhost:8000        # public r
 python3 scripts/a11y_axe_audit.py --base http://localhost:8000 --admin # + admin panels
 ```
 
-- Runs axe-core (WCAG 2.0/2.1 A+AA **and** best-practice) over every page the app renders: 40 public routes, plus 19 admin routes with `--admin`.
+- Runs axe-core (WCAG 2.0/2.1 A+AA **and** best-practice) over **74+ routes** covering every page the app renders (currently 50 public routes + 23 admin routes with `--admin`, plus dynamically expanded parameterised routes).
 - **Blocks on WCAG serious/critical findings that reproduce across two passes**
   (a live clock can otherwise cause a one-off contrast hit). Best-practice rules
   (`region`, `heading-order`) are reported but advisory.

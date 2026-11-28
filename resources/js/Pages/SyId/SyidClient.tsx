@@ -6,6 +6,7 @@ import {
 import { Button } from "@/Components/ui/button";
 import { PageBody, PageHeader } from "@/Components/layout";
 import { notify } from '@/Lib/notify';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { copyText } from '@/Lib/copy';
 import { MEDIA_BASE } from '@/Domain/govapps/media';
 import { SYID_FACTS, type SyidFacts } from '@/Domain/syid/facts';
@@ -243,6 +244,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
         // Revoking in the same task can cancel the download in some browsers.
         setTimeout(() => URL.revokeObjectURL(url), 1000);
 
+        trackEvent('syid_asset_action', { action: 'export_map', format: 'svg', slug: selectedGov });
         notify.success(`تم تحميل ملف SVG بنجاح`);
     };
 
@@ -274,12 +276,24 @@ export default function SyidClient({ syid }: SyidClientProps) {
         // Revoking in the same task can cancel the download in some browsers.
         setTimeout(() => URL.revokeObjectURL(url), 1000);
 
+        trackEvent('syid_asset_action', { action: 'export_map', format: 'geojson', slug: selectedGov });
         notify.success(`تم تحميل ملف GeoJSON بنجاح`);
     };
 
-    const copyToClipboard = async (text: string, key: string) => {
+    const copyToClipboard = async (
+        text: string,
+        key: string,
+        colorMeta?: { format: 'hex' | 'hsl' | 'cmyk' | 'oklch'; slug: string },
+    ) => {
         const copied = await copyText(text, { successMessage: `تم النسخ: ${text}` });
         if (!copied) return;
+        if (colorMeta) {
+            trackEvent('syid_asset_action', {
+                action: 'copy_color',
+                format: colorMeta.format,
+                slug: colorMeta.slug,
+            });
+        }
         setCopiedKey(key);
         setTimeout(() => setCopiedKey(null), 2000);
     };
@@ -397,7 +411,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                                     }}
                                                 >
                                                     <button
-                                                        onClick={() => copyToClipboard(color.hex, hexKey)}
+                                                        onClick={() => copyToClipboard(color.hex, hexKey, { format: 'hex', slug: color.hex })}
                                                         className="flex items-center justify-between w-full font-mono text-xs font-bold p-1 rounded bg-black/20 hover:bg-black/30 transition-colors"
                                                     >
                                                         <span>{color.hex}</span>
@@ -406,21 +420,21 @@ export default function SyidClient({ syid }: SyidClientProps) {
 
                                                     <div dir="ltr" className="space-y-1 text-[10px] font-mono mt-2">
                                                         <button
-                                                            onClick={() => copyToClipboard(color.hsl, hslKey)}
+                                                            onClick={() => copyToClipboard(color.hsl, hslKey, { format: 'hsl', slug: color.hex })}
                                                             className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"
                                                         >
                                                             <span className="truncate">{color.hsl}</span>
                                                             {copiedKey === hslKey ? <Check className="h-2.5 w-2.5 text-green-400 shrink-0" /> : <Copy className="h-2.5 w-2.5 opacity-60 shrink-0" />}
                                                         </button>
                                                         <button
-                                                            onClick={() => copyToClipboard(color.cmyk, cmykKey)}
+                                                            onClick={() => copyToClipboard(color.cmyk, cmykKey, { format: 'cmyk', slug: color.hex })}
                                                             className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"
                                                         >
                                                             <span className="truncate">{color.cmyk}</span>
                                                             {copiedKey === cmykKey ? <Check className="h-2.5 w-2.5 text-green-400 shrink-0" /> : <Copy className="h-2.5 w-2.5 opacity-60 shrink-0" />}
                                                         </button>
                                                         <button
-                                                            onClick={() => copyToClipboard(color.oklch, oklchKey)}
+                                                            onClick={() => copyToClipboard(color.oklch, oklchKey, { format: 'oklch', slug: color.hex })}
                                                             className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"
                                                         >
                                                             <span className="truncate">{color.oklch}</span>
@@ -532,6 +546,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                                         <a
                                                             href={`/syid-assets/fonts/HayyakumAllah/TTF/${weight.file}.ttf`}
                                                             download
+                                                            onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'ttf', slug: weight.file })}
                                                             className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
                                                         >
                                                             <Download className="h-3.5 w-3.5" />
@@ -550,6 +565,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                                         <a
                                                             href={`/syid-assets/fonts/HayyakumAllah/WOFF/${weight.file}.woff`}
                                                             download
+                                                            onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'woff', slug: weight.file })}
                                                             className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
                                                         >
                                                             <Download className="h-3.5 w-3.5" />
@@ -568,6 +584,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                                         <a
                                                             href={`/syid-assets/fonts/HayyakumAllah/WOFF2/${weight.file}.woff2`}
                                                             download
+                                                            onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'woff2', slug: weight.file })}
                                                             className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
                                                         >
                                                             <Download className="h-3.5 w-3.5" />
@@ -656,6 +673,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/downloads/syrian-flag-3840.png"
                                 download="علم-سوريا-الجديد-4K-3840.png"
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'png', slug: 'flag-4k' })}
                                 className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
@@ -664,6 +682,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/downloads/syrian-flag.svg"
                                 download="علم-سوريا-الجديد.svg"
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'svg', slug: 'flag-clean' })}
                                 className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
@@ -672,6 +691,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/materials/syrian-flag-proportions.png"
                                 download
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'png', slug: 'flag-proportions' })}
                                 className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
@@ -680,6 +700,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/materials/syrian-flag-proportions.svg"
                                 download
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'svg', slug: 'flag-proportions' })}
                                 className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
@@ -688,6 +709,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/materials/syrian-flag.dwg"
                                 download
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'dwg', slug: 'flag-proportions' })}
                                 className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
@@ -730,6 +752,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 href="https://drive.google.com/uc?export=download&id=1-HbfWI2PC76TTR6rKpmGl7GDcUlcZFXl"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'pdf', slug: 'flag-guide' })}
                                 className="inline-flex items-center justify-center gap-2 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm h-10 rounded-lg transition-colors"
                             >
                                 <Download className="h-4 w-4" />
@@ -767,6 +790,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 <a
                                     href="/syid-assets/materials/logo.ai.svg"
                                     download="شعار_الهوية_البصرية_السورية.svg"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'svg', slug: 'emblem' })}
                                     className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
                                     <FileDown className="h-4 w-4" aria-hidden="true" />
@@ -775,6 +799,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 <a
                                     href="/syid-assets/downloads/syrian-arab-republic-eagle-emblem-4k.png"
                                     download="شعار-الجمهورية-العربية-السورية-4K.png"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'png', slug: 'emblem-4k' })}
                                     className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
                                     <Download className="h-4 w-4" aria-hidden="true" />
@@ -783,6 +808,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 <a
                                     href="/syid-assets/downloads/syrian-arab-republic-eagle-emblem.pdf"
                                     download="شعار-الجمهورية-العربية-السورية.pdf"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'pdf', slug: 'emblem' })}
                                     className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
                                     <FileDown className="h-4 w-4" aria-hidden="true" />
@@ -792,6 +818,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                     href={`${MEDIA_BASE}/downloads/191b8f0d278fc2ab095fb4f344e3e9b4-vGF1L1.zip`}
                                     target="_blank"
                                     rel="noreferrer"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'zip', slug: 'emblem-pack' })}
                                     className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
                                     <Download className="h-4 w-4" aria-hidden="true" />
@@ -887,6 +914,11 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 document.body.removeChild(link);
                                 // Revoking in the same task can cancel the download in some browsers.
                                 setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                trackEvent('syid_asset_action', {
+                                    action: 'download',
+                                    format: 'svg',
+                                    slug: icon.file.replace(/\.svg$/i, ''),
+                                });
                                 notify.success(`تم تنزيل أيقونة ${icon.name} - ${currentTheme.name}`);
                             };
 
@@ -983,6 +1015,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                             href={`${MEDIA_BASE}/downloads/syria_provinces.geojson`}
                                             target="_blank"
                                             rel="noopener noreferrer"
+                                            onClick={() => trackEvent('syid_asset_action', { action: 'export_map', format: 'geojson', slug: 'full-r2' })}
                                             className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border hover:bg-muted/50 transition-colors"
                                         >
                                             <span className="font-medium">تحميل GeoJSON بدقة كاملة (R2)</span>

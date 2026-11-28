@@ -448,7 +448,12 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
         Route::post('/answer', [FakeNewsTestController::class, 'recordAnswer'])->middleware('throttle:120,1')->name('api.v1.fakenews.answer');
         Route::post('/result', [FakeNewsTestController::class, 'recordResult'])->middleware('throttle:30,1')->name('api.v1.fakenews.result');
     });
+
+    require __DIR__.'/api-public-civic.php';
 });
+
+require __DIR__.'/api-bootstrap.php';
+require __DIR__.'/api-civic-crud.php';
 
 /*
 |--------------------------------------------------------------------------

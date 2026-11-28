@@ -5,6 +5,7 @@ import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { MEDIA_BASE } from '@/Domain/govapps/media';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { SYID_FACTS, type SyidFacts } from '@/Domain/syid/facts';
 import { PageBody, PageHeader } from '@/Components/layout';
 import { DownloadRow } from './_components/DownloadRow';
@@ -64,6 +65,13 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
                                     key={file.id}
                                     file={file}
                                     primary={index === 0 || index === 1}
+                                    onDownload={() =>
+                                        trackEvent('syid_asset_action', {
+                                            action: 'download',
+                                            format: file.format.toLowerCase(),
+                                            slug: file.id,
+                                        })
+                                    }
                                 />
                             ))}
                         </div>
@@ -83,6 +91,7 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
                                     href={officialZipUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'zip', slug: 'emblem-pack' })}
                                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 h-10 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                                 >
                                     <Download className="h-4 w-4" aria-hidden="true" />
@@ -148,6 +157,13 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
                                                 key={file.id}
                                                 href={file.path}
                                                 download={file.download_name}
+                                                onClick={() =>
+                                                    trackEvent('syid_asset_action', {
+                                                        action: 'download',
+                                                        format: file.format.toLowerCase(),
+                                                        slug: file.id,
+                                                    })
+                                                }
                                                 className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background hover:bg-muted/60 px-3 py-2 text-xs transition-colors"
                                             >
                                                 <span className="inline-flex items-center gap-1.5 font-medium text-foreground">

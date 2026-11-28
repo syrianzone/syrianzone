@@ -16,6 +16,7 @@ import {
 } from "@/Components/ui/table";
 import MainLayout from '@/Layouts/MainLayout';
 import { useCanAny } from '@/Lib/useCan';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { copyText } from '@/Lib/copy';
 import { matchesFilterText } from '@/Lib/smartFilterSearch';
 import type { PhonebookCategory, PhonebookEntry } from '@/Domain/phonebook/types';
@@ -121,9 +122,17 @@ export default function Index({ initialData, categories: serverCategories = [] }
         resetKey: `${directory.query}|${JSON.stringify(directory.value.filters)}|${viewMode}`,
     });
 
-    const handleCopy = async (number: string, id: string) => {
-        if (!await copyText(number)) return;
-        setCopiedId(id);
+    const trackContact = (action: 'call' | 'whatsapp' | 'copy', item: PhonebookEntry) => {
+        trackEvent('phonebook_contact_action', {
+            action,
+            category: item.category_en ? categoryKey(item) : item.category_id || undefined,
+        });
+    };
+
+    const handleCopy = async (item: PhonebookEntry) => {
+        if (!await copyText(item.number)) return;
+        trackContact('copy', item);
+        setCopiedId(item.id);
         // Restart the window on every copy so an older timer can't clear a newer tick.
         if (copiedTimerRef.current !== null) window.clearTimeout(copiedTimerRef.current);
         copiedTimerRef.current = window.setTimeout(() => setCopiedId(null), 2000);
@@ -282,7 +291,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                         <div className="space-y-2">
                                             <button
                                                 type="button"
-                                                onClick={() => handleCopy(item.number, item.id)}
+                                                onClick={() => handleCopy(item)}
                                                 className="w-full text-center py-2 bg-muted/50 hover:bg-muted/80 rounded-xl border border-border/60 font-mono text-base font-extrabold text-foreground tracking-wide transition-colors cursor-pointer group flex items-center justify-center gap-2"
                                                 title="انقر لنسخ الرقم"
                                             >
@@ -303,7 +312,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                     className="flex-1 flex items-center justify-center gap-1.5 text-xs h-8 px-2"
                                                     title="اتصال هاتفي"
                                                 >
-                                                    <a href={getTelUrl(item.number)}>
+                                                    <a href={getTelUrl(item.number)} onClick={() => trackContact('call', item)}>
                                                         <Phone className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                                                         <span>اتصال</span>
                                                     </a>
@@ -317,7 +326,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         className="flex-1 flex items-center justify-center gap-1.5 text-xs h-8 px-2 border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600"
                                                         title="مراسلة عبر واتساب"
                                                     >
-                                                        <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
+                                                        <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer" onClick={() => trackContact('whatsapp', item)}>
                                                             <MessageSquare className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
                                                             <span>واتساب</span>
                                                         </a>
@@ -376,7 +385,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                         </div>
                                         <button
                                             type="button"
-                                            onClick={() => handleCopy(item.number, item.id)}
+                                            onClick={() => handleCopy(item)}
                                             className="shrink-0 inline-flex items-center gap-1.5 rounded-md bg-muted/60 hover:bg-muted px-2 py-1 font-mono text-sm font-extrabold tabular-nums text-foreground transition-colors"
                                             aria-label={`نسخ رقم ${item.name_ar} ${item.number}`}
                                             title="نسخ الرقم"
@@ -423,7 +432,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                 className="h-8 w-8 text-primary hover:text-primary/80"
                                                 title="اتصال هاتفي"
                                             >
-                                                <a href={getTelUrl(item.number)}>
+                                                <a href={getTelUrl(item.number)} onClick={() => trackContact('call', item)}>
                                                     <Phone className="h-4 w-4" aria-hidden="true" />
                                                 </a>
                                             </Button>
@@ -437,7 +446,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                     className="h-8 w-8 text-emerald-500 hover:text-emerald-600"
                                                     title="مراسلة عبر واتساب"
                                                 >
-                                                    <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
+                                                    <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer" onClick={() => trackContact('whatsapp', item)}>
                                                         <MessageSquare className="h-4 w-4" aria-hidden="true" />
                                                     </a>
                                                 </Button>
@@ -507,7 +516,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                             <Button aria-label={`نسخ رقم ${item.name_ar} ${item.number}`}
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleCopy(item.number, item.id)}
+                                                onClick={() => handleCopy(item)}
                                                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                                 title="نسخ الرقم"
                                             >
@@ -525,7 +534,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                 className="h-8 w-8 text-primary hover:text-primary/80"
                                                 title="اتصال هاتفي"
                                             >
-                                                <a href={getTelUrl(item.number)}>
+                                                <a href={getTelUrl(item.number)} onClick={() => trackContact('call', item)}>
                                                     <Phone className="h-4 w-4" aria-hidden="true" />
                                                 </a>
                                             </Button>
@@ -538,7 +547,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                     className="h-8 w-8 text-emerald-500 hover:text-emerald-600"
                                                     title="مراسلة عبر واتساب"
                                                 >
-                                                    <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
+                                                    <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer" onClick={() => trackContact('whatsapp', item)}>
                                                         <MessageSquare className="h-4 w-4" aria-hidden="true" />
                                                     </a>
                                                 </Button>

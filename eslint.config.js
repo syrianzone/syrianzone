@@ -1,6 +1,5 @@
-// Lint gate: only rules that catch real bugs the type checker cannot see.
-// rules-of-hooks fails a hook called after an early return or in a branch
-// (the Tarneeb/Trix crash, React error #310). Style is not linted.
+// Lint gate: zero-noise rules that catch real bugs and enforce core boundaries
+// the type checker cannot see. Style is not linted.
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
@@ -11,6 +10,27 @@ export default [
     languageOptions: { parser: tseslint.parser },
     linterOptions: { reportUnusedDisableDirectives: 'off' },
     plugins: { 'react-hooks': reactHooks },
-    rules: { 'react-hooks/rules-of-hooks': 'error' },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'no-alert': 'error',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'axios',
+              message: 'Use resources/js/Lib/api.ts instead of importing axios directly.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['resources/js/Lib/api.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
   },
 ];

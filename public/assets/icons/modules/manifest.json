@@ -1,0 +1,174 @@
+{
+  "version": "4bf6cb4c",
+  "aliases": {
+    "atlas": "population",
+    "places": "mishwar",
+    "polls": "tierlist"
+  },
+  "icons": {
+    "answers": {
+      "light": "f18cb55b",
+      "dark": "5bd30ad2"
+    },
+    "assets": {
+      "light": "e32a1b70",
+      "dark": "8213adae"
+    },
+    "board": {
+      "light": "2783d23f",
+      "dark": "fd8adc15"
+    },
+    "codex": {
+      "light": "d559171b",
+      "dark": "29f88bd0"
+    },
+    "compass": {
+      "light": "eed96684",
+      "dark": "6b98b7ea"
+    },
+    "contributors": {
+      "light": "d0d7e357",
+      "dark": "4100199b"
+    },
+    "crossings": {
+      "light": "57cababf",
+      "dark": "88656d8d"
+    },
+    "currency": {
+      "light": "a13e97b6",
+      "dark": "200be648"
+    },
+    "fakenews": {
+      "light": "939f854c",
+      "dark": "9f1f71db"
+    },
+    "game_2048": {
+      "light": "dbd88c58",
+      "dark": "082f87c7"
+    },
+    "games": {
+      "light": "827d5063",
+      "dark": "371bec29"
+    },
+    "govapps": {
+      "light": "1c8053f8",
+      "dark": "b58d52ff"
+    },
+    "governorates": {
+      "light": "e25241df",
+      "dark": "b7a139d4"
+    },
+    "govtcvs": {
+      "light": "42d1c41c",
+      "dark": "76b792fb"
+    },
+    "guesswho": {
+      "light": "b0ae634b",
+      "dark": "aa3d7a9d"
+    },
+    "house": {
+      "light": "9d449c1c",
+      "dark": "f1be174d"
+    },
+    "justice": {
+      "light": "a7643483",
+      "dark": "da67cc37"
+    },
+    "ministries": {
+      "light": "a7c5825c",
+      "dark": "66586bd0"
+    },
+    "mishwar": {
+      "light": "39af0875",
+      "dark": "a3ef1293"
+    },
+    "muslim": {
+      "light": "c5fa7303",
+      "dark": "a5324ad1"
+    },
+    "news": {
+      "light": "4c094cef",
+      "dark": "de236f92"
+    },
+    "party": {
+      "light": "ee7f2b39",
+      "dark": "9954ac71"
+    },
+    "phonebook": {
+      "light": "60e53735",
+      "dark": "45ddaf64"
+    },
+    "population": {
+      "light": "cb395bc6",
+      "dark": "052fe725"
+    },
+    "priorities": {
+      "light": "00f61f24",
+      "dark": "30bf8061"
+    },
+    "promises": {
+      "light": "0df9cd38",
+      "dark": "0865876d"
+    },
+    "quran": {
+      "light": "a19da5a7",
+      "dark": "1449ca27"
+    },
+    "quran_radio": {
+      "light": "ab03f7f9",
+      "dark": "d06d47bd"
+    },
+    "recipes": {
+      "light": "e7808195",
+      "dark": "7f695f2e"
+    },
+    "roznama": {
+      "light": "f3668969",
+      "dark": "31678cba"
+    },
+    "site": {
+      "light": "f2b3c144",
+      "dark": "92b96be8"
+    },
+    "sites": {
+      "light": "a6733d6a",
+      "dark": "b9d78616"
+    },
+    "solitaire": {
+      "light": "969aa9b0",
+      "dark": "7a4f5a93"
+    },
+    "syid": {
+      "light": "1d6f5de9",
+      "dark": "8a10d3d2"
+    },
+    "syofficial": {
+      "light": "63ee833a",
+      "dark": "45edf72d"
+    },
+    "tarneeb": {
+      "light": "076bf794",
+      "dark": "195145c7"
+    },
+    "tierlist": {
+      "light": "7435608e",
+      "dark": "edd28bb8"
+    },
+    "transit": {
+      "light": "8a423e97",
+      "dark": "425fef56"
+    },
+    "trix": {
+      "light": "8663b207",
+      "dark": "2d66b78a"
+    },
+    "users": {
+      "light": "629a7e98",
+      "dark": "629a7e98"
+    },
+    "wild": {
+      "light": "591af245",
+      "dark": "c53f87a8"
+    }
+  }
+}

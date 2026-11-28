@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/Components/ui/dialog';
 import { notify } from '@/Lib/notify';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { getThemeById, useThemeId } from '@/Lib/theme';
 import { isShareCancelled, useCanShare } from '@/Lib/webShare';
 import type { ElementPngOptions } from '@/Lib/exportElementAsPng';
@@ -45,6 +46,17 @@ export interface ShareImageDialogProps {
   extraActions?: React.ReactNode;
   /** Max display width of the preview container in CSS pixels (default 360). */
   previewMaxWidth?: number;
+  /** Optional module slug for analytics (falls back to a sanitized stem from `filename`). */
+  analyticsModule?: string;
+}
+
+function moduleFromFilename(filename: string): string {
+  const stem = filename
+    .replace(/\.[^.]+$/, '')
+    .replace(/[^a-z0-9_-]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+  return stem.slice(0, 40) || 'share';
 }
 
 const subscribeNoop = () => () => {};
@@ -73,8 +85,11 @@ export default function ShareImageDialog({
   renderImage,
   extraActions,
   previewMaxWidth = 360,
+  analyticsModule,
 }: ShareImageDialogProps) {
   const activeThemeId = useThemeId();
+  const resolvedModule = analyticsModule || moduleFromFilename(filename);
+  const wasOpenRef = useRef(false);
   const [themeId, setThemeId] = useState<ShareThemeChoice>(() => defaultMadarChoice(activeThemeId));
   const [format, setFormat] = useState<ShareFormatChoice>(defaultFormat);
   const [busy, setBusy] = useState<'share' | 'download' | 'copy' | null>(null);
@@ -95,10 +110,20 @@ export default function ShareImageDialog({
   // Sync theme choice to active page theme each time the dialog opens.
   useEffect(() => {
     if (open) {
-      setThemeId(defaultMadarChoice(activeThemeId));
+      const nextTheme = defaultMadarChoice(activeThemeId);
+      setThemeId(nextTheme);
       setFormat(defaultFormat);
+      if (!wasOpenRef.current) {
+        trackEvent('share_image_action', {
+          action: 'open',
+          module: resolvedModule,
+          format: defaultFormat,
+          theme_id: nextTheme,
+        });
+      }
     }
-  }, [open, activeThemeId, defaultFormat]);
+    wasOpenRef.current = open;
+  }, [open, activeThemeId, defaultFormat, resolvedModule]);
 
   // Reset cached PNG file whenever dialog state, theme, or format changes.
   useEffect(() => {
@@ -194,18 +219,39 @@ export default function ShareImageDialog({
       if (action === 'download') {
         const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
         await exportElementAsPng(file, file.name || filename);
+        trackEvent('share_image_action', {
+          action: 'download',
+          module: resolvedModule,
+          format,
+          theme_id: themeId,
+        });
         notify.success('تم تحميل الصورة');
       } else if (action === 'copy') {
         const { copyElementAsPng } = await import('@/Lib/exportElementAsPng');
         const copied = await copyElementAsPng(file);
-        if (copied) notify.copy('تم نسخ الصورة إلى الحافظة');
-        else notify.error('المتصفح لا يدعم نسخ الصور');
+        if (copied) {
+          trackEvent('share_image_action', {
+            action: 'copy',
+            module: resolvedModule,
+            format,
+            theme_id: themeId,
+          });
+          notify.copy('تم نسخ الصورة إلى الحافظة');
+        } else {
+          notify.error('المتصفح لا يدعم نسخ الصور');
+        }
       } else {
         try {
           await navigator.share({
             files: [file],
             ...(shareTitle ? { title: shareTitle } : {}),
             ...(shareText ? { text: shareText } : {}),
+          });
+          trackEvent('share_image_action', {
+            action: 'web_share',
+            module: resolvedModule,
+            format,
+            theme_id: themeId,
           });
         } catch (error) {
           if (!preparedFile && error instanceof DOMException && error.name === 'NotAllowedError') return;

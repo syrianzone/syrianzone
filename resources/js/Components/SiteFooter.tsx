@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import { Logo } from '@/Components/brand/Logo';
+import { trackEvent } from '@/Lib/analyticsConsent';
 
 const FOOTER_COLUMNS = [
     {
@@ -75,6 +76,13 @@ const SiteFooter = React.memo(function SiteFooter({
                                 )}
                                 <Link
                                     href={item.href}
+                                    onClick={() =>
+                                        trackEvent('nav_select', {
+                                            module: item.href.replace(/^\/+/, '') || 'home',
+                                            surface: 'footer_slim',
+                                            is_external: false,
+                                        })
+                                    }
                                     className="transition-colors hover:text-foreground"
                                 >
                                     {item.label}
@@ -117,6 +125,13 @@ const SiteFooter = React.memo(function SiteFooter({
                                         <li key={item.href}>
                                             <Link
                                                 href={item.href}
+                                                onClick={() =>
+                                                    trackEvent('nav_select', {
+                                                        module: item.href.replace(/^\/+/, '') || 'home',
+                                                        surface: 'footer_full',
+                                                        is_external: false,
+                                                    })
+                                                }
                                                 className="text-xs text-muted-foreground transition-colors hover:text-foreground"
                                             >
                                                 {item.label}

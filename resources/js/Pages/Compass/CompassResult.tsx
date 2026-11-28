@@ -395,6 +395,7 @@ export default function CompassResult({
         <ShareImageDialog
           open={shareOpen}
           onOpenChange={setShareOpen}
+          analyticsModule="compass"
           title="مشاركة نتيجة البوصلة"
           description="اختر المظهر والأبعاد ثم شارك أو حمّل بطاقة نتيجتك."
           filename={`bousalat-syria-${computed.spectrum?.id ?? 'result'}.png`}

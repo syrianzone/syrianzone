@@ -6,41 +6,17 @@
 
 This document is the single contract for the feature as implemented. Every name, path, prop, and JSON key below is normative. Do not invent alternatives.
 
-## 2. HOUSE CONVENTIONS (follow exactly, do not re-derive from the codebase)
+## 2. HOUSE CONVENTIONS
 
-- 2-space indentation everywhere (PHP, TS, JSON). Terse code. Comments explain why, not what, and are sparse. No em or en dashes anywhere; use colons, commas, or parentheses.
-- Arabic-only UI strings hardcoded in JSX. RTL via `dir="rtl"` on containers, not on `<html>`. Coordinates and numbers render inside `dir="ltr"` spans when shown as text so RTL does not reverse them.
-- Page skeleton:
+Repo-wide conventions live in [docs/guidelines/design-and-conventions.md](../guidelines/design-and-conventions.md) and [AGENTS.md](../../AGENTS.md) — follow them as the single source of truth (RTL at `<html>` with logical utilities, capability checks via `useCan()`, `Lib/api.ts`, `Lib/notify.ts`, `confirmDialog()`, token-only theming, Pest + `RefreshDatabase`, and explicit `permissions` on `UserFactory`).
 
-```tsx
-import MainLayout from '@/Layouts/MainLayout';
+Mishwar-specific notes:
 
-export default function Index() {
-  return (
-    <MainLayout>
-      <h1 className="sr-only">مشوار</h1>
-      <div dir="rtl">...</div>
-    </MainLayout>
-  );
-}
-```
-
-The `<title>`/meta tags are not a page's job: `SeoMeta` prints them from
-`resources/data/seo.json`, so a page renders neither `<Head>` for them nor a
-second `<main>` (the one landmark comes from `ConditionalLayout`).
-
-- Auth in React: `const { user, isAdmin } = useAuth()` from `@/Contexts/AuthContext` (available under MainLayout). Login prompt is a plain link: `<a href="/auth/google">تسجيل الدخول عبر جوجل</a>`. No login page exists.
-- HTTP client: `import { api } from '@/Lib/api'` (CSRF, cookies, JSON and one timeout already configured), and its `apiErrorMessage`/`apiFieldErrors` helpers for failures. Never use raw `fetch` or `axios` for API calls. All Places components call the typed client in `resources/js/Domain/places/api.ts`, never `Lib/api` directly (exception: the Lightbox photo downloads, which fetch static `/storage/...` files, not API endpoints).
-- UI components: import from `@/Components/ui/*` (button, card, dialog, sheet, input, textarea, select, badge, avatar, alert, separator, scroll-area, label). Transient feedback (submission accepted, a failed request, a point outside Syria) goes through `Lib/notify`; field errors stay next to their field.
-- Icons: lucide-react. Theme: rely on tokens (`bg-background`, `text-foreground`, `text-primary`, `bg-card`, `text-muted-foreground`, `border-border`, `bg-accent/50`, `destructive`). Never hardcode colors; the scheme is automatic via `data-scheme` (`data-theme` picks the theme).
-- Map style: resolved by `Components/map/resolveStyle.ts` (`light-vector.json` / `dark-matter-vector.json` under `public/styles/styles/`, local, no API key) and applied by the shared `Components/map/MapCanvas`, which also restyles on a theme switch. MapLibre v5 is already a dependency.
-- Backend validation: inline `$request->validate(['field' => 'required|string|max:255'])` pipe-string rules in controllers. No FormRequest classes, no Policies, no API Resources: match the codebase. Guard checks return early JSON: `return response()->json(['message' => '...'], 403);`.
-- Response codes: 201 create, 204 delete (`response()->json(null, 204)`), 400 invalid transition, 403 forbidden, 404 missing, 422 validation (automatic), 429 throttled. Error key is `message`.
-- Models: explicit `$fillable`, sparse `$casts`, one-line relation methods, `HasFactory`.
-- Migrations: anonymous class, `up()`/`down()`, `foreignId(...)->constrained()->cascadeOnDelete()`, `enum` for status columns, `timestamps()`. SQLite AND MySQL portable: no spatial functions, no SQLite-only SQL, no generated columns. Shipped migrations are never edited; schema removals happen through new drop migrations.
-- Tests: Pest closures in `tests/Feature/`, `RefreshDatabase` is global via `tests/Pest.php`. Style: `test('can list approved places', function () { ... });`, `$this->getJson()/postJson()`, `assertOk/assertCreated/assertJsonPath/assertJsonCount/assertDatabaseHas`, `actingAs(User::factory()->create())`. NOTE: `UserFactory` defaults `role` to `'user'` and a plain account holds **no** capabilities (only `superadmin` bypasses), so capability-gated tests must grant `permissions` explicitly. Rate-limit tests loop N+1 requests and assert 429.
-- Routing split: public reads live in `routes/api.php` under `api_user` + `throttle:60,1` (no session needed, but `statefulApi()` and `api_user` mean `$request->user()` still resolves when a session cookie or bearer token is present). User writes live in the same file under `Route::middleware('auth:sanctum')`, so a browser gets session + CSRF through `statefulApi()` and mobile gets Bearer; admin writes live in `routes/web.php` under the `places_admin` group.
-- GeoJSON coordinates are `[lng, lat]`. Database columns and all non-GeoJSON API JSON use explicit `lat` and `lng` keys.
+- **Typed API client**: all Places components call `resources/js/Domain/places/api.ts` (built on `Lib/api.ts`), never raw `fetch`/`axios` (exception: Lightbox photo downloads fetch static media URLs).
+- **Map style**: resolved by `Components/map/resolveStyle.ts` (`light-vector.json` / `dark-matter-vector.json` under `public/styles/styles/`, local, no API key) and applied by `Components/map/MapCanvas`, which restyles on theme switches.
+- **Routing split**: public reads live in `routes/api.php` under `api_user` + `throttle:60,1`; authenticated user writes live under `auth:sanctum`; admin writes live in `routes/web.php` under the `places_admin` capability group.
+- **Coordinates**: GeoJSON coordinates are `[lng, lat]`. Database columns and all non-GeoJSON API JSON use explicit `lat` and `lng` keys.
+- **Upload limits**: container limits are configured in `Dockerfile` (`PHP_UPLOAD_MAX_FILE_SIZE=52M`, `PHP_POST_MAX_SIZE=64M`, `NGINX_CLIENT_MAX_BODY_SIZE=64M`); per-photo validation enforces `max:12288` (12 MB) and `max_width=6000,max_height=6000`.
 
 ## 3. DATA MODEL
 
@@ -127,7 +103,7 @@ The `saves_count` counter cache is maintained by controllers with `increment()`/
 - Paths (all under `places/{place_id}/`): original `places/{id}/{uuid}.{ext}` (ext = original extension, stored untouched for future reprocessing), display `places/{id}/{uuid}_display.webp`, thumb `places/{id}/{uuid}_thumb.webp`.
 - Sizes: thumb = 400x400 cover crop, webp quality 75. Display = scaled down so the longest side is at most 1600px (never upscaled), webp quality 80. Use `ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class)`, `cover(400, 400)` and `scaleDown(width: 1600, height: 1600)`, `toWebp(quality)`.
 - Validation (in controller, exact rules): `'photos' => 'required|array|min:1|max:10'`, `'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000'`. Laravel's `image`/`mimes` rules sniff content via fileinfo, not extension: this is the required mime check. The max dimensions cap decompression bombs before GD allocates the bitmap.
-- Ops prerequisite for the 10-photo, 12 MB caps: a full submit needs `upload_max_filesize >= 12M`, `post_max_size >= 125M`, and nginx `client_max_body_size >= 125M`. The 6000x6000 dimension cap stays (real memory bound).
+- Ops prerequisite: container defaults (`Dockerfile`) set `PHP_UPLOAD_MAX_FILE_SIZE=52M`, `PHP_POST_MAX_SIZE=64M`, and `NGINX_CLIENT_MAX_BODY_SIZE=64M`. Keep single-photo validation at `max:12288` (12 MB) and `max_width=6000,max_height=6000` (real GD memory bound).
 - Service class: `app/Services/PlaceImageService.php`
 
 ```php

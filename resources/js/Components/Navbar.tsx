@@ -42,7 +42,21 @@ import { Logo } from '@/Components/brand/Logo';
 import { Node } from '@/Components/brand/Node';
 import { groupSiteLinks, useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { isActive, pathnameOf, routeFamily, routeSegment } from '@/Lib/routes';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { siteModule, type SiteModuleGroup } from '@/Lib/siteModules';
+
+function navModuleFromHref(href: string, id?: string): string {
+  if (id) return id;
+  if (href.startsWith('http://') || href.startsWith('https://')) {
+    try {
+      return new URL(href).hostname;
+    } catch {
+      return 'external';
+    }
+  }
+  const clean = pathnameOf(href).replace(/^\/+/, '');
+  return clean || 'home';
+}
 
 /**
  * The mobile menu's search panel carries the whole search engine (results
@@ -94,9 +108,19 @@ const NavTile = React.forwardRef<
     compact?: boolean;
     current?: boolean;
     external?: boolean;
+    moduleId?: string;
+    surface?: string;
     onNavigate?: () => void;
   }
->(function NavTile({ href, text, icon: Icon, image, imageDark, isFlag, compact, current, external, onNavigate, ...rest }, ref) {
+>(function NavTile({ href, text, icon: Icon, image, imageDark, isFlag, compact, current, external, moduleId, surface = 'navbar_panel', onNavigate, ...rest }, ref) {
+  const handleClick = () => {
+    trackEvent('nav_select', {
+      module: navModuleFromHref(href, moduleId),
+      surface,
+      is_external: Boolean(external),
+    });
+    onNavigate?.();
+  };
   const iconSize = compact ? 'h-9 w-9' : 'h-12 w-12';
   const className =
     'group flex h-full select-none flex-col items-center gap-1.5 rounded-lg px-1 py-2 text-center no-underline outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring';
@@ -161,6 +185,7 @@ const NavTile = React.forwardRef<
         href={href}
         target="_blank"
         rel="noreferrer"
+        onClick={handleClick}
         aria-current={current ? 'page' : undefined}
         className={className}
         {...rest}
@@ -173,7 +198,7 @@ const NavTile = React.forwardRef<
     <Link
       ref={ref}
       href={href}
-      onClick={onNavigate}
+      onClick={handleClick}
       aria-current={current ? 'page' : undefined}
       className={className}
       {...rest}
@@ -210,6 +235,7 @@ function TileGrid({
             isFlag={isFlag}
             compact={compact}
             external={external}
+            moduleId={id}
             current={isActive(href, pathname)}
             onNavigate={onNavigate}
           />
@@ -304,7 +330,18 @@ function MorePanel({
             (link, index) => (
               <React.Fragment key={link.href}>
                 {index > 0 && <span>•</span>}
-                <Link href={link.href} onClick={onNavigate} className="flex items-center gap-1 transition-colors hover:text-primary">
+                <Link
+                  href={link.href}
+                  onClick={() => {
+                    trackEvent('nav_select', {
+                      module: navModuleFromHref(link.href),
+                      surface: 'navbar_panel',
+                      is_external: false,
+                    });
+                    onNavigate?.();
+                  }}
+                  className="flex items-center gap-1 transition-colors hover:text-primary"
+                >
                   <link.icon className="h-3.5 w-3.5" />
                   {link.label}
                 </Link>
@@ -390,6 +427,13 @@ function DomainPanel({
                   href={link.href}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() =>
+                    trackEvent('nav_select', {
+                      module: navModuleFromHref(link.href, link.id),
+                      surface: 'navbar_panel',
+                      is_external: true,
+                    })
+                  }
                   aria-current={active ? 'page' : undefined}
                   className={itemClass}
                 >
@@ -398,7 +442,14 @@ function DomainPanel({
               ) : (
                 <Link
                   href={link.href}
-                  onClick={onNavigate}
+                  onClick={() => {
+                    trackEvent('nav_select', {
+                      module: navModuleFromHref(link.href, link.id),
+                      surface: 'navbar_panel',
+                      is_external: false,
+                    });
+                    onNavigate();
+                  }}
                   aria-current={active ? 'page' : undefined}
                   className={itemClass}
                 >
@@ -462,16 +513,24 @@ function NavTopLink({
     </>
   );
 
+  const handleClick = () => {
+    trackEvent('nav_select', {
+      module: navModuleFromHref(href),
+      surface: 'navbar',
+      is_external: Boolean(external),
+    });
+  };
+
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noreferrer" aria-current={active ? 'page' : undefined} className={cls}>
+      <a href={href} target="_blank" rel="noreferrer" onClick={handleClick} aria-current={active ? 'page' : undefined} className={cls}>
         {content}
       </a>
     );
   }
 
   return (
-    <Link href={href} aria-current={active ? 'page' : undefined} className={cls}>
+    <Link href={href} onClick={handleClick} aria-current={active ? 'page' : undefined} className={cls}>
       {content}
     </Link>
   );
@@ -802,7 +861,14 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                       <Link
                         key={link.href}
                         href={link.href}
-                        onClick={() => setIsOpen(false)}
+                        onClick={() => {
+                          trackEvent('nav_select', {
+                            module: navModuleFromHref(link.href),
+                            surface: 'navbar_mobile',
+                            is_external: false,
+                          });
+                          setIsOpen(false);
+                        }}
                         className="flex items-center gap-1.5 hover:text-primary transition-colors"
                       >
                         <link.icon className="h-3.5 w-3.5" />
@@ -935,7 +1001,14 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                               {index > 0 && <span>•</span>}
                               <Link
                                 href={link.href}
-                                onClick={() => setOpenMenuId(null)}
+                                onClick={() => {
+                                  trackEvent('nav_select', {
+                                    module: navModuleFromHref(link.href),
+                                    surface: 'navbar_panel',
+                                    is_external: false,
+                                  });
+                                  setOpenMenuId(null);
+                                }}
                                 className="flex items-center gap-1 transition-colors hover:text-primary"
                               >
                                 <link.icon className="h-3.5 w-3.5" />

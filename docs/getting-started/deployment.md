@@ -18,16 +18,30 @@ Warm end-to-end time is about 3 minutes.
 
 ## The image
 
-Single production image (see `Dockerfile`): bun builds the Vite assets, then
-serversideup/php:8.4-fpm-nginx runs php-fpm + nginx with s6 longruns for the
-queue worker, the scheduler, and reverb (websockets, proxied at `/app/`).
-On boot `docker/10-startup.sh` runs `migrate --force` (fatal on failure by
-design), links storage and caches config/routes/views; nginx and PHP-FPM
-start only after it, so keep it to what a request needs. The idempotent syncs
-that can run while the site serves (R2 asset moves, the Guess Who seed, the
-HalaSyria hotel sync, the promises research import, the share-card renderer
-check) run once per container in the `post-boot` s6 service
-(`docker/s6/post-boot-run`).
+Single multi-stage production image (see `Dockerfile`):
+
+1. **Stage 1 (`frontend-builder`)**: Bun builds the client and SSR Vite bundles (`bun run build`) and then precompresses every `.js`, `.css`, and `.svg` asset ≥ 1 KB under `public/build/assets` with Brotli level 11 (`.br`) and Gzip level 9 (`.gz`) via `scripts/precompress-assets.mjs`.
+2. **Stage 1b (`ssr-deps`)**: installs `--production` `node_modules` for the externalized dependencies imported by the SSR bundle (`bootstrap/ssr`).
+3. **Stage 2 (`serversideup/php:8.4-fpm-nginx`)**: runs PHP-FPM + Nginx + Node.js 22 with s6-overlay longruns for:
+   - `queue-worker`
+   - `laravel-scheduler`
+   - `reverb-server` (websockets, proxied at `/app/`)
+   - `inertia-ssr` (`docker/s6/inertia-ssr-run`, Node.js SSR render server for `bootstrap/ssr`; active by default and idles only when `INERTIA_SSR_ENABLED=false`)
+   - `post-boot` (`docker/s6/post-boot-run`, runs idempotent syncs once per container while the site serves: R2 asset moves, Guess Who seed, HalaSyria hotel sync, promises research import, share-card renderer check).
+
+On boot `docker/10-startup.sh` runs `migrate --force` (fatal on failure by design), links storage and caches config/routes/views; Nginx and PHP-FPM start only after it, so keep it to what a request needs.
+
+### Precompressed static assets
+
+`docker/server-opts.d/assets-compression.conf` is injected into the Nginx `server {}` block and serves the build-time `.br` (Brotli-11) and `.gz` (`gzip_static on`, Gzip-9) files from `public/build/assets/` with zero runtime CPU, `Cache-Control: public, max-age=31536000, immutable`, and `Vary: Accept-Encoding`. Works both behind Cloudflare and direct-to-origin. See [architecture/performance.md](../architecture/performance.md).
+
+### PHP CVE mitigations
+
+`Dockerfile` hardens PHP INI (`/usr/local/etc/php/conf.d/zz-security-mitigations.ini`) and the PHP-FPM pool (`docker-php-serversideup-pool.conf`) using `php_admin_value`/`php_admin_flag` so runtime `ini_set()` or `.env` cannot override them:
+
+- **CVE-2026-109618**: `memory_limit = -1` removes the controllable PHP memory-limit bailout path; the container's cgroup `mem_limit` (`4g`) acts as the hard memory boundary.
+- **CVE-2026-109619**: `session.upload_progress.enabled = 0` (`off`) disables upload-progress session state initialization before request parsing.
+- Request body caps are bounded at `PHP_UPLOAD_MAX_FILE_SIZE=52M`, `PHP_POST_MAX_SIZE=64M`, and `NGINX_CLIENT_MAX_BODY_SIZE=64M`.
 
 ## Server layout
 

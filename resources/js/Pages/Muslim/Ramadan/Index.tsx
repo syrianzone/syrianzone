@@ -42,7 +42,7 @@ export default function Index({ meta, images, todayInfo }: RamadanHubProps) {
 
   return (
     <MainLayout>
-      <MuslimShell title="إمساكية رمضان 1448 هـ / 2027 م" icon={MuslimIcon} width="max-w-5xl">
+      <MuslimShell title="إمساكية رمضان 1448 هـ / 2027 م" icon={MuslimIcon} width="default">
         <div className="space-y-6">
           {/* Countdown & key dates card */}
           <Card className="border-primary/20 bg-primary/5">

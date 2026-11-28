@@ -69,6 +69,7 @@ class GlobalSearchController extends Controller
 
         $phonebook = PhonebookEntry::query()
             ->where('is_active', true)
+            ->whereHas('category', fn ($q) => $q->where('is_active', true))
             ->where(function ($query) use ($like, $foldLike) {
                 $query->where('name_ar_fold', 'like', $foldLike)
                     ->orWhere('name_en', 'like', $like)
@@ -87,6 +88,7 @@ class GlobalSearchController extends Controller
 
         $officials = OfficialEntity::query()
             ->where('is_active', true)
+            ->whereHas('category', fn ($q) => $q->where('is_active', true))
             ->where(function ($query) use ($like, $foldLike) {
                 $query->where('name_ar_fold', 'like', $foldLike)
                     ->orWhere('name', 'like', $like)

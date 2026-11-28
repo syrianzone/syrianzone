@@ -41,12 +41,13 @@ export default function CurrencyIndex({ currency }: CurrencyPageProps) {
     return (
         <MainLayout>
             <div className="min-h-screen bg-background text-foreground" dir="rtl">
-                <PageBody className="space-y-6 sm:space-y-8">
-                    <PageHeader
-                        title="تحويل الليرة السورية الجديدة والقديمة"
-                        description="أداة حساب تحويل العملة السورية بمعيار حذف صفرين (100 قديمة = 1 جديدة)، مع تقسيم الفئات للدفع ومعرض الأوراق النقدية الرسمية."
-                        divider
-                    />
+                <PageHeader
+                    title="تحويل الليرة السورية الجديدة والقديمة"
+                    description="أداة حساب تحويل العملة السورية بمعيار حذف صفرين (100 قديمة = 1 جديدة)، مع تقسيم الفئات للدفع ومعرض الأوراق النقدية الرسمية."
+                    divider
+                />
+
+                <PageBody className="pt-6 space-y-6 sm:space-y-8">
 
                     <Alert variant="warning" className="px-3.5 py-3 sm:px-4 sm:py-3.5">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />

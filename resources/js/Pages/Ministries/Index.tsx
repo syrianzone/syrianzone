@@ -83,34 +83,35 @@ export default function MinistriesIndex({
 
     return (
         <MainLayout>
-            <PageBody className="pb-2 space-y-6">
-                <PageHeader
-                    title="وزارات سوريا والحكومة السورية"
-                    description="دليل موثّق للتشكيل الوزاري السوري الحالي والهيئات السيادية، والخط الزمني لتعاقب الوزراء ومسارات الدمج والفصل الوزاري عبر أربع مراحل حكومية (2024–2026)، مع ربط مباشر بالسير الذاتية والحسابات والتطبيقات الرسمية."
-                    divider
-                    actions={
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Button asChild size="sm" className="h-9 gap-1.5">
-                                <a href="#government-timeline">
-                                    <History className="h-4 w-4" aria-hidden="true" />
-                                    <span>الخط الزمني</span>
-                                </a>
-                            </Button>
-                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-                                <Link href="/govtcvs">
-                                    <IdCard className="h-4 w-4" aria-hidden="true" />
-                                    <span>السير الذاتية</span>
-                                </Link>
-                            </Button>
-                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-                                <Link href="/syofficial">
-                                    <Landmark className="h-4 w-4" aria-hidden="true" />
-                                    <span>الحسابات الرسمية</span>
-                                </Link>
-                            </Button>
-                        </div>
-                    }
-                />
+            <PageHeader
+                title="وزارات سوريا والحكومة السورية"
+                description="دليل موثّق للتشكيل الوزاري السوري الحالي والهيئات السيادية، والخط الزمني لتعاقب الوزراء ومسارات الدمج والفصل الوزاري عبر أربع مراحل حكومية (2024–2026)، مع ربط مباشر بالسير الذاتية والحسابات والتطبيقات الرسمية."
+                divider
+                actions={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button asChild size="sm" className="h-9 gap-1.5">
+                            <a href="#government-timeline">
+                                <History className="h-4 w-4" aria-hidden="true" />
+                                <span>الخط الزمني</span>
+                            </a>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <Link href="/govtcvs">
+                                <IdCard className="h-4 w-4" aria-hidden="true" />
+                                <span>السير الذاتية</span>
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <Link href="/syofficial">
+                                <Landmark className="h-4 w-4" aria-hidden="true" />
+                                <span>الحسابات الرسمية</span>
+                            </Link>
+                        </Button>
+                    </div>
+                }
+            />
+
+            <PageBody className="pt-6 space-y-10 md:space-y-12">
 
                 {/* Quick stats */}
                 <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -139,9 +140,7 @@ export default function MinistriesIndex({
                         </dd>
                     </div>
                 </dl>
-            </PageBody>
 
-            <div className="container mx-auto max-w-6xl space-y-12 px-4 py-8 md:py-10">
                 {/* 1. Current Cabinet */}
                 <section aria-labelledby="current-cabinet-heading" className="space-y-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -445,7 +444,7 @@ export default function MinistriesIndex({
                         </p>
                     )}
                 </footer>
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

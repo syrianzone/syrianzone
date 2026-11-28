@@ -8,7 +8,7 @@ import './styles.css';
 export default function Index() {
   return (
     <MainLayout>
-      <GameShell slug="trix" width="max-w-4xl" rules={<TrixRules />} fit>
+      <GameShell slug="trix" width="default" rules={<TrixRules />} fit>
         <Trix />
       </GameShell>
     </MainLayout>

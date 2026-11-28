@@ -28,7 +28,7 @@ describe('apiErrorMessage', () => {
     });
 
     it('rejects a non-Arabic server message in favour of the fallback', () => {
-        expect(apiErrorMessage(axiosError(400, { message: 'Place is already approved' }))).toBe('تعذر تنفيذ الطلب');
+        expect(apiErrorMessage(axiosError(400, { message: 'Place is already approved' }))).toBe('تعذّر تنفيذ الطلب');
         expect(apiErrorMessage(axiosError(400, { message: 'Place is already approved' }), 'تعذّر الحفظ')).toBe('تعذّر الحفظ');
         expect(apiErrorMessage(axiosError(422, { errors: { name: ['The name field is required.'] } }))).toBe('تحقق من البيانات المدخلة');
     });
@@ -51,7 +51,7 @@ describe('apiErrorMessage', () => {
 
     it('reports a network failure', () => {
         expect(apiErrorMessage({ isAxiosError: true, code: 'ERR_NETWORK', message: 'Network Error', request: {} })).toBe(
-            'تعذر الاتصال بالخادم، تحقق من اتصالك بالإنترنت وحاول مجدداً'
+            'تعذّر الاتصال بالخادم، تحقق من اتصالك بالإنترنت وحاول مجدداً'
         );
     });
 
@@ -74,7 +74,7 @@ describe('apiErrorMessage', () => {
 
     it('returns the fallback for an unknown error', () => {
         expect(apiErrorMessage({}, 'خطأ')).toBe('خطأ');
-        expect(apiErrorMessage(null)).toBe('حدث خطأ غير متوقع');
+        expect(apiErrorMessage(null)).toBe('حدث خطأ غير متوقع، حاول مجدداً');
     });
 
     it('exposes the status of a failed response', () => {

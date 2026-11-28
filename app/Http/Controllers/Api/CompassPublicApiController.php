@@ -24,6 +24,7 @@ class CompassPublicApiController extends Controller
         );
 
         $personas = CompassPersona::query()
+            ->where('enabled', true)
             ->orderBy('sort_order')
             ->get(['slug', 'name'])
             ->map(fn (CompassPersona $p) => ['id' => $p->slug, 'name' => $p->name])

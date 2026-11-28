@@ -21,6 +21,15 @@ interface SitesClientProps {
 
 const ITEMS_PER_PAGE = 24;
 
+function formatSiteTotal(count: number): string {
+    if (count === 1) return 'موقع واحد';
+    if (count === 2) return 'موقعين';
+    const mod100 = count % 100;
+    if (mod100 >= 3 && mod100 <= 10) return `${count} مواقع`;
+    if (mod100 === 0 || mod100 === 1 || mod100 === 2) return `${count} موقع`;
+    return `${count} موقعاً`;
+}
+
 const getTypeDisplayName = (type: string) => {
     if (type.includes('مدونة شخصية')) return 'المدونات الشخصية';
     if (type.includes('شركة') || type.includes('مبادرة')) return 'المواقع التعريفية';
@@ -114,8 +123,8 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <DirectoryResultCount>
                         {directory.results.length === 0
-                            ? 'لم يتم العثور على نتائج'
-                            : `عرض ${directory.shown} من أصل ${directory.results.length} موقع`}
+                            ? 'لا توجد نتائج مطابقة'
+                            : `عرض ${directory.shown} من أصل ${formatSiteTotal(directory.results.length)}`}
                     </DirectoryResultCount>
 
                     <div className="flex items-center gap-4">
@@ -129,8 +138,8 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                 {directory.results.length === 0 ? (
                     <DirectoryEmptyState
                         icon={Search}
-                        title="لم يتم العثور على مواقع"
-                        description="جرب تغيير مصطلحات البحث أو الفلاتر"
+                        title="لا توجد مواقع مطابقة"
+                        description="جرّب تعديل كلمات البحث أو خيارات التصفية."
                         directory={directory}
                     />
                 ) : (

@@ -325,7 +325,7 @@ export default function CompassResult({
       {!readOnly && statsShared && (
         <div className="space-y-2">
           <p className="text-center text-base font-bold text-foreground leading-snug">
-            نتيجتك مشتركة مجهولة الهوية (بلا حساب ولا اسم). اضغط الإزالة لسحبها.
+            نتيجتك مشتركة مجهولة الهوية (بلا حساب ولا اسم). اختر الإزالة لسحبها.
           </p>
           <Button
             variant="destructive"
@@ -342,7 +342,7 @@ export default function CompassResult({
         <div className="space-y-2">
           <p className="text-center text-base font-bold text-foreground leading-snug">
             {savedToAccount
-              ? 'محفوظة في حسابك. اضغط الإزالة لحذفها.'
+              ? 'محفوظة في حسابك. اختر الإزالة لحذفها.'
               : 'احفظها لمتابعتها ومراجعتها لاحقاً من حسابك.'}
           </p>
           <Button

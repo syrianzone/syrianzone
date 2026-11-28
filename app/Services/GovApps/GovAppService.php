@@ -5,11 +5,11 @@ namespace App\Services\GovApps;
 use App\Exceptions\Directories\DirectoryActionException;
 use App\Models\GovApp;
 use App\Services\Directories\SquareWebpImageService;
+use App\Support\Security\SafeRemoteImageFetcher;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 
 /**
  * The government-apps directory domain, transport-free.
@@ -33,7 +33,10 @@ class GovAppService
 
     public const ICON_DIR = 'govapps';
 
-    public function __construct(private readonly SquareWebpImageService $images) {}
+    public function __construct(
+        private readonly SquareWebpImageService $images,
+        private readonly ?SafeRemoteImageFetcher $remoteImages = null,
+    ) {}
 
     /**
      * @return Collection<int, GovApp>
@@ -155,20 +158,14 @@ class GovAppService
 
     private function storeIconFromUrl(string $url, string $appId): ?string
     {
-        $trimmed = trim($url);
-        if (! str_starts_with($trimmed, 'https://') && ! str_starts_with($trimmed, 'http://')) {
+        $fetcher = $this->remoteImages ?? app(SafeRemoteImageFetcher::class);
+        $bytes = $fetcher->fetch($url);
+
+        if ($bytes === null) {
             return null;
         }
 
-        $response = Http::timeout(15)
-            ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
-            ->get($trimmed);
-
-        if (! $response->successful() || $response->body() === '') {
-            return null;
-        }
-
-        return $this->images->storeSquareWebpFromBytes($response->body(), self::ICON_DIR, $appId);
+        return $this->images->storeSquareWebpFromBytes($bytes, self::ICON_DIR, $appId);
     }
 
     public function setActive(string $id, bool $isActive): GovApp

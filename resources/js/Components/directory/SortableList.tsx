@@ -82,7 +82,7 @@ export default function SortableList({ items: initialItems, endpoint, canReorder
             });
             setSavedItems(items);
             setHasChanges(false);
-            notify.success('تم حفظ الترتيب الجديد');
+            notify.success('حُفظ الترتيب الجديد');
             onSaved?.();
         } catch (err) {
             setItems(savedItems);
@@ -103,7 +103,7 @@ export default function SortableList({ items: initialItems, endpoint, canReorder
                 </p>
                 {canReorder && hasChanges && (
                     <Button type="button" size="sm" onClick={save} disabled={saving} className="gap-1.5 font-bold">
-                        {saving ? 'جاري الحفظ...' : 'حفظ الترتيب الجديد'}
+                        {saving ? 'جارٍ الحفظ…' : 'حفظ الترتيب الجديد'}
                     </Button>
                 )}
             </div>

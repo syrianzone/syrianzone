@@ -61,6 +61,16 @@ class SecurityHeaders
      */
     public function applyHeaders(Response $response): Response
     {
+        if (! $response->headers->has('X-Content-Type-Options')) {
+            $response->headers->set('X-Content-Type-Options', 'nosniff');
+        }
+        if (! $response->headers->has('Referrer-Policy')) {
+            $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        }
+        if (! $response->headers->has('X-Frame-Options')) {
+            $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        }
+
         // Only HTML documents: Inertia XHR payloads are JSON, and streamed or
         // binary responses (downloads, share cards, sitemap) must be left alone.
         if (! $this->isHtmlDocument($response)) {
@@ -73,7 +83,9 @@ class SecurityHeaders
             return $response;
         }
 
-        if (config('security.csp_report_only', true)) {
+        if (config('security.csp_enforce', false)) {
+            $response->headers->set('Content-Security-Policy', $this->policy($this->registerNonce()));
+        } elseif (config('security.csp_report_only', true)) {
             $response->headers->set('Content-Security-Policy-Report-Only', $this->policy($this->registerNonce()));
         }
 

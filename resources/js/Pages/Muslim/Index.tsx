@@ -116,12 +116,13 @@ export default function Index() {
         dir="rtl"
         style={{ fontFamily: 'var(--site-font, inherit)' }}
       >
-        <PageBody className="space-y-5">
-          <PageHeader
-            title="الركن الإسلامي"
-            description="أدواتك اليومية من مواقيت الصلاة والقرآن الكريم والإذاعات وإمساكية رمضان في مكان واحد."
-            divider
-          />
+        <PageHeader
+          title="الركن الإسلامي"
+          description="أدواتك اليومية من مواقيت الصلاة والقرآن الكريم والإذاعات وإمساكية رمضان في مكان واحد."
+          divider
+        />
+
+        <PageBody className="pt-5 space-y-5">
 
           <div className="space-y-3">
             <NextPrayerLink timings={timings} timeZone={timeZone} hijriLabel={apiHijri} />

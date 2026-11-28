@@ -80,8 +80,8 @@ class UpdateCompassFigureTool extends AuditedTool
             'align' => ['sometimes', 'nullable', 'string', 'max:64'],
             'positions' => ['sometimes', 'array'],
             'positions.*' => ['nullable', 'numeric', 'min:-1', 'max:1'],
-            'image_url' => ['sometimes', 'nullable', 'string', 'max:2048'],
-            'image_path' => ['sometimes', 'nullable', 'string', 'max:1024'],
+            'image_url' => ['sometimes', 'nullable', 'string', 'url:http,https', 'max:2048'],
+            'image_path' => ['sometimes', 'nullable', 'string', 'max:1024', 'regex:/^(?:compass|images\/compass)\/(?!.*\.\.)[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/'],
             'enabled' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:100000'],
         ]);

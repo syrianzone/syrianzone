@@ -90,7 +90,7 @@ export function gpsAvailable(): boolean {
 /** The browser refused location permission (as opposed to a timeout or no fix). */
 export class GpsPermissionDeniedError extends Error {
   constructor() {
-    super('تم رفض إذن الموقع — فعّله من المتصفح أو استخدم التعرف عبر IP');
+    super('رُفض إذن الموقع؛ فعّله من إعدادات المتصفح أو استخدم التعرّف عبر IP');
     this.name = 'GpsPermissionDeniedError';
   }
 }
@@ -103,7 +103,7 @@ export function resolveGps(): Promise<GeoPoint> {
     }
     // Geolocation API only exists in secure contexts (HTTPS or localhost).
     if (typeof window !== 'undefined' && window.isSecureContext === false) {
-      reject(new Error('تحديد الموقع يحتاج اتصالاً آمناً (HTTPS) — جرّب عبر الإنترنت (IP)'));
+      reject(new Error('يتطلب تحديد الموقع اتصالاً آمناً (HTTPS)؛ جرّب التعرّف عبر الإنترنت (IP)'));
       return;
     }
 
@@ -135,16 +135,16 @@ export function resolveGps(): Promise<GeoPoint> {
         return;
       }
       if (err.code !== err.TIMEOUT && err.code !== err.POSITION_UNAVAILABLE) {
-        reject(new Error('تعذر تحديد الموقع — حاول مجدداً'));
+        reject(new Error('تعذّر تحديد الموقع، حاول مجدداً'));
         return;
       }
       attempt({ enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }, (err2) => {
         if (err2.code === err2.PERMISSION_DENIED) {
           reject(new GpsPermissionDeniedError());
         } else if (err2.code === err2.TIMEOUT) {
-          reject(new Error('تعذر التقاط إشارة كافية — جرّب قرب نافذة أو فعّل الـ WiFi ثم أعد المحاولة'));
+          reject(new Error('تعذّر التقاط إشارة كافية؛ جرّب قرب نافذة أو فعّل Wi-Fi ثم أعد المحاولة'));
         } else {
-          reject(new Error('تعذر تحديد الموقع على هذا الجهاز — تأكد من تفعيل خدمات الموقع في النظام أو استخدم التعرف عبر IP'));
+          reject(new Error('تعذّر تحديد الموقع على هذا الجهاز؛ تأكد من تفعيل خدمات الموقع في النظام أو استخدم التعرّف عبر IP'));
         }
       });
     });
@@ -186,8 +186,8 @@ export async function resolveIp(signal?: AbortSignal): Promise<GeoPoint> {
       at: Date.now(),
     };
   } catch (e) {
-    if ((e as Error)?.name === 'AbortError') throw new Error('انتهت مهلة التعرف — حاول مجدداً');
-    throw new Error('تعذر التعرف عبر الإنترنت — تحقق من الاتصال أو أدخل المدينة يدوياً');
+    if ((e as Error)?.name === 'AbortError') throw new Error('انتهت مهلة التعرّف، حاول مجدداً');
+    throw new Error('تعذّر التعرّف عبر الإنترنت؛ تحقق من الاتصال أو أدخل المدينة يدوياً');
   } finally {
     window.clearTimeout(timer);
     signal?.removeEventListener('abort', onAbort);

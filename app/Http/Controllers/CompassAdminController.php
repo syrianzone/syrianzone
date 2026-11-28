@@ -134,7 +134,7 @@ class CompassAdminController extends Controller
     public function uploadFigureImage(Request $request)
     {
         $request->validate([
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192', 'dimensions:max_width=6000,max_height=6000'],
         ]);
 
         $file = $request->file('image');

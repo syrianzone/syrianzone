@@ -200,48 +200,46 @@ export default function GovtCvsIndex({
 
     return (
         <MainLayout>
-            <PageBody className="pb-2">
-                <PageHeader
-                    title="السير الذاتية للمسؤولين"
-                    description="دليل موثّق للسير الذاتية والمناصب الحكومية في سوريا منذ 8 كانون الأول 2024، يرصد التعيينات والتنقلات والمراسيم والمصادر الرسمية لكل مسؤول."
-                    divider
-                    actions={
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                                type="button"
-                                size="sm"
-                                className="h-9 gap-1.5"
-                                onClick={() => setSuggestOpen(true)}
-                            >
-                                <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
-                                <span>إضافة / اقتراح تعديل</span>
-                            </Button>
-                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-                                <Link href="/govtcvs/movements">
-                                    <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
-                                    <span>سجل التعيينات</span>
+            <PageHeader
+                title="السير الذاتية للمسؤولين"
+                description="دليل موثّق للسير الذاتية والمناصب الحكومية في سوريا منذ 8 كانون الأول 2024، يرصد التعيينات والتنقلات والمراسيم والمصادر الرسمية لكل مسؤول."
+                divider
+                actions={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="h-9 gap-1.5"
+                            onClick={() => setSuggestOpen(true)}
+                        >
+                            <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
+                            <span>إضافة / اقتراح تعديل</span>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <Link href="/govtcvs/movements">
+                                <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
+                                <span>سجل التعيينات</span>
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <Link href="/ministries">
+                                <Landmark className="h-4 w-4" aria-hidden="true" />
+                                <span>وزارات سوريا</span>
+                            </Link>
+                        </Button>
+                        {canAdmin && (
+                            <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 text-muted-foreground">
+                                <Link href="/admin/govtcvs">
+                                    <Settings className="h-4 w-4" aria-hidden="true" />
+                                    <span>الإدارة</span>
                                 </Link>
                             </Button>
-                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-                                <Link href="/ministries">
-                                    <Landmark className="h-4 w-4" aria-hidden="true" />
-                                    <span>وزارات سوريا</span>
-                                </Link>
-                            </Button>
-                            {canAdmin && (
-                                <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 text-muted-foreground">
-                                    <Link href="/admin/govtcvs">
-                                        <Settings className="h-4 w-4" aria-hidden="true" />
-                                        <span>الإدارة</span>
-                                    </Link>
-                                </Button>
-                            )}
-                        </div>
-                    }
-                />
-            </PageBody>
+                        )}
+                    </div>
+                }
+            />
 
-            <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8">
+            <PageBody className="pt-6 space-y-6">
                 <Scoreboard
                     stats={resolvedStats}
                     active={activeScoreboardTile(value)}
@@ -436,7 +434,7 @@ export default function GovtCvsIndex({
                         </ul>
                     </section>
                 )}
-            </div>
+            </PageBody>
 
             {suggestOpen && (
                 <Suspense fallback={null}>

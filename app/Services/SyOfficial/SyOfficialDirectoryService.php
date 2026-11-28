@@ -6,11 +6,11 @@ use App\Exceptions\Directories\DirectoryActionException;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
 use App\Services\Directories\SquareWebpImageService;
+use App\Support\Security\SafeRemoteImageFetcher;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 
 /**
  * The SyOfficial directory domain, transport-free.
@@ -38,7 +38,10 @@ class SyOfficialDirectoryService
 
     public const PLACEHOLDER_IMAGE = 'images/governorates/placeholder.webp';
 
-    public function __construct(private readonly SquareWebpImageService $images) {}
+    public function __construct(
+        private readonly SquareWebpImageService $images,
+        private readonly ?SafeRemoteImageFetcher $remoteImages = null,
+    ) {}
 
     /**
      * @return Collection<int, OfficialCategory>
@@ -225,15 +228,14 @@ class SyOfficialDirectoryService
 
     private function storeImageFromUrl(string $url, string $entityId): ?string
     {
-        $response = Http::timeout(15)
-            ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
-            ->get(trim($url));
+        $fetcher = $this->remoteImages ?? app(SafeRemoteImageFetcher::class);
+        $bytes = $fetcher->fetch($url);
 
-        if (! $response->successful() || $response->body() === '') {
+        if ($bytes === null) {
             return null;
         }
 
-        return $this->images->storeSquareWebpFromBytes($response->body(), self::IMAGE_DIR, $entityId);
+        return $this->images->storeSquareWebpFromBytes($bytes, self::IMAGE_DIR, $entityId);
     }
 
     public function setEntityActive(string $id, bool $isActive): OfficialEntity

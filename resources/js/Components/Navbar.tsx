@@ -79,7 +79,7 @@ const MEGA_GRID = 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-10';
  */
 const FOOTER_LINKS = [
   { href: '/about', label: 'عن المنصة', icon: Info, about: true },
-  { href: '/stats', label: 'الإحصائيات', icon: BarChart3, about: true },
+  { href: '/stats', label: 'الإحصاءات', icon: BarChart3, about: true },
   { href: '/privacy', label: 'سياسة الخصوصية', icon: Shield, about: false },
   { href: '/terms', label: 'الشروط والأحكام', icon: FileText, about: false },
 ] as const;
@@ -716,7 +716,7 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
     <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}>
       {/* This row plus the border of the header is `--sz-navbar-h`
           (resources/css/app.css), which the full-viewport pages subtract. */}
-      <div className="container relative flex h-16 max-w-[76rem] mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">
+      <div className="relative flex h-16 w-full max-w-[76rem] mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">
         {/* Mobile Menu / Settings */}
         <div className="flex items-center lg:hidden">
           {isHomepage ? (

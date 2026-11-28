@@ -91,16 +91,17 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
 
     return (
         <MainLayout>
-            <PageBody className="space-y-10">
-                <PageHeader
-                    title="علم الجمهورية العربية السورية الجديد"
-                    description="تحميل علم سوريا الجديد بصيغة SVG المتّجهة وصور PNG بدقات 640 و1280 و1920 و4K، مع زر نسخ إيموجي العلم مباشرة، النسب الهندسية المعتمدة (2:3)، أكواد الألوان، والخلفيات الرسمية."
-                    breadcrumbs={[
-                        { label: 'الهوية البصرية', href: '/syid' },
-                        { label: 'العلم السوري' },
-                    ]}
-                    divider
-                />
+            <PageHeader
+                title="علم الجمهورية العربية السورية الجديد"
+                description="تحميل علم سوريا الجديد بصيغة SVG المتّجهة وصور PNG بدقات 640 و1280 و1920 و4K، مع زر نسخ إيموجي العلم مباشرة، النسب الهندسية المعتمدة (2:3)، أكواد الألوان، والخلفيات الرسمية."
+                breadcrumbs={[
+                    { label: 'الهوية البصرية', href: '/syid' },
+                    { label: 'العلم السوري' },
+                ]}
+                divider
+            />
+
+            <PageBody className="pt-6 space-y-10">
 
                 <section aria-labelledby="flag-hero-heading" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     <Card className="lg:col-span-7 border border-border rounded-2xl overflow-hidden">

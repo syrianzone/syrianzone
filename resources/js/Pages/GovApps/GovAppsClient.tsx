@@ -90,7 +90,7 @@ function DescriptionText({ description }: { description: string }) {
                 setExpanded((prev) => !prev);
             }}
             className="mb-3 block w-full rounded-sm text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            title={expanded ? 'اضغط للتقليص' : 'اضغط لإظهار النص كاملاً'}
+            title={expanded ? 'قلّص النص' : 'أظهر النص كاملاً'}
         >
             <span
                 className={`text-xs text-muted-foreground leading-relaxed cursor-pointer select-none transition-all ${
@@ -147,7 +147,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
     return (
         <div className="min-h-screen bg-background" dir="rtl">
             <PageHeader
-                title="تطبيقات حكومية"
+                title="التطبيقات الحكومية"
                 description="دليل التطبيقات والخدمات الحكومية الإلكترونية الرسمية على أندرويد وآيفون والويب."
                 actions={
                     <>
@@ -196,7 +196,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                 {directory.results.length === 0 ? (
                     <DirectoryEmptyState
                         icon={Smartphone}
-                        title={initialData.length === 0 ? 'لم يتم العثور على تطبيقات' : 'لا توجد تطبيقات تطابق البحث والتصفية'}
+                        title={initialData.length === 0 ? 'لا توجد تطبيقات متاحة حالياً' : 'لا توجد تطبيقات تطابق البحث والتصفية'}
                         directory={directory}
                         className="rounded-xl border-border bg-muted/30 shadow-none"
                     />

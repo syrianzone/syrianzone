@@ -20,7 +20,7 @@ interface Props {
 
 /** The "nothing matches" card: one icon, an `<h2>` under the page `<h1>`, and a way out when there is one. */
 export default function DirectoryEmptyState({
-    icon: Icon, title, description, directory, clearLabel = 'مسح جميع الفلاتر', className,
+    icon: Icon, title, description, directory, clearLabel = 'مسح التصفية', className,
 }: Props) {
     return (
         <div className={cn(

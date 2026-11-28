@@ -59,7 +59,11 @@ class DeleteGuessWhoCharacterTool extends AuditedTool
             $character->delete();
         });
 
-        if ($imagePath && ! GuessWhoCharacter::where('image_path', $imagePath)->exists()) {
+        if (
+            is_string($imagePath)
+            && preg_match('/^guesswho\/(?!.*\.\.)[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/', $imagePath) === 1
+            && ! GuessWhoCharacter::where('image_path', $imagePath)->exists()
+        ) {
             GuessWhoCharacter::deleteStoredImage($imagePath);
         }
 

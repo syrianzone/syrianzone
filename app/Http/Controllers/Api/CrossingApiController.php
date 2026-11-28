@@ -90,8 +90,8 @@ class CrossingApiController extends Controller
         $fallbackMeta = Crossing::fromJsonFallback()['meta'];
 
         try {
-            $rows = Crossing::active()->ordered()->get();
-            if ($rows->isNotEmpty()) {
+            if (Crossing::query()->exists()) {
+                $rows = Crossing::active()->ordered()->get();
                 $dataset = [
                     'meta' => $fallbackMeta,
                     'crossings' => $rows->map(fn (Crossing $c) => $c->toPublicPayload())->values()->all(),

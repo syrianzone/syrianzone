@@ -40,6 +40,21 @@ class AssetUploadController extends Controller
      */
     private const FIRST_PAGE_CACHE_KEY = 'r2_files_page_first_v2';
 
+    /** @var list<string> */
+    private const ALLOWED_FOLDERS = [
+        'uploads', 'downloads', 'tierlist', 'syofficial', 'govapps',
+        'avatars', 'guesswho', 'places', 'compass',
+    ];
+
+    /** @var list<string> */
+    private const ALLOWED_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'webp', 'gif', 'avif',
+        'pdf', 'txt', 'csv', 'json',
+        'zip',
+        'woff', 'woff2', 'ttf',
+        'mp3', 'mp4', 'webm',
+    ];
+
     /**
      * List assets from Cloudflare R2 with cursor-based pagination.
      * Uses S3 ListObjectsV2 directly so we never fetch the whole bucket.
@@ -134,18 +149,31 @@ class AssetUploadController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'file'   => 'required|file|max:51200', // 50MB max file size
+            'file'   => 'required|file|max:51200|mimes:'.implode(',', self::ALLOWED_EXTENSIONS),
             'folder' => 'nullable|string|max:50',
         ]);
 
         $file   = $request->file('file');
-        $folder = trim($request->input('folder', 'uploads'), '/');
+        $rawFolder = trim((string) $request->input('folder', 'uploads'), '/');
+        if (str_contains($rawFolder, '..')) {
+            return response()->json(['success' => false, 'message' => 'This folder is not allowed.'], 422);
+        }
 
-        $folder = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $folder) ?: 'uploads';
+        $folder = trim((string) preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $rawFolder), '/') ?: 'uploads';
+        $top = explode('/', $folder)[0] ?? '';
+        if (! in_array($top, self::ALLOWED_FOLDERS, true)) {
+            return response()->json(['success' => false, 'message' => 'This folder is not allowed.'], 422);
+        }
+
+        // Derive the stored extension from content sniffing, never the client filename,
+        // and enforce the explicit allowlist (blocking html/htm/svg/js/xml/php).
+        $extension = strtolower((string) $file->extension());
+        if (! in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
+            return response()->json(['success' => false, 'message' => 'File type is not allowed.'], 422);
+        }
 
         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $cleanName    = Str::slug($originalName);
-        $extension    = $file->getClientOriginalExtension();
+        $cleanName    = Str::slug($originalName) ?: 'asset';
         $filename     = $cleanName . '-' . Str::random(6) . '.' . $extension;
 
         $path = $folder . '/' . $filename;
@@ -178,9 +206,8 @@ class AssetUploadController extends Controller
         // Allowlist: keys must live under a known top-level folder and must
         // not traverse. Without this any superadmin session (or CSRF'd browser)
         // could delete avatars, entity icons, or the brandkit zip.
-        $allowed = ['uploads', 'downloads', 'tierlist', 'syofficial', 'govapps', 'avatars', 'guesswho', 'places', 'compass'];
         $top = explode('/', $path)[0] ?? '';
-        if (str_contains($path, '..') || !in_array($top, $allowed, true)) {
+        if (str_contains($path, '..') || ! in_array($top, self::ALLOWED_FOLDERS, true)) {
             return response()->json(['success' => false, 'message' => 'This path cannot be deleted.'], 422);
         }
 

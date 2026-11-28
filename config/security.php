@@ -16,6 +16,8 @@ return [
     |
     */
 
+    'csp_enforce' => (bool) env('CSP_ENFORCE', false),
+
     'csp_report_only' => (bool) env('CSP_REPORT_ONLY', true),
 
     /*

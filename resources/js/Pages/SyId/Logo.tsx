@@ -22,16 +22,17 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
 
     return (
         <MainLayout>
-            <PageBody className="space-y-10">
-                <PageHeader
-                    title="شعار الجمهورية العربية السورية الجديد (العقاب الذهبي)"
-                    description="تحميل الشعار الرسمي للجمهورية العربية السورية المُطلق في 3 تموز 2025 بصيغ SVG وPNG بدقة 4K و1080px وPDF للطباعة، بالنسخ الذهبية والأحادية (الأسود والأبيض)، مع دلالاته الرسمية وضوابط استخدامه الموثّقة."
-                    breadcrumbs={[
-                        { label: 'الهوية البصرية', href: '/syid' },
-                        { label: 'الشعار' },
-                    ]}
-                    divider
-                />
+            <PageHeader
+                title="شعار الجمهورية العربية السورية الجديد (العقاب الذهبي)"
+                description="تحميل الشعار الرسمي للجمهورية العربية السورية المُطلق في 3 تموز 2025 بصيغ SVG وPNG بدقة 4K و1080px وPDF للطباعة، بالنسخ الذهبية والأحادية (الأسود والأبيض)، مع دلالاته الرسمية وضوابط استخدامه الموثّقة."
+                breadcrumbs={[
+                    { label: 'الهوية البصرية', href: '/syid' },
+                    { label: 'الشعار' },
+                ]}
+                divider
+            />
+
+            <PageBody className="pt-6 space-y-10">
 
                 <section aria-labelledby="emblem-hero-heading" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     <Card className="lg:col-span-5 border border-border rounded-2xl overflow-hidden">

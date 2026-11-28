@@ -7,7 +7,7 @@ import Tarneeb, { TarneebRules } from '../_components/Tarneeb';
 export default function Index() {
   return (
     <MainLayout>
-      <GameShell slug="tarneeb" width="max-w-4xl" rules={<TarneebRules />} fit>
+      <GameShell slug="tarneeb" width="default" rules={<TarneebRules />} fit>
         <Tarneeb />
       </GameShell>
     </MainLayout>

@@ -83,17 +83,18 @@ function MemberCard({ member, root = false }: { member: Member; root?: boolean }
 export default function JusticePage() {
     return (
         <MainLayout>
-            <PageBody className="space-y-10">
-                <PageHeader
-                    title="العدالة الانتقالية"
-                    description='قائمة بأبرز مجرمي نظام الأسد الموقوفين لدى وزارة الداخلية السورية ضمن حملة "المخطط يليق بك".'
-                    divider
-                    actions={
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                            محدّث حتى {updatedArabic}
-                        </span>
-                    }
-                />
+            <PageHeader
+                title="العدالة الانتقالية"
+                description='قائمة بأبرز مجرمي نظام الأسد الموقوفين لدى وزارة الداخلية السورية ضمن حملة "المخطط يليق بك".'
+                divider
+                actions={
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                        محدّث حتى {updatedArabic}
+                    </span>
+                }
+            />
+
+            <PageBody className="pt-6 space-y-10">
 
                 <section aria-labelledby="tree-heading">
                     <h2 id="tree-heading" className="text-2xl md:text-3xl font-bold text-foreground text-center mb-6">القائمة السوداء</h2>

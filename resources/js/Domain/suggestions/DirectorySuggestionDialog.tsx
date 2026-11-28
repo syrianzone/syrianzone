@@ -69,14 +69,14 @@ const MODULE_COPY: Record<SuggestionModule, ModuleCopy> = {
         targetSearchPlaceholder: 'ابحث باسم المسؤول...',
         detailsPlaceholderAdd: 'اذكر السيرة الذاتية، المنصب، تاريخ التعيين، أو أي معلومات موثّقة...',
         detailsPlaceholderEdit: 'وضّح التعديل المطلوب (تغيير منصب، تصحيح اسم، معلومة ناقصة في السيرة)...',
-        sourceLabel: 'رابط المصدر الرسمي (سانا، الإخبارية، موقع الوزارة...) (اختياري)',
+        sourceLabel: 'رابط المصدر الرسمي مثل سانا أو الإخبارية أو موقع الوزارة (اختياري)',
     },
     syofficial: {
         dialogTitleAdd: 'إضافة حساب رسمي أو اقتراح تعديل',
         dialogTitleEdit: 'اقتراح تعديل على الحسابات الرسمية',
         dialogDescription:
             'أضف جهة أو حساباً رسمياً موثّقاً أو أبلغ عن رابط معطّل أو تغيير في الحسابات الرسمية ليراجعه المحررون.',
-        addTabLabel: 'إضافة جهة / حساب جديد',
+        addTabLabel: 'إضافة جهة أو حساب جديد',
         editTabLabel: 'تعديل جهة موجودة',
         addTitleLabel: 'اسم الجهة أو الشخصية الرسمية',
         addTitlePlaceholder: 'مثال: وزارة الاقتصاد والتجارة الخارجية',
@@ -320,8 +320,8 @@ export default function DirectorySuggestionDialog({
                 {!user ? (
                     <div className="space-y-4 rounded-xl border border-border bg-muted/30 p-5 text-center">
                         <p className="text-sm leading-relaxed text-foreground">
-                            إرسال الإضافات واقتراحات التعديل يتطلب تسجيل الدخول بحسابك لضمان موثوقية
-                            المساهمات ومتابعتها من قبل فريق التحرير.
+                            يتطلب إرسال الإضافات واقتراحات التعديل تسجيل الدخول بحسابك لضمان موثوقية
+                            المساهمات ومراجعتها تحريرياً.
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-2">
                             <Button asChild className="gap-2">
@@ -352,7 +352,7 @@ export default function DirectorySuggestionDialog({
                         />
                         <div className="space-y-1">
                             <h3 className="text-base font-bold text-foreground">
-                                تم استلام اقتراحك بنجاح
+                                وصلنا اقتراحك بنجاح
                             </h3>
                             <p className="text-sm text-muted-foreground">{submittedMessage}</p>
                         </div>
@@ -544,7 +544,7 @@ export default function DirectorySuggestionDialog({
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="sg-inst">الجهة / الوزارة (اختياري)</Label>
+                                    <Label htmlFor="sg-inst">الجهة أو الوزارة (اختياري)</Label>
                                     <Input
                                         id="sg-inst"
                                         value={institutionNameAr}

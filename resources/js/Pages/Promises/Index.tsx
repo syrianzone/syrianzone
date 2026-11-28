@@ -108,20 +108,21 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
 
     return (
         <MainLayout>
-            <PageBody className="space-y-6">
-                <PageHeader
-                    title="عداد الوعود"
-                    description="سجل علني لما وعد به المسؤولون السوريون منذ 8 كانون الأول 2024، بالمصدر والتاريخ والموعد، مع عدّاد لكل وعد يبيّن ما بقي من الوقت أو ما مضى على انقضائه."
-                    divider
-                    actions={
-                        <Button asChild size="sm" className="h-9 gap-1.5">
-                            <Link href="/promises/suggest">
-                                <Plus className="h-4 w-4" aria-hidden="true" />
-                                <span>اقترح وعداً</span>
-                            </Link>
-                        </Button>
-                    }
-                />
+            <PageHeader
+                title="عداد الوعود"
+                description="سجل علني لما وعد به المسؤولون السوريون منذ 8 كانون الأول 2024، بالمصدر والتاريخ والموعد، مع عدّاد لكل وعد يبيّن ما بقي من الوقت أو ما مضى على انقضائه."
+                divider
+                actions={
+                    <Button asChild size="sm" className="h-9 gap-1.5">
+                        <Link href="/promises/suggest">
+                            <Plus className="h-4 w-4" aria-hidden="true" />
+                            <span>اقترح وعداً</span>
+                        </Link>
+                    </Button>
+                }
+            />
+
+            <PageBody className="pt-6 space-y-6">
 
                 <Scoreboard stats={stats} active={activeScoreboardState(value)} onSelect={showScoreboardState} />
 
@@ -187,7 +188,7 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
 
                 {visible.length > 0 ? (
                     layout === 'charts' ? (
-                        <Suspense fallback={<div className="py-12 text-center text-sm text-muted-foreground">جاري تحميل الرسوم البيانية...</div>}>
+                        <Suspense fallback={<div className="py-12 text-center text-sm text-muted-foreground">جارٍ تحميل الرسوم البيانية…</div>}>
                             <PromiseCharts promises={visible} returnUrl={listUrl}
                                 canFilter={(key, id) => narrowFromChart(value, key, id) !== null}
                                 onFilter={(key, id) => changeFilters(narrowFromChart(value, key, id) ?? value)} />

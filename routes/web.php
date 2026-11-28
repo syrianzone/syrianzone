@@ -431,6 +431,13 @@ Route::middleware('auth:web,sanctum')->group(function () {
             ->middleware('agent_tokens');
     });
 
+    // Civic CRUD admin API (Crossings, Syrian Sites, House Members 2026).
+    // admin-api-civic-crud.php applies auth:sanctum, FirstPartyAdminTransport,
+    // and superadmin under the v1/admin prefix.
+    Route::prefix('api')->middleware('throttle:120,1')->group(function () {
+        require __DIR__.'/admin-api-civic-crud.php';
+    });
+
     // Hosted-file manager. `assets.manage` is granted to the superadmin role
     // through User::effectivePermissions(), so the audience is superadmins.
     Route::middleware('assets_admin')->group(function () {

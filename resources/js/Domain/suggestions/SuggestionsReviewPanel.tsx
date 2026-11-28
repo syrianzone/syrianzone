@@ -36,7 +36,7 @@ const STATUS_TABS: ReadonlyArray<{ value: FilterStatus; label: string }> = [
 const PAYLOAD_LABELS: Record<string, string> = {
     role_title_ar: 'المنصب',
     institution_name_ar: 'الجهة',
-    decree_ref: 'المرسوم / القرار',
+    decree_ref: 'المرسوم أو القرار',
     category_id: 'التصنيف',
     name_en: 'الاسم بالإنكليزية',
     account_url: 'رابط الحساب',
@@ -186,7 +186,7 @@ export default function SuggestionsReviewPanel({
                 <Card>
                     <CardContent className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                        جاري تحميل الاقتراحات...
+                        جارٍ تحميل الاقتراحات…
                     </CardContent>
                 </Card>
             ) : items.length === 0 ? (
@@ -352,7 +352,7 @@ export default function SuggestionsReviewPanel({
                                                         [item.id]: e.target.value,
                                                     }))
                                                 }
-                                                placeholder="ملاحظة تحريرية داخلية (اختياري)..."
+                                                placeholder="ملاحظة تحريرية داخلية (اختياري)…"
                                                 aria-label={`ملاحظة تحريرية داخلية على «${item.title}» (اختياري)`}
                                                 className="h-9 flex-1 text-xs"
                                                 maxLength={1000}
@@ -390,7 +390,7 @@ export default function SuggestionsReviewPanel({
                                             <div className="border-t border-border pt-2.5 text-xs text-muted-foreground">
                                                 راجعه <strong className="font-medium text-foreground">{item.reviewer_name}</strong>
                                                 {item.reviewed_at && ` · ${formatTimestamp(item.reviewed_at)}`}
-                                                {item.resolution_note && ` — ${item.resolution_note}`}
+                                                {item.resolution_note && ` · ${item.resolution_note}`}
                                             </div>
                                         )
                                     )}

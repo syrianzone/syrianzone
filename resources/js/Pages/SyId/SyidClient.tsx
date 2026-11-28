@@ -300,24 +300,25 @@ export default function SyidClient({ syid }: SyidClientProps) {
 
     return (
         <div className="min-h-screen bg-background text-foreground transition-colors" dir="rtl">
-            <PageBody className="space-y-12">
-                <PageHeader
-                    title="عناصر الهوية البصرية السورية"
-                    description="دليل متكامل ومجمّع للمواد الرقمية والملفات المتصلة بالهوية البصرية السورية — الشعار، العلم، الألوان، الخطوط، وأيقونات المحافظات."
-                    divider
-                    actions={
-                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-                            <a
-                                href="https://syrianidentity.sy"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                <span>الموقع الرسمي</span>
-                                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                            </a>
-                        </Button>
-                    }
-                />
+            <PageHeader
+                title="عناصر الهوية البصرية السورية"
+                description="دليل متكامل ومجمّع للمواد الرقمية والملفات المتصلة بالهوية البصرية السورية — الشعار، العلم، الألوان، الخطوط، وأيقونات المحافظات."
+                divider
+                actions={
+                    <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                        <a
+                            href="https://syrianidentity.sy"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <span>الموقع الرسمي</span>
+                            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                        </a>
+                    </Button>
+                }
+            />
+
+            <PageBody className="pt-6 space-y-12">
 
                 <section aria-labelledby="syid-hub-links-heading">
                     <h2 id="syid-hub-links-heading" className="sr-only">صفحات الشعار والعلم المخصّصة</h2>

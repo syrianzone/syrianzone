@@ -12,8 +12,8 @@ import { trackEvent } from '@/Lib/analyticsConsent';
 import { saveAccountSettings, type AccountSettingsPatch } from '@/Domain/settings/accountSettings';
 
 const FONT_OPTIONS: Array<[FontPreference, string]> = [
-    ['ibm-plex', 'Plex'],
-    ['system', 'محلي'],
+    ['ibm-plex', 'خط Plex'],
+    ['system', 'خط الجهاز'],
 ];
 
 // Theme + font picker for every visitor (logged in or not). Available in the

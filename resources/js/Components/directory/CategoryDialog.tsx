@@ -39,7 +39,7 @@ export default function CategoryDialog({
     open, onOpenChange, category, endpoint,
     title = { create: 'إضافة فئة جديدة', edit: 'تعديل الفئة' },
     submit = { create: 'إضافة الفئة', edit: 'حفظ التعديلات' },
-    slug = { label: 'معرف الفئة (Slug - بالإنجليزية)', placeholder: 'مثال: embassies', maxLength: 64 },
+    slug = { label: 'معرّف الفئة (Slug بالإنكليزية)', placeholder: 'مثال: embassies', maxLength: 64 },
     activeLabel = 'مفعلة وتظهر في الصفحة',
     onDelete,
     deleteLabel = 'حذف الفئة',
@@ -113,7 +113,7 @@ export default function CategoryDialog({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="category-label-en">الاسم بالإنجليزية</Label>
+                        <Label htmlFor="category-label-en">الاسم بالإنكليزية</Label>
                         <Input
                             id="category-label-en"
                             value={form.data.label_en}

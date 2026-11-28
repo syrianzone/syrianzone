@@ -78,6 +78,10 @@ class UpdatePhonebookEntryTool extends AuditedTool
             return Response::error('Provide at least one field to update.');
         }
 
+        if (array_key_exists('is_active', $attributes)) {
+            $context->authorize(PermissionCatalogue::PHONEBOOK_TOGGLE);
+        }
+
         try {
             $entry = app(PhonebookDirectoryService::class)->updateEntry($id, $attributes);
             $entry->load('category');

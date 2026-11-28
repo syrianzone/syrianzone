@@ -69,13 +69,13 @@ export function isArabicMessage(message: string): boolean {
   return /[\u0600-\u06FF]/.test(message);
 }
 
-const FALLBACK_MESSAGE = 'حدث خطأ غير متوقع';
+const FALLBACK_MESSAGE = 'حدث خطأ غير متوقع، حاول مجدداً';
 
 const SESSION_STATUSES = [401, 419, 429];
 
 const STATUS_MESSAGES: Record<number, string> = {
-  400: 'تعذر تنفيذ الطلب',
-  401: 'سجل الدخول للمتابعة',
+  400: 'تعذّر تنفيذ الطلب',
+  401: 'سجّل الدخول للمتابعة',
   403: 'غير مسموح لك بهذا الإجراء',
   404: 'العنصر غير موجود',
   405: 'هذا الإجراء غير متاح',
@@ -85,7 +85,7 @@ const STATUS_MESSAGES: Record<number, string> = {
   422: 'تحقق من البيانات المدخلة',
   429: 'محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة',
   500: 'حدث خطأ في الخادم، حاول مجدداً',
-  502: 'تعذر الوصول إلى الخادم، حاول مجدداً',
+  502: 'تعذّر الوصول إلى الخادم، حاول مجدداً',
   503: 'الخدمة غير متاحة مؤقتاً، حاول بعد قليل',
   504: 'انتهت مهلة الخادم، حاول مجدداً',
 };
@@ -163,7 +163,7 @@ function transportMessage(err: unknown): string | null {
     if (e.code === 'ECONNABORTED' || e.code === 'ETIMEDOUT') return 'انتهت مهلة الطلب، حاول مجدداً';
     if (e.code === 'ERR_CANCELED' || e.code === 'ERR_ABORTED') return 'تم إلغاء الطلب';
     if (e.code === 'ERR_NETWORK' || typeof e.request !== 'undefined') {
-      return 'تعذر الاتصال بالخادم، تحقق من اتصالك بالإنترنت وحاول مجدداً';
+      return 'تعذّر الاتصال بالخادم، تحقق من اتصالك بالإنترنت وحاول مجدداً';
     }
     return null;
   }

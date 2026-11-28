@@ -508,27 +508,25 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                 dir="rtl"
                 style={{ fontFamily: "var(--site-font, inherit)" }}
             >
-                <PageBody className="pb-2">
-                    <PageHeader
-                        title={`الروزنامة السورية ${currentYear} — التقويم والعطل الرسمية`}
-                        description="الروزنامة (التقويم) السورية لعرض التاريخ اليوم ميلادياً وهجرياً، والأعياد والعطل الرسمية، وكم باقي على رمضان ومواقيت الصلاة بتوقيت دمشق (وتُعرف أيضاً باسم «روزناما» سوريا)."
-                        divider
-                        actions={(
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-9 gap-1.5"
-                                onClick={() => setRoznamaSettingsOpen(true)}
-                            >
-                                <Settings className="h-4 w-4" aria-hidden="true" />
-                                <span>إعدادات الموقع والصلاة</span>
-                            </Button>
-                        )}
-                    />
-                </PageBody>
+                <PageHeader
+                    title={`الروزنامة السورية ${currentYear} — التقويم والعطل الرسمية`}
+                    description="الروزنامة (التقويم) السورية لعرض التاريخ اليوم ميلادياً وهجرياً، والأعياد والعطل الرسمية، وكم باقي على رمضان ومواقيت الصلاة بتوقيت دمشق (وتُعرف أيضاً باسم «روزناما» سوريا)."
+                    divider
+                    actions={(
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 gap-1.5"
+                            onClick={() => setRoznamaSettingsOpen(true)}
+                        >
+                            <Settings className="h-4 w-4" aria-hidden="true" />
+                            <span>إعدادات الموقع والصلاة</span>
+                        </Button>
+                    )}
+                />
 
-                <div className="container mx-auto px-4 py-8 max-w-7xl">
+                <PageBody className="pt-6">
                     <Card className="mb-6 border-primary/20 bg-primary/5 shadow-sm">
                         <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
                             <div>
@@ -961,7 +959,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                             </div>
                         </Card>
 
-                    </div>
+                    </PageBody>
 
                 </div>
 

@@ -316,8 +316,9 @@ class TransitImportController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
+            report($e);
 
-            return response()->json(['message' => 'فشل نشر الخط', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'فشل نشر الخط'], 500);
         }
     }
 

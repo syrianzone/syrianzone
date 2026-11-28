@@ -95,18 +95,22 @@ class ListWildlifeTool extends Tool
         if ($status !== '') {
             $filtered = array_values(array_filter(
                 $filtered,
-                fn (array $s): bool => (string) ($s['iucn_status'] ?? $s['status'] ?? '') === $status,
+                fn (array $s): bool => (string) ($s['iucn']['category'] ?? $s['iucn_status'] ?? '') === $status
+                    || (string) ($s['syriaStatus'] ?? $s['status'] ?? '') === $status,
             ));
         }
 
         $folded = ArabicSearch::fold($query);
         if ($folded !== '') {
             $filtered = array_values(array_filter($filtered, function (array $s) use ($folded): bool {
+                $altNames = is_array($s['altNamesAr'] ?? null) ? implode(' ', $s['altNamesAr']) : '';
                 $haystack = ArabicSearch::fold(implode(' ', [
                     (string) ($s['slug'] ?? ''),
-                    (string) ($s['name_ar'] ?? ''),
-                    (string) ($s['name_en'] ?? ''),
-                    (string) ($s['scientific_name'] ?? ''),
+                    (string) ($s['nameAr'] ?? $s['name_ar'] ?? ''),
+                    $altNames,
+                    (string) ($s['nameEn'] ?? $s['name_en'] ?? ''),
+                    (string) ($s['scientific'] ?? $s['scientific_name'] ?? ''),
+                    (string) ($s['subspecies'] ?? ''),
                 ]));
 
                 return str_contains($haystack, $folded);

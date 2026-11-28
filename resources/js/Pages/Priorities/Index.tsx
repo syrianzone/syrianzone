@@ -7,12 +7,13 @@ export default function PrioritiesPage() {
     return (
         <MainLayout>
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors">
-                <PageBody className="flex-1 space-y-6">
-                    <PageHeader
-                        title="أولويات سوريا المستقبل"
-                        description="اصنع بطاقة تخبر الناس فيها عن أولوياتك لسوريا الحرة."
-                        divider
-                    />
+                <PageHeader
+                    title="أولويات سوريا المستقبل"
+                    description="اصنع بطاقة تخبر الناس فيها عن أولوياتك لسوريا الحرة."
+                    divider
+                />
+
+                <PageBody className="flex-1 pt-6 space-y-6">
 
                     <PrioritiesApp />
                 </PageBody>

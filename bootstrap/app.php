@@ -83,6 +83,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'guesswho_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
             'assets_admin'    => \App\Http\Middleware\ModuleCapabilityGuard::class,
             'site_admin'      => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'wildlife_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
             // Agent API tokens: any capability holder, for their own tokens.
             'agent_tokens'    => \App\Http\Middleware\AgentTokensAccess::class,

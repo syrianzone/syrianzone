@@ -22,20 +22,21 @@ export default function Index({ polls = [] }: PollsPageProps) {
     return (
         <MainLayout>
             <div className="min-h-screen bg-background text-foreground" dir="rtl">
-                <PageBody className="space-y-6">
-                    <PageHeader
-                        title="الاستبيانات واستطلاعات الرأي"
-                        description="شارك برأيك في الاستطلاعات المفتوحة وتصفّح نتائج التصويت المجتمعي."
-                        divider
-                        actions={canManage ? (
-                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-                                <Link href="/dashboard">
-                                    <Settings2 className="h-4 w-4" aria-hidden="true" />
-                                    <span>إدارة الاستبيانات</span>
-                                </Link>
-                            </Button>
-                        ) : undefined}
-                    />
+                <PageHeader
+                    title="الاستبيانات واستطلاعات الرأي"
+                    description="شارك برأيك في الاستطلاعات المفتوحة وتصفّح نتائج التصويت المجتمعي."
+                    divider
+                    actions={canManage ? (
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <Link href="/dashboard">
+                                <Settings2 className="h-4 w-4" aria-hidden="true" />
+                                <span>إدارة الاستبيانات</span>
+                            </Link>
+                        </Button>
+                    ) : undefined}
+                />
+
+                <PageBody className="pt-6 space-y-6">
 
                     {polls.length === 0 ? (
                         <div className="rounded-lg border border-border bg-card py-12 text-center text-sm text-muted-foreground">

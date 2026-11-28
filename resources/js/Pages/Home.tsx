@@ -190,7 +190,7 @@ export default function Home() {
                 )}
                 {lastPage === link.href && (
                     <span
-                        title="آخر صفحة تمت زيارتها"
+                        title="آخر صفحة زرتها"
                         className="absolute top-1 end-1 rounded-full border border-border bg-background p-0.5 text-primary shadow-2xs"
                     >
                         <History className="h-3 w-3" aria-hidden="true" />
@@ -290,7 +290,7 @@ export default function Home() {
                             >
                                 <span className="flex min-w-0 items-center gap-2">
                                     <Search className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                                    <span className="truncate">ابحث في المساحة السورية...</span>
+                                    <span className="truncate">ابحث في المساحة السورية…</span>
                                 </span>
                                 <kbd
                                     dir="ltr"
@@ -368,7 +368,7 @@ export default function Home() {
                     </div>
 
                     {/* Mobile row: [Settings] · [Logo] · [AppearanceMenu · UserNav] */}
-                    <div className="relative mx-auto flex h-14 items-center justify-between px-4 lg:hidden">
+                    <div className="relative mx-auto flex h-14 items-center justify-between px-4 md:px-8 lg:hidden">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -415,7 +415,7 @@ export default function Home() {
                             className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-input bg-muted/35 px-3 text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             <Search className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                            <span className="truncate">ابحث في المساحة السورية...</span>
+                            <span className="truncate">ابحث في المساحة السورية…</span>
                         </button>
 
                         {mounted && (weatherMini || prayerMini || todayGregorian) && (

@@ -268,9 +268,12 @@ it('refuses a list-shaped links argument from create-gov-app and keeps keyed lin
 });
 
 it('downloads and stores icon_url on R2 when creating a gov app via MCP', function () {
-    Http::fake([
-        'https://example.test/icon.png' => Http::response('fake-png-bytes', 200),
-    ]);
+    $fetcher = Mockery::mock(\App\Support\Security\SafeRemoteImageFetcher::class);
+    $fetcher->shouldReceive('fetch')
+        ->once()
+        ->with('https://example.test/icon.png')
+        ->andReturn('fake-png-bytes');
+    app()->instance(\App\Support\Security\SafeRemoteImageFetcher::class, $fetcher);
 
     $mock = Mockery::mock(SquareWebpImageService::class);
     $mock->shouldReceive('storeSquareWebpFromBytes')
@@ -294,9 +297,12 @@ it('downloads and stores icon_url on R2 when creating a gov app via MCP', functi
 it('downloads and stores image_url on R2 when creating a SyOfficial entity via MCP', function () {
     $category = OfficialCategory::factory()->create(['id' => 'ministries']);
 
-    Http::fake([
-        'https://example.test/logo.png' => Http::response('fake-logo-bytes', 200),
-    ]);
+    $fetcher = Mockery::mock(\App\Support\Security\SafeRemoteImageFetcher::class);
+    $fetcher->shouldReceive('fetch')
+        ->once()
+        ->with('https://example.test/logo.png')
+        ->andReturn('fake-logo-bytes');
+    app()->instance(\App\Support\Security\SafeRemoteImageFetcher::class, $fetcher);
 
     $mock = Mockery::mock(SquareWebpImageService::class);
     $mock->shouldReceive('storeSquareWebpFromBytes')

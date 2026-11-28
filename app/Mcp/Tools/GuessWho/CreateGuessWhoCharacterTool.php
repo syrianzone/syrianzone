@@ -60,7 +60,7 @@ class CreateGuessWhoCharacterTool extends AuditedTool
             'category_id' => 'required|integer|exists:guess_who_categories,id',
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
-            'image_path' => 'sometimes|nullable|string|max:1024',
+            'image_path' => ['sometimes', 'nullable', 'string', 'max:1024', 'regex:/^guesswho\/(?!.*\.\.)[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/'],
             'attributes' => 'sometimes|nullable|array',
             'is_active' => 'sometimes|boolean',
         ]);

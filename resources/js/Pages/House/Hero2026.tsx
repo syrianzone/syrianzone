@@ -5,8 +5,8 @@ export default function Hero2026({ total, female, male, onOpenArchive }: { total
     return (
         <div>
             <PageHeader
-                title="أعضاء مجلس الشعب السوري 2026 — الأسماء حسب المحافظة"
-                description="القائمة الكاملة لأسماء أعضاء مجلس الشعب السوري 2026 موزّعين حسب المحافظة، مع مخطط القاعة التفاعلي والإحصائيات وصفحة مستقلة لكل عضو."
+                title="أعضاء مجلس الشعب السوري 2026: الأسماء حسب المحافظة"
+                description="القائمة الكاملة لأسماء أعضاء مجلس الشعب السوري 2026 موزّعين حسب المحافظة، مع مخطط القاعة التفاعلي والإحصاءات وصفحة مستقلة لكل عضو."
                 divider
                 actions={
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground tabular-nums">
@@ -22,7 +22,7 @@ export default function Hero2026({ total, female, male, onOpenArchive }: { total
                 <p className="text-xs text-muted-foreground leading-relaxed">
                     المصدر:{' '}
                     <a href={OMran_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline font-semibold text-primary">
-                        مركز عمران — المخطط التفاعلي لمجلس الشعب السوري 2026
+                        مركز عمران: المخطط التفاعلي لمجلس الشعب السوري 2026
                     </a>
                     . بيانات المرحلة الانتقالية محفوظة في{' '}
                     <a href="#historical-archive" onClick={onOpenArchive} className="underline font-semibold text-primary">

@@ -21,20 +21,21 @@ interface TierListPageProps {
 export default function Index({ poll, candidates = [], groups = [], voteDay }: TierListPageProps) {
     return (
         <MainLayout>
-            <PageBody className="space-y-5">
-                <PageHeader
-                    title="تير ليست الحكومة السورية الجديدة"
-                    description="رتّب أداء الوزراء وشارك بطاقة تقييمك، أو استعرض النتائج الجماعية."
-                    divider
-                    actions={
-                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-                            <Link href="/tierlist/leaderboard">
-                                <BarChart3Icon className="h-4 w-4" aria-hidden="true" />
-                                <span>عرض النتائج</span>
-                            </Link>
-                        </Button>
-                    }
-                />
+            <PageHeader
+                title="تير ليست الحكومة السورية الجديدة"
+                description="رتّب أداء الوزراء وشارك بطاقة تقييمك، أو استعرض النتائج الجماعية."
+                divider
+                actions={
+                    <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                        <Link href="/tierlist/leaderboard">
+                            <BarChart3Icon className="h-4 w-4" aria-hidden="true" />
+                            <span>عرض النتائج</span>
+                        </Link>
+                    </Button>
+                }
+            />
+
+            <PageBody className="pt-5 space-y-5">
 
                 <Alert>
                     <AlertCircleIcon className="h-4 w-4" aria-hidden="true" />

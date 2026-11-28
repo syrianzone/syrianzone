@@ -12,28 +12,28 @@ const ANALYTICS_REPORT_URL = "https://datastudio.google.com/embed/reporting/65f1
 export default function Stats() {
     return (
         <MainLayout>
-            <PageBody className="space-y-6">
-                <PageHeader
-                    title="إحصائيات المنصة"
-                    description="تقارير وإحصائيات تفاعلية حول التفاعل والنشاط في المساحة السورية."
-                    divider
-                    actions={
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-                                <Link href="/tierlist/leaderboard">
-                                    <TierlistIcon className="h-4 w-4" aria-hidden="true" />
-                                    <span>تير ليست الحكومة</span>
-                                </Link>
-                            </Button>
-                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
-                                <Link href="/compass/stats">
-                                    <CompassIcon className="h-4 w-4" aria-hidden="true" />
-                                    <span>بوصلة سوريا</span>
-                                </Link>
-                            </Button>
-                        </div>
-                    }
-                />
+            <PageHeader
+                title="إحصائيات المنصة"
+                description="تقارير وإحصائيات تفاعلية حول التفاعل والنشاط في المساحة السورية."
+                divider
+                actions={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <Link href="/tierlist/leaderboard">
+                                <TierlistIcon className="h-4 w-4" aria-hidden="true" />
+                                <span>تير ليست الحكومة</span>
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <Link href="/compass/stats">
+                                <CompassIcon className="h-4 w-4" aria-hidden="true" />
+                                <span>بوصلة سوريا</span>
+                            </Link>
+                        </Button>
+                    </div>
+                }
+            />
+            <PageBody className="pt-6 space-y-6">
 
                 <div className="space-y-6" dir="rtl">
                     <Card className="border-border bg-card">

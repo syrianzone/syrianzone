@@ -85,6 +85,7 @@ final class ModuleCapabilityGuard
         'guesswho_admin' => 'guesswho',
         'assets_admin' => 'assets',
         'site_admin' => 'site',
+        'wildlife_admin' => 'wildlife',
     ];
 
     /**

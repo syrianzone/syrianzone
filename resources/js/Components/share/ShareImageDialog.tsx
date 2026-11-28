@@ -74,7 +74,7 @@ export default function ShareImageDialog({
   open,
   onOpenChange,
   title = 'مشاركة الصورة',
-  description = 'معاينة البطاقة الجاهزة للمشاركة والتحميل.',
+  description = 'معاينة البطاقة الجاهزة للمشاركة والتنزيل.',
   filename,
   shareTitle,
   shareText,
@@ -225,7 +225,7 @@ export default function ShareImageDialog({
           format,
           theme_id: themeId,
         });
-        notify.success('تم تحميل الصورة');
+        notify.success('حُفظت الصورة');
       } else if (action === 'copy') {
         const { copyElementAsPng } = await import('@/Lib/exportElementAsPng');
         const copied = await copyElementAsPng(file);
@@ -236,7 +236,7 @@ export default function ShareImageDialog({
             format,
             theme_id: themeId,
           });
-          notify.copy('تم نسخ الصورة إلى الحافظة');
+          notify.copy('نُسخت الصورة إلى الحافظة');
         } else {
           notify.error('المتصفح لا يدعم نسخ الصور');
         }
@@ -265,7 +265,7 @@ export default function ShareImageDialog({
             ? 'تعذّرت مشاركة الصورة'
             : action === 'copy'
               ? 'تعذّر نسخ الصورة'
-              : 'تعذّر تحميل الصورة';
+              : 'تعذّر تنزيل الصورة';
         notify.error(msg);
       }
     } finally {
@@ -302,7 +302,7 @@ export default function ShareImageDialog({
               }`}
             >
               <Sun className="h-3.5 w-3.5" aria-hidden="true" />
-              نيلي فاتح
+              نيلي
             </button>
             <button
               type="button"
@@ -335,7 +335,7 @@ export default function ShareImageDialog({
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                9:16 قصة
+                <span dir="ltr">9:16</span> قصة
               </button>
               <button
                 type="button"
@@ -347,7 +347,7 @@ export default function ShareImageDialog({
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                1:1 منشور
+                <span dir="ltr">1:1</span> منشور
               </button>
             </div>
           )}
@@ -417,7 +417,7 @@ export default function ShareImageDialog({
             ) : (
               <Download className="h-4 w-4" aria-hidden="true" />
             )}
-            تحميل PNG
+            تنزيل الصورة (PNG)
           </Button>
           {supportsCopy && (
             <Button

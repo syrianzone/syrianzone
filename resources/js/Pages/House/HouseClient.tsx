@@ -161,12 +161,12 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                     setData(res.rows);
                     setHeaders(res.headers);
                     if (res.rows.length === 0) {
-                        setLoadError('تعذر تحميل البيانات (المصدر فارغ أو غير متاح). حاول مجدداً لاحقاً.');
+                        setLoadError('تعذّر تحميل البيانات (المصدر فارغ أو غير متاح). حاول مجدداً لاحقاً.');
                     }
                 }
             } catch (err) {
                 console.error(err);
-                if (active) setLoadError('تعذر تحميل البيانات. تحقق من الاتصال وحاول مجدداً.');
+                if (active) setLoadError('تعذّر تحميل البيانات. تحقق من الاتصال وحاول مجدداً.');
             } finally {
                 if (active) setLoading(false);
             }
@@ -404,7 +404,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                         <div className="flex items-end">
                             <button
                                 onClick={resetFilters}
-                                aria-label="إعادة ضبط الفلاتر"
+                                aria-label="إعادة ضبط التصفية"
                                 className="w-full h-10 flex items-center justify-center gap-2 bg-muted hover:bg-accent text-muted-foreground rounded-md transition border border-border"
                             >
                                 <RotateCcw className="h-4 w-4" />
@@ -520,7 +520,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             عرض {sortedData.length} سجل
                         </p>
                     </div>
-                    <div role="status" className="text-sm text-muted-foreground font-medium">{loading ? 'جاري التحميل...' : ''}</div>
+                    <div role="status" className="text-sm text-muted-foreground font-medium">{loading ? 'جارٍ التحميل…' : ''}</div>
                 </div>
 
                 {loadError && sortedData.length === 0 && !loading && (
@@ -581,7 +581,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             ) : (
                                 <tr>
                                     <td colSpan={displayColumns.length} className="px-6 py-12 text-center text-muted-foreground">
-                                        لا توجد بيانات مطابقة
+                                        لا توجد بيانات مطابقة لبحثك أو خيارات التصفية
                                     </td>
                                 </tr>
                             )}

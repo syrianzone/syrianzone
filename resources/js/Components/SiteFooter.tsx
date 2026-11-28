@@ -38,7 +38,7 @@ const FOOTER_COLUMNS = [
         title: 'المنصة',
         links: [
             { href: '/about', label: 'عن المنصة' },
-            { href: '/stats', label: 'الإحصائيات' },
+            { href: '/stats', label: 'الإحصاءات' },
             { href: '/syid', label: 'الهوية البصرية' },
             { href: '/privacy', label: 'سياسة الخصوصية' },
             { href: '/terms', label: 'الشروط والأحكام' },
@@ -48,7 +48,7 @@ const FOOTER_COLUMNS = [
 
 const SLIM_FOOTER_LINKS = [
     { href: '/about', label: 'عن المنصة' },
-    { href: '/stats', label: 'الإحصائيات' },
+    { href: '/stats', label: 'الإحصاءات' },
     { href: '/syid', label: 'الهوية البصرية' },
     { href: '/privacy', label: 'الخصوصية' },
     { href: '/terms', label: 'الشروط' },
@@ -145,7 +145,7 @@ const SiteFooter = React.memo(function SiteFooter({
                 </div>
 
                 <div className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-5 text-xs text-muted-foreground">
-                    <span>المساحة السورية — مبادرة مجتمعية مفتوحة المصدر</span>
+                    <span>المساحة السورية، مبادرة مجتمعية مفتوحة المصدر</span>
                     <span dir="ltr" className="font-mono text-[11px] tabular-nums">
                         syrian.zone
                     </span>

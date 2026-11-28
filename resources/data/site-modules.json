@@ -47,7 +47,7 @@
   {
    "id": "muslim",
    "title": "الركن الإسلامي",
-   "subtitle": "مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن",
+   "subtitle": "مواقيت الصلاة والقرآن الكريم وإذاعة القرآن",
    "href": "/muslim",
    "type": "native",
    "target": "muslim_hub",
@@ -96,7 +96,7 @@
      "iconUrl": null
     }
    ],
-   "description": "مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن",
+   "description": "مواقيت الصلاة والقرآن الكريم وإذاعة القرآن",
    "navbarSticky": false,
    "group": "daily",
    "groupOrder": 1
@@ -173,7 +173,7 @@
      "iconUrl": null
     }
    ],
-   "description": "ألعاب ورق وذكاء جماعية وفردية: تركس، طرنيب، مين، سوليتير، 2048",
+   "description": "ألعاب ورق وذكاء جماعية وفردية: تركس وطرنيب ومن هو؟ وسوليتير و2048 وهل تميّزها؟",
    "navbarSticky": false,
    "group": "interactive",
    "groupOrder": 3
@@ -241,8 +241,8 @@
   },
   {
    "id": "compass",
-   "title": "البوصلة السياسية",
-   "subtitle": "اختبار البوصلة السياسية السورية وتحديد توجهاتك",
+   "title": "بوصلة سوريا",
+   "subtitle": "اختبار بوصلة سوريا لتحديد توجهاتك السياسية",
    "href": "/compass",
    "type": "web",
    "target": "/compass",
@@ -250,7 +250,7 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "اختبار البوصلة السياسية السورية وتحديد توجهاتك",
+   "description": "اختبار بوصلة سوريا لتحديد توجهاتك السياسية",
    "group": "interactive",
    "groupOrder": 1
   },
@@ -283,7 +283,7 @@
     {
      "id": "tierlist_leaderboard",
      "title": "نتائج التقييم",
-     "subtitle": "ترتيب وإحصائيات تصويت الجمهور",
+     "subtitle": "ترتيب تصويت الجمهور وإحصاءاته",
      "href": "/tierlist/leaderboard",
      "type": "native",
      "target": "tierlist_leaderboard",
@@ -458,7 +458,7 @@
   },
   {
    "id": "govapps",
-   "title": "تطبيقات الحكومة",
+   "title": "التطبيقات الحكومية",
    "subtitle": "دليل التطبيقات الحكومية والخدمية الرسمية في سوريا",
    "href": "/govapps",
    "type": "native",
@@ -473,8 +473,8 @@
   },
   {
    "id": "house",
-   "title": "المجلس التشريعي",
-   "subtitle": "مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء",
+   "title": "مجلس الشعب 2026",
+   "subtitle": "مرصد مجلس الشعب 2026 وتوزيع المقاعد والأعضاء",
    "href": "/house",
    "type": "web",
    "target": "/house",
@@ -482,7 +482,7 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء",
+   "description": "مرصد مجلس الشعب 2026 وتوزيع المقاعد والأعضاء",
    "group": "state",
    "groupOrder": 3
   },
@@ -504,7 +504,7 @@
   {
    "id": "syid",
    "title": "الهوية البصرية",
-   "subtitle": "دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات",
+   "subtitle": "دليل الهوية البصرية السورية الرسمية: الألوان والخطوط والشعارات",
    "href": "/syid",
    "type": "web",
    "target": "/syid",
@@ -512,7 +512,7 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات",
+   "description": "دليل الهوية البصرية السورية الرسمية: الألوان والخطوط والشعارات",
    "group": "community",
    "groupOrder": 0
   },
@@ -549,7 +549,7 @@
   {
    "id": "flag_replacer",
    "title": "مبدل العلم",
-   "subtitle": "إضافة متصفح لاستبدال العلم القديم بالعلم السوري",
+   "subtitle": "إضافة متصفح لتبديل العلم القديم بالعلم السوري",
    "href": "https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog",
    "type": "external",
    "target": "https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog",
@@ -557,7 +557,7 @@
    "iconUrl": "/flag-replacer/1f1f8-1f1fe.svg",
    "isInternal": true,
    "subCategories": [],
-   "description": "إضافة متصفح لاستبدال العلم القديم بالعلم السوري",
+   "description": "إضافة متصفح لتبديل العلم القديم بالعلم السوري",
    "group": "community",
    "groupOrder": 1
   },
@@ -618,7 +618,7 @@
    "iconUrl": "/assets/games/president.svg",
    "isInternal": false,
    "subCategories": [],
-   "description": "محاكي رئيس الجمهورية — لعبة سياسية تفاعلية",
+   "description": "محاكي رئيس الجمهورية: لعبة سياسية تفاعلية",
    "group": "interactive",
    "groupOrder": 5
   },
@@ -648,7 +648,7 @@
    "iconUrl": null,
    "isInternal": true,
    "subCategories": [],
-   "description": "دليل محافظات سوريا الأربع عشرة: السكان، المحافظون، مواقيت الصلاة، المواصلات، المعابر، الأماكن وأرقام الطوارئ",
+   "description": "دليل محافظات سوريا الأربع عشرة: السكان والمحافظون ومواقيت الصلاة والمواصلات والمعابر والأماكن وأرقام الطوارئ",
    "group": "maps",
    "groupOrder": 2
   },
@@ -718,7 +718,7 @@
   },
   {
    "id": "guesswho",
-   "label": "من هو",
+   "label": "من هو؟",
    "href": "/admin/guesswho",
    "gate": {
     "capability": "guesswho.manage"

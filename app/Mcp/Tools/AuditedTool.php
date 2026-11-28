@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Exceptions\DomainActionException;
 use App\Support\Agents\AgentAudit;
 use App\Support\Agents\AgentContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -100,13 +101,17 @@ abstract class AuditedTool extends Tool
             $this->audit($context, $http, $request, $started, AgentAudit::OUTCOME_INVALID, $e->getMessage());
 
             return Response::error($this->describeValidation($e));
+        } catch (DomainActionException $e) {
+            $this->audit($context, $http, $request, $started, AgentAudit::OUTCOME_ERROR, $e->getMessage());
+
+            return Response::error($e->getMessage());
         } catch (Throwable $e) {
             report($e);
 
             $this->audit($context, $http, $request, $started, AgentAudit::OUTCOME_ERROR, $e->getMessage());
 
             return Response::error(
-                'The action could not be completed: '.$e->getMessage()
+                'The action could not be completed due to an internal error.'
             );
         }
     }

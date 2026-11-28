@@ -6,12 +6,13 @@ export default function Index() {
   return (
     <MainLayout>
       <div className="min-h-[calc(100svh-var(--sz-navbar-h))] bg-background text-foreground" dir="rtl">
-        <PageBody className="space-y-6">
-          <PageHeader
-            title="الألعاب"
-            description="ألعاب تلعبها في المتصفح مباشرة، دون تحميل."
-            divider
-          />
+        <PageHeader
+          title="الألعاب"
+          description="ألعاب تلعبها في المتصفح مباشرة، دون تحميل."
+          divider
+        />
+
+        <PageBody className="pt-6 space-y-6">
 
           {/* App-grid: icon above, title under — the same borderless rhythm as
               the homepage and the Muslim Corner tool grid. Each card is a real

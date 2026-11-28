@@ -207,7 +207,7 @@ class PromisesAdminController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         $request->validate([
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192', 'dimensions:max_width=6000,max_height=6000'],
             'kind' => ['nullable', Rule::in(['speaker', 'source'])],
         ], $this->rules->messages());
 

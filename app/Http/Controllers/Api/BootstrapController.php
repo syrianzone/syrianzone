@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CompassFigure;
+use App\Models\CompassPersona;
 use App\Models\GovApp;
 use App\Models\GovtOfficial;
 use App\Models\GovtTenure;
+use App\Models\HouseMember2026;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
 use App\Models\PhonebookCategory;
 use App\Models\PhonebookEntry;
 use App\Models\Promise;
 use App\Models\SiteSetting;
+use App\Models\SyrianSite;
 use App\Models\WildlifeSpecies;
 use App\Support\Facts;
 use Illuminate\Http\JsonResponse;
@@ -132,6 +136,20 @@ class BootstrapController extends Controller
                 ]),
                 'ministries' => $this->hashParts([
                     $this->fileStamp(resource_path('data/government/ministries.json')),
+                ]),
+                'sites' => $this->hashParts([
+                    $this->tableStamp((new SyrianSite)->getTable()),
+                ]),
+                'house' => $this->hashParts([
+                    $this->tableStamp((new HouseMember2026)->getTable()),
+                ]),
+                'compass' => $this->hashParts([
+                    $this->tableStamp((new CompassFigure)->getTable()),
+                    $this->tableStamp((new CompassPersona)->getTable()),
+                ]),
+                'governorates' => $this->hashParts([
+                    $this->fileStamp(resource_path('data/governorates.json')),
+                    $this->fileStamp(resource_path('data/governorates/governors.json')),
                 ]),
             ];
         });

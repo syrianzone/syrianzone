@@ -62,6 +62,15 @@ const shortCodesFirst = (a: PhonebookEntry, b: PhonebookEntry) => {
     return isShortCode(a.number) ? -1 : 1;
 };
 
+function formatPhoneCount(count: number): string {
+    if (count === 1) return 'رقم واحد';
+    if (count === 2) return 'رقمان';
+    const mod100 = count % 100;
+    if (mod100 >= 3 && mod100 <= 10) return `${count} أرقام`;
+    if (mod100 === 0 || mod100 === 1 || mod100 === 2) return `${count} رقم`;
+    return `${count} رقماً`;
+}
+
 export default function Index({ initialData, categories: serverCategories = [] }: PhonebookProps) {
     const page = usePage();
     // Server-resolved capabilities (role implications already applied), not the
@@ -229,8 +238,8 @@ export default function Index({ initialData, categories: serverCategories = [] }
                             className="sm:max-w-xs"
                             value={directory.query}
                             onChange={directory.setQuery}
-                            placeholder="ابحث بالجهة، القسم، أو الرقم..."
-                            ariaLabel="ابحث بالجهة، القسم، أو رقم الهاتف"
+                            placeholder="ابحث بالجهة أو القسم أو الرقم…"
+                            ariaLabel="ابحث بالجهة أو القسم أو رقم الهاتف"
                         />
                         <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-1">
                             <DirectoryFacetFilter
@@ -242,7 +251,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                             <div className="flex items-center gap-3 sm:ms-auto">
                                 <DirectoryResultCount className="text-xs tabular-nums">
                                     {directory.results.length > 0
-                                        ? `${directory.results.length} رقم`
+                                        ? formatPhoneCount(directory.results.length)
                                         : 'لا توجد نتائج'}
                                 </DirectoryResultCount>
                                 <DirectoryViewToggle value={viewMode} onChange={setViewMode} />
@@ -253,8 +262,8 @@ export default function Index({ initialData, categories: serverCategories = [] }
                     {directory.results.length === 0 ? (
                         <DirectoryEmptyState
                             icon={Search}
-                            title="لا توجد نتائج"
-                            description="جرب تعديل كلمات البحث أو الفلاتر."
+                            title="لا توجد أرقام مطابقة"
+                            description="جرّب تعديل كلمات البحث أو خيارات التصفية."
                             directory={directory}
                         />
                     ) : viewMode === 'grid' ? (
@@ -469,7 +478,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                             )}
                             desktopHeader={
                                 <TableRow>
-                                    <TableHead className="text-start font-bold text-foreground">الجهة / القسم</TableHead>
+                                    <TableHead className="text-start font-bold text-foreground">الجهة أو القسم</TableHead>
                                     <TableHead className="text-start font-bold text-foreground">الرقم</TableHead>
                                     <TableHead className="text-start font-bold text-foreground">النوع</TableHead>
                                     <TableHead className="text-start font-bold text-foreground">المصدر</TableHead>
@@ -583,7 +592,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                             <div>
                                 <span className="font-bold text-foreground block mb-1">ملاحظات حول أرقام الدليل الخدمي:</span>
-                                تم جمع وتدقيق هذا الدليل من القرارات والبيانات الرسمية الصادرة عن الوزارات ومجالس المحافظات السورية. يرجى الملاحظة أن بعض الأرقام مخصصة للتواصل عبر قنوات المراسلة الفورية (مثل واتساب)، بينما تعمل الأرقام المختصرة وخطوط الهاتف الأرضي للاستجابة السريعة على مستوى الشبكات المحلية.
+                                جُمع هذا الدليل ودُقّق من القرارات والبيانات الرسمية الصادرة عن الوزارات ومجالس المحافظات السورية. يرجى الملاحظة أن بعض الأرقام مخصصة للتواصل عبر قنوات المراسلة الفورية (مثل واتساب)، بينما تعمل الأرقام المختصرة وخطوط الهاتف الأرضي للاستجابة السريعة على مستوى الشبكات المحلية.
                             </div>
                         </div>
                     </Card>

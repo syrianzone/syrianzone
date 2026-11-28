@@ -28,7 +28,7 @@ export function PageShell({
     as?: 'div' | 'section';
 }) {
     return (
-        <Tag className={cn('mx-auto w-full px-4 md:px-8', WIDTH[width], className)}>
+        <Tag className={cn('mx-auto w-full', width !== 'full' && 'px-4 md:px-8', WIDTH[width], className)}>
             {children}
         </Tag>
     );

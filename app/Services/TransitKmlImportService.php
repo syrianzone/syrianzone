@@ -429,7 +429,15 @@ class TransitKmlImportService
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $name = $zip->getNameIndex($i);
                 if (is_string($name) && str_ends_with(strtolower($name), '.kml')) {
-                    $contents = $zip->getFromIndex($i);
+                    $stat = $zip->statIndex($i);
+                    if (($stat['size'] ?? 0) > self::MAX_KML_BYTES) {
+                        throw new \RuntimeException('ملف الخريطة كبير جداً (الحد 5MB)');
+                    }
+
+                    $contents = $zip->getFromIndex($i, self::MAX_KML_BYTES + 1);
+                    if (is_string($contents) && strlen($contents) > self::MAX_KML_BYTES) {
+                        throw new \RuntimeException('ملف الخريطة كبير جداً (الحد 5MB)');
+                    }
                     if (is_string($contents) && $contents !== '') {
                         return $contents;
                     }

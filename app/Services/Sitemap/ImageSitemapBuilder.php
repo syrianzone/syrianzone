@@ -555,8 +555,7 @@ class ImageSitemapBuilder
 
     private function mediaBase(): string
     {
-        $r2Url = env('R2_PUBLIC_URL')
-            ?: (config('filesystems.disks.r2.url') ?: Facts::media()['public_base']);
+        $r2Url = config('filesystems.disks.r2.url') ?: Facts::media()['public_base'];
 
         return rtrim((string) $r2Url, '/');
     }

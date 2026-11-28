@@ -17,6 +17,15 @@ interface Character {
   id: number;
   name_ar: string;
   image_path: string;
+  image_url?: string;
+}
+
+function characterImageSrc(char: Pick<Character, 'image_path' | 'image_url'>): string {
+  if (char.image_url) return char.image_url;
+  if (char.image_path.startsWith('http://') || char.image_path.startsWith('https://') || char.image_path.startsWith('/')) {
+    return char.image_path;
+  }
+  return `/storage/${char.image_path}`;
 }
 
 interface GameProps {
@@ -123,7 +132,7 @@ function CharacterCard({
           }`}
         >
           <div className="w-full aspect-square bg-muted rounded-lg overflow-hidden flex-shrink-0">
-            <img src={`/storage/${char.image_path}`} alt={char.name_ar} className="w-full h-full object-cover" />
+            <img src={characterImageSrc(char)} alt={char.name_ar} loading="lazy" decoding="async" className="w-full h-full object-cover" />
           </div>
 
           <div className="flex flex-col gap-1 sm:gap-2 mt-1.5 sm:mt-2">
@@ -640,7 +649,7 @@ export default function GameRoom({ game }: GameProps) {
                         return s ? (
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg overflow-hidden bg-muted border border-primary/20 shrink-0">
-                              <img src={`/storage/${s.image_path}`} alt={s.name_ar} className="w-full h-full object-cover" />
+                              <img src={characterImageSrc(s)} alt={s.name_ar} className="w-full h-full object-cover" />
                             </div>
                             <span className="text-xs font-black text-foreground truncate max-w-[80px]">{s.name_ar}</span>
                           </div>

@@ -305,6 +305,17 @@ path.leaflet-interactive:hover {
                 }
                 .leaflet-control-zoom-in { border-radius: 8px 8px 0 0 !important; }
                 .leaflet-control-zoom-out { border-radius: 0 0 8px 8px !important; border-top: 1px solid rgba(255,255,255,0.05) !important; }
+                .leaflet-control-attribution {
+                    background: rgba(15, 23, 42, 0.85) !important;
+                    backdrop-filter: blur(12px) !important;
+                    color: #94a3b8 !important;
+                    border: 1px solid rgba(255,255,255,0.1) !important;
+                    border-radius: 6px !important;
+                    padding: 2px 6px !important;
+                }
+                .leaflet-control-attribution a {
+                    color: #e2e8f0 !important;
+                }
 
             `}</style>
 

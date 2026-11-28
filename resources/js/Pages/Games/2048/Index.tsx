@@ -8,7 +8,7 @@ import './styles.css';
 export default function Index() {
   return (
     <MainLayout>
-      <GameShell slug="2048" rules={<Game2048Rules />}>
+      <GameShell slug="2048" width="narrow" rules={<Game2048Rules />}>
         <Game2048 />
       </GameShell>
     </MainLayout>

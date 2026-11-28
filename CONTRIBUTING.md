@@ -6,10 +6,12 @@ Thank you for your interest in contributing to **Syrian Zone**! We welcome contr
 
 ## 🚀 Getting Started (دليل التطوير السريع)
 
-Before submitting code changes or opening pull requests, please read our developer setup and asset storage documentation:
+Before submitting code changes or opening pull requests, please read our core engineering docs:
 
-1. **[Developer Setup & Quickstart Guide](docs/getting-started/development.md)**: Instructions on cloning the repo, running migrations, database seeders, and starting the local development server (`bun run dev` & `php artisan serve`).
-2. **[Cloudflare R2 Asset Storage Guide](docs/reference/asset-storage.md)**: Details on how static assets, candidate avatars, GeoJSON maps, and brand kit downloads are hosted on Cloudflare R2 CDN and how to work with them in local development.
+1. **[AGENTS.md](AGENTS.md)**: Non-negotiable conventions (accessibility, RTL, theming, layering, API client) and common pitfalls.
+2. **[Documentation Index (`docs/INDEX.md`)](docs/INDEX.md)**: Task-oriented router to all architecture, module, reference, and runbook docs.
+3. **[Developer Setup & Quickstart Guide](docs/getting-started/development.md)**: Cloning the repo, migrations, database seeders, and starting the local dev server (`bun run dev`).
+4. **[Cloudflare R2 Asset Storage Guide](docs/reference/asset-storage.md)**: How static assets, candidate avatars, GeoJSON maps, and brand kit downloads are hosted on Cloudflare R2 CDN and worked with locally.
 
 ---
 
@@ -28,12 +30,13 @@ Before submitting code changes or opening pull requests, please read our develop
    - Backend: Follow Laravel standard conventions (`app/`, PSR-12 formatting).
    - Frontend: Use React 19 + TypeScript (`resources/js/`) with TailwindCSS utility classes.
 3. **Seed Dev Data**: Use `php artisan db:seed --class=StagingSeeder` to test your changes against realistic mock data.
-4. **Commit & Push**:
+4. **Run the Quality Gate**: Run [`bash scripts/gate.sh`](scripts/gate.sh) before opening a PR (runs `tsc`, ESLint, Vitest, Vite client + SSR build, answer-card tests, Pest, and advisory Pint). For UI changes, also run `python3 scripts/a11y_axe_audit.py --base http://localhost:8000`.
+5. **Commit & Push**:
    ```bash
    git commit -m "feat(module): description of changes"
    git push origin feature/my-new-feature
    ```
-5. **Open Pull Request**: Submit a Pull Request targeting the `main` branch with a concise summary of your changes.
+6. **Open Pull Request**: Submit a Pull Request targeting the `main` branch with a concise summary of your changes.
 
 ---
 

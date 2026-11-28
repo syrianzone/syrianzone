@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { usePage } from '@inertiajs/react'
 import Navbar from './Navbar'
+import SiteFooter from './SiteFooter'
 import UnblockSyriaNotification from './UnblockSyriaNotification'
-import { DevRoleSwitcher } from './DevRoleSwitcher'
 import { FocusModeProvider } from '@/Contexts/FocusModeContext'
 import { recordVisit } from '@/Lib/visit'
 import { isFullBleed, isNavbarSticky, pathnameOf, routeFamily } from '@/Lib/routes'
+
+const DevRoleSwitcher = import.meta.env.DEV
+  ? React.lazy(() => import('./DevRoleSwitcher').then((m) => ({ default: m.DevRoleSwitcher })))
+  : null
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const { url } = usePage()
@@ -19,12 +23,13 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   useEffect(() => { recordVisit(path); }, [path])
   // The catalogue decides which pages take the full viewport and which keep
   // the navbar in the flow; the shell only knows its own homepage rule.
+  const isHome = path === '/'
   const fullBleed = isFullBleed(path)
-  const sticky = path !== '/' && !fullBleed && isNavbarSticky(path)
+  const sticky = !isHome && !fullBleed && isNavbarSticky(path)
 
   return (
     <FocusModeProvider value={focusValue}>
-      <div className={fullBleed ? 'flex flex-col h-dvh overflow-hidden' : ''}>
+      <div className={fullBleed ? 'flex flex-col h-dvh overflow-hidden' : 'flex min-h-dvh flex-col'}>
         {!focus && (
           <a
             href="#main-content"
@@ -33,19 +38,24 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
             تجاوز إلى المحتوى
           </a>
         )}
-        {!focus && <Navbar sticky={sticky} />}
+        {!focus && !isHome && <Navbar sticky={sticky} />}
         <main
           id="main-content"
           tabIndex={-1}
           className={
-            (fullBleed ? 'flex-1 min-h-0 overflow-hidden ' : '') + 'focus:outline-none'
+            (fullBleed ? 'flex-1 min-h-0 overflow-hidden ' : 'flex-1 ') + 'focus:outline-none'
           }
         >
           {children}
         </main>
+        {!focus && !fullBleed && <SiteFooter variant={isHome ? 'slim' : 'full'} />}
         {/* The popup is suppressed for the whole transit section. */}
         {routeFamily(path) !== 'transit' && <UnblockSyriaNotification />}
-        <DevRoleSwitcher />
+        {DevRoleSwitcher && (
+          <Suspense fallback={null}>
+            <DevRoleSwitcher />
+          </Suspense>
+        )}
       </div>
     </FocusModeProvider>
   )

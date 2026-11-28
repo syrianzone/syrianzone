@@ -103,9 +103,12 @@ class CompassAdminController extends Controller
 
         // Best-effort cleanup of the uploaded portrait, but only under our own
         // prefix so a tampered value can never delete an unrelated object.
-        if ($figure->image_path && str_starts_with($figure->image_path, 'compass/')) {
+        if ($figure->image_path && (str_starts_with($figure->image_path, 'compass/') || str_starts_with($figure->image_path, 'images/compass/'))) {
             try {
-                Storage::disk(config('filesystems.disks.r2.bucket') ? 'r2' : 'public')->delete($figure->image_path);
+                $disk = str_starts_with($figure->image_path, 'images/compass/')
+                    ? 'public'
+                    : ($this->usesR2() ? 'r2' : 'public');
+                Storage::disk($disk)->delete($figure->image_path);
             } catch (\Throwable $e) {
                 report($e);
             }
@@ -131,14 +134,14 @@ class CompassAdminController extends Controller
     public function uploadFigureImage(Request $request)
     {
         $request->validate([
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192', 'dimensions:max_width=4800,max_height=4800'],
         ]);
 
         $file = $request->file('image');
         $base = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'figure';
         $filename = $base.'-'.Str::random(8).'.'.strtolower($file->getClientOriginalExtension());
 
-        if (config('filesystems.disks.r2.bucket')) {
+        if ($this->usesR2()) {
             $path = 'compass/figures/'.$filename;
             $disk = Storage::disk('r2');
             $disk->putFileAs('compass/figures', $file, $filename, 'public');
@@ -151,6 +154,12 @@ class CompassAdminController extends Controller
         Storage::disk('public')->putFileAs('images/compass/figures', $file, $filename);
 
         return response()->json(['success' => true, 'path' => $rel, 'url' => '/storage/'.$rel]);
+    }
+
+    private function usesR2(): bool
+    {
+        return config('filesystems.media_disk', 'public') === 'r2'
+            && ! empty(config('filesystems.disks.r2.bucket'));
     }
 
     /**

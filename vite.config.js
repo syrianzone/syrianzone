@@ -7,7 +7,7 @@ import { fileURLToPath, URL } from 'node:url';
 // source-map upload runs only in ci builds (token present); local builds are untouched
 const sentryUpload = !!process.env.SENTRY_AUTH_TOKEN;
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
     define: {
         'process.env': {},
     },
@@ -38,6 +38,38 @@ export default defineConfig({
     build: {
         // hidden: maps are written for the upload but not referenced from the bundles
         sourcemap: sentryUpload ? 'hidden' : false,
+        ...(isSsrBuild
+            ? {}
+            : {
+                  rolldownOptions: {
+                      output: {
+                          codeSplitting: {
+                              groups: [
+                                  {
+                                      name: 'vendor-react',
+                                      test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+                                      priority: 40,
+                                  },
+                                  {
+                                      name: 'vendor-inertia',
+                                      test: /[\\/]node_modules[\\/](@inertiajs|axios)[\\/]/,
+                                      priority: 35,
+                                  },
+                                  {
+                                      name: 'vendor-maplibre',
+                                      test: /[\\/]node_modules[\\/]maplibre-gl[\\/]/,
+                                      priority: 20,
+                                  },
+                                  {
+                                      name: 'vendor-leaflet',
+                                      test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
+                                      priority: 20,
+                                  },
+                              ],
+                          },
+                      },
+                  },
+              }),
     },
     plugins: [
         laravel({
@@ -61,4 +93,4 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
         },
     },
-});
+}));

@@ -3,6 +3,8 @@ import { Link, usePage } from '@inertiajs/react';
 import { BarChart3, PencilRuler } from 'lucide-react';
 import CompassApp from './CompassApp';
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody, PageHeader } from '@/Components/layout';
+import { Button } from '@/Components/ui/button';
 import type { Figure, Spectrum } from '@/Domain/compass/types';
 
 export default function CompassPage() {
@@ -13,38 +15,35 @@ export default function CompassPage() {
 
     return (
         <MainLayout>
-            
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors">
-                <section className="bg-card py-9 border-b border-border">
-                    <div className="container mx-auto px-4 text-center">
-                        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-foreground">بوصلة سوريا</h1>
-                        <p className="text-base md:text-lg text-muted-foreground">
-                            اكتشف موقعك السياسي على أحد عشر محوراً وأقرب التوجّهات إليك
-                        </p>
-                        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-                            <Link
-                                href="/compass/stats"
-                                className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"
-                            >
-                                <BarChart3 className="h-4 w-4" />
-                                إحصاءات عامة مجهولة الهوية
-                            </Link>
+                <PageHeader
+                    title="بوصلة سوريا"
+                    description="اكتشف موقعك السياسي على أحد عشر محوراً وأقرب التوجّهات إليك."
+                    width="narrow"
+                    divider
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                                <Link href="/compass/stats">
+                                    <BarChart3 className="h-4 w-4" aria-hidden="true" />
+                                    <span>إحصاءات عامة</span>
+                                </Link>
+                            </Button>
                             {/* The only in-site link to /alignment: without it the
                                 page is reachable from the sitemap alone. */}
-                            <Link
-                                href="/alignment"
-                                className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"
-                            >
-                                <PencilRuler className="h-4 w-4" aria-hidden="true" />
-                                صمّم بوصلتك السياسية الخاصة
-                            </Link>
+                            <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 text-muted-foreground">
+                                <Link href="/alignment">
+                                    <PencilRuler className="h-4 w-4" aria-hidden="true" />
+                                    <span>صمّم بوصلتك</span>
+                                </Link>
+                            </Button>
                         </div>
-                    </div>
-                </section>
+                    }
+                />
 
-                <div className="flex-1 container mx-auto px-3 sm:px-4 py-6 relative z-10 max-w-3xl">
+                <PageBody width="narrow" className="flex-1 pt-4 relative z-10">
                     <CompassApp isLoggedIn={Boolean(user)} figures={figures} personas={personas} />
-                </div>
+                </PageBody>
             </div>
         </MainLayout>
     );

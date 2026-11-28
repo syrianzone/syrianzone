@@ -1,10 +1,12 @@
-import React, { useState, useMemo, Suspense, useEffect } from 'react';
+import React, { useState, useMemo, Suspense, useEffect, useRef } from 'react';
 import { Link } from '@inertiajs/react';
 import {
     ArrowLeft, Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Tag, Eye
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
+import { PageBody, PageHeader } from "@/Components/layout";
 import { notify } from '@/Lib/notify';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { copyText } from '@/Lib/copy';
 import { MEDIA_BASE } from '@/Domain/govapps/media';
 import { SYID_FACTS, type SyidFacts } from '@/Domain/syid/facts';
@@ -123,8 +125,32 @@ export default function SyidClient({ syid }: SyidClientProps) {
     const [loadFontPreview, setLoadFontPreview] = useState(false);
     const [activePosterTheme, setActivePosterTheme] = useState<string>('default');
     const [svgContents, setSvgContents] = useState<Record<string, string>>({});
+    const [posterSectionVisible, setPosterSectionVisible] = useState(false);
+    const posterGridRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
+        if (posterSectionVisible) return;
+        const el = posterGridRef.current;
+        if (!el || typeof IntersectionObserver === 'undefined') {
+            setPosterSectionVisible(true);
+            return;
+        }
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    setPosterSectionVisible(true);
+                    observer.disconnect();
+                }
+            },
+            { rootMargin: '300px 0px' },
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [posterSectionVisible]);
+
+    useEffect(() => {
+        if (!posterSectionVisible) return;
+        let cancelled = false;
         const loadSvgs = async () => {
             const loaded: Record<string, string> = {};
             let failed = 0;
@@ -143,6 +169,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                     }
                 })
             );
+            if (cancelled) return;
             setSvgContents(loaded);
             // The icons are the poster's artwork: a failed load draws a hole in it,
             // which the visitor only notices after downloading.
@@ -151,7 +178,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
             }
         };
         loadSvgs();
-    }, []);
+        return () => { cancelled = true; };
+    }, [posterSectionVisible]);
 
 
 
@@ -216,6 +244,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
         // Revoking in the same task can cancel the download in some browsers.
         setTimeout(() => URL.revokeObjectURL(url), 1000);
 
+        trackEvent('syid_asset_action', { action: 'export_map', format: 'svg', slug: selectedGov });
         notify.success(`تم تحميل ملف SVG بنجاح`);
     };
 
@@ -247,43 +276,49 @@ export default function SyidClient({ syid }: SyidClientProps) {
         // Revoking in the same task can cancel the download in some browsers.
         setTimeout(() => URL.revokeObjectURL(url), 1000);
 
+        trackEvent('syid_asset_action', { action: 'export_map', format: 'geojson', slug: selectedGov });
         notify.success(`تم تحميل ملف GeoJSON بنجاح`);
     };
 
-    const copyToClipboard = async (text: string, key: string) => {
+    const copyToClipboard = async (
+        text: string,
+        key: string,
+        colorMeta?: { format: 'hex' | 'hsl' | 'cmyk' | 'oklch'; slug: string },
+    ) => {
         const copied = await copyText(text, { successMessage: `تم النسخ: ${text}` });
         if (!copied) return;
+        if (colorMeta) {
+            trackEvent('syid_asset_action', {
+                action: 'copy_color',
+                format: colorMeta.format,
+                slug: colorMeta.slug,
+            });
+        }
         setCopiedKey(key);
         setTimeout(() => setCopiedKey(null), 2000);
     };
 
     return (
         <div className="min-h-screen bg-background text-foreground transition-colors" dir="rtl">
+            <PageHeader
+                title="عناصر الهوية البصرية السورية"
+                description="دليل متكامل ومجمّع للمواد الرقمية والملفات المتصلة بالهوية البصرية السورية — الشعار، العلم، الألوان، الخطوط، وأيقونات المحافظات."
+                divider
+                actions={
+                    <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                        <a
+                            href="https://syrianidentity.sy"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <span>الموقع الرسمي</span>
+                            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                        </a>
+                    </Button>
+                }
+            />
 
-            <header className="py-12 border-b border-border text-center bg-muted/20">
-                <div className="container mx-auto px-4 max-w-4xl">
-                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
-                        عناصر الهوية البصرية السورية
-                    </h1>
-                    <p className="text-muted-foreground text-base max-w-2xl mx-auto mb-6">
-                        دليل متكامل ومجمّع للمواد الرقمية والملفات المتصلة بالهوية البصرية السورية
-                    </p>
-                    <a
-                        href="https://syrianidentity.sy"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 font-medium text-sm bg-[#428177] hover:bg-[#054239] text-white h-10 px-5 rounded-lg transition-colors shadow-xs"
-                    >
-                        <span>زيارة الموقع الرسمي</span>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                    <p className="mt-3 text-xs text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                        الموقع متوقف عن العمل منذ فترة، لتحميل الموجود فيه تحقق من قسم &quot;شعار الهوية والمواد الرسمية&quot;
-                    </p>
-                </div>
-            </header>
-
-            <div className="container mx-auto py-10 max-w-6xl px-4 space-y-14">
+            <PageBody className="pt-6 space-y-12">
 
                 <section aria-labelledby="syid-hub-links-heading">
                     <h2 id="syid-hub-links-heading" className="sr-only">صفحات الشعار والعلم المخصّصة</h2>
@@ -377,7 +412,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                                     }}
                                                 >
                                                     <button
-                                                        onClick={() => copyToClipboard(color.hex, hexKey)}
+                                                        onClick={() => copyToClipboard(color.hex, hexKey, { format: 'hex', slug: color.hex })}
                                                         className="flex items-center justify-between w-full font-mono text-xs font-bold p-1 rounded bg-black/20 hover:bg-black/30 transition-colors"
                                                     >
                                                         <span>{color.hex}</span>
@@ -386,21 +421,21 @@ export default function SyidClient({ syid }: SyidClientProps) {
 
                                                     <div dir="ltr" className="space-y-1 text-[10px] font-mono mt-2">
                                                         <button
-                                                            onClick={() => copyToClipboard(color.hsl, hslKey)}
+                                                            onClick={() => copyToClipboard(color.hsl, hslKey, { format: 'hsl', slug: color.hex })}
                                                             className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"
                                                         >
                                                             <span className="truncate">{color.hsl}</span>
                                                             {copiedKey === hslKey ? <Check className="h-2.5 w-2.5 text-green-400 shrink-0" /> : <Copy className="h-2.5 w-2.5 opacity-60 shrink-0" />}
                                                         </button>
                                                         <button
-                                                            onClick={() => copyToClipboard(color.cmyk, cmykKey)}
+                                                            onClick={() => copyToClipboard(color.cmyk, cmykKey, { format: 'cmyk', slug: color.hex })}
                                                             className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"
                                                         >
                                                             <span className="truncate">{color.cmyk}</span>
                                                             {copiedKey === cmykKey ? <Check className="h-2.5 w-2.5 text-green-400 shrink-0" /> : <Copy className="h-2.5 w-2.5 opacity-60 shrink-0" />}
                                                         </button>
                                                         <button
-                                                            onClick={() => copyToClipboard(color.oklch, oklchKey)}
+                                                            onClick={() => copyToClipboard(color.oklch, oklchKey, { format: 'oklch', slug: color.hex })}
                                                             className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"
                                                         >
                                                             <span className="truncate">{color.oklch}</span>
@@ -441,7 +476,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
 
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border">
                                     <div className="flex items-center gap-2 text-xs">
-                                        <Tag className="h-3.5 w-3.5 text-[#428177]" />
+                                        <Tag className="h-3.5 w-3.5 text-primary" />
                                         <span>كود الخصم (25%):</span>
                                         <code className="font-mono font-bold text-foreground">syrianzone</code>
                                     </div>
@@ -461,7 +496,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 href="https://iwantype.com/product/qomra/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-2 w-full bg-[#428177] hover:bg-[#054239] text-white font-medium text-sm h-10 rounded-lg transition-colors mt-6"
+                                className="inline-flex items-center justify-center gap-2 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm h-10 rounded-lg transition-colors mt-6"
                             >
                                 <span>شراء الخطوط من iWantype</span>
                                 <ExternalLink className="h-4 w-4" />
@@ -483,15 +518,15 @@ export default function SyidClient({ syid }: SyidClientProps) {
 
                                 <Dialog>
                                     <DialogTrigger asChild>
-                                        <Button className="w-full bg-[#428177] hover:bg-[#054239] text-white font-medium text-sm h-10 rounded-lg flex items-center justify-center gap-2">
+                                        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm h-10 rounded-lg flex items-center justify-center gap-2">
                                             <Download className="h-4 w-4" />
                                             <span>تحميل خط حيّاكم الله</span>
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent dir="rtl" className="max-w-md text-right sm:rounded-xl">
+                                    <DialogContent dir="rtl" className="max-w-md text-start sm:rounded-xl">
                                         <DialogHeader>
-                                            <DialogTitle className="text-lg font-bold text-right">تحميل خط حيّاكم الله</DialogTitle>
-                                            <DialogDescription className="text-xs text-muted-foreground text-right">
+                                            <DialogTitle className="text-lg font-bold text-start">تحميل خط حيّاكم الله</DialogTitle>
+                                            <DialogDescription className="text-xs text-muted-foreground text-start">
                                                 اختر الصيغة المناسبة لتنزيل الأوزان المتوفرة (Light, Regular, Medium, Bold).
                                             </DialogDescription>
                                         </DialogHeader>
@@ -512,7 +547,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                                         <a
                                                             href={`/syid-assets/fonts/HayyakumAllah/TTF/${weight.file}.ttf`}
                                                             download
-                                                            className="inline-flex items-center gap-1.5 bg-[#428177] hover:bg-[#054239] text-white text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                                                            onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'ttf', slug: weight.file })}
+                                                            className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
                                                         >
                                                             <Download className="h-3.5 w-3.5" />
                                                             <span>تحميل</span>
@@ -530,7 +566,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                                         <a
                                                             href={`/syid-assets/fonts/HayyakumAllah/WOFF/${weight.file}.woff`}
                                                             download
-                                                            className="inline-flex items-center gap-1.5 bg-[#428177] hover:bg-[#054239] text-white text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                                                            onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'woff', slug: weight.file })}
+                                                            className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
                                                         >
                                                             <Download className="h-3.5 w-3.5" />
                                                             <span>تحميل</span>
@@ -548,7 +585,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                                         <a
                                                             href={`/syid-assets/fonts/HayyakumAllah/WOFF2/${weight.file}.woff2`}
                                                             download
-                                                            className="inline-flex items-center gap-1.5 bg-[#428177] hover:bg-[#054239] text-white text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                                                            onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'woff2', slug: weight.file })}
+                                                            className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
                                                         >
                                                             <Download className="h-3.5 w-3.5" />
                                                             <span>تحميل</span>
@@ -565,9 +603,9 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                         <Button
                                             variant="outline"
                                             onClick={() => setLoadFontPreview(true)}
-                                            className="w-full text-xs font-medium h-9 border-dashed border-border hover:border-[#428177] flex items-center justify-center gap-2"
+                                            className="w-full text-xs font-medium h-9 border-dashed border-border hover:border-primary flex items-center justify-center gap-2"
                                         >
-                                            <Eye className="h-3.5 w-3.5 text-[#428177]" />
+                                            <Eye className="h-3.5 w-3.5 text-primary" />
                                             <span>تحميل المعاينة ومقارنة الخط</span>
                                         </Button>
                                     ) : (
@@ -636,6 +674,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/downloads/syrian-flag-3840.png"
                                 download="علم-سوريا-الجديد-4K-3840.png"
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'png', slug: 'flag-4k' })}
                                 className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
@@ -644,6 +683,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/downloads/syrian-flag.svg"
                                 download="علم-سوريا-الجديد.svg"
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'svg', slug: 'flag-clean' })}
                                 className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
@@ -652,7 +692,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/materials/syrian-flag-proportions.png"
                                 download
-                                className="inline-flex items-center gap-2 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 px-4 rounded-lg transition-colors"
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'png', slug: 'flag-proportions' })}
+                                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
                                 <span>PNG</span>
@@ -660,7 +701,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/materials/syrian-flag-proportions.svg"
                                 download
-                                className="inline-flex items-center gap-2 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 px-4 rounded-lg transition-colors"
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'svg', slug: 'flag-proportions' })}
+                                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
                                 <span>SVG</span>
@@ -668,6 +710,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             <a
                                 href="/syid-assets/materials/syrian-flag.dwg"
                                 download
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'dwg', slug: 'flag-proportions' })}
                                 className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
                                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
@@ -690,7 +733,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                         href="https://x.com/abd_hmh"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="font-medium text-foreground hover:text-[#428177] underline"
+                                        className="font-medium text-foreground hover:text-primary underline"
                                     >
                                         عبدالرحمن حداد (@abd_hmh)
                                     </a>
@@ -710,7 +753,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 href="https://drive.google.com/uc?export=download&id=1-HbfWI2PC76TTR6rKpmGl7GDcUlcZFXl"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-2 w-full bg-[#428177] hover:bg-[#054239] text-white font-medium text-sm h-10 rounded-lg transition-colors"
+                                onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'pdf', slug: 'flag-guide' })}
+                                className="inline-flex items-center justify-center gap-2 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm h-10 rounded-lg transition-colors"
                             >
                                 <Download className="h-4 w-4" />
                                 <span>تحميل الدليل (PDF)</span>
@@ -747,7 +791,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 <a
                                     href="/syid-assets/materials/logo.ai.svg"
                                     download="شعار_الهوية_البصرية_السورية.svg"
-                                    className="inline-flex items-center justify-center gap-2 bg-[#428177] hover:bg-[#054239] text-white font-medium text-xs h-10 px-3 rounded-lg transition-colors"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'svg', slug: 'emblem' })}
+                                    className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
                                     <FileDown className="h-4 w-4" aria-hidden="true" />
                                     <span>تحميل الشعار (SVG)</span>
@@ -755,6 +800,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 <a
                                     href="/syid-assets/downloads/syrian-arab-republic-eagle-emblem-4k.png"
                                     download="شعار-الجمهورية-العربية-السورية-4K.png"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'png', slug: 'emblem-4k' })}
                                     className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
                                     <Download className="h-4 w-4" aria-hidden="true" />
@@ -763,6 +809,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 <a
                                     href="/syid-assets/downloads/syrian-arab-republic-eagle-emblem.pdf"
                                     download="شعار-الجمهورية-العربية-السورية.pdf"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'pdf', slug: 'emblem' })}
                                     className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
                                     <FileDown className="h-4 w-4" aria-hidden="true" />
@@ -772,6 +819,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                     href={`${MEDIA_BASE}/downloads/191b8f0d278fc2ab095fb4f344e3e9b4-vGF1L1.zip`}
                                     target="_blank"
                                     rel="noreferrer"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'zip', slug: 'emblem-pack' })}
                                     className="inline-flex items-center justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
                                     <Download className="h-4 w-4" aria-hidden="true" />
@@ -794,7 +842,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                     href="https://x.com/walaa_akdesign"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="font-medium text-foreground hover:text-[#428177] underline"
+                                    className="font-medium text-foreground hover:text-primary underline"
                                 >
                                     X / Twitter
                                 </a>
@@ -803,7 +851,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                     href="https://www.instagram.com/walaa_akdesign/"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="font-medium text-foreground hover:text-[#428177] underline"
+                                    className="font-medium text-foreground hover:text-primary underline"
                                 >
                                     Instagram
                                 </a>)
@@ -814,7 +862,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                             href="https://drive.google.com/drive/folders/1rRpQ98QKB_hnTofuN7zTVdk0YpH73CLL"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-2 bg-[#428177] hover:bg-[#054239] text-white font-medium text-xs h-10 px-5 rounded-lg transition-colors shadow-xs shrink-0"
+                            className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs h-10 px-5 rounded-lg transition-colors shadow-xs shrink-0"
                         >
                             <Download className="h-4 w-4" />
                             <span>تحميل الحزمة الكاملة (Google Drive)</span>
@@ -833,7 +881,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                     onClick={() => setActivePosterTheme(theme.id)}
                                     className={`inline-flex items-center gap-2 text-xs px-3.5 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
                                         isActive
-                                            ? 'bg-background text-foreground shadow-xs border border-border font-bold ring-1 ring-[#428177]/40'
+                                            ? 'bg-background text-foreground shadow-xs border border-border font-bold ring-1 ring-primary/40'
                                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent'
                                     }`}
                                 >
@@ -849,7 +897,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                     </div>
 
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">
+                    <div ref={posterGridRef} className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">
                         {GOVERNORATE_ICONS.map((icon) => {
                             const rawSvg = svgContents[icon.file];
                             const currentTheme = POSTER_THEMES.find(t => t.id === activePosterTheme) || POSTER_THEMES[0];
@@ -867,6 +915,11 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                 document.body.removeChild(link);
                                 // Revoking in the same task can cancel the download in some browsers.
                                 setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                trackEvent('syid_asset_action', {
+                                    action: 'download',
+                                    format: 'svg',
+                                    slug: icon.file.replace(/\.svg$/i, ''),
+                                });
                                 notify.success(`تم تنزيل أيقونة ${icon.name} - ${currentTheme.name}`);
                             };
 
@@ -931,7 +984,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                     <div className="flex gap-2 w-full sm:w-auto">
                                         <Button
                                             onClick={handleExportSVG}
-                                            className="flex-1 sm:flex-none h-10 px-4 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium rounded-lg"
+                                            className="flex-1 sm:flex-none h-10 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-lg"
                                         >
                                             <FileDown className="me-1.5 h-3.5 w-3.5" />
                                             تصدير SVG
@@ -963,10 +1016,11 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                             href={`${MEDIA_BASE}/downloads/syria_provinces.geojson`}
                                             target="_blank"
                                             rel="noopener noreferrer"
+                                            onClick={() => trackEvent('syid_asset_action', { action: 'export_map', format: 'geojson', slug: 'full-r2' })}
                                             className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border hover:bg-muted/50 transition-colors"
                                         >
                                             <span className="font-medium">تحميل GeoJSON بدقة كاملة (R2)</span>
-                                            <FileDown className="h-3.5 w-3.5 text-[#428177]" />
+                                            <FileDown className="h-3.5 w-3.5 text-primary" />
                                         </a>
 
                                         <a
@@ -994,7 +1048,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                         ) : (
                             <CardContent className="p-8">
                                 <div className="h-[380px] w-full rounded-xl bg-muted/20 border border-dashed border-border flex flex-col items-center justify-center p-6 text-center space-y-4">
-                                    <div className="p-3.5 rounded-full bg-[#428177]/10 text-[#428177]">
+                                    <div className="p-3.5 rounded-full bg-primary/10 text-primary">
                                         <MapIcon className="h-8 w-8" />
                                     </div>
                                     <div>
@@ -1006,7 +1060,7 @@ export default function SyidClient({ syid }: SyidClientProps) {
                                     <Button
                                         onClick={loadMapData}
                                         disabled={loadingMap}
-                                        className="bg-[#428177] hover:bg-[#054239] text-white font-medium text-xs h-10 px-6 rounded-lg transition-all shadow-xs"
+                                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs h-10 px-6 rounded-lg transition-all shadow-xs"
                                     >
                                         {loadingMap ? (
                                             <span>جاري تحميل البيانات...</span>
@@ -1023,16 +1077,8 @@ export default function SyidClient({ syid }: SyidClientProps) {
                     </Card>
                 </section>
 
-            </div>
+            </PageBody>
 
-            <footer className="border-t border-border py-8 mt-16 text-center text-xs text-muted-foreground bg-muted/10">
-                <p>&copy; 2025 syrian.zone • التطوير بواسطة هادي الأحمد</p>
-                <div className="mt-2 flex justify-center gap-4">
-                    <a href="http://hadealahmad.com/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">الموقع الشخصي</a>
-                    <span>•</span>
-                    <a href="https://x.com/hadealahmad" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">حساب X</a>
-                </div>
-            </footer>
         </div>
     );
 }

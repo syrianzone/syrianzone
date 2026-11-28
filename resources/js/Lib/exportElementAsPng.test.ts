@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import html2canvas from 'html2canvas-pro';
-import { exportElementAsPng, renderElementAsPngFile } from './exportElementAsPng';
+import {
+    canCopyImage,
+    copyElementAsPng,
+    exportElementAsPng,
+    renderElementAsPngFile,
+} from './exportElementAsPng';
 
 vi.mock('html2canvas-pro', () => ({ default: vi.fn() }));
 
@@ -83,5 +88,29 @@ describe('PNG export destinations', () => {
         setup();
         vi.mocked(html2canvas).mockResolvedValue({ toBlob: (callback: BlobCallback) => callback(null) } as unknown as HTMLCanvasElement);
         await expect(renderElementAsPngFile({} as HTMLElement, 'promise-8.png')).rejects.toThrow('PNG encoding failed');
+    });
+
+    it('reports clipboard image capability and copies a prepared PNG file when supported', async () => {
+        setup();
+        const write = vi.fn().mockResolvedValue(undefined);
+        class FakeClipboardItem {
+            constructor(public readonly items: Record<string, Blob>) {}
+        }
+        vi.stubGlobal('navigator', { clipboard: { write } });
+        vi.stubGlobal('ClipboardItem', FakeClipboardItem);
+
+        expect(canCopyImage()).toBe(true);
+        const file = new File([bytes], 'card.png', { type: 'image/png' });
+        await expect(copyElementAsPng(file)).resolves.toBe(true);
+        expect(write).toHaveBeenCalledOnce();
+        expect(html2canvas).not.toHaveBeenCalled();
+    });
+
+    it('returns false when clipboard image copy is unavailable', async () => {
+        setup();
+        vi.stubGlobal('navigator', {});
+        vi.stubGlobal('ClipboardItem', undefined);
+        expect(canCopyImage()).toBe(false);
+        await expect(copyElementAsPng({} as HTMLElement)).resolves.toBe(false);
     });
 });

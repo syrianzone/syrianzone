@@ -2,17 +2,19 @@ import * as React from "react";
 import { cn } from "@/Lib/utils";
 
 type AlertProps = React.HTMLAttributes<HTMLDivElement> & {
-    variant?: "default" | "destructive" | "success" | "warning";
+    variant?: "default" | "destructive" | "success" | "warning" | "info";
 };
 
 const variantClasses: Record<NonNullable<AlertProps["variant"]>, string> = {
     default: "bg-card text-card-foreground border-border",
     destructive:
-        "bg-destructive/10 text-destructive border-destructive/30",
+        "bg-[color-mix(in_oklab,hsl(var(--destructive))_10%,hsl(var(--card)))] text-destructive border-[color-mix(in_oklab,hsl(var(--destructive))_35%,hsl(var(--border)))] [&>svg]:text-destructive",
     success:
-        "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
+        "bg-[color-mix(in_oklab,hsl(var(--success))_10%,hsl(var(--card)))] text-foreground border-[color-mix(in_oklab,hsl(var(--success))_35%,hsl(var(--border)))] [&>svg]:text-success",
     warning:
-        "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300",
+        "bg-[color-mix(in_oklab,hsl(var(--warning))_10%,hsl(var(--card)))] text-foreground border-[color-mix(in_oklab,hsl(var(--warning))_35%,hsl(var(--border)))] [&>svg]:text-warning",
+    info:
+        "bg-[color-mix(in_oklab,hsl(var(--info))_10%,hsl(var(--card)))] text-foreground border-[color-mix(in_oklab,hsl(var(--info))_35%,hsl(var(--border)))] [&>svg]:text-info",
 };
 
 export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(
@@ -35,12 +37,12 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert
     );
 });
 
-export const AlertTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(function AlertTitle(
+export const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(function AlertTitle(
     { className, ...props },
     ref
 ) {
     return (
-        <h5
+        <p
             ref={ref}
             className={cn("font-semibold leading-none tracking-tight", className)}
             {...props}

@@ -8,11 +8,12 @@ import {
 import { useAuth } from '@/Contexts/AuthContext';
 import { applyTheme, THEME_REGISTRY, useThemePreference } from '@/Lib/theme';
 import { applyFont, useFontPreference, type FontPreference } from '@/Lib/font';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { saveAccountSettings, type AccountSettingsPatch } from '@/Domain/settings/accountSettings';
 
 const FONT_OPTIONS: Array<[FontPreference, string]> = [
-    ['ibm-plex', 'Plex'],
-    ['system', 'محلي'],
+    ['ibm-plex', 'خط Plex'],
+    ['system', 'خط الجهاز'],
 ];
 
 // Theme + font picker for every visitor (logged in or not). Available in the
@@ -30,11 +31,13 @@ export default function AppearanceMenu({ className }: { className?: string }) {
     const handleThemeChange = (themeId: string) => {
         applyTheme(themeId);
         saveSetting({ theme: themeId });
+        trackEvent('appearance_change', { kind: 'theme', theme_id: themeId });
     };
 
     const handleFontChange = (font: FontPreference) => {
         applyFont(font);
         saveSetting({ fontFamily: font });
+        trackEvent('appearance_change', { kind: 'font', font_family: font });
     };
 
     const madarThemes = THEME_REGISTRY.filter((t) => t.group === 'madar');
@@ -138,7 +141,7 @@ export default function AppearanceMenu({ className }: { className?: string }) {
                                         type="button"
                                         title={t.nameAr}
                                         onClick={() => handleThemeChange(t.id)}
-                                        className="w-6 h-6 inline-flex items-center justify-center rounded-full shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="h-8 w-8 inline-flex items-center justify-center rounded-full shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
                                         <span
                                             aria-hidden="true"

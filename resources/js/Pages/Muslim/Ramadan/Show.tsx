@@ -32,7 +32,7 @@ export default function Show({ city, meta, rows, image, todayInfo }: RamadanCity
 
   return (
     <MainLayout>
-      <MuslimShell title={`إمساكية رمضان 2027 في ${city.nameAr}`} icon={MuslimIcon} width="max-w-5xl">
+      <MuslimShell title={`إمساكية رمضان 2027 في ${city.nameAr}`} icon={MuslimIcon} width="default">
         <div className="space-y-6">
           {/* Print-only title */}
           <div className="hidden border-b border-border pb-3 print:block">

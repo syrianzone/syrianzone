@@ -17,7 +17,7 @@ step() {
 step 'typecheck — npx tsc --noEmit'
 npx tsc --noEmit
 
-step 'lint — npm run lint (rules of hooks)'
+step 'lint — npm run lint (hooks, no-alert, no-console, api boundary)'
 npm run lint
 
 step 'frontend tests — npm run test:js'
@@ -28,6 +28,24 @@ npm run build
 
 step 'answer card renderer tests — node --test'
 node --test scripts/answers-card/render.test.mjs
+
+step 'OG images freshness — npm run og:check'
+npm run og:check
+
+# Guard against a worktree symlink pointing outside this checkout: Composer's
+# autoloader resolves paths relative to vendor/'s realpath, so a symlink to the
+# main repo causes Pest to run the main repo's app/ code instead of this tree.
+if [ -L vendor ]; then
+    vendor_target="$(readlink -f vendor)"
+    case "$vendor_target" in
+        "$PWD"/*) ;;
+        *)
+            printf '\nERROR: vendor/ is a symlink pointing outside this worktree (%s).\n' "$vendor_target" >&2
+            printf 'Replace it with a local install (`rm vendor && composer install`) so Pest tests this checkout.\n' >&2
+            exit 1
+            ;;
+    esac
+fi
 
 step 'PHP tests — vendor/bin/pest --parallel'
 vendor/bin/pest --parallel

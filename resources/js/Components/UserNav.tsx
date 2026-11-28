@@ -36,7 +36,11 @@ export default function UserNav() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full p-0">
+                <Button
+                    variant="ghost"
+                    aria-label="قائمة الحساب"
+                    className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full p-0"
+                >
                     <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border border-border/50">
                         <AvatarImage src={user.avatar_url ?? undefined} alt={user.name} />
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>

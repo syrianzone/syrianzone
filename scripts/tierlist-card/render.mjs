@@ -122,8 +122,19 @@ function caption(top, bottom) {
 
 // ***** template *****
 
-const FONT = (name) => readFileSync(join(HERE, 'fonts', name)).toString('base64')
-const LOGO = readFileSync(join(HERE, '..', '..', 'public', 'assets', 'logo-darkmode.svg'), 'utf8')
+const ROOT = resolve(HERE, '..', '..')
+const TOKENS = JSON.parse(readFileSync(join(ROOT, 'resources', 'og', 'tokens.json'), 'utf8'))
+const FONT_WOFF2 = (relPath) => readFileSync(join(ROOT, 'public', 'fonts', relPath)).toString('base64')
+const LOGO = readFileSync(join(ROOT, 'public', 'assets', 'logo-darkmode.svg'), 'utf8')
+
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
 
 function personRow(row, index, tone) {
   const handle = handleOf(row)
@@ -132,77 +143,313 @@ function personRow(row, index, tone) {
     <div class="rank">${index + 1}</div>
     <img class="photo" src="${row.photo}" alt="">
     <div class="who">
-      <div class="name">${row.name}</div>
-      <div class="title">${row.title ?? ''}</div>
-      ${handle ? `<div class="handle">@${handle}</div>` : ''}
+      <div class="name">${escapeHtml(row.name)}</div>
+      <div class="title">${escapeHtml(row.title ?? '')}</div>
+      ${handle ? `<div class="handle">@${escapeHtml(handle)}</div>` : ''}
     </div>
-    <div class="score">${row.avg}</div>
+    <div class="score">${escapeHtml(row.avg)}</div>
   </div>`
 }
 
 function html(groupKey, top, bottom) {
+  const t = TOKENS.dark
   const date = damascusNow()
   const dateLabel = `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`
+  const groupLabel = GROUP_LABELS[groupKey] || groupKey
   return `<!doctype html>
 <html dir="rtl" lang="ar"><head><meta charset="utf-8"><style>
-  @font-face { font-family: AlJazeera; font-weight: 700; src: url(data:font/ttf;base64,${FONT('AlJazeeraArabic-Bold.ttf')}); }
-  @font-face { font-family: AlJazeera; font-weight: 400; src: url(data:font/ttf;base64,${FONT('AlJazeeraArabic-Regular.ttf')}); }
-  @font-face { font-family: AlJazeera; font-weight: 300; src: url(data:font/ttf;base64,${FONT('AlJazeeraArabic-Light.ttf')}); }
-  * { margin: 0; box-sizing: border-box; }
-  body { line-height: 1.3; }
-  body {
-    width: 1080px; height: 1350px; overflow: hidden;
-    font-family: AlJazeera, sans-serif; color: #f5f2e9;
-    background: radial-gradient(140% 90% at 50% -10%, #14523f 0%, #0b3527 46%, #071f18 100%);
-    display: flex; flex-direction: column; padding: 38px 56px 0;
+  @font-face {
+    font-family: 'Beiruti';
+    font-weight: 200 900;
+    font-style: normal;
+    src: url(data:font/woff2;base64,${FONT_WOFF2('beiruti/Beiruti-VariableFont_wght.woff2')}) format('woff2');
   }
-  .header { display: flex; align-items: center; justify-content: space-between; }
-  .header svg { width: 190px; height: auto; }
-  .head-text { text-align: right; }
-  .head-text .kicker { font-weight: 300; font-size: 24px; color: #cfe3d3; letter-spacing: 0.5px; }
-  .head-text h1 { font-size: 46px; font-weight: 700; margin-top: 4px; }
-  .head-text .period { font-size: 25px; color: #e7d191; margin-top: 6px; }
-  .section { margin-top: 22px; border-radius: 26px; padding: 16px 28px 6px;
-    background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.09); }
-  .section h2 { font-size: 30px; display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
-  .section h2 .dot { width: 16px; height: 16px; border-radius: 50%; display: inline-block; }
-  .top h2 { color: #a9e5b8; }   .top .dot { background: #4fd07f; }
-  .bottom h2 { color: #f0b2a4; } .bottom .dot { background: #e0654a; }
-  .person { display: flex; align-items: center; gap: 22px; padding: 9px 6px; }
-  .person + .person { border-top: 1px solid rgba(255,255,255,0.08); }
-  .rank { font-size: 38px; font-weight: 700; width: 40px; text-align: center; color: #e7d191; }
-  .photo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid; }
-  .top .photo { border-color: #4fd07f; } .bottom .photo { border-color: #e0654a; }
-  .who { flex: 1; min-width: 0; }
-  .name { font-size: 32px; font-weight: 700; }
-  .title { font-size: 23px; font-weight: 300; color: #cfe3d3; margin-top: 2px; }
-  .handle { font-size: 21px; color: #9fc4ad; direction: ltr; text-align: right; margin-top: 2px; }
-  .score { font-size: 30px; font-weight: 700; color: #e7d191; background: rgba(231,209,145,0.12);
-    border: 1px solid rgba(231,209,145,0.35); border-radius: 16px; padding: 6px 18px; }
-  .footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 4px 28px; font-size: 26px; }
-  .footer .vote { color: #e7d191; font-weight: 700; }
-  .footer .site { direction: ltr; color: #cfe3d3; }
+  @font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    font-weight: 400 500;
+    font-style: normal;
+    src: url(data:font/woff2;base64,${FONT_WOFF2('ibm-plex-sans-arabic/ibm-plex-sans-arabic-regular.woff2')}) format('woff2');
+  }
+  @font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    font-weight: 600 700;
+    font-style: normal;
+    src: url(data:font/woff2;base64,${FONT_WOFF2('ibm-plex-sans-arabic/ibm-plex-sans-arabic-bold.woff2')}) format('woff2');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    position: relative;
+    width: 1080px;
+    height: 1350px;
+    overflow: hidden;
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    line-height: 1.35;
+    color: ${t.foreground};
+    background: linear-gradient(180deg, ${t.card} 0%, ${t.background} 22%, ${t.background} 100%);
+    display: flex;
+    flex-direction: column;
+    padding: 40px 64px 0 56px;
+  }
+  /* Madar signature: 12px RTL right-edge primary rail + saffron node notch */
+  .rail {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 12px;
+    background: ${t.primary};
+  }
+  .rail-notch {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    width: 12px;
+    height: 44px;
+    background: ${t.node};
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 22px;
+    border-bottom: 1px solid ${t.border};
+  }
+  .topbar svg {
+    height: 60px;
+    width: auto;
+    display: block;
+  }
+  .module-pill {
+    font-size: 23px;
+    font-weight: 700;
+    color: ${t.primary};
+    background: ${t.card};
+    border: 1px solid ${t.border};
+    border-radius: 999px;
+    padding: 9px 24px;
+    white-space: nowrap;
+  }
+  .hero {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 26px;
+    margin-bottom: 22px;
+  }
+  .hero h1 {
+    font-family: 'Beiruti', 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 54px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: ${t.foreground};
+  }
+  .hero .period {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 23px;
+    white-space: nowrap;
+  }
+  .hero .period-name {
+    font-weight: 700;
+    color: ${t.node};
+  }
+  .hero .period-sep {
+    color: ${t.border};
+  }
+  .hero .period-date {
+    color: ${t.mutedForeground};
+  }
+  .sections {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 22px;
+    min-height: 0;
+  }
+  .section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 22px;
+    padding: 20px 28px 14px;
+    background: ${t.card};
+    border: 1px solid ${t.border};
+  }
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid ${t.border};
+  }
+  .section h2 {
+    font-family: 'Beiruti', 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    line-height: 1.15;
+  }
+  .section h2 .bar {
+    width: 6px;
+    height: 26px;
+    border-radius: 999px;
+    display: inline-block;
+  }
+  .section-tag {
+    font-size: 19px;
+    font-weight: 600;
+    color: ${t.mutedForeground};
+  }
+  .top h2 { color: ${t.node}; }
+  .top .bar { background: ${t.node}; }
+  .bottom h2 { color: ${t.destructive}; }
+  .bottom .bar { background: ${t.destructive}; }
+  .person {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 13px 4px;
+  }
+  .person + .person {
+    border-top: 1px solid ${t.border};
+  }
+  .rank {
+    font-family: 'Beiruti', 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    width: 38px;
+    text-align: center;
+    line-height: 1;
+  }
+  .top .rank { color: ${t.node}; }
+  .bottom .rank { color: ${t.destructive}; }
+  .photo {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid ${t.border};
+    flex-shrink: 0;
+  }
+  .top .photo { border-color: ${t.node}; }
+  .bottom .photo { border-color: ${t.destructive}; }
+  .who {
+    flex: 1;
+    min-width: 0;
+  }
+  .name {
+    font-size: 30px;
+    font-weight: 700;
+    color: ${t.foreground};
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .title {
+    font-size: 22px;
+    font-weight: 400;
+    color: ${t.mutedForeground};
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .handle {
+    font-size: 19px;
+    color: ${t.primary};
+    direction: ltr;
+    text-align: right;
+    margin-top: 2px;
+  }
+  .score {
+    font-family: 'Beiruti', 'IBM Plex Sans Arabic', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    background: ${t.secondary};
+    border: 1px solid ${t.border};
+    border-radius: 14px;
+    padding: 8px 20px;
+    min-width: 96px;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .top .score { color: ${t.node}; border-color: ${t.node}; }
+  .bottom .score { color: ${t.destructive}; border-color: ${t.destructive}; }
+  .footer {
+    margin-top: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 32px;
+    border-top: 1px solid ${t.border};
+    font-size: 24px;
+  }
+  .footer .cta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .footer .vote {
+    color: ${t.node};
+    font-weight: 700;
+  }
+  .footer .brand-name {
+    color: ${t.mutedForeground};
+    font-weight: 400;
+  }
+  .footer .site {
+    direction: ltr;
+    color: ${t.primary};
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
 </style></head>
 <body>
-  <div class="header">
-    <div class="head-text">
-      <div class="kicker">تقييم الحكومة السورية · ${GROUP_LABELS[groupKey]}</div>
-      <h1>الأعلى والأقل تقييماً</h1>
-      <div class="period">${periodLabel()} · ${dateLabel}</div>
-    </div>
+  <div class="rail"></div>
+  <div class="rail-notch"></div>
+  <div class="topbar">
     ${LOGO}
+    <div class="module-pill">تقييم الحكومة · ${escapeHtml(groupLabel)}</div>
   </div>
-  <div class="section top">
-    <h2><span class="dot"></span>الأعلى تقييماً</h2>
-    ${top.map((row, index) => personRow(row, index, 'top')).join('')}
+  <div class="hero">
+    <h1>الأعلى والأقل تقييماً</h1>
+    <div class="period">
+      <span class="period-name">${escapeHtml(periodLabel())}</span>
+      <span class="period-sep">·</span>
+      <span class="period-date">${escapeHtml(dateLabel)}</span>
+    </div>
   </div>
-  <div class="section bottom">
-    <h2><span class="dot"></span>الأقل تقييماً</h2>
-    ${bottom.map((row, index) => personRow(row, index, 'bottom')).join('')}
+  <div class="sections">
+    <div class="section top">
+      <div class="section-head">
+        <h2><span class="bar"></span>الأعلى تقييماً</h2>
+        <span class="section-tag">أعلى 3 تقييمات</span>
+      </div>
+      ${top.map((row, index) => personRow(row, index, 'top')).join('')}
+    </div>
+    <div class="section bottom">
+      <div class="section-head">
+        <h2><span class="bar"></span>الأقل تقييماً</h2>
+        <span class="section-tag">أدنى 3 تقييمات</span>
+      </div>
+      ${bottom.map((row, index) => personRow(row, index, 'bottom')).join('')}
+    </div>
   </div>
   <div class="footer">
-    <div class="vote">صوّت الآن</div>
+    <div class="cta">
+      <span class="vote">صوّت الآن</span>
+      <span class="brand-name">· المساحة السورية</span>
+    </div>
     <div class="site">syrian.zone/tierlist</div>
   </div>
 </body></html>`

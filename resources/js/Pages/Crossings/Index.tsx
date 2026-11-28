@@ -168,7 +168,7 @@ export default function CrossingsPage() {
                                     <Signpost className="h-5 w-5" />
                                 </span>
                                 <div>
-                                    <h1 className="text-sm font-bold leading-tight text-foreground">المنافذ الحدودية</h1>
+                                    <h1 className="font-display text-lg font-bold leading-tight text-foreground">المنافذ الحدودية</h1>
                                     <p className="text-[11px] leading-tight text-muted-foreground">الحالة الفنية لكل منفذ ومرفأ</p>
                                 </div>
                             </div>
@@ -229,7 +229,7 @@ export default function CrossingsPage() {
                     </p>
                 </aside>
 
-                <div className="relative h-[45vh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1">
+                <div className="relative isolate z-0 h-[45vh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1">
                     <MapErrorBoundary className="h-full w-full">
                         <React.Suspense
                             fallback={

@@ -1,30 +1,36 @@
-import { Card, CardContent } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
+import { PageHeader, PageShell } from '@/Components/layout';
 import { OMran_SOURCE_URL } from './members2026';
 
 export default function Hero2026({ total, female, male, onOpenArchive }: { total: number; female: number; male: number; onOpenArchive?: () => void }) {
     return (
-        <Card className="overflow-hidden">
-            <CardContent className="p-6 md:p-8 space-y-4">
-                <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">مجلس الشعب السوري 2026</Badge>
-                    <Badge variant="outline">{total} عضواً</Badge>
-                    <Badge variant="outline">ذكور {male}</Badge>
-                    <Badge variant="outline">إناث {female}</Badge>
-                </div>
-                <h1 className="text-3xl font-bold text-foreground">أعضاء مجلس الشعب السوري 2026 — الأسماء حسب المحافظة</h1>
-                <p className="text-muted-foreground leading-relaxed">
-                    القائمة الكاملة لأسماء أعضاء مجلس الشعب السوري 2026 موزّعين حسب المحافظة، مع مخطط القاعة التفاعلي والإحصائيات وصفحة مستقلة لكل عضو.
-                    البيانات الأساسية مأخوذة من المخطط التفاعلي لمركز عمران للدراسات الاستراتيجية.
+        <div>
+            <PageHeader
+                title="أعضاء مجلس الشعب السوري 2026: الأسماء حسب المحافظة"
+                description="القائمة الكاملة لأسماء أعضاء مجلس الشعب السوري 2026 موزّعين حسب المحافظة، مع مخطط القاعة التفاعلي والإحصاءات وصفحة مستقلة لكل عضو."
+                divider
+                actions={
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground tabular-nums">
+                        <span className="font-semibold text-foreground">{total} عضواً</span>
+                        <span aria-hidden="true">·</span>
+                        <span>ذكور {male}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>إناث {female}</span>
+                    </div>
+                }
+            />
+            <PageShell className="pt-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                    المصدر:{' '}
+                    <a href={OMran_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline font-semibold text-primary">
+                        مركز عمران: المخطط التفاعلي لمجلس الشعب السوري 2026
+                    </a>
+                    . بيانات المرحلة الانتقالية محفوظة في{' '}
+                    <a href="#historical-archive" onClick={onOpenArchive} className="underline font-semibold text-primary">
+                        قسم البيانات التاريخية أسفل الصفحة
+                    </a>
+                    .
                 </p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                    المصدر: <a href={OMran_SOURCE_URL} target="_blank" rel="noreferrer" className="underline font-semibold text-primary">مركز عمران — المخطط التفاعلي لمجلس الشعب السوري 2026</a>.
-                    تجدون هناك أيضاً بيانات إضافية لكل عضو: طريقة التعيين، صفة العضوية، العرق والديانة والمذهب، الفئة العمرية، القطاع والفصيل، والتحصيل العلمي.
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                    ملاحظة: أبقينا بيانات المرحلة الانتقالية (الهيئات الناخبة، المرشحون، الفائزون) في <a href="#historical-archive" onClick={onOpenArchive} className="underline font-semibold text-primary">قسم البيانات التاريخية أسفل الصفحة</a> للرجوع إليها عند الحاجة.
-                </p>
-            </CardContent>
-        </Card>
+            </PageShell>
+        </div>
     );
 }

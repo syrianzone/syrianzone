@@ -74,7 +74,7 @@ class SyOfficialAdminController extends Controller
             'name_ar' => 'required|string|max:255',
             'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
-            'image_file' => 'nullable|image|max:5120', // Max 5MB
+            'image_file' => 'nullable|image|max:5120|dimensions:max_width=4800,max_height=4800', // Max 5MB
             'socials' => 'nullable|array',
             'socials.*' => 'nullable|string|max:2048|starts_with:http://,https://',
             'is_active' => 'boolean',
@@ -101,7 +101,7 @@ class SyOfficialAdminController extends Controller
             'name_ar' => 'required|string|max:255',
             'description' => 'nullable|string',
             'description_ar' => 'nullable|string',
-            'image_file' => 'nullable|image|max:5120',
+            'image_file' => 'nullable|image|max:5120|dimensions:max_width=4800,max_height=4800',
             'socials' => 'nullable|array',
             'socials.*' => 'nullable|string|max:2048|starts_with:http://,https://',
             'is_active' => 'boolean',

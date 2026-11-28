@@ -3,139 +3,174 @@ import type { AxisId, Spectrum } from '@/Domain/compass/types';
 import { AXES } from '@/Domain/compass/axes';
 import { axisDisplay } from '@/Domain/compass/axisDisplay';
 import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
-import { getThemeById, THEME_REGISTRY, hexToRgbString, readThemeColor, readThemeRgb, shareCardPalette } from '@/Lib/theme';
-
-const fmt = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}`;
+import BrandShareFrame, {
+  MADAR_DISPLAY_FONT,
+} from '@/Components/share/BrandShareFrame';
 
 interface Props {
   spectrum: Spectrum | null;
   axes: Partial<Record<AxisId, number | null>>;
   themeKey: string;
+  format?: 'story' | 'square';
 }
 
-/** 360×640 story card used for the "share as image" download. The colours of
- *  the applied theme are read from its CSS tokens, so the card shows what the
- *  page shows; the palette in themes.json covers a theme that is not applied
- *  yet and the renderers that compose rgba() themselves. */
+/**
+ * Editorial Madar share card for Syria Compass results (9:16 story or 1:1 square).
+ * Highlights the spectrum hero and the 4 strongest defining axes so the card
+ * reads cleanly in 2 seconds on WhatsApp/Instagram/X.
+ */
 const CompassShareCard = forwardRef<HTMLDivElement, Props>(function CompassShareCard(
-  { spectrum, axes, themeKey },
-  ref
+  { spectrum, axes, themeKey, format = 'story' },
+  ref,
 ) {
-  const theme = getThemeById(themeKey) || THEME_REGISTRY[2];
-  // The card's gradient comes from the palette, not from the scheme: jasmine is
-  // a light theme with a deliberately dark card gradient, so only `light` draws
-  // the dark-on-light text set.
-  const palette = shareCardPalette(theme.id);
-  const pri = theme.priorities;
-  const primary = readThemeColor('--primary', themeKey) || theme.primary;
-  const primaryRgb = readThemeRgb('--primary', themeKey) || hexToRgbString(theme.primary);
-  const urlText = pri?.urlText || primary;
-  const gradient =
-    pri?.gradient ||
-    (palette.isLight ? 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' : 'linear-gradient(135deg, #0b0f19 0%, #064e3b 50%, #022c22 100%)');
+  const isStory = format === 'story';
 
-  const fg = palette.textPrimary;
-  const sub = palette.textSecondary;
-  const muted = palette.textMuted;
-  const faint = palette.isLight ? 'rgba(15,23,42,0.10)' : 'rgba(255,255,255,0.12)';
-  const panelBg = palette.cardBg;
-  const panelBorder = palette.cardBorder;
+  const topAxes = [...AXES]
+    .filter((a) => axes[a.id] != null)
+    .sort((a, b) => Math.abs((axes[b.id] as number) ?? 0) - Math.abs((axes[a.id] as number) ?? 0))
+    .slice(0, 4);
+
+  const displayAxes = topAxes.length > 0 ? topAxes : AXES.slice(0, 4);
 
   return (
-    <div
+    <BrandShareFrame
       ref={ref}
       id="compass-card-canvas"
-      dir="rtl"
-      style={{
-        width: 360,
-        height: 640,
-        position: 'relative',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        padding: 22,
-        textAlign: 'right',
-        color: fg,
-        fontFamily: 'IBM Plex Sans Arabic, sans-serif',
-        background: gradient,
-      }}
+      themeId={themeKey}
+      moduleLabel="بوصلة سوريا"
+      shareUrl="syrian.zone/compass"
+      format={format}
     >
-      <div
-        className="compass-card-bg-blur"
-        style={{ position: 'absolute', top: -60, right: -50, width: 200, height: 200, borderRadius: '50%', filter: 'blur(60px)', background: `rgba(${primaryRgb},0.28)` }}
-      />
-      <div
-        className="compass-card-bg-blur"
-        style={{ position: 'absolute', bottom: 40, left: -70, width: 220, height: 220, borderRadius: '50%', filter: 'blur(80px)', background: `rgba(${primaryRgb},0.14)` }}
-      />
+      {(tokens) => {
+        const trackBg = tokens.isDark ? 'rgba(238,240,255,0.14)' : 'rgba(23,26,46,0.10)';
+        const chipBg = `rgba(${tokens.primaryRgb}, ${tokens.isDark ? 0.18 : 0.10})`;
+        const chipBorder = `rgba(${tokens.primaryRgb}, ${tokens.isDark ? 0.36 : 0.25})`;
 
-      <div style={{ position: 'relative', textAlign: 'center', marginTop: 6 }}>
-        <div style={{ display: 'inline-flex', width: 44, height: 44, borderRadius: '50%', alignItems: 'center', justifyContent: 'center', color: primary, background: `rgba(${primaryRgb},0.14)`, border: `1px solid rgba(${primaryRgb},0.4)`, marginBottom: 5 }}>
-          <SpectrumIcon name={spectrum?.icon} className="w-6 h-6" />
-        </div>
-        <div style={{ fontSize: 19, fontWeight: 900, lineHeight: 1.2 }}>{spectrum?.name ?? 'نتيجتك'}</div>
-        {spectrum && (
-          <div style={{ fontSize: 9.5, color: sub, lineHeight: 1.5, marginTop: 4, maxHeight: 40, overflow: 'hidden' }}>
-            {spectrum.short}
-          </div>
-        )}
-        {spectrum && spectrum.stances.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, justifyContent: 'center', marginTop: 7 }}>
-            {spectrum.stances.slice(0, 3).map((s) => (
-              <span key={s} style={{ fontSize: 8, fontWeight: 700, padding: '3px 8px', borderRadius: 999, color: primary, background: `rgba(${primaryRgb},0.14)`, border: `1px solid rgba(${primaryRgb},0.3)` }}>
-                {s}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 22 : 16 }}>
+            {/* 1. Hero spectrum focal point */}
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  width: 52,
+                  height: 52,
+                  borderRadius: '50%',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: tokens.primary,
+                  backgroundColor: chipBg,
+                  border: `1.5px solid ${chipBorder}`,
+                  marginBottom: 10,
+                }}
+              >
+                <SpectrumIcon name={spectrum?.icon} className="h-6 w-6" />
+              </div>
 
-      <div style={{ position: 'relative', background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 14, padding: '10px 12px', flex: '1 1 auto' }}>
-        <div style={{ fontSize: 9, fontWeight: 800, color: sub, marginBottom: 8 }}>موقعك على المحاور</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          {AXES.map((a) => {
-            const raw = axes[a.id];
-            const has = raw != null;
-            const val = has ? (raw as number) : 0;
-            const { leftLabel, rightLabel, positiveOnLeft } = axisDisplay(a);
-            const pct = Math.min(Math.abs(val), 1) * 50;
-            const fillOnLeft = val >= 0 === positiveOnLeft;
-            return (
-              <div key={a.id}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, fontSize: 7.5, marginBottom: 3 }}>
-                  <span style={{ fontWeight: 700 }}>{rightLabel}</span>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: primary }}>{has ? fmt(val) : '—'}</span>
-                  <span style={{ fontWeight: 700 }}>{leftLabel}</span>
+              <div
+                style={{
+                  fontFamily: MADAR_DISPLAY_FONT,
+                  fontSize: isStory ? 30 : 28,
+                  fontWeight: 900,
+                  lineHeight: 1.2,
+                  color: tokens.ink,
+                }}
+              >
+                {spectrum?.name ?? 'نتيجتك السياسية'}
+              </div>
+
+              {spectrum?.short && (
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: tokens.muted,
+                    lineHeight: 1.5,
+                    marginTop: 6,
+                  }}
+                >
+                  {spectrum.short}
                 </div>
-                <div style={{ position: 'relative', height: 6, borderRadius: 999, background: faint }}>
-                  <div style={{ position: 'absolute', left: '50%', top: -2, bottom: -2, width: 1, background: panelBorder }} />
-                  {has && pct > 0 && (
+              )}
+            </div>
+
+            {/* 2. Top 4 defining axes */}
+            <div
+              style={{
+                backgroundColor: tokens.card,
+                border: `1px solid ${tokens.border}`,
+                borderRadius: 14,
+                padding: isStory ? '16px 16px' : '14px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: isStory ? 14 : 12,
+              }}
+            >
+              {displayAxes.map((a) => {
+                const raw = axes[a.id];
+                const has = raw != null;
+                const val = has ? (raw as number) : 0;
+                const { leftLabel, rightLabel, positiveOnLeft } = axisDisplay(a);
+                const pct = Math.min(Math.abs(val), 1) * 50;
+                const fillOnLeft = (val >= 0) === positiveOnLeft;
+
+                return (
+                  <div key={a.id}>
                     <div
                       style={{
-                        position: 'absolute',
-                        top: 0,
-                        bottom: 0,
-                        borderRadius: 999,
-                        background: primary,
-                        ...(fillOnLeft ? { right: '50%', width: `${pct}%` } : { left: '50%', width: `${pct}%` }),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        marginBottom: 6,
+                        color: tokens.ink,
                       }}
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ position: 'relative', textAlign: 'center', lineHeight: 1.5 }}>
-        <div style={{ fontSize: 7.5, color: muted }}>بوصلة سوريا · مشروع سوري مفتوح المصدر</div>
-        <div style={{ fontSize: 8.5, fontWeight: 700, color: urlText, direction: 'ltr', marginTop: 2 }}>
-          syrian.zone/compass
-        </div>
-      </div>
-    </div>
+                    >
+                      <span>{rightLabel}</span>
+                      <span>{leftLabel}</span>
+                    </div>
+                    <div
+                      style={{
+                        position: 'relative',
+                        height: 8,
+                        borderRadius: 999,
+                        backgroundColor: trackBg,
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: '50%',
+                          top: -2,
+                          bottom: -2,
+                          width: 2,
+                          backgroundColor: tokens.node,
+                        }}
+                      />
+                      {has && pct > 0 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            bottom: 0,
+                            borderRadius: 999,
+                            backgroundColor: tokens.primary,
+                            ...(fillOnLeft
+                              ? { right: '50%', width: `${pct}%` }
+                              : { left: '50%', width: `${pct}%` }),
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }}
+    </BrandShareFrame>
   );
 });
 

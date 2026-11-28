@@ -11,11 +11,15 @@ class MetricsController extends Controller
 {
     public function index()
     {
-        // Optional scrape-token guard: when METRICS_TOKEN is set, the scraper
-        // must send it as a bearer token. Keeps the endpoint private on hosts
-        // where the scraper can't be firewalled at the network level.
+        // Scrape-token guard: when METRICS_TOKEN is set, the scraper must send
+        // it as a bearer token. In production, fail closed when unset so the
+        // metrics endpoint is never accidentally exposed publicly.
         $token = config('services.metrics.token');
-        if ($token && !hash_equals($token, (string) request()->bearerAuth())) {
+        if (! is_string($token) || $token === '') {
+            if (app()->isProduction()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+        } elseif (! hash_equals($token, (string) request()->bearerToken())) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 

@@ -1,0 +1,7 @@
+{
+    "preset": "laravel",
+    "notPath": [
+        "routes/web.php",
+        "bootstrap/app.php"
+    ]
+}

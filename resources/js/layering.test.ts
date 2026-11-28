@@ -167,7 +167,6 @@ const SHARED_TO_DOMAIN_ALLOWED = [
   'Components/GlobalSearch.tsx -> Domain/quran/quran.ts',
   'Components/GlobalSearch.tsx -> Domain/transit/cities.ts',
   'Components/UnblockSyriaNotification.tsx -> Domain/settings/popup.ts',
-  'Lib/entityImage.ts -> Domain/govapps/media.ts',
   // Exceptions. `MainLayout` mounts the sync and radio components the app shell
   // owns, the onboarding tracker records a visit, the appearance menu writes the
   // account setting, and the search box focuses the reader's current ayah.

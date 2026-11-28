@@ -82,7 +82,7 @@ export default function SortableList({ items: initialItems, endpoint, canReorder
             });
             setSavedItems(items);
             setHasChanges(false);
-            notify.success('تم حفظ الترتيب الجديد');
+            notify.success('حُفظ الترتيب الجديد');
             onSaved?.();
         } catch (err) {
             setItems(savedItems);
@@ -103,7 +103,7 @@ export default function SortableList({ items: initialItems, endpoint, canReorder
                 </p>
                 {canReorder && hasChanges && (
                     <Button type="button" size="sm" onClick={save} disabled={saving} className="gap-1.5 font-bold">
-                        {saving ? 'جاري الحفظ...' : 'حفظ الترتيب الجديد'}
+                        {saving ? 'جارٍ الحفظ…' : 'حفظ الترتيب الجديد'}
                     </Button>
                 )}
             </div>
@@ -160,7 +160,7 @@ function SortableRow({ item, index, count, canReorder, onMove }: {
                     <GripVertical className="h-5 w-5" aria-hidden="true" />
                 </Button>
                 {item.image && (
-                    <img src={item.image} alt="" className="h-8 w-8 shrink-0 rounded-lg bg-muted object-cover" />
+                    <img src={item.image} alt="" loading="lazy" decoding="async" className="h-8 w-8 shrink-0 rounded-lg bg-muted object-cover" />
                 )}
                 <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground">{item.label}</p>

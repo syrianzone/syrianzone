@@ -16,6 +16,108 @@ class SiteSetting extends Model
 
     public const SITE_NAVIGATION_KEY = 'site_navigation';
 
+    /** @var array{version?: string, aliases?: array<string, string>, icons?: array<string, array{light?: string, dark?: string}>}|null */
+    private static ?array $moduleIconManifest = null;
+
+    /**
+     * Resolve an icon key (following aliases such as `atlas` -> `population`,
+     * `places` -> `mishwar`, `polls` -> `tierlist`) to its canonical drawing key,
+     * or null if the key is unknown.
+     */
+    public static function resolveIconKey(?string $iconKey): ?string
+    {
+        if ($iconKey === null || trim($iconKey) === '') {
+            return null;
+        }
+
+        $icons = Facts::projectIcons()['icons'] ?? [];
+        $key = trim($iconKey);
+
+        for ($hop = 0; $hop < 5; $hop++) {
+            $entry = $icons[$key] ?? null;
+            if (! is_array($entry)) {
+                return null;
+            }
+            if (! isset($entry['alias'])) {
+                return isset($entry['body']) ? $key : null;
+            }
+            $key = trim((string) $entry['alias']);
+        }
+
+        return null;
+    }
+
+    /**
+     * Read the exported module icons manifest (`public/assets/icons/modules/manifest.json`)
+     * for cache-busting content hashes.
+     *
+     * @return array{version?: string, aliases?: array<string, string>, icons?: array<string, array{light?: string, dark?: string}>}
+     */
+    public static function moduleIconManifest(): array
+    {
+        if (self::$moduleIconManifest !== null) {
+            return self::$moduleIconManifest;
+        }
+
+        $path = public_path('assets/icons/modules/manifest.json');
+        if (! is_file($path)) {
+            return self::$moduleIconManifest = [];
+        }
+
+        $decoded = json_decode((string) @file_get_contents($path), true);
+
+        return self::$moduleIconManifest = is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Build an absolute, cache-busted URL for a compiled module SVG icon.
+     */
+    public static function moduleIconUrl(string $canonicalKey, bool $dark = false): string
+    {
+        $manifest = static::moduleIconManifest();
+        $variant = $dark ? 'dark' : 'light';
+        $hash = $manifest['icons'][$canonicalKey][$variant] ?? ($manifest['version'] ?? null);
+        $suffix = $dark ? '-dark' : '';
+        $path = "/assets/icons/modules/{$canonicalKey}{$suffix}.svg";
+        if (is_string($hash) && $hash !== '') {
+            $path .= '?v='.rawurlencode($hash);
+        }
+
+        return url($path);
+    }
+
+    /**
+     * Ensure any relative icon path (e.g. `/assets/games/president.svg` or
+     * `/flag-replacer/1f1f8-1f1fe.svg`) is returned as an absolute URL so
+     * mobile clients never have to guess the base host.
+     */
+    public static function normalizeIconUrl(?string $iconUrl): ?string
+    {
+        if ($iconUrl === null) {
+            return null;
+        }
+
+        $trimmed = trim($iconUrl);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
+            return $trimmed;
+        }
+
+        if (str_starts_with($trimmed, '//')) {
+            return 'https:'.$trimmed;
+        }
+
+        return url($trimmed);
+    }
+
+    private static function isGeneratedModuleIconUrl(?string $url): bool
+    {
+        return is_string($url) && str_contains($url, '/assets/icons/modules/');
+    }
+
     /**
      * The copy the site ships with. The row in `site_settings` overrides it;
      * the browser falls back to the same file (resources/data/site-popup.json)
@@ -114,15 +216,21 @@ class SiteSetting extends Model
             ? (! empty($raw['iconKey']) ? trim((string) $raw['iconKey']) : null)
             : ($base['iconKey'] ?? null);
 
+        $baseIconUrl = ! empty($base['iconUrl'])
+            ? (string) $base['iconUrl']
+            : (! empty($base['image']) ? (string) $base['image'] : null);
+        $baseIconUrlDark = ! empty($base['iconUrlDark'])
+            ? (string) $base['iconUrlDark']
+            : (! empty($base['imageDark']) ? (string) $base['imageDark'] : null);
+        $iconKeyChanged = ($base['iconKey'] ?? null) !== $iconKey;
+
         $iconUrl = null;
         if (array_key_exists('iconUrl', $raw) && ! empty($raw['iconUrl'])) {
             $iconUrl = trim((string) $raw['iconUrl']);
         } elseif (array_key_exists('image', $raw) && ! empty($raw['image'])) {
             $iconUrl = trim((string) $raw['image']);
-        } elseif (! empty($base['iconUrl'])) {
-            $iconUrl = (string) $base['iconUrl'];
-        } elseif (! empty($base['image'])) {
-            $iconUrl = (string) $base['image'];
+        } elseif ($baseIconUrl !== null && (! $iconKeyChanged || ! static::isGeneratedModuleIconUrl($baseIconUrl))) {
+            $iconUrl = $baseIconUrl;
         }
 
         $iconUrlDark = null;
@@ -130,11 +238,22 @@ class SiteSetting extends Model
             $iconUrlDark = ! empty($raw['iconUrlDark']) ? trim((string) $raw['iconUrlDark']) : null;
         } elseif (array_key_exists('imageDark', $raw)) {
             $iconUrlDark = ! empty($raw['imageDark']) ? trim((string) $raw['imageDark']) : null;
-        } elseif (! empty($base['iconUrlDark'])) {
-            $iconUrlDark = (string) $base['iconUrlDark'];
-        } elseif (! empty($base['imageDark'])) {
-            $iconUrlDark = (string) $base['imageDark'];
+        } elseif ($baseIconUrlDark !== null && (! $iconKeyChanged || ! static::isGeneratedModuleIconUrl($baseIconUrlDark))) {
+            $iconUrlDark = $baseIconUrlDark;
         }
+
+        if ($iconUrl === null && $iconKey !== null) {
+            $canonicalKey = static::resolveIconKey($iconKey);
+            if ($canonicalKey !== null) {
+                $iconUrl = static::moduleIconUrl($canonicalKey, false);
+                if ($iconUrlDark === null) {
+                    $iconUrlDark = static::moduleIconUrl($canonicalKey, true);
+                }
+            }
+        }
+
+        $iconUrl = static::normalizeIconUrl($iconUrl);
+        $iconUrlDark = static::normalizeIconUrl($iconUrlDark);
 
         $validGroupIds = array_column(static::navigationGroups(), 'id');
         $group = null;
@@ -209,6 +328,20 @@ class SiteSetting extends Model
                 if ($subTitle === '' && $subHref === '') {
                     continue;
                 }
+                $subIconKey = ! empty($sub['iconKey']) ? trim((string) $sub['iconKey']) : $iconKey;
+                $subIconUrl = ! empty($sub['iconUrl']) ? static::normalizeIconUrl(trim((string) $sub['iconUrl'])) : null;
+                $subIconUrlDark = ! empty($sub['iconUrlDark']) ? static::normalizeIconUrl(trim((string) $sub['iconUrlDark'])) : null;
+
+                if ($subIconUrl === null && $subIconKey !== null) {
+                    $canonicalSubKey = static::resolveIconKey($subIconKey);
+                    if ($canonicalSubKey !== null) {
+                        $subIconUrl = static::moduleIconUrl($canonicalSubKey, false);
+                        if ($subIconUrlDark === null) {
+                            $subIconUrlDark = static::moduleIconUrl($canonicalSubKey, true);
+                        }
+                    }
+                }
+
                 $subCategories[] = [
                     'id' => trim((string) ($sub['id'] ?? ($id.'_sub_'.$subIdx))),
                     'title' => $subTitle,
@@ -216,8 +349,9 @@ class SiteSetting extends Model
                     'href' => $subHref !== '' ? $subHref : $href,
                     'type' => in_array(($sub['type'] ?? 'web'), ['native', 'web', 'external'], true) ? (string) $sub['type'] : 'web',
                     'target' => trim((string) ($sub['target'] ?? ($subHref !== '' ? $subHref : $href))),
-                    'iconKey' => ! empty($sub['iconKey']) ? trim((string) $sub['iconKey']) : $iconKey,
-                    'iconUrl' => ! empty($sub['iconUrl']) ? trim((string) $sub['iconUrl']) : null,
+                    'iconKey' => $subIconKey,
+                    'iconUrl' => $subIconUrl,
+                    'iconUrlDark' => $subIconUrlDark,
                 ];
             }
         }

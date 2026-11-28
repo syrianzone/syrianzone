@@ -7,7 +7,7 @@ use App\Models\Candidate;
 use App\Models\Poll;
 use App\Services\Directories\SquareWebpImageService;
 use App\Services\TierlistLeaderboard;
-use Illuminate\Support\Facades\Http;
+use App\Support\Security\SafeRemoteImageFetcher;
 
 /**
  * Shared helpers for Polls / Tierlist MCP tools.
@@ -54,13 +54,11 @@ abstract class PollTool extends AuditedTool
             return $trimmed;
         }
 
-        $response = Http::timeout(15)
-            ->withUserAgent('Mozilla/5.0 (compatible; SyrianZoneBot/1.0)')
-            ->get($trimmed);
+        $bytes = app(SafeRemoteImageFetcher::class)->fetch($trimmed);
 
-        if ($response->successful() && $response->body() !== '') {
+        if ($bytes !== null) {
             $stored = app(SquareWebpImageService::class)->storeSquareWebpFromBytes(
-                $response->body(),
+                $bytes,
                 self::IMAGE_DIR,
                 $basename,
             );

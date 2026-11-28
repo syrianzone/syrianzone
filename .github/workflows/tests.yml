@@ -3,6 +3,7 @@ name: tests
 # The gate both deploy workflows run before they ship: one reusable workflow so
 # production and staging are checked by the same commands (scripts/gate.sh).
 on:
+  pull_request:
   workflow_call:
     inputs:
       ref:

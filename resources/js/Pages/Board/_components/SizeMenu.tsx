@@ -51,7 +51,7 @@ export function SizeMenu(props: {
         <button
           type="button"
           aria-label={`حجم ${props.name}`}
-          className="inline-flex min-h-6 min-w-6 items-center justify-center rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="inline-flex h-8 w-8 items-center justify-center rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Maximize2 className="h-3.5 w-3.5" />
         </button>

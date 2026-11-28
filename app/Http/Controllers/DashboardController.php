@@ -92,18 +92,29 @@ class DashboardController extends Controller
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,'.$user->id,
+            // Google OAuth is the sole login mechanism: accept the unchanged email
+            // submitted by the profile form, but reject attempts to change it so an
+            // account cannot pre-claim another Google user's email address.
+            'email' => [
+                'sometimes',
+                'nullable',
+                'email',
+                'max:255',
+                function (string $attribute, mixed $value, \Closure $fail) use ($user): void {
+                    if (is_string($value) && trim($value) !== '' && strcasecmp(trim($value), (string) $user->email) !== 0) {
+                        $fail('لا يمكن تغيير البريد الإلكتروني المرتبط بحساب Google');
+                    }
+                },
+            ],
         ], [
             'name.required' => 'اكتب الاسم',
             'name.string' => 'الاسم يجب أن يكون نصاً',
             'name.max' => 'الاسم يجب ألا يتجاوز 255 حرفاً',
-            'email.required' => 'اكتب البريد الإلكتروني',
             'email.email' => 'أدخل بريداً إلكترونياً صالحاً',
             'email.max' => 'البريد الإلكتروني يجب ألا يتجاوز 255 حرفاً',
-            'email.unique' => 'هذا البريد الإلكتروني مستخدم',
         ]);
 
-        $user->update($data);
+        $user->update(['name' => $data['name']]);
 
         if ($request->bearerToken() !== null) {
             return response()->json([

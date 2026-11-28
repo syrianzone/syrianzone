@@ -108,7 +108,7 @@ export default function GlobalCommandPalette() {
                                     inputRef.current?.focus();
                                 }}
                                 aria-label="مسح البحث"
-                                className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -117,7 +117,7 @@ export default function GlobalCommandPalette() {
                             type="button"
                             onClick={() => setOpen(false)}
                             aria-label="إغلاق نافذة البحث"
-                            className="inline-flex h-7 items-center rounded-lg border border-border bg-background px-2 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0"
+                            className="inline-flex h-8 items-center rounded-lg border border-border bg-background px-2 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0"
                         >
                             Esc
                         </button>

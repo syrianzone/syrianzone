@@ -128,7 +128,7 @@ export function EditPlaceDialog(props: {
           if (dirty || busy) e.preventDefault();
         }}
       >
-        <DialogHeader className="text-right">
+        <DialogHeader className="text-start">
           <DialogTitle>تعديل المكان</DialogTitle>
           <DialogDescription>غيّر بيانات المكان كما ستظهر على الخريطة العامة.</DialogDescription>
         </DialogHeader>

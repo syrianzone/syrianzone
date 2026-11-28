@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from '@inertiajs/react';
 import { ChevronLeft, Compass, ExternalLink, MapPin, Users } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
-import { GovernoratesIcon } from '@/Components/Icons/ProjectIcons';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { Card, CardContent } from '@/Components/ui/card';
 import { SyriaGovernoratesMap } from './_components/SyriaGovernoratesMap';
 import type { GovernoratesHubProps } from './_types';
@@ -24,73 +24,42 @@ export default function GovernoratesIndex({
 
     return (
         <MainLayout>
-            <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
-                {/* Breadcrumb */}
-                <nav aria-label="مسار التنقل" className="text-xs text-muted-foreground">
-                    <ol className="flex flex-wrap items-center gap-1.5">
-                        <li className="flex items-center gap-1.5">
-                            <Link href="/" className="transition-colors hover:text-foreground">
-                                الرئيسية
-                            </Link>
-                            <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        </li>
-                        <li>
-                            <span aria-current="page" className="font-medium text-foreground">
-                                محافظات سوريا
-                            </span>
-                        </li>
-                    </ol>
-                </nav>
-
-                {/* Header */}
-                <header className="space-y-4">
-                    <div className="flex items-start gap-3">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border bg-card shadow-xs">
-                            <GovernoratesIcon className="h-7 w-7" />
+            <PageHeader
+                title="محافظات سوريا الأربع عشرة"
+                description="دليل موحّد لمحافظات الجمهورية العربية السورية الـ 14 يجمع البيانات السكانية، المراكز الإدارية، المحافظين الحاليين، مواقيت الصلاة اليومية وإمساكية رمضان، خطوط المواصلات العامة، المعابر الحدودية، الأماكن والأرقام الخدمية لكل محافظة."
+                divider
+            />
+            <PageBody className="space-y-8">
+                {populationMeta && (
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 font-medium text-foreground">
+                            <Users className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                            <span>إجمالي السكان (تقدير {populationMeta.year ?? 'مرجعي'}):</span>
+                            <strong dir="ltr" className="font-mono tabular-nums">
+                                {formatNumber(populationMeta.total)}
+                            </strong>
+                            <span>نسمة</span>
                         </span>
-                        <div className="space-y-1.5">
-                            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                                محافظات سوريا الأربع عشرة
-                            </h1>
-                            <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                                دليل موحّد لمحافظات الجمهورية العربية السورية الـ 14 يجمع البيانات السكانية،
-                                المراكز الإدارية، المحافظين الحاليين، مواقيت الصلاة اليومية وإمساكية رمضان،
-                                خطوط المواصلات العامة، المعابر الحدودية، الأماكن والأرقام الخدمية لكل محافظة.
-                            </p>
-                        </div>
-                    </div>
-
-                    {populationMeta && (
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 font-medium text-foreground">
-                                <Users className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                                <span>إجمالي السكان (تقدير {populationMeta.year ?? 'مرجعي'}):</span>
-                                <strong dir="ltr" className="font-mono tabular-nums">
-                                    {formatNumber(populationMeta.total)}
-                                </strong>
-                                <span>نسمة</span>
-                            </span>
-                            {populationMeta.source_url && (
-                                <a
-                                    href={populationMeta.source_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4 hover:no-underline"
-                                >
-                                    <span>مصدر التقديرات السكانية</span>
-                                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                                </a>
-                            )}
-                            <Link
-                                href="/atlas"
+                        {populationMeta.source_url && (
+                            <a
+                                href={populationMeta.source_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4 hover:no-underline"
                             >
-                                <Compass className="h-3.5 w-3.5" aria-hidden="true" />
-                                <span>استعراض أطلس السكان الكامل</span>
-                            </Link>
-                        </div>
-                    )}
-                </header>
+                                <span>مصدر التقديرات السكانية</span>
+                                <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                            </a>
+                        )}
+                        <Link
+                            href="/atlas"
+                            className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4 hover:no-underline"
+                        >
+                            <Compass className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>استعراض أطلس السكان الكامل</span>
+                        </Link>
+                    </div>
+                )}
 
                 {/* Interactive SSR Syria Map */}
                 <SyriaGovernoratesMap svgMap={svgMap} populationById={populationById} />
@@ -228,7 +197,7 @@ export default function GovernoratesIndex({
                         )}
                     </p>
                 </footer>
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

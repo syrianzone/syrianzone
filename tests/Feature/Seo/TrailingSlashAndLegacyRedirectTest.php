@@ -33,7 +33,6 @@ test('trailing-slash GET and HEAD requests redirect 301 to the slash-less path',
 })->with([
     'syid' => ['/syid/', '/syid'],
     'syofficial' => ['/syofficial/', '/syofficial'],
-    'party' => ['/party/', '/party'],
     'tierlist' => ['/tierlist/', '/tierlist'],
     'compass' => ['/compass/', '/compass'],
     'sites' => ['/sites/', '/sites'],

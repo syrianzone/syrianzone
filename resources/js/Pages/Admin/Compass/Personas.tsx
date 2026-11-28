@@ -304,7 +304,7 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
             </div>
 
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
                     <DialogHeader className="text-right sm:text-right">
                         <DialogTitle className="text-right">
                             {editing ? `تعديل «${editing.name}»` : 'إضافة نمط'}

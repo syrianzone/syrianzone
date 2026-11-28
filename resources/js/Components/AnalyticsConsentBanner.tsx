@@ -43,7 +43,7 @@ export default function AnalyticsConsentBanner() {
                     className="flex-1"
                     onClick={() => setConsent('granted')}
                 >
-                    موافق
+                    أوافق
                 </Button>
                 <Button
                     type="button"
@@ -52,7 +52,7 @@ export default function AnalyticsConsentBanner() {
                     className="flex-1"
                     onClick={() => setConsent('denied')}
                 >
-                    رفض
+                    أرفض
                 </Button>
             </div>
 

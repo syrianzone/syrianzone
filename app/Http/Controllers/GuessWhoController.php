@@ -142,8 +142,8 @@ class GuessWhoController extends Controller
         ]);
 
         $stringToSign = $socketId . ':' . $channelName . ':' . $channelData;
-        $appSecret = env('REVERB_APP_SECRET') ?: env('PUSHER_APP_SECRET');
-        $appKey = env('REVERB_APP_KEY') ?: env('PUSHER_APP_KEY');
+        $appSecret = config('broadcasting.connections.reverb.secret') ?: config('broadcasting.connections.pusher.secret');
+        $appKey = config('broadcasting.connections.reverb.key') ?: config('broadcasting.connections.pusher.key');
 
         if (!$appSecret) {
             return $this->jsonError('لم يتم إعداد Reverb App Secret.', 500);

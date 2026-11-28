@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { notify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
-import type { PngDeclarations } from '@/Lib/exportElementAsPng';
+import BrandShareFrame, { MADAR_DISPLAY_FONT, MADAR_MONO_FONT } from '@/Components/share/BrandShareFrame';
+import ShareImageDialog from '@/Components/share/ShareImageDialog';
 
 // recharts draws nothing on the server (ResponsiveContainer has no size there)
 // and is the page's heaviest dependency, so the radar loads on demand inside
@@ -10,14 +11,11 @@ const PrioritiesRadar = React.lazy(() => import('./_components/PrioritiesRadar')
 import {
   RotateCcw,
   Share2,
-  Download,
   Copy,
   Link as LinkIcon,
   SlidersHorizontal,
   AlertTriangle,
   GitFork,
-  UserCheck,
-  Sparkles,
   ChevronDown,
   ChevronUp,
   Info,
@@ -33,10 +31,9 @@ import {
 } from 'lucide-react';
 import { Instagram } from '@/Components/ui/icons';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
-import { THEME_REGISTRY, getThemeById, hexToRgbString, shareCardPalette, useThemeId } from '@/Lib/theme';
+import { Card } from "@/Components/ui/card";
+import { THEME_REGISTRY, getThemeById, hexToRgbString, useThemeId } from '@/Lib/theme';
 import { Button } from "@/Components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 
 import {
   INITIAL_TOPICS,
@@ -66,134 +63,8 @@ const getShortTopicName = (id: string, fallback: string) => {
   return fallback;
 };
 
-const getStoryThemeStyles = (themeKey: string) => {
-  const theme = getThemeById(themeKey) || getThemeById('dark') || THEME_REGISTRY[2];
-  const priorities = theme.priorities || {
-    gradient: 'linear-gradient(135deg, #0b0f19 0%, #064e3b 50%, #022c22 100%)',
-    accentBg: 'bg-emerald-500/20 border-emerald-500/30',
-    accentText: 'text-emerald-400',
-    badgeBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300',
-    headerSubtitle: '#a7f3d0',
-    urlText: '#34d399',
-  };
-
-  // The card's gradient comes from the palette, not from the scheme: jasmine is
-  // a light theme with a deliberately dark card gradient, so only `light` draws
-  // the dark-on-light text set.
-  const palette = shareCardPalette(theme.id);
-  const isLight = palette.isLight;
-  const textPrimary = palette.textPrimary;
-  const textSecondary = palette.textSecondary;
-  const textMuted = palette.textMuted;
-  const cardBg = palette.cardBg;
-  const cardBorder = palette.cardBorder;
-
-  const headerTitle = palette.textPrimary;
-  const headerSubtitle = priorities.headerSubtitle;
-  const urlLabel = isLight ? '#64748b' : '#cbd5e1';
-  const urlText = priorities.urlText;
-
-  return {
-    gradient: priorities.gradient,
-    accentBg: priorities.accentBg,
-    accentText: priorities.accentText,
-    badgeBg: priorities.badgeBg,
-    primary: theme.primary,
-    primaryRgb: hexToRgbString(theme.primary),
-    textPrimary,
-    textSecondary,
-    textMuted,
-    cardBg,
-    cardBorder,
-    isLight,
-    headerTitle,
-    headerSubtitle,
-    urlLabel,
-    urlText
-  };
-};
-
 const BUDGET_LIMIT = 100;
 const MAX_SUBFILES_CHECKED = 5;
-
-/** The story card draws its own fixed palette, so the exporter's generic slate
- *  fallback would flatten it; this is the card's own modern-colour mapping. */
-const STORY_CARD_PNG_OPTIONS = {
-  scale: 3,
-  backgroundColor: null,
-  removeSelectors: ['.story-card-bg-blur'],
-  rootStyle: { color: '#ffffff', 'border-color': 'transparent' },
-  colorPolicy: (node: HTMLElement, style: CSSStyleDeclaration): PngDeclarations => {
-    const className = typeof node.className === 'string' ? node.className : '';
-    const modern = (value: string | undefined): value is string =>
-      !!value && (value.includes('oklch') || value.includes('oklab') || value.includes('color-mix'));
-    const declarations: PngDeclarations = {};
-
-    if (modern(style.backgroundColor)) {
-      if (className.includes('bg-emerald-500/20')) declarations['background-color'] = 'rgba(16, 185, 129, 0.2)';
-      else if (className.includes('bg-slate-900/60')) declarations['background-color'] = 'rgba(15, 23, 42, 0.6)';
-      else if (className.includes('bg-emerald-500/10')) declarations['background-color'] = 'rgba(16, 185, 129, 0.1)';
-      else if (className.includes('bg-slate-900/50')) declarations['background-color'] = 'rgba(15, 23, 42, 0.5)';
-      else if (className.includes('bg-slate-950/60')) declarations['background-color'] = 'rgba(2, 6, 23, 0.6)';
-      else if (className.includes('bg-emerald-400')) declarations['background-color'] = '#34d399';
-      else if (className.includes('bg-emerald-600')) declarations['background-color'] = '#059669';
-      else declarations['background-color'] = cleanStoryColor(style.backgroundColor);
-    }
-
-    if (modern(style.backgroundImage)) {
-      declarations['background-image'] = 'none';
-      declarations['background-color'] = '#10b981'; // solid fallback for the gradient progress bars
-    }
-
-    if (modern(style.background)) {
-      declarations.background = 'none';
-      declarations['background-color'] = '#022c22';
-    }
-
-    if (modern(style.color)) {
-      if (className.includes('text-emerald-400')) declarations.color = '#34d399';
-      else if (className.includes('text-emerald-300')) declarations.color = '#6ee7b7';
-      else if (className.includes('text-amber-400')) declarations.color = '#fbbf24';
-      else declarations.color = cleanStoryColor(style.color);
-    }
-
-    if (modern(style.borderColor)) {
-      if (className.includes('border-emerald-500/30')) declarations['border-color'] = 'rgba(16, 185, 129, 0.3)';
-      else if (className.includes('border-slate-700')) declarations['border-color'] = '#334155';
-      else if (className.includes('border-emerald-500/20')) declarations['border-color'] = 'rgba(16, 185, 129, 0.2)';
-      else if (className.includes('border-slate-800/60')) declarations['border-color'] = 'rgba(30, 41, 59, 0.6)';
-      else if (className.includes('border-slate-800/80')) declarations['border-color'] = 'rgba(30, 41, 59, 0.8)';
-      else declarations['border-color'] = cleanStoryColor(style.borderColor);
-    }
-
-    return declarations;
-  },
-};
-
-/** html2canvas cannot parse oklch/oklab/color-mix; map the card palette to hex. */
-function cleanStoryColor(color: string): string {
-  if (!color) return color;
-  if (!color.includes('oklch') && !color.includes('oklab') && !color.includes('color-mix')) return color;
-
-  if (color.includes('transparent')) {
-    if (color.includes('emerald') || color.includes('16, 185, 129') || color.includes('52, 211, 153')) return 'rgba(16, 185, 129, 0.15)';
-    if (color.includes('red') || color.includes('220, 38, 38')) return 'rgba(220, 38, 38, 0.05)';
-    return 'rgba(15, 23, 42, 0.5)';
-  }
-
-  if (color.includes('emerald-400') || color.includes('34d399') || color.includes('52, 211, 153')) return '#34d399';
-  if (color.includes('emerald-500') || color.includes('10b981') || color.includes('16, 185, 129')) return '#10b981';
-  if (color.includes('emerald-600') || color.includes('059669') || color.includes('5, 150, 105')) return '#059669';
-  if (color.includes('emerald-300') || color.includes('6ee7b7') || color.includes('110, 231, 183')) return '#6ee7b7';
-  if (color.includes('amber') || color.includes('fbbf24') || color.includes('251, 191, 36')) return '#fbbf24';
-  if (color.includes('red') || color.includes('dc2626') || color.includes('220, 38, 38')) return '#dc2626';
-  if (color.includes('slate-400') || color.includes('94a3b8') || color.includes('148, 163, 184')) return '#94a3b8';
-  if (color.includes('slate-700') || color.includes('334155') || color.includes('51, 65, 85')) return '#334155';
-  if (color.includes('slate-800') || color.includes('1e293b') || color.includes('30, 41, 59')) return '#1e293b';
-  if (color.includes('slate-900') || color.includes('0f172a') || color.includes('15, 23, 42')) return '#0f172a';
-  if (color.includes('slate-950') || color.includes('020617') || color.includes('2, 6, 23')) return '#020617';
-  return '#34d399';
-}
 
 export default function PrioritiesApp() {
   const [topics, setTopics] = useState<Topic[]>(INITIAL_TOPICS.map(t => ({ ...t })));
@@ -202,14 +73,10 @@ export default function PrioritiesApp() {
   const [showBanner, setShowBanner] = useState<boolean>(true);
   const activeTheme = useThemeId();
   const [isStoryModalOpen, setIsStoryModalOpen] = useState<boolean>(false);
-  const [storyTheme, setStoryTheme] = useState<string>(activeTheme);
-  const storyThemeStyles = getStoryThemeStyles(storyTheme);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set(['economy', 'justice', 'housing', 'security', 'politics', 'digital']));
 
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const storyCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -542,25 +409,7 @@ export default function PrioritiesApp() {
       notify.warning("⚠️ الرجاء موازنة الـ 100 نقطة كاملة أولاً لتتمكن من إنشاء بطاقة قصة إنستغرام جميلة ومكتملة!");
       return;
     }
-    setStoryTheme(activeTheme);
     setIsStoryModalOpen(true);
-  };
-
-  const downloadStoryAsImage = async () => {
-    const card = storyCardRef.current;
-    if (!card) return;
-
-    notify.success("⏳ يجري الآن تجميع وتوليد بطاقتك التخطيطية بجودة عالية الاستثنائية... الرجاء الانتظار.");
-
-    try {
-      // Imported on demand: html2canvas is heavy and only this button needs it.
-      const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
-      await exportElementAsPng(card, `Syrian-Consensus-Story-${Date.now()}.png`, STORY_CARD_PNG_OPTIONS);
-      notify.success("🎉 تم تحميل صورتك بنجاح! افتح قصتك في إنستغرام أو سناب شات وأضفها الآن لإشعال التوافق البنّاء.");
-      setIsStoryModalOpen(false);
-    } catch {
-      notify.warning("⚠️ حدث خطأ ما أثناء معالجة الصورة. يرجى محاولة التنزيل مرة أخرى.");
-    }
   };
 
   const sortedTopicsForCard = useMemo(() => {
@@ -988,129 +837,69 @@ export default function PrioritiesApp() {
         </div>
       </div>
 
-      <Dialog open={isStoryModalOpen} onOpenChange={setIsStoryModalOpen}>
-        <DialogContent className="bg-card text-card-foreground border-border shadow-2xl p-6 max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto flex flex-col items-center gap-0">
+      <ShareImageDialog
+        open={isStoryModalOpen}
+        onOpenChange={setIsStoryModalOpen}
+        title="مشاركة بطاقة الأولويات"
+        description="معاينة بطاقة أولوياتك الوطنية بصيغة قصة أو منشور."
+        filename={`syrian-priorities-${Date.now()}.png`}
+        shareTitle={persona?.title ?? 'أولوياتي لمستقبل سوريا'}
+        allowFormatToggle
+        defaultFormat="story"
+        renderCard={({ themeId, format, cardRef }) => {
+          const isStory = format === 'story';
+          const RADAR_ORDER = ['economy', 'justice', 'housing', 'security', 'politics', 'digital'];
+          const SIZE = isStory ? 96 : 92;
+          const cx = SIZE / 2;
+          const cy = SIZE / 2;
+          const R = isStory ? 38 : 36;
+          const n = RADAR_ORDER.length;
+          const pointsMap: Record<string, number> = {};
+          topics.forEach((t) => { pointsMap[t.id] = t.points; });
+          const angle = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
+          const rings = [0.33, 0.66, 1.0];
+          const ringPath = (ratio: number) =>
+            RADAR_ORDER.map((_, i) => {
+              const a = angle(i);
+              const r = R * ratio;
+              return `${i === 0 ? 'M' : 'L'} ${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
+            }).join(' ') + ' Z';
+          const dataPath =
+            RADAR_ORDER.map((id, i) => {
+              const ratio = (pointsMap[id] ?? 0) / 100;
+              const a = angle(i);
+              const r = R * ratio;
+              return `${i === 0 ? 'M' : 'L'} ${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
+            }).join(' ') + ' Z';
 
-            <DialogHeader className="w-full pb-3 pe-8 mb-4 border-b border-border">
-              <DialogTitle className="font-extrabold text-foreground text-base flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" aria-hidden="true" />
-                تصدير بطاقة القصة (Instagram Story)
-              </DialogTitle>
-              <DialogDescription className="sr-only">
-                معاينة بطاقة القصة مع اختيار لونها وتنزيلها كصورة.
-              </DialogDescription>
-            </DialogHeader>
+          const topPriorities = sortedTopicsForCard.slice(0, 3);
 
-            <div className="w-full flex justify-center py-2 overflow-x-auto">
+          return (
+            <BrandShareFrame
+              ref={cardRef}
+              id="story-card-canvas"
+              themeId={themeId}
+              moduleLabel="موازنة الأولويات"
+              shareUrl="syrian.zone/priorities"
+              format={format}
+            >
+              {(tokens) => {
+                const gridColor = tokens.isDark ? 'rgba(238,240,255,0.18)' : 'rgba(23,26,46,0.14)';
+                const trackBg = tokens.isDark ? 'rgba(238,240,255,0.14)' : 'rgba(23,26,46,0.09)';
 
-              <div
-                ref={storyCardRef}
-                id="story-card-canvas"
-                dir="rtl"
-                className="w-[360px] h-[640px] relative overflow-hidden text-right select-none rounded-2xl flex flex-col justify-between p-6 shadow-2xl"
-                style={{
-                  background: storyThemeStyles.gradient,
-                  color: storyThemeStyles.textPrimary,
-                  fontFamily: 'IBM Plex Sans Arabic, sans-serif'
-                }}
-              >
-                <div
-                  className="story-card-bg-blur absolute top-0 right-0 w-44 h-44 rounded-full blur-[60px] pointer-events-none"
-                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb}, 0.15)` }}
-                ></div>
-                <div
-                  className="story-card-bg-blur absolute bottom-12 left-0 w-48 h-48 rounded-full blur-[80px] pointer-events-none"
-                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb}, 0.05)` }}
-                ></div>
-
-                <div
-                  className="flex items-center justify-between pt-2 pb-2 border-b"
-                  style={{ borderBottomColor: storyThemeStyles.cardBorder }}
-                >
-                  <div className="flex items-center gap-2">
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 22 : 16 }}>
+                    {/* 1. Hero: Radar + Persona title */}
                     <div
                       style={{
-                        width: '32px',
-                        height: '32px',
-                        minWidth: '32px',
-                        minHeight: '32px',
-                        borderRadius: '8px',
                         display: 'flex',
+                        flexDirection: isStory ? 'column' : 'row',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '6px',
-                        border: '1px solid',
-                        overflow: 'hidden',
-                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb}, 0.2)`,
-                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb}, 0.3)`
+                        gap: isStory ? 10 : 14,
+                        textAlign: isStory ? 'center' : 'right',
                       }}
                     >
-                      <img src="/assets/ar.svg" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} alt="علم سوريا" />
-                    </div>
-                    <div>
-                      <h4 className="text-[11px] font-black" style={{ color: storyThemeStyles.headerTitle }}>المساحة السورية</h4>
-                      <p className="text-[7.5px]" style={{ color: storyThemeStyles.headerSubtitle }}>بوصلة أولويات العمل بعد التحرير</p>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', direction: 'ltr' }}>
-                    <div style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px', borderRadius: '6px', backgroundColor: '#ffffff', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg style={{ width: '100%', height: '100%', display: 'block' }} viewBox="0 0 31 31" shapeRendering="crispEdges">
-                        <path stroke="#000000" d="M1 1.5h7m2 0h1m3 0h1m2 0h4m2 0h7M1 2.5h1m5 0h1m1 0h1m1 0h3m1 0h4m1 0h1m2 0h1m5 0h1M1 3.5h1m1 0h3m1 0h1m6 0h2m1 0h1m2 0h2m1 0h1m1 0h3m1 0h1M1 4.5h1m1 0h3m1 0h1m2 0h1m3 0h3m2 0h3m1 0h1m1 0h3m1 0h1M1 5.5h1m1 0h3m1 0h1m1 0h5m1 0h1m2 0h3m2 0h1m1 0h3m1 0h1M1 6.5h1m5 0h1m2 0h1m2 0h2m4 0h2m2 0h1m5 0h1M1 7.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 8.5h3m1 0h2m1 0h4M1 9.5h1m1 0h1m1 0h1m1 0h1m3 0h3m1 0h2m1 0h1m6 0h1m2 0h1M1 10.5h1m2 0h1m1 0h1m2 0h4m2 0h2m1 0h2m1 0h3m2 0h1m2 0h1M4 11.5h2m1 0h1m2 0h2m2 0h1m3 0h2m3 0h3m1 0h3M1 12.5h1m1 0h1m2 0h1m1 0h2m1 0h2m3 0h1m1 0h1m2 0h1m2 0h2m2 0h1M2 13.5h2m1 0h3m4 0h2m3 0h2m1 0h4m2 0h1m1 0h2M1 14.5h6m1 0h4m2 0h1m1 0h2m4 0h2m2 0h1m2 0h1M3 15.5h1m3 0h1m1 0h1m1 0h2m2 0h3m1 0h1m2 0h1m3 0h1m1 0h2M1 16.5h3m2 0h1m1 0h1m1 0h2m2 0h2m1 0h8m1 0h1m1 0h1M1 17.5h3m3 0h3m1 0h2m2 0h2m1 0h1m2 0h1m1 0h2m1 0h1m1 0h2M2 18.5h3m1 0h1m1 0h2m3 0h1m1 0h2m1 0h2m1 0h3m2 0h2m1 0h1M1 19.5h1m3 0h4m1 0h1m1 0h1m1 0h1m6 0h2m1 0h2m2 0h2M2 20.5h3m3 0h2m3 0h1m2 0h1m1 0h1m2 0h6m1 0h1M1 21.5h1m1 0h1m3 0h1m1 0h1m1 0h1m5 0h2m1 0h6M9 22.5h1m1 0h1m1 0h2m1 0h2m2 0h2m3 0h1m1 0h3M1 23.5h7m3 0h2m2 0h3m1 0h3m1 0h1m1 0h2m1 0h2M1 24.5h1m5 0h1m5 0h3m1 0h3m1 0h1m3 0h2m1 0h2M1 25.5h1m1 0h3m1 0h1m1 0h1m5 0h4m2 0h5m2 0h1M1 26.5h1m1 0h3m1 0h1m2 0h1m2 0h1m1 0h2m1 0h1m2 0h1m3 0h1m1 0h1M1 27.5h1m1 0h3m1 0h1m1 0h1m1 0h2m2 0h1m4 0h1m1 0h1m1 0h3m2 0h1M1 28.5h1m5 0h1m2 0h1m2 0h1m4 0h6m1 0h1m2 0h1M1 29.5h7m1 0h2m2 0h1m1 0h1m2 0h1m1 0h2m3 0h2m1 0h2" />
-                      </svg>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                      <span className="text-[7px] font-extrabold leading-tight" style={{ color: storyThemeStyles.urlLabel }}>صمّم بروفايلك:</span>
-                      <span className="text-[8px] font-black" style={{ color: storyThemeStyles.urlText }}>syrian.zone/priorities</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ textAlign: 'center', margin: '8px 0', padding: '0 8px' }}>
-                  {(() => {
-                    const RADAR_ORDER = ['economy', 'justice', 'housing', 'security', 'politics', 'digital'];
-                    const SIZE = 80;
-                    const cx = SIZE / 2;
-                    const cy = SIZE / 2;
-                    const R = 30; // max radius - leaves 10px padding each side
-                    const n = RADAR_ORDER.length;
-                    const accentColor = storyThemeStyles.urlText;
-                    const gridColor = storyThemeStyles.isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)';
-
-                    const pointsMap: Record<string, number> = {};
-                    topics.forEach(t => { pointsMap[t.id] = t.points; });
-                    const maxVal = 100;
-
-                    // angle for each axis: start at top (-90°), go clockwise
-                    const angle = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
-
-                    const rings = [0.25, 0.5, 0.75, 1.0];
-
-                    const ringPath = (ratio: number) => {
-                      return RADAR_ORDER.map((_, i) => {
-                        const a = angle(i);
-                        const r = R * ratio;
-                        const x = cx + r * Math.cos(a);
-                        const y = cy + r * Math.sin(a);
-                        return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
-                      }).join(' ') + ' Z';
-                    };
-
-                    const dataPath = RADAR_ORDER.map((id, i) => {
-                      const val = pointsMap[id] ?? 0;
-                      const ratio = val / maxVal;
-                      const a = angle(i);
-                      const r = R * ratio;
-                      const x = cx + r * Math.cos(a);
-                      const y = cy + r * Math.sin(a);
-                      return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
-                    }).join(' ') + ' Z';
-
-                    return (
-                      <div
-                        dir="ltr"
-                        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '6px' }}
-                      >
+                      <div dir="ltr" style={{ flexShrink: 0 }}>
                         <svg
                           width={SIZE}
                           height={SIZE}
@@ -1124,7 +913,7 @@ export default function PrioritiesApp() {
                               d={ringPath(ratio)}
                               fill="none"
                               stroke={gridColor}
-                              strokeWidth={ratio === 1.0 ? 0.8 : 0.5}
+                              strokeWidth={ratio === 1.0 ? 1.1 : 0.6}
                             />
                           ))}
                           {RADAR_ORDER.map((_, i) => {
@@ -1137,212 +926,144 @@ export default function PrioritiesApp() {
                                 x2={cx + R * Math.cos(a)}
                                 y2={cy + R * Math.sin(a)}
                                 stroke={gridColor}
-                                strokeWidth={0.5}
+                                strokeWidth={0.6}
                               />
                             );
                           })}
                           <path
                             d={dataPath}
-                            fill={accentColor}
-                            fillOpacity={0.25}
-                            stroke={accentColor}
-                            strokeWidth={1.5}
+                            fill={tokens.primary}
+                            fillOpacity={0.22}
+                            stroke={tokens.primary}
+                            strokeWidth={2}
                             strokeLinejoin="round"
                           />
                           {RADAR_ORDER.map((id, i) => {
-                            const val = pointsMap[id] ?? 0;
-                            const ratio = val / maxVal;
+                            const ratio = (pointsMap[id] ?? 0) / 100;
                             const a = angle(i);
                             return (
                               <circle
                                 key={id}
                                 cx={cx + R * ratio * Math.cos(a)}
                                 cy={cy + R * ratio * Math.sin(a)}
-                                r={1.8}
-                                fill={accentColor}
+                                r={2.5}
+                                fill={tokens.node}
                               />
                             );
                           })}
                         </svg>
                       </div>
-                    );
-                  })()}
 
-                  <div>
-                    <span
-                      className="text-[8px] font-bold px-2 py-0.5 rounded-full uppercase border"
-                      style={{
-                        color: storyThemeStyles.urlText,
-                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb}, 0.1)`,
-                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb}, 0.2)`
-                      }}
-                    >
-                      {persona?.tag}
-                    </span>
-                  </div>
-                  <h2 className="text-sm font-black mt-1 leading-tight" style={{ color: storyThemeStyles.textPrimary }}>{persona?.title}</h2>
-                  <p className="text-[8px] mt-1 leading-relaxed px-1" style={{ color: storyThemeStyles.textSecondary }}>{persona?.desc}</p>
-                </div>
-
-                <div
-                  className="space-y-1 rounded-xl p-3 my-1 backdrop-blur-sm border"
-                  style={{
-                    backgroundColor: storyThemeStyles.cardBg,
-                    borderColor: storyThemeStyles.cardBorder
-                  }}
-                >
-                  <h3
-                    className="text-[8.5px] font-extrabold pb-1 flex items-center gap-1.5 border-b"
-                    style={{
-                      color: storyThemeStyles.textSecondary,
-                      borderBottomColor: storyThemeStyles.cardBorder
-                    }}
-                  >
-                    <span className="w-1 h-1 rounded-full" style={{ backgroundColor: storyThemeStyles.urlText }}></span>
-                    توزيع موازنة نقاط الاهتمام المائة بالكامل (النسب الستة):
-                  </h3>
-                  <div className="space-y-1.5">
-                    {sortedTopicsForCard.map(topic => {
-                      const pct = topic.points;
-                      return (
-                        <div key={topic.id} className="space-y-0.5">
-                          <div className="flex items-center justify-between text-[7.5px] font-bold" style={{ color: storyThemeStyles.textPrimary }}>
-                            <span className="truncate max-w-[210px]" style={{ display: 'inline-block', direction: 'rtl', textAlign: 'right' }}>
-                              {TOPIC_ICONS[topic.id] && (
-                                <span style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '6px', width: '10px', height: '10px' }}>
-                                  {React.createElement(TOPIC_ICONS[topic.id], {
-                                    size: 10,
-                                    style: { color: storyThemeStyles.urlText, display: 'block' }
-                                  })}
-                                </span>
-                              )}
-                              <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>{topic.name}</span>
-                            </span>
-                            <span style={{ color: storyThemeStyles.urlText }}>%{pct}</span>
-                          </div>
-                          <div
-                            className="w-full h-1 rounded-full overflow-hidden border"
+                      <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontFamily: MADAR_DISPLAY_FONT,
+                            fontSize: isStory ? 26 : 24,
+                            fontWeight: 900,
+                            lineHeight: 1.2,
+                            color: tokens.ink,
+                          }}
+                        >
+                          {persona?.title ?? 'أولوياتي لمستقبل سوريا'}
+                        </div>
+                        {persona?.desc && (
+                          <p
                             style={{
-                              backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(0, 0, 0, 0.4)',
-                              borderColor: storyThemeStyles.cardBorder
+                              fontSize: 12.5,
+                              lineHeight: 1.5,
+                              margin: '6px 0 0',
+                              color: tokens.muted,
                             }}
                           >
-                            <div className="h-full" style={{ width: `${pct}%`, backgroundColor: storyThemeStyles.urlText }}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                            {persona.desc}
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                {selectedSubFilesData.length > 0 && (
-                  <div
-                    className="rounded-xl p-2 my-0.5 border text-right"
-                    style={{
-                      backgroundColor: storyThemeStyles.isLight ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.25)',
-                      borderColor: storyThemeStyles.cardBorder,
-                      direction: 'rtl'
-                    }}
-                  >
-                    <h4
-                      className="text-[7.5px] font-extrabold pb-0.5 mb-1 border-b"
+                    {/* 2. Top 3 priorities */}
+                    <div
                       style={{
-                        color: storyThemeStyles.textSecondary,
-                        borderBottomColor: storyThemeStyles.cardBorder
+                        borderRadius: 14,
+                        backgroundColor: tokens.card,
+                        border: `1px solid ${tokens.border}`,
+                        padding: isStory ? '16px 16px' : '14px 16px',
                       }}
                     >
-                      الملفات الفرعية الأكثر إلحاحاً:
-                    </h4>
-                    <div className="space-y-1 max-h-[85px] overflow-hidden">
-                      {selectedSubFilesData.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 text-[7px] leading-tight font-bold justify-start" style={{ direction: 'rtl' }}>
-                          <span
-                            className="inline-block px-1 rounded-sm text-[6px] font-black shrink-0"
-                            style={{
-                              backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb}, 0.2)`,
-                              color: storyThemeStyles.urlText,
-                              border: `1px solid rgba(${storyThemeStyles.primaryRgb}, 0.35)`
-                            }}
-                          >
-                            {item.topicName}
-                          </span>
-                          <span style={{ color: storyThemeStyles.textPrimary }}>
-                            {item.name}
-                          </span>
-                        </div>
-                      ))}
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: tokens.muted,
+                          marginBottom: 12,
+                        }}
+                      >
+                        أعلى الأولويات
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 14 : 12 }}>
+                        {topPriorities.map((topic) => (
+                          <div key={topic.id}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 10,
+                                marginBottom: 6,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: 13.5,
+                                  fontWeight: 800,
+                                  color: tokens.ink,
+                                  lineHeight: 1.3,
+                                }}
+                              >
+                                {topic.name}
+                              </span>
+                              <span
+                                dir="ltr"
+                                style={{
+                                  fontFamily: MADAR_MONO_FONT,
+                                  fontSize: 14,
+                                  fontWeight: 800,
+                                  color: tokens.primary,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {topic.points}%
+                              </span>
+                            </div>
+                            <div
+                              style={{
+                                width: '100%',
+                                height: 8,
+                                borderRadius: 999,
+                                backgroundColor: trackBg,
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  height: '100%',
+                                  width: `${topic.points}%`,
+                                  borderRadius: 999,
+                                  backgroundColor: tokens.primary,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                )}
-
-                <div className="text-center pb-2">
-                  <p className="text-[7.5px]" style={{ color: storyThemeStyles.textMuted }}>المساحة السورية - مشروع سوري مفتوح المصدر</p>
-                </div>
-
-              </div>
-
-            </div>
-
-            <div className="w-full mt-4 mb-2" dir="rtl">
-              <p id="priorities-story-theme-label" className="block text-xs font-bold text-muted-foreground text-right mb-2">
-                اختر لون المظهر للبطاقة:
-              </p>
-              <div role="group" aria-labelledby="priorities-story-theme-label" className="flex flex-wrap justify-start gap-2">
-                {THEME_REGISTRY.filter(t => t.id !== 'system').map((theme) => {
-                  const themeKey = theme.id;
-                  const colors = {
-                    primary: theme.primary,
-                  };
-                  const isActive = storyTheme === themeKey;
-                  const themeMeta = {
-                    ar: theme.shortNameAr || theme.nameAr,
-                    emoji: theme.emoji
-                  };
-
-                  return (
-                    <button
-                      key={themeKey}
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() => setStoryTheme(themeKey)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${isActive
-                        ? 'border-transparent text-white shadow-sm scale-105'
-                        : 'bg-card text-muted-foreground border-border hover:bg-accent/50 hover:text-foreground'
-                        }`}
-                      style={{
-                        backgroundColor: isActive ? colors.primary : undefined,
-                      }}
-                    >
-                      <span className="w-2.5 h-2.5 rounded-full" aria-hidden="true" style={{ backgroundColor: colors.primary }}></span>
-                      <span>{themeMeta.emoji} {themeMeta.ar}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="w-full grid grid-cols-2 gap-3 mt-5">
-              <Button
-                onClick={() => setIsStoryModalOpen(false)}
-                variant="outline"
-                className="w-full py-3"
-              >
-                إلغاء وإغلاق
-              </Button>
-              <Button
-                onClick={downloadStoryAsImage}
-                className="w-full py-3 text-white font-bold transition-colors shadow-md border-none flex items-center justify-center gap-2"
-                style={{
-                  backgroundColor: storyThemeStyles.primary,
-                }}
-              >
-                <Download className="w-4 h-4" />
-                حفظ وتنزيل الصورة
-              </Button>
-            </div>
-
-        </DialogContent>
-      </Dialog>
+                );
+              }}
+            </BrandShareFrame>
+          );
+        }}
+      />
     </div>
   );
 }

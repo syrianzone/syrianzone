@@ -1,12 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import { Button } from '@/Components/ui/button';
-import {
-    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/Components/ui/dialog';
-import { Download, Loader2, Share2 } from 'lucide-react';
-import { notify } from '@/Lib/notify';
-import { isShareCancelled, useCanShare } from '@/Lib/webShare';
+import BrandShareFrame, { MADAR_DISPLAY_FONT } from '@/Components/share/BrandShareFrame';
+import ShareImageDialog from '@/Components/share/ShareImageDialog';
 import Countdown from './Countdown';
 import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
 import StateBadge from '@/Domain/promises/StateBadge';
@@ -14,12 +8,11 @@ import { formatDate } from '@/Domain/promises/format';
 import type { PromiseDetailData } from '@/Domain/promises/types';
 
 /**
- * A square card with today's count, rendered in the browser so it is never
- * stale (pre-rendered OG images would freeze the number). The exporter is
- * loaded on demand: html2canvas is heavy and most visitors never share.
+ * Square Madar share card with today's live promise count, rendered in the
+ * browser so the counter is never stale.
  *
- * Nothing inside the captured node may use `truncate`: html2canvas lays out
- * ellipsised right-to-left text wrongly and clips Arabic names.
+ * Nothing inside the captured node uses `truncate`: html2canvas lays out
+ * ellipsised RTL text wrongly and clips Arabic names.
  */
 export default function ShareCardDialog({ promise, open, onOpenChange }: {
     promise: PromiseDetailData;
@@ -27,62 +20,11 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
     onOpenChange: (open: boolean) => void;
 }) {
     const { seo } = usePage().props as { seo?: { canonical?: string } };
-    const frameRef = useRef<HTMLDivElement>(null);
-    const [busy, setBusy] = useState<'download' | 'share' | null>(null);
-    const [preparedFile, setPreparedFile] = useState<File | null>(null);
-    const generation = useRef(0);
-    const exporting = useRef(false);
     const filename = `promise-${promise.number}.png`;
-    const supportsImages = useCanShare(() => ({ files: [new File([], filename, { type: 'image/png' })] }));
-
-    useEffect(() => {
-        setPreparedFile(null);
-        setBusy(null);
-        exporting.current = false;
-        return () => { generation.current += 1; };
-    }, [open, promise]);
 
     // The canonical URL comes from the server (config('seo.base_url')), so the
-    // card prints the public address even when exported from a local or
-    // staging host.
-    const shareUrl = (seo?.canonical ?? `/promises/${promise.number}`).replace(/^https?:\/\//, '');
-
-    const exportImage = async (action: 'download' | 'share') => {
-        const frame = frameRef.current;
-        if (!frame || exporting.current) return;
-        exporting.current = true;
-        const current = generation.current;
-        const isCurrent = () => current === generation.current && frameRef.current === frame && frame.isConnected;
-        setBusy(action);
-        try {
-            let file = preparedFile;
-            if (!file) {
-                const { renderElementAsPngFile } = await import('@/Lib/exportElementAsPng');
-                if (!isCurrent()) return;
-                file = await renderElementAsPngFile(frame, filename);
-                if (!isCurrent()) return;
-                setPreparedFile(file);
-            }
-            if (action === 'download') {
-                const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
-                if (isCurrent()) await exportElementAsPng(file, filename);
-            } else {
-                try {
-                    await navigator.share({ files: [file] });
-                } catch (error) {
-                    if (!preparedFile && error instanceof DOMException && error.name === 'NotAllowedError') return;
-                    throw error;
-                }
-            }
-        } catch (error) {
-            if (isCurrent() && !isShareCancelled(error)) notify.error(action === 'share' ? 'تعذّرت مشاركة الصورة' : 'تعذّر إنشاء الصورة');
-        } finally {
-            if (isCurrent()) {
-                exporting.current = false;
-                setBusy(null);
-            }
-        }
-    };
+    // card prints the public address even when exported from a local host.
+    const shareUrl = (seo?.canonical ?? `syrian.zone/promises/${promise.number}`).replace(/^https?:\/\//, '');
 
     const coSpeakers = promise.coSpeakers ?? [];
     const allSpeakers = [promise.speaker, ...coSpeakers];
@@ -90,72 +32,123 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
     const speakerTitles = allSpeakers.map((s) => s.title).filter(Boolean).join(' · ');
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent dir="rtl" className="max-h-[92vh] overflow-y-auto sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>صورة للمشاركة</DialogTitle>
-                    <DialogDescription>صورة بعدّاد اليوم لنشرها على وسائل التواصل.</DialogDescription>
-                </DialogHeader>
-
-                {/* The captured node is this padded frame rather than the rounded
-                    card, so the image's corners take the theme background instead
-                    of the exporter's fixed fill. */}
-                <div id={`promise-share-${promise.number}`} ref={frameRef} dir="rtl" className="mx-auto w-full max-w-sm bg-background p-3">
-                    <div className="flex aspect-square flex-col justify-between gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground">
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex min-w-0 items-center gap-2.5">
-                                {coSpeakers.length > 0 ? (
-                                    <div className="flex shrink-0 items-center">
-                                        {allSpeakers.map((s, idx) => (
-                                            <SpeakerAvatar
-                                                key={s.id ?? idx}
-                                                name={s.name}
-                                                image={s.image}
-                                                size={40}
-                                                className={`ring-2 ring-card${idx > 0 ? ' -ms-2.5' : ''}`}
-                                            />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={44} />
-                                )}
-                                <div className="min-w-0">
-                                    <p className="text-sm font-bold leading-snug">{speakerNames}</p>
-                                    {speakerTitles && (
-                                        <p className="text-xs leading-snug text-muted-foreground">{speakerTitles}</p>
+        <ShareImageDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            title="صورة للمشاركة"
+            description="صورة بعدّاد اليوم لنشرها على وسائل التواصل."
+            filename={filename}
+            shareTitle={promise.title}
+            defaultFormat="square"
+            previewMaxWidth={440}
+            renderCard={({ themeId, cardRef }) => (
+                <BrandShareFrame
+                    ref={cardRef}
+                    id={`promise-share-${promise.number}`}
+                    themeId={themeId}
+                    moduleLabel="عداد الوعود"
+                    shareUrl={shareUrl}
+                    format="square"
+                >
+                    {(tokens) => (
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                gap: 18,
+                                color: tokens.ink,
+                            }}
+                        >
+                            {/* 1. Speaker + verdict badge */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                    {coSpeakers.length > 0 ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                                            {allSpeakers.map((s, idx) => (
+                                                <SpeakerAvatar
+                                                    key={s.id ?? idx}
+                                                    name={s.name}
+                                                    image={s.image}
+                                                    size={42}
+                                                    className={`ring-2 ring-card${idx > 0 ? ' -ms-2.5' : ''}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={46} />
                                     )}
+                                    <div style={{ minWidth: 0 }}>
+                                        <p style={{ fontSize: 14.5, fontWeight: 800, lineHeight: 1.3, color: tokens.ink, margin: 0 }}>
+                                            {speakerNames}
+                                        </p>
+                                        {speakerTitles && (
+                                            <p style={{ fontSize: 12, lineHeight: 1.4, color: tokens.muted, margin: '2px 0 0' }}>
+                                                {speakerTitles}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                <StateBadge state={promise.state} keptLate={promise.keptLate} />
+                            </div>
+
+                            {/* 2. Hero headline */}
+                            <p
+                                style={{
+                                    fontFamily: MADAR_DISPLAY_FONT,
+                                    fontSize: 24,
+                                    fontWeight: 900,
+                                    lineHeight: 1.35,
+                                    color: tokens.ink,
+                                    margin: 0,
+                                }}
+                            >
+                                {promise.title}
+                            </p>
+
+                            {/* 3. Focal counter card */}
+                            <div
+                                style={{
+                                    borderRadius: 14,
+                                    backgroundColor: tokens.card,
+                                    border: `1px solid ${tokens.border}`,
+                                    padding: '16px 18px 14px',
+                                }}
+                            >
+                                <Countdown
+                                    state={promise.state}
+                                    counter={promise.counter}
+                                    deadlineDate={promise.deadlineDate}
+                                    statementDate={promise.statementDate}
+                                    size="lg"
+                                />
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: 8,
+                                        borderTop: `1px solid ${tokens.border}`,
+                                        marginTop: 14,
+                                        paddingTop: 10,
+                                        fontSize: 12,
+                                        color: tokens.muted,
+                                    }}
+                                >
+                                    <span>
+                                        {promise.deadlineDate
+                                            ? `الموعد ${formatDate(promise.deadlineDate)}`
+                                            : `أُطلق ${formatDate(promise.statementDate)}`}
+                                    </span>
+                                    <span style={{ fontWeight: 700, color: tokens.primary }}>
+                                        وعد #{promise.number}
+                                    </span>
                                 </div>
                             </div>
-                            <StateBadge state={promise.state} keptLate={promise.keptLate} />
                         </div>
-                        <p className="text-lg font-extrabold leading-snug">{promise.title}</p>
-                        <Countdown state={promise.state} counter={promise.counter} deadlineDate={promise.deadlineDate} statementDate={promise.statementDate} size="lg" />
-                        <div className="flex items-end justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
-                            <span>
-                                {promise.deadlineDate ? `الموعد ${formatDate(promise.deadlineDate)}` : `أُطلق ${formatDate(promise.statementDate)}`}
-                            </span>
-                            <span className="text-end font-semibold text-foreground">
-                                عداد الوعود
-                                <br />
-                                <span dir="ltr">{shareUrl}</span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <DialogFooter className="gap-2 sm:justify-start">
-                    {supportsImages && (
-                        <Button onClick={() => exportImage('share')} disabled={busy !== null} className="gap-2" aria-busy={busy === 'share'}>
-                            {busy === 'share' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Share2 className="h-4 w-4" aria-hidden="true" />}
-                            {busy === 'share' && !preparedFile ? 'جارٍ تجهيز الصورة…' : preparedFile ? 'جاهزة للمشاركة, شارك!' : 'مشاركة الصورة'}
-                        </Button>
                     )}
-                    <Button variant={supportsImages ? 'outline' : 'default'} onClick={() => exportImage('download')} disabled={busy !== null} className="gap-2" aria-busy={busy === 'download'}>
-                        {busy === 'download' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
-                        تحميل الصورة
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </BrandShareFrame>
+            )}
+        />
     );
 }

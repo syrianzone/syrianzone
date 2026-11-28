@@ -4,10 +4,12 @@ import { BookOpen, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/Components/ui/dialog';
+import { PageShell, type ShellWidth } from '@/Components/layout';
 import { GameHeaderActions } from './gameHeaderActions';
 import HeaderButton from './HeaderButton';
 import { gameBySlug } from '../../../Domain/games/games';
@@ -20,11 +22,10 @@ interface Props {
    */
   slug: string;
   /**
-   * Tailwind max-width for the page column. A single square board is happy in
-   * `max-w-3xl`, but Solitaire has to fit seven columns *and* a fan lane beside
-   * each one, so it asks for more.
+   * Canonical page column width: a single square board fits in `narrow` (48rem),
+   * while card tables and Solitaire use `default` (76rem).
    */
-  width?: string;
+  width?: Extract<ShellWidth, 'narrow' | 'default'>;
   /** The game's rules, shown behind a "القوانين" button when supplied. */
   rules?: React.ReactNode;
   /**
@@ -42,7 +43,7 @@ interface Props {
 // consistent navigation for free.
 export default function GameShell({
   slug,
-  width = 'max-w-3xl',
+  width = 'narrow',
   rules,
   fit,
   children,
@@ -63,10 +64,9 @@ export default function GameShell({
       dir="rtl"
     >
       <GameHeaderActions.Provider value={actions}>
-        <div
-          className={`container mx-auto ${width} px-4 ${
-            fit ? 'flex min-h-0 flex-1 flex-col py-3' : 'py-6'
-          }`}
+        <PageShell
+          width={width}
+          className={fit ? 'flex min-h-0 flex-1 flex-col py-3' : 'py-6'}
         >
           {!focus && (
             <Link
@@ -101,9 +101,10 @@ export default function GameShell({
                   <DialogTrigger asChild>
                     <HeaderButton icon={BookOpen}>القوانين</HeaderButton>
                   </DialogTrigger>
-                  <DialogContent dir="rtl" className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+                  <DialogContent dir="rtl" className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
                     <DialogHeader className="text-start sm:text-start">
                       <DialogTitle>قوانين {title}</DialogTitle>
+                      <DialogDescription className="sr-only">شرح قواعد وطريقة لعب {title}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3 text-sm leading-relaxed text-foreground">{rules}</div>
                   </DialogContent>
@@ -121,7 +122,7 @@ export default function GameShell({
           </div>
 
           {fit ? <div className="flex min-h-0 flex-1 flex-col">{children}</div> : children}
-        </div>
+        </PageShell>
       </GameHeaderActions.Provider>
     </div>
   );

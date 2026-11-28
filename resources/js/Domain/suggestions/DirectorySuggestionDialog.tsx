@@ -24,6 +24,7 @@ import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { CheckCircle2, Loader2, LogIn, PencilLine, PlusCircle, Search, X } from 'lucide-react';
 import { normalizeArabic } from '@/Lib/arabic';
 import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { notify } from '@/Lib/notify';
 import { cn } from '@/Lib/utils';
 import { suggestionsApi } from '@/Domain/suggestions/api';
@@ -68,14 +69,14 @@ const MODULE_COPY: Record<SuggestionModule, ModuleCopy> = {
         targetSearchPlaceholder: 'ابحث باسم المسؤول...',
         detailsPlaceholderAdd: 'اذكر السيرة الذاتية، المنصب، تاريخ التعيين، أو أي معلومات موثّقة...',
         detailsPlaceholderEdit: 'وضّح التعديل المطلوب (تغيير منصب، تصحيح اسم، معلومة ناقصة في السيرة)...',
-        sourceLabel: 'رابط المصدر الرسمي (سانا، الإخبارية، موقع الوزارة...) (اختياري)',
+        sourceLabel: 'رابط المصدر الرسمي مثل سانا أو الإخبارية أو موقع الوزارة (اختياري)',
     },
     syofficial: {
         dialogTitleAdd: 'إضافة حساب رسمي أو اقتراح تعديل',
         dialogTitleEdit: 'اقتراح تعديل على الحسابات الرسمية',
         dialogDescription:
             'أضف جهة أو حساباً رسمياً موثّقاً أو أبلغ عن رابط معطّل أو تغيير في الحسابات الرسمية ليراجعه المحررون.',
-        addTabLabel: 'إضافة جهة / حساب جديد',
+        addTabLabel: 'إضافة جهة أو حساب جديد',
         editTabLabel: 'تعديل جهة موجودة',
         addTitleLabel: 'اسم الجهة أو الشخصية الرسمية',
         addTitlePlaceholder: 'مثال: وزارة الاقتصاد والتجارة الخارجية',
@@ -292,6 +293,7 @@ export default function DirectorySuggestionDialog({
                 payload: buildPayload(),
             });
             notify.success(res.message);
+            trackEvent('directory_suggestion_submit', { module, kind: effectiveKind });
             setSubmittedMessage(res.message);
         } catch (err) {
             setErrors(apiFieldErrors(err));
@@ -307,7 +309,7 @@ export default function DirectorySuggestionDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+            <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>
                         {fixedTarget ? copy.dialogTitleEdit : copy.dialogTitleAdd}
@@ -318,8 +320,8 @@ export default function DirectorySuggestionDialog({
                 {!user ? (
                     <div className="space-y-4 rounded-xl border border-border bg-muted/30 p-5 text-center">
                         <p className="text-sm leading-relaxed text-foreground">
-                            إرسال الإضافات واقتراحات التعديل يتطلب تسجيل الدخول بحسابك لضمان موثوقية
-                            المساهمات ومتابعتها من قبل فريق التحرير.
+                            يتطلب إرسال الإضافات واقتراحات التعديل تسجيل الدخول بحسابك لضمان موثوقية
+                            المساهمات ومراجعتها تحريرياً.
                         </p>
                         <div className="flex flex-wrap items-center justify-center gap-2">
                             <Button asChild className="gap-2">
@@ -350,7 +352,7 @@ export default function DirectorySuggestionDialog({
                         />
                         <div className="space-y-1">
                             <h3 className="text-base font-bold text-foreground">
-                                تم استلام اقتراحك بنجاح
+                                وصلنا اقتراحك بنجاح
                             </h3>
                             <p className="text-sm text-muted-foreground">{submittedMessage}</p>
                         </div>
@@ -445,7 +447,7 @@ export default function DirectorySuggestionDialog({
                                             type="button"
                                             variant="ghost"
                                             size="icon"
-                                            className="h-7 w-7 shrink-0"
+                                            className="h-8 w-8 shrink-0"
                                             aria-label="تغيير العنصر المحدد"
                                             ref={changeTargetRef}
                                             onClick={() => {
@@ -542,7 +544,7 @@ export default function DirectorySuggestionDialog({
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="sg-inst">الجهة / الوزارة (اختياري)</Label>
+                                    <Label htmlFor="sg-inst">الجهة أو الوزارة (اختياري)</Label>
                                     <Input
                                         id="sg-inst"
                                         value={institutionNameAr}

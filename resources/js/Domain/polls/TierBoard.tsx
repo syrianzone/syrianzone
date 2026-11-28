@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTabList } from '@/Lib/useTabList';
 import { Card } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { TierAvatar as Avatar } from "./TierAvatar";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
-import { CheckCircle2Icon, AlertCircleIcon, Download } from "lucide-react";
+import { CheckCircle2Icon, AlertCircleIcon, Download, Share2 } from "lucide-react";
 import { TIERS, TIER_KEYS, type TierKey } from "@/Domain/polls/tiers";
 import { MIN_SELECTIONS } from "@/Domain/polls/core";
 import { pollsApi, type RankingSubmission } from "@/Domain/polls/api";
-import { exportTierListFromData } from "./exportTierList";
+import { renderTierListFile } from "./exportTierList";
+import ShareImageDialog, { type ShareThemeChoice } from "@/Components/share/ShareImageDialog";
 import { getDeviceId } from "@/Lib/deviceId";
 import { apiErrorMessage } from '@/Lib/api';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 
@@ -107,7 +109,7 @@ export default function TierBoard({
         description?: string;
     } | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
+    const [shareOpen, setShareOpen] = useState(false);
     const [nextSubmitAt, setNextSubmitAt] = useState<number | null>(null);
 
     const cooldownKey = `submitCooldown:${pollId}:${voteDay}`;
@@ -325,6 +327,7 @@ export default function TierBoard({
         };
         try {
             await pollsApi.submit(payload);
+            trackEvent('poll_vote_submit', { slug: pollSlug, count: totalAssigned });
             setSubmitStatus({ ok: true, message: "تم تسجيل التصويت" });
             const ts = Date.now() + 1 * 60 * 1000;
             setNextSubmitAt(ts);
@@ -336,63 +339,38 @@ export default function TierBoard({
         }
     }
 
-    async function saveImage() {
-        setIsSaving(true);
+    const activeGroupName = groups.find(g => g.id === selectedGroupId)?.name;
+
+    const renderTierShareImage = useCallback(async ({ themeId }: { themeId: ShareThemeChoice }) => {
         const appEl = containerRef.current;
         const maxWidthStyle = appEl ? window.getComputedStyle(appEl).maxWidth : "";
         const targetWidthCss =
             maxWidthStyle && maxWidthStyle !== "none" ? maxWidthStyle : "1000px";
         const targetWidth = parseInt(targetWidthCss, 10) || 1000;
-        const data = {
-            S: tiers.S.map((c) => ({
+        const mapTier = (list: Candidate[]) =>
+            list.map((c) => ({
                 name: c.name,
                 title: c.title || null,
                 imageUrl: c.imageUrl || null,
-            })),
-            A: tiers.A.map((c) => ({
-                name: c.name,
-                title: c.title || null,
-                imageUrl: c.imageUrl || null,
-            })),
-            B: tiers.B.map((c) => ({
-                name: c.name,
-                title: c.title || null,
-                imageUrl: c.imageUrl || null,
-            })),
-            C: tiers.C.map((c) => ({
-                name: c.name,
-                title: c.title || null,
-                imageUrl: c.imageUrl || null,
-            })),
-            D: tiers.D.map((c) => ({
-                name: c.name,
-                title: c.title || null,
-                imageUrl: c.imageUrl || null,
-            })),
-            F: tiers.F.map((c) => ({
-                name: c.name,
-                title: c.title || null,
-                imageUrl: c.imageUrl || null,
-            })),
-        } as Record<
-            "S" | "A" | "B" | "C" | "D" | "F",
-            Array<{ name: string; title?: string | null; imageUrl?: string | null }>
-        >;
-        try {
-            await exportTierListFromData({
-                tiers: data,
-                basePath: BASE_PATH,
-                fileName: "tier-list.jpg",
-                width: targetWidth,
-                scale: 2,
-                watermarkText: "syrian.zone/tierlist",
-            });
-        } catch {
-            notify.error("تعذّر إنشاء صورة القائمة، حاول مرة أخرى");
-        } finally {
-            setIsSaving(false);
-        }
-    }
+            }));
+        return renderTierListFile({
+            tiers: {
+                S: mapTier(tiers.S),
+                A: mapTier(tiers.A),
+                B: mapTier(tiers.B),
+                C: mapTier(tiers.C),
+                D: mapTier(tiers.D),
+                F: mapTier(tiers.F),
+            },
+            basePath: BASE_PATH,
+            fileName: "tier-list.png",
+            width: targetWidth,
+            scale: 2,
+            watermarkText: "syrian.zone/tierlist",
+            themeId,
+            groupName: activeGroupName,
+        });
+    }, [tiers, activeGroupName]);
 
     const isJolaniGroup = groups.find(g => g.id === selectedGroupId)?.key === 'jolani';
 
@@ -812,37 +790,12 @@ export default function TierBoard({
                 </Button>
                 <Button
                     type="button"
-                    onClick={saveImage}
-                    disabled={isSubmitting || isSaving}
+                    onClick={() => setShareOpen(true)}
+                    disabled={isSubmitting}
+                    className="gap-2"
                 >
-                    {isSaving ? (
-                        <span className="inline-flex items-center gap-2">
-                            <svg
-                                className="animate-spin h-4 w-4"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                                aria-hidden
-                            >
-                                <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                />
-                                <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                                />
-                            </svg>
-                            جاري التحضير...
-                        </span>
-                    ) : (
-                        "حفظ كصورة"
-                    )}
+                    <Share2 className="h-4 w-4" aria-hidden="true" />
+                    مشاركة / حفظ كصورة
                 </Button>
                 <Button
                     type="button"
@@ -879,6 +832,16 @@ export default function TierBoard({
                     </Alert>
                 </div>
             )}
+            <ShareImageDialog
+                open={shareOpen}
+                onOpenChange={setShareOpen}
+                analyticsModule="tierlist"
+                title="مشاركة قائمة التقييم"
+                description="معاينة قائمة التقييم بهوية المساحة السورية قبل المشاركة أو التحميل."
+                filename="tier-list.png"
+                shareTitle={activeGroupName ? `تقييمي: ${activeGroupName}` : "تقييمي في المساحة السورية"}
+                renderImage={renderTierShareImage}
+            />
         </Card>
     );
 }

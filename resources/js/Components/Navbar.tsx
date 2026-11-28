@@ -28,6 +28,7 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -38,9 +39,24 @@ import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
 import { DesktopSearchTrigger } from './DesktopSearchTrigger';
 import { Logo } from '@/Components/brand/Logo';
+import { Node } from '@/Components/brand/Node';
 import { groupSiteLinks, useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { isActive, pathnameOf, routeFamily, routeSegment } from '@/Lib/routes';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { siteModule, type SiteModuleGroup } from '@/Lib/siteModules';
+
+function navModuleFromHref(href: string, id?: string): string {
+  if (id) return id;
+  if (href.startsWith('http://') || href.startsWith('https://')) {
+    try {
+      return new URL(href).hostname;
+    } catch {
+      return 'external';
+    }
+  }
+  const clean = pathnameOf(href).replace(/^\/+/, '');
+  return clean || 'home';
+}
 
 /**
  * The mobile menu's search panel carries the whole search engine (results
@@ -63,7 +79,7 @@ const MEGA_GRID = 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-10';
  */
 const FOOTER_LINKS = [
   { href: '/about', label: 'عن المنصة', icon: Info, about: true },
-  { href: '/stats', label: 'الإحصائيات', icon: BarChart3, about: true },
+  { href: '/stats', label: 'الإحصاءات', icon: BarChart3, about: true },
   { href: '/privacy', label: 'سياسة الخصوصية', icon: Shield, about: false },
   { href: '/terms', label: 'الشروط والأحكام', icon: FileText, about: false },
 ] as const;
@@ -92,9 +108,19 @@ const NavTile = React.forwardRef<
     compact?: boolean;
     current?: boolean;
     external?: boolean;
+    moduleId?: string;
+    surface?: string;
     onNavigate?: () => void;
   }
->(function NavTile({ href, text, icon: Icon, image, imageDark, isFlag, compact, current, external, onNavigate, ...rest }, ref) {
+>(function NavTile({ href, text, icon: Icon, image, imageDark, isFlag, compact, current, external, moduleId, surface = 'navbar_panel', onNavigate, ...rest }, ref) {
+  const handleClick = () => {
+    trackEvent('nav_select', {
+      module: navModuleFromHref(href, moduleId),
+      surface,
+      is_external: Boolean(external),
+    });
+    onNavigate?.();
+  };
   const iconSize = compact ? 'h-9 w-9' : 'h-12 w-12';
   const className =
     'group flex h-full select-none flex-col items-center gap-1.5 rounded-lg px-1 py-2 text-center no-underline outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring';
@@ -159,6 +185,7 @@ const NavTile = React.forwardRef<
         href={href}
         target="_blank"
         rel="noreferrer"
+        onClick={handleClick}
         aria-current={current ? 'page' : undefined}
         className={className}
         {...rest}
@@ -171,7 +198,7 @@ const NavTile = React.forwardRef<
     <Link
       ref={ref}
       href={href}
-      onClick={onNavigate}
+      onClick={handleClick}
       aria-current={current ? 'page' : undefined}
       className={className}
       {...rest}
@@ -208,6 +235,7 @@ function TileGrid({
             isFlag={isFlag}
             compact={compact}
             external={external}
+            moduleId={id}
             current={isActive(href, pathname)}
             onNavigate={onNavigate}
           />
@@ -240,12 +268,12 @@ function MorePanel({
   const grouped = groupSiteLinks(links, groups);
   const byId = new Map(grouped.map((g) => [g.id, g]));
   const bentoSlots: Array<{ id: string; span: string; cols: string }> = [
-    { id: 'daily', span: 'lg:col-span-5', cols: 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-2' },
-    { id: 'maps', span: 'lg:col-span-7', cols: 'grid-cols-3' },
-    { id: 'politics', span: 'lg:col-span-7', cols: 'grid-cols-2 sm:grid-cols-4' },
-    { id: 'directories', span: 'lg:col-span-5', cols: 'grid-cols-3' },
-    { id: 'community', span: 'lg:col-span-7', cols: 'grid-cols-3 sm:grid-cols-6' },
-    { id: 'external', span: 'lg:col-span-5', cols: 'grid-cols-2 sm:grid-cols-4' },
+    { id: 'daily', span: 'lg:col-span-7', cols: 'grid-cols-3 sm:grid-cols-4' },
+    { id: 'maps', span: 'lg:col-span-5', cols: 'grid-cols-3' },
+    { id: 'state', span: 'lg:col-span-6', cols: 'grid-cols-3' },
+    { id: 'interactive', span: 'lg:col-span-6', cols: 'grid-cols-3' },
+    { id: 'community', span: 'lg:col-span-8', cols: 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-7' },
+    { id: 'external', span: 'lg:col-span-4', cols: 'grid-cols-3' },
   ];
   const knownIds = new Set(bentoSlots.map((s) => s.id));
   const others = grouped.filter((g) => !knownIds.has(g.id));
@@ -302,7 +330,18 @@ function MorePanel({
             (link, index) => (
               <React.Fragment key={link.href}>
                 {index > 0 && <span>•</span>}
-                <Link href={link.href} onClick={onNavigate} className="flex items-center gap-1 transition-colors hover:text-primary">
+                <Link
+                  href={link.href}
+                  onClick={() => {
+                    trackEvent('nav_select', {
+                      module: navModuleFromHref(link.href),
+                      surface: 'navbar_panel',
+                      is_external: false,
+                    });
+                    onNavigate?.();
+                  }}
+                  className="flex items-center gap-1 transition-colors hover:text-primary"
+                >
                   <link.icon className="h-3.5 w-3.5" />
                   {link.label}
                 </Link>
@@ -336,37 +375,37 @@ function DomainPanel({
   footer?: React.ReactNode;
 }) {
   return (
-    <div
+      <div
       id={`sz-nav-panel-${id}`}
       role="region"
       aria-label={title}
-      className="w-[min(640px,92vw)] max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-xl border bg-popover p-4 text-popover-foreground shadow-lg"
+      className="w-[min(620px,92vw)] max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-lg border border-border bg-popover p-3.5 text-popover-foreground shadow-md"
       dir="rtl"
     >
-      <p className="mb-3 flex items-center gap-2 px-1 text-xs font-extrabold text-muted-foreground">
-        <span aria-hidden="true" className="inline-block size-1.5 shrink-0 rounded-[2px] bg-sz-node" />
+      <p className="mb-2.5 flex items-center gap-2 px-1.5 font-display text-sm font-bold text-foreground">
+        <Node size="sm" />
         {title}
       </p>
-      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
         {links.map((link) => {
           const Icon = link.icon;
           const active = isActive(link.href, pathname);
           const itemClass = cn(
-            'group flex items-start gap-3 rounded-lg p-2.5 text-start transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            active && 'bg-accent/70 text-primary',
+            'group flex items-start gap-2.5 rounded-md px-2.5 py-2 text-start transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            active && 'bg-accent text-primary',
           );
           const body = (
             <>
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+              <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center">
                 {link.image && link.imageDark ? (
                   <>
-                    <img src={link.image} alt="" loading="lazy" decoding="async" className="h-6 w-6 object-contain dark:hidden" />
-                    <img src={link.imageDark} alt="" loading="lazy" decoding="async" className="hidden h-6 w-6 object-contain dark:block" />
+                    <img src={link.image} alt="" loading="lazy" decoding="async" className="h-5 w-5 object-contain dark:hidden" />
+                    <img src={link.imageDark} alt="" loading="lazy" decoding="async" className="hidden h-5 w-5 object-contain dark:block" />
                   </>
                 ) : link.image ? (
-                  <img src={link.image} alt="" loading="lazy" decoding="async" className="h-6 w-6 object-contain" />
+                  <img src={link.image} alt="" loading="lazy" decoding="async" className="h-5 w-5 object-contain" />
                 ) : Icon ? (
-                  <Icon className="h-6 w-6 shrink-0" />
+                  <Icon className="h-5 w-5 shrink-0" />
                 ) : null}
               </span>
               <span className="min-w-0 flex-1">
@@ -388,6 +427,13 @@ function DomainPanel({
                   href={link.href}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() =>
+                    trackEvent('nav_select', {
+                      module: navModuleFromHref(link.href, link.id),
+                      surface: 'navbar_panel',
+                      is_external: true,
+                    })
+                  }
                   aria-current={active ? 'page' : undefined}
                   className={itemClass}
                 >
@@ -396,7 +442,14 @@ function DomainPanel({
               ) : (
                 <Link
                   href={link.href}
-                  onClick={onNavigate}
+                  onClick={() => {
+                    trackEvent('nav_select', {
+                      module: navModuleFromHref(link.href, link.id),
+                      surface: 'navbar_panel',
+                      is_external: false,
+                    });
+                    onNavigate();
+                  }}
                   aria-current={active ? 'page' : undefined}
                   className={itemClass}
                 >
@@ -460,16 +513,24 @@ function NavTopLink({
     </>
   );
 
+  const handleClick = () => {
+    trackEvent('nav_select', {
+      module: navModuleFromHref(href),
+      surface: 'navbar',
+      is_external: Boolean(external),
+    });
+  };
+
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noreferrer" aria-current={active ? 'page' : undefined} className={cls}>
+      <a href={href} target="_blank" rel="noreferrer" onClick={handleClick} aria-current={active ? 'page' : undefined} className={cls}>
         {content}
       </a>
     );
   }
 
   return (
-    <Link href={href} aria-current={active ? 'page' : undefined} className={cls}>
+    <Link href={href} onClick={handleClick} aria-current={active ? 'page' : undefined} className={cls}>
       {content}
     </Link>
   );
@@ -546,11 +607,13 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
   const { user } = useAuth();
   const { navbarLinks, groups } = useSiteNavigation();
 
-  // Group all navbar links by the 6 canonical domains so standard pages show
-  // 5 focused internal domain dropdowns + a compact "شقيقة / المزيد" dropdown.
+  // Option A: 4 focused top-level domain dropdowns (daily, maps, state,
+  // interactive) + a single "المزيد" dropdown holding community & external.
   const allGrouped = React.useMemo(() => groupSiteLinks(navbarLinks, groups), [navbarLinks, groups]);
-  const domainGroups = React.useMemo(() => allGrouped.filter((g) => g.id !== 'external'), [allGrouped]);
-  const externalGroup = React.useMemo(() => allGrouped.find((g) => g.id === 'external'), [allGrouped]);
+  const primaryGroupIds = React.useMemo(() => new Set(['daily', 'maps', 'state', 'interactive']), []);
+  const domainGroups = React.useMemo(() => allGrouped.filter((g) => primaryGroupIds.has(g.id)), [allGrouped, primaryGroupIds]);
+  const moreGroups = React.useMemo(() => allGrouped.filter((g) => !primaryGroupIds.has(g.id)), [allGrouped, primaryGroupIds]);
+  const moreLinks = React.useMemo(() => moreGroups.flatMap((g) => g.links), [moreGroups]);
 
   const groupIsActive = React.useCallback(
     (links: SiteLink[]) =>
@@ -610,7 +673,8 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
 
   const toggleMenu = (id: string) => setOpenMenuId((cur) => (cur === id ? null : id));
 
-  // Navbar hidden on homepage (Startpage) on desktop; on mobile it stays fixed at the top
+  // The homepage renders its own unified startpage header; skip Navbar and its
+  // hidden DomainPanels completely on `/`.
   const isHomepage = pathname === '/';
 
   // The buttons the navbar carries for one page's own dialog. The page owns the
@@ -644,12 +708,15 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
     },
   ].filter((action) => isActive(action.href, pathname));
 
+  if (isHomepage || (quranFocus && isActive('/muslim/quran', pathname))) {
+    return null;
+  }
+
   return (
-    quranFocus && isActive('/muslim/quran', pathname) ? null :
-    <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
+    <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}>
       {/* This row plus the border of the header is `--sz-navbar-h`
           (resources/css/app.css), which the full-viewport pages subtract. */}
-      <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 lg:px-6 xl:px-8 justify-between lg:justify-normal" dir="rtl">
+      <div className="relative flex h-16 w-full max-w-[76rem] mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">
         {/* Mobile Menu / Settings */}
         <div className="flex items-center lg:hidden">
           {isHomepage ? (
@@ -683,26 +750,27 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
               dir="rtl"
               style={{ '--sz-menu-x': `${menuOrigin.x}px`, '--sz-menu-y': `${menuOrigin.y}px` } as React.CSSProperties}
             >
-              <SheetHeader className="flex-row items-center justify-between gap-2 space-y-0 px-4 pt-4 pb-2 text-right shrink-0">
-                <SheetTitle className="flex h-10 items-center">
+              <SheetHeader className="flex-row items-center justify-between gap-2 space-y-0 h-14 border-b border-border px-4 text-start shrink-0">
+                <SheetTitle className="flex h-9 items-center">
                   <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
-                    <SiteLogo className="h-8" />
+                    <SiteLogo className="h-7" />
                   </Link>
                 </SheetTitle>
+                <SheetDescription className="sr-only">قائمة التنقل الرئيسية والبحث</SheetDescription>
                 <SheetClose asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 shrink-0"
+                    className="h-9 w-9 shrink-0"
                     title="إغلاق"
                     aria-label="إغلاق القائمة"
                   >
-                    <X className="h-6 w-6" />
+                    <X className="h-5 w-5" aria-hidden="true" />
                   </Button>
                 </SheetClose>
               </SheetHeader>
 
-              <div className="flex flex-1 flex-col justify-between gap-4 px-6 sm:px-10 pb-6">
+              <div className="flex flex-1 flex-col justify-between gap-4 px-4 pt-3 pb-6">
                 <div className="flex flex-col gap-4">
                   {isTransitPage && (
                     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
@@ -793,7 +861,14 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                       <Link
                         key={link.href}
                         href={link.href}
-                        onClick={() => setIsOpen(false)}
+                        onClick={() => {
+                          trackEvent('nav_select', {
+                            module: navModuleFromHref(link.href),
+                            surface: 'navbar_mobile',
+                            is_external: false,
+                          });
+                          setIsOpen(false);
+                        }}
                         className="flex items-center gap-1.5 hover:text-primary transition-colors"
                       >
                         <link.icon className="h-3.5 w-3.5" />
@@ -868,6 +943,7 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                 label="المزيد"
                 controlsId="sz-nav-panel-more"
                 open={openMenuId === 'more'}
+                active={groupIsActive(moreLinks)}
                 onToggle={() => toggleMenu('more')}
               />
             </>
@@ -912,8 +988,8 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                 <div className="sz-menu-pop">
                   <DomainPanel
                     id="more"
-                    title={externalGroup?.title ?? 'مشاريع شقيقة'}
-                    links={externalGroup?.links ?? []}
+                    title="الهوية والمجتمع والشركاء"
+                    links={moreLinks}
                     pathname={pathname}
                     onNavigate={() => setOpenMenuId(null)}
                     footer={
@@ -925,7 +1001,14 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                               {index > 0 && <span>•</span>}
                               <Link
                                 href={link.href}
-                                onClick={() => setOpenMenuId(null)}
+                                onClick={() => {
+                                  trackEvent('nav_select', {
+                                    module: navModuleFromHref(link.href),
+                                    surface: 'navbar_panel',
+                                    is_external: false,
+                                  });
+                                  setOpenMenuId(null);
+                                }}
                                 className="flex items-center gap-1 transition-colors hover:text-primary"
                               >
                                 <link.icon className="h-3.5 w-3.5" />

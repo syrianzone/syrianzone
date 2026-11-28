@@ -306,7 +306,7 @@ describe('pages render their content on the server', () => {
         const cleanHouse = houseHtml.replace(/<!-- -->/g, '');
         expect(cleanHouse.match(/<h1[\s>]/g)).toHaveLength(1);
         expect(cleanHouse.match(/<main[\s>]/g)).toHaveLength(1);
-        expect(cleanHouse).toContain('أعضاء مجلس الشعب السوري 2026 — الأسماء حسب المحافظة');
+        expect(cleanHouse).toContain('أعضاء مجلس الشعب السوري 2026: الأسماء حسب المحافظة');
         expect(cleanHouse).toContain('أسماء أعضاء مجلس الشعب السوري حسب المحافظة');
         expect(cleanHouse).toContain('href="/house/members/73"');
         expect(cleanHouse).toContain('مصطفى عبدالوهاب موسى');

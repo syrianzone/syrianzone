@@ -202,34 +202,62 @@ class AuthController extends Controller
         ?string $name,
         ?string $avatar,
     ): User {
-        // withTrashed: a soft-deleted account still holds the unique email, so a
-        // scoped miss would send updateOrCreate into a duplicate-email insert (500).
-        $user = User::withTrashed()->where('email', $email)->first();
-        if ($user && $user->trashed()) {
-            $user->restore();
+        // Resolve by immutable google_id first so an unrelated account cannot
+        // pre-claim a victim's email. Fall back to matching by email only when
+        // google_id is null (pre-seeded/legacy accounts and SUPERADMIN_EMAIL).
+        // withTrashed: a soft-deleted account still holds the unique email.
+        $user = null;
+        if ($googleId !== null && $googleId !== '') {
+            $user = User::withTrashed()->where('google_id', $googleId)->first();
         }
+        if (! $user) {
+            $user = User::withTrashed()
+                ->where('email', $email)
+                ->whereNull('google_id')
+                ->first();
+        }
+
         $superadminEmail = config('app.superadmin_email');
         $isSuperAdmin = $superadminEmail !== '' && $email === $superadminEmail;
 
-        // Self-registration: unknown emails become regular users so the
-        // community can contribute (places, comments). Existing users keep their role.
-        $attributes = [
-            'google_id' => $googleId ?? $user?->google_id,
-            'password' => $user?->password ?? bcrypt(str()->random(16)),
-            'role' => $isSuperAdmin ? 'superadmin' : ($user?->role ?? 'user'),
-        ];
-        // Google only seeds the display name at signup. Overwriting it on every login
-        // undid any name set in the dashboard and put real names on public pages.
-        if (! $user) {
-            $attributes['name'] = $name ?: explode('@', $email)[0];
-        }
-        // Refresh the Google avatar only when the user has not uploaded a custom
-        // one; a custom avatar lives under our media disk's avatars/ prefix.
-        if (! $this->hasCustomAvatar($user) && $avatar !== null) {
-            $attributes['avatar_url'] = $avatar;
+        if ($user) {
+            if ($user->trashed()) {
+                $user->restore();
+            }
+
+            if ($googleId !== null && $googleId !== '' && $user->google_id === null) {
+                $user->google_id = $googleId;
+            }
+
+            if ($user->email !== $email && ! User::withTrashed()->where('email', $email)->where('id', '!=', $user->id)->exists()) {
+                $user->email = $email;
+            }
+
+            if ($isSuperAdmin) {
+                $user->role = 'superadmin';
+            }
+
+            // Refresh the Google avatar only when the user has not uploaded a custom
+            // one; a custom avatar lives under our media disk's avatars/ prefix.
+            if (! $this->hasCustomAvatar($user) && $avatar !== null) {
+                $user->avatar_url = $avatar;
+            }
+
+            $user->save();
+
+            return $user;
         }
 
-        return User::updateOrCreate(['email' => $email], $attributes);
+        // Self-registration: unknown emails become regular users so the
+        // community can contribute (places, comments).
+        return User::create([
+            'email' => $email,
+            'google_id' => $googleId,
+            'name' => $name ?: explode('@', $email)[0],
+            'password' => bcrypt(str()->random(16)),
+            'role' => $isSuperAdmin ? 'superadmin' : 'user',
+            'avatar_url' => $avatar,
+        ]);
     }
 
     private function hasCustomAvatar(?User $user): bool

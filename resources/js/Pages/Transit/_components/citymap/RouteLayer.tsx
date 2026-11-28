@@ -132,25 +132,31 @@ export default function RouteLayer({ data }: RouteLayerProps) {
       onClick={() => { setActiveRoute(null); setSelectedRouteId(null) }}
     >
       <div
-        className="pointer-events-auto absolute rounded-2xl shadow-xl"
+        className="pointer-events-auto absolute rounded-2xl border border-border bg-card text-foreground shadow-xl"
         style={{
           left: x,
           top: y,
           transform: `translate(-50%, ${translateY})`,
-          background: color,
-          minWidth: '120px',
-          maxWidth: '220px',
+          borderInlineStartWidth: '4px',
+          borderInlineStartColor: color,
+          minWidth: '140px',
+          maxWidth: '240px',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 px-4 py-2.5" dir="rtl">
-          <span className="flex-1 text-center text-sm font-bold leading-snug text-white">
+        <div className="flex items-center gap-2 px-3.5 py-2.5" dir="rtl">
+          <span
+            className="size-2.5 shrink-0 rounded-full ring-1 ring-border"
+            style={{ backgroundColor: color }}
+            aria-hidden="true"
+          />
+          <span className="flex-1 text-start text-sm font-bold leading-snug text-foreground">
             {props.nameAr}
           </span>
           <button
             type="button"
             onClick={() => { setActiveRoute(null); setSelectedRouteId(null) }}
-            className="-m-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors hover:text-white"
+            className="-m-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="إغلاق"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -167,8 +173,8 @@ export default function RouteLayer({ data }: RouteLayerProps) {
             borderLeft: '6px solid transparent',
             borderRight: '6px solid transparent',
             ...(showBelow
-              ? { borderBottom: `6px solid ${color}` }
-              : { borderTop: `6px solid ${color}` }),
+              ? { borderBottom: '6px solid hsl(var(--card))' }
+              : { borderTop: '6px solid hsl(var(--card))' }),
           }}
         />
       </div>

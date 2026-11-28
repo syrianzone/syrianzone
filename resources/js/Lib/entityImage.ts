@@ -1,4 +1,4 @@
-import { MEDIA_BASE } from '@/Domain/govapps/media';
+import { MEDIA_BASE } from '@/Lib/media';
 
 const R2_BASE = `${MEDIA_BASE}/syofficial/entities/`;
 

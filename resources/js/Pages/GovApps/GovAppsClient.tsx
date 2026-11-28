@@ -1,16 +1,21 @@
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import { Button } from "@/Components/ui/button";
+import { Badge } from "@/Components/ui/badge";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Smartphone, Globe, MessageSquarePlus, Pencil, PencilLine, Settings } from "lucide-react";
 import { useCanAny, useCanModule } from '@/Lib/useCan';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import type { GovApp } from '@/Domain/govapps/types';
 import type { SuggestionTargetOption } from '@/Domain/suggestions/types';
 import { DEFAULT_GOVAPP_ICON } from '@/Domain/govapps/media';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
-import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
-import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { DirectoryUnderlineTabs } from '@/Components/directory/DirectoryUnderlineTabs';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
+import { PageBody, PageHeader } from '@/Components/layout';
+
+const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 
 const PLATFORMS = [
     { value: 'android', label: 'أندرويد' },
@@ -85,7 +90,7 @@ function DescriptionText({ description }: { description: string }) {
                 setExpanded((prev) => !prev);
             }}
             className="mb-3 block w-full rounded-sm text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            title={expanded ? 'اضغط للتقليص' : 'اضغط لإظهار النص كاملاً'}
+            title={expanded ? 'قلّص النص' : 'أظهر النص كاملاً'}
         >
             <span
                 className={`text-xs text-muted-foreground leading-relaxed cursor-pointer select-none transition-all ${
@@ -141,50 +146,57 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
 
     return (
         <div className="min-h-screen bg-background" dir="rtl">
-            <section className="bg-card py-10 shadow-sm border-b border-border">
-                <div className="container mx-auto px-4 text-center max-w-4xl">
-                    {canOpenPanel && (
-                        <div className="mb-4 flex justify-center">
-                            <a
-                                href="/admin/govapps"
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg hover:bg-primary/90 transition-all transform hover:-translate-y-0.5"
-                            >
-                                <Settings className="w-4 h-4" aria-hidden="true" />
-                                <span>لوحة تحكم إدارة التطبيقات (Admin Panel)</span>
-                            </a>
-                        </div>
-                    )}
-                    <h1 className="text-3xl md:text-4xl font-bold mb-3 text-foreground">تطبيقات حكومية</h1>
-                    <p className="text-lg text-muted-foreground">
-                        دليل التطبيقات والخدمات الحكومية الإلكترونية الرسمية
-                    </p>
-                    <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <PageHeader
+                title="التطبيقات الحكومية"
+                description="دليل التطبيقات والخدمات الحكومية الإلكترونية الرسمية على أندرويد وآيفون والويب."
+                actions={
+                    <>
+                        {canOpenPanel && (
+                            <Button asChild variant="ghost" size="sm" className="h-9">
+                                <a href="/admin/govapps">
+                                    <Settings className="h-4 w-4" aria-hidden="true" />
+                                    <span>إدارة التطبيقات</span>
+                                </a>
+                            </Button>
+                        )}
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
+                            className="h-9 bg-card shadow-none"
                             onClick={openAddSuggestion}
-                            className="h-9 rounded-full gap-2 px-4 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
                         >
                             <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
-                            <span>إضافة / اقتراح تعديل</span>
+                            <span>اقتراح تطبيق</span>
                         </Button>
-                    </div>
-                </div>
-            </section>
+                    </>
+                }
+            />
 
-            <div className="container mx-auto px-4 py-8">
+            <PageBody>
                 {initialData.length > 0 && (
-                    <DirectorySmartSearch
+                    <DirectoryUnderlineTabs
                         className="mb-5"
-                        facets={directory.searchFacets} value={directory.value} onChange={directory.setValue}
-                        placeholder="ابحث بالاسم أو الوصف أو اختر تصفية..." ariaLabel="ابحث في التطبيقات الحكومية"
+                        label="متوفر على"
+                        allLabel="الكل"
+                        allCount={initialData.length}
+                        options={PLATFORMS}
+                        value={directory.filters.platform ?? []}
+                        onChange={(next) => directory.setFilters({ ...directory.filters, platform: next })}
+                        trailing={
+                            <DirectorySearch
+                                value={directory.query}
+                                onChange={directory.setQuery}
+                                placeholder="ابحث في التطبيقات..."
+                                ariaLabel="ابحث في التطبيقات الحكومية"
+                            />
+                        }
                     />
                 )}
                 {directory.results.length === 0 ? (
                     <DirectoryEmptyState
                         icon={Smartphone}
-                        title={initialData.length === 0 ? 'لم يتم العثور على تطبيقات' : 'لا توجد تطبيقات تطابق البحث والتصفية'}
+                        title={initialData.length === 0 ? 'لا توجد تطبيقات متاحة حالياً' : 'لا توجد تطبيقات تطابق البحث والتصفية'}
                         directory={directory}
                         className="rounded-xl border-border bg-muted/30 shadow-none"
                     />
@@ -193,7 +205,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                         {directory.results.map((app) => (
                             <Card
                                 key={app.id}
-                                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:border-primary/40 hover:shadow-sm transition-all duration-200 flex flex-col justify-between"
                             >
                                 <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
                                     {canEditEntries && (
@@ -212,7 +224,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                         onClick={() => openEditSuggestion(app)}
                                         aria-label={`اقتراح تعديل — ${app.name_ar || app.name}`}
                                         title="اقتراح تعديل"
-                                        className="absolute top-2 end-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-background/85 text-muted-foreground backdrop-blur-md border border-border/60 shadow-xs transition-all duration-200 opacity-80 hover:opacity-100 hover:bg-background hover:text-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="absolute top-2 end-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-background/85 text-muted-foreground backdrop-blur-md border border-border/60 shadow-xs transition-all duration-200 opacity-80 hover:opacity-100 hover:bg-background hover:text-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
                                         <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
                                     </button>
@@ -244,7 +256,8 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                     href={app.links.android}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-[#3DDC84] shadow-2xs"
+                                                    onClick={() => trackEvent('govapp_store_click', { slug: app.id, platform: 'android' })}
+                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-success shadow-2xs"
                                                     title="تحميل لأندرويد"
                                                     aria-label={`تحميل ${app.name} لأندرويد`}
                                                 >
@@ -256,6 +269,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                     href={app.links.apple}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
+                                                    onClick={() => trackEvent('govapp_store_click', { slug: app.id, platform: 'apple' })}
                                                     className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-foreground shadow-2xs"
                                                     title="تحميل لآيفون"
                                                     aria-label={`تحميل ${app.name} لآيفون`}
@@ -268,6 +282,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                     href={app.links.official}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
+                                                    onClick={() => trackEvent('govapp_store_click', { slug: app.id, platform: 'official' })}
                                                     className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-primary shadow-2xs"
                                                     title="الموقع الرسمي"
                                                     aria-label={`الموقع الرسمي لـ ${app.name}`}
@@ -282,16 +297,20 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </PageBody>
 
-            <DirectorySuggestionDialog
-                module="govapps"
-                open={suggestionOpen}
-                onOpenChange={setSuggestionOpen}
-                defaultKind={suggestionTarget ? 'edit' : 'add'}
-                fixedTarget={suggestionTarget}
-                targets={suggestionTargets}
-            />
+            {suggestionOpen && (
+                <Suspense fallback={null}>
+                    <DirectorySuggestionDialog
+                        module="govapps"
+                        open={suggestionOpen}
+                        onOpenChange={setSuggestionOpen}
+                        defaultKind={suggestionTarget ? 'edit' : 'add'}
+                        fixedTarget={suggestionTarget}
+                        targets={suggestionTargets}
+                    />
+                </Suspense>
+            )}
         </div>
     );
 }

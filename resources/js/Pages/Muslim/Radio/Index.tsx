@@ -20,7 +20,7 @@ export default function Index() {
     <MainLayout>
       
 
-      <MuslimShell title="إذاعة القرآن" icon={QuranRadioIcon}>
+      <MuslimShell title="إذاعة القرآن" icon={QuranRadioIcon} width="narrow">
         <RadioView onContinue={continueToReader} />
       </MuslimShell>
     </MainLayout>

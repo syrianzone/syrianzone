@@ -6,9 +6,10 @@ import type { SyidDownloadFile } from '@/Domain/syid/facts';
 interface DownloadRowProps {
     file: SyidDownloadFile;
     primary?: boolean;
+    onDownload?: () => void;
 }
 
-export function DownloadRow({ file, primary = false }: DownloadRowProps) {
+export function DownloadRow({ file, primary = false, onDownload }: DownloadRowProps) {
     return (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-border bg-card p-3.5">
             <div className="space-y-1 min-w-0">
@@ -34,6 +35,7 @@ export function DownloadRow({ file, primary = false }: DownloadRowProps) {
             <a
                 href={file.path}
                 download={file.download_name}
+                onClick={onDownload}
                 className={
                     primary
                         ? 'inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 h-10 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shrink-0'

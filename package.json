@@ -3,8 +3,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --ssr && concurrently -n serve,reverb,vite,ssr-build,ssr -c blue,magenta,green,gray,yellow \"php artisan serve\" \"php artisan reverb:start\" \"vite\" \"vite build --ssr --watch\" \"node --watch bootstrap/ssr/ssr.js\"",
-    "build": "vite build && vite build --ssr",
+    "build": "npm run icons:export && vite build && vite build --ssr",
     "build:ssr": "vite build --ssr",
+    "icons:export": "node scripts/export-module-icons.mjs",
     "test:js": "vitest run",
     "lint": "eslint resources/js",
     "test:js:watch": "vitest",

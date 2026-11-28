@@ -42,7 +42,7 @@ export default function Index({ meta, images, todayInfo }: RamadanHubProps) {
 
   return (
     <MainLayout>
-      <MuslimShell title="إمساكية رمضان 1448 هـ / 2027 م" icon={MuslimIcon} width="max-w-5xl">
+      <MuslimShell title="إمساكية رمضان 1448 هـ / 2027 م" icon={MuslimIcon} width="default">
         <div className="space-y-6">
           {/* Countdown & key dates card */}
           <Card className="border-primary/20 bg-primary/5">
@@ -149,11 +149,12 @@ export default function Index({ meta, images, todayInfo }: RamadanHubProps) {
                     {img && (
                       <div className="aspect-[16/10] w-full overflow-hidden bg-muted">
                         <img
-                          src={img.file}
+                          src={img.file.replace('/images/ramadan/', '/images/ramadan/thumbs/')}
                           alt={img.alt_ar}
                           width={img.width}
                           height={img.height}
                           loading={idx < 3 ? 'eager' : 'lazy'}
+                          decoding="async"
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       </div>

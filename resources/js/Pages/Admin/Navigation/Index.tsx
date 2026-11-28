@@ -667,7 +667,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                 </Card>
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogContent dir="rtl" className="max-w-2xl max-h-[90dvh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>
                                 {editingIndex !== null ? 'تعديل بيانات القسم / الأيقونة' : 'إضافة قسم أو أيقونة جديدة'}

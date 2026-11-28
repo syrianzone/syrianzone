@@ -940,7 +940,7 @@ Where both rows describe the same module (auth token, global search, transit rea
 ## 12. Promises Tracker API (`/api/v1/promises/*`)
 
 The public surface of the promises tracker (عداد الوعود). Pages and the admin
-capability map are described in [specs/promises.md](../specs/promises.md); the
+capability map are described in [modules/promises.md](../modules/promises.md); the
 admin write endpoints are listed in §10.4 style under `/api/v1/admin/promises*`.
 
 | Method & Canonical Path | Route Name | Auth | Rate Limit | Description |

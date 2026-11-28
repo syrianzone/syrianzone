@@ -66,7 +66,7 @@ export default function ResponsiveSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent dir="rtl" className={cn('flex max-h-[85vh] flex-col p-0', contentClassName ?? 'sm:max-w-md')}>
+      <DialogContent dir="rtl" className={cn('flex max-h-[85dvh] flex-col p-0', contentClassName ?? 'sm:max-w-md')}>
         <DialogHeader className="px-6 pt-6 pb-2 text-start">
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}

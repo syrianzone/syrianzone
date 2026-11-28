@@ -48,9 +48,9 @@ test('public navigation api exposes groups, item group metadata, and dark logos 
     $groups = $response->json('groups');
     $items = collect($response->json('items'));
 
-    expect(array_column($groups, 'id'))->toBe(['daily', 'maps', 'politics', 'directories', 'community', 'external'])
+    expect(array_column($groups, 'id'))->toBe(['daily', 'maps', 'state', 'interactive', 'community', 'external'])
         ->and($items->firstWhere('id', 'party'))->toBeNull()
-        ->and($items->firstWhere('id', 'compass')['group'])->toBe('politics')
+        ->and($items->firstWhere('id', 'compass')['group'])->toBe('interactive')
         ->and($items->firstWhere('id', 'atlas')['group'])->toBe('maps')
         ->and($items->firstWhere('id', 'jard')['iconUrl'])->toBe('https://jard.chat/images/logo-light.svg')
         ->and($items->firstWhere('id', 'jard')['iconUrlDark'])->toBe('https://jard.chat/images/logo-dark.svg');

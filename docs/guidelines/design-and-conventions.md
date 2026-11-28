@@ -1,13 +1,18 @@
 # Design & Conventions
 
-Repo-wide styling and coding conventions. The most detailed normative reference is [modules/mishwar-places.md](../modules/mishwar-places.md) §2; this page summarizes and extends it.
+Repo-wide styling, brand, and coding conventions. This document is the single normative reference for cross-cutting UI, theming, layering, and backend conventions across all modules.
 
 ## Styling system
 
 - **Tailwind CSS v4** via `@tailwindcss/postcss`; entry `resources/css/app.css` uses `@import "tailwindcss"` with `@theme` tokens.
 - **shadcn-style components**: Radix primitives + `class-variance-authority` + `cn()` (`clsx` + `tailwind-merge`, in `Lib/utils.ts`). Shared primitives live in `resources/js/Components/ui/` — reuse them before writing new ones.
-- **Theming**: HSL token set (`--background`, `--primary`, `--muted`, `--border`, …) mapped through `@theme`. The theme is two attributes set together at `document.documentElement` — `data-theme` (which theme) and `data-scheme` (`light`/`dark`) — not a class. The registry (ids, labels, storage keys, dark flags) lives in `resources/data/themes.json`, which Blade, CSS and TS all read through `Lib/theme.ts`; it ships light, dark, dark-blue, dark-purple, dark-green, high-contrast, damascus-rose, and jasmine, and users switch it from `Components/AppearanceMenu` (the navbar control).
-- **Fonts**: IBM Plex Sans Arabic from npm (`@ibm/plex-sans-arabic`), `font-display: swap`; `--font-sans` falls back to `var(--site-font)`.
+- **Theming (15 entries / 14 concrete themes + `system`)**: HSL token set (`--background`, `--primary`, `--muted`, `--border`, …) mapped through `@theme`. The theme is two attributes set together at `document.documentElement` — `data-theme` (which theme) and `data-scheme` (`light`/`dark`) — not a class. The registry (ids, labels, storage keys, dark flags) lives in `resources/data/themes.json`, which Blade, CSS and TS all read through `Lib/theme.ts`:
+  - `system` — resolves automatically to `nili` (light) or `nili-night` (dark).
+  - **6 Al-Madar (المدار) themes**: `nili` / `nili-night` (system defaults), `qashani` / `qashani-night`, `limestone` / `basalt`.
+  - **6 standard themes**: `light`, `dark`, `dark-blue`, `dark-purple`, `dark-green`, `high-contrast`.
+  - **2 heritage themes**: `damascus-rose`, `jasmine`.
+  - Users switch themes from `Components/AppearanceMenu` (the navbar control). See [architecture/brand-and-ui-system.md](../architecture/brand-and-ui-system.md).
+- **Fonts**: Display headings use **Beiruti** (`750` / variable `700–800`, `.sz-display`, preloaded via `app.blade.php`) and UI body copy uses **IBM Plex Sans Arabic** (`400` and `700` weights covering `400–500` and `600–700`, from `@ibm/plex-sans-arabic`, `font-display: swap`), both self-hosted in `public/fonts/` and split with `unicode-range` subsetting (core Arabic/Latin vs. extended `-ext.woff2`) plus a metric-matched `IBM Plex Sans Arabic Fallback` local face. `--font-sans` falls back to `var(--site-font)`.
 - **RTL is the default direction** — `<DirectionProvider dir="rtl">` wraps both client (`app.tsx`) and SSR entry (`ssr.tsx`). Never hardcode left/right without checking RTL semantics.
 - Map labels use `@mapbox/mapbox-gl-rtl-text`; map font glyphs generated with fontnik (`scripts/build-map-glyphs.mjs`).
 
@@ -95,13 +100,14 @@ lives in [accessibility.md](accessibility.md); the short version:
 ## Theming
 
 - Colour is **always** a token (`hsl(var(--…))` or a Tailwind token class).
-  Literal hex/`rgb()` in a component is a bug — it escapes the nine themes.
+  Literal hex/`rgb()` in a component is a bug — it escapes the 14 themes.
 - The theme is `data-theme="…"` plus `data-scheme="light|dark"`, applied together
   at `document.documentElement` (the pre-paint script in `resources/views/app.blade.php`
-  and `applyTheme()` in `Lib/theme.ts`). The registry, its ids, labels, storage
-  keys and dark flags live in `resources/data/themes.json`, which Blade, CSS and
-  TS all read: add a theme by adding its CSS variable block in
-  `resources/css/app.css` **and** an entry in that file, and check contrast.
+  and `applyTheme()` in `Lib/theme.ts`). The registry, its 15 entries (14 concrete
+  themes + `system` defaulting to `nili`/`nili-night`), labels, storage keys and
+  dark flags live in `resources/data/themes.json`, which Blade, CSS and TS all
+  read: add a theme by adding its CSS variable block in `resources/css/app.css`
+  **and** an entry in that file, and check contrast.
   CSS never lists dark theme ids: the shared dark token block and Tailwind's
   `dark:` variant use `[data-scheme="dark"]`. Read the current scheme with
   `useColorScheme()`; never compare `data-theme` to a theme id yourself.
@@ -125,6 +131,11 @@ already exists. Before writing a component, search `Components/` and
 | Tabs / segmented switcher | `Lib/useTabList.ts` (custom) or `Components/ui/tabs` |
 | Filter chips | `Components/ui/filter-chip.tsx` |
 | Search field with filter chips | `Components/SmartFilterSearch.tsx` |
+| Brand marks, patterns, headings & status pills | `Components/brand/*` (`Logo`, `Node`, `Pattern`, `Rings`, `SectionHeading`, `StatusBadge`) |
+| Page shell, headers, grids & layout templates | `Components/layout/*` (`PageShell`, `PageBody`, `PageHeader`, `PageToolbar`, `SplitLayout`, `KpiGrid`, `CardGrid`, `EmptyState`, `ReaderLayout`, `FlowLayout`) |
+| Site footer | `Components/SiteFooter.tsx` |
+| Branded share cards & PNG export dialog | `Components/share/BrandShareFrame.tsx` + `Components/share/ShareImageDialog.tsx` |
+| Directory responsive tables & progressive lists | `Components/directory/ResponsiveTable.tsx`, `Components/directory/ProgressiveListFooter.tsx`, `Lib/useProgressiveList.ts` |
 | Buttons, dialogs, sheets, selects, tables, scroll areas | `Components/ui/*` |
 | Icon-only button | `Components/ui/button` + `aria-label` |
 | Weather icons, cluster layers, media-query hook | one shared helper per concern |

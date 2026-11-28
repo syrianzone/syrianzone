@@ -12,9 +12,10 @@ import {
     AccordionTrigger,
 } from '@/Components/ui/accordion';
 import { copyText } from '@/Lib/copy';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { notify } from '@/Lib/notify';
 import { SYID_FACTS, type SyidFacts } from '@/Domain/syid/facts';
-import { SyidBreadcrumbs } from './_components/SyidBreadcrumbs';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { DownloadRow } from './_components/DownloadRow';
 import { FlagProportionsDiagram } from './_components/FlagProportionsDiagram';
 import './page_custom.css';
@@ -70,6 +71,7 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
     const handleCopyFlagEmoji = async () => {
         const ok = await copyWithFallback(flag.emoji);
         if (ok) {
+            trackEvent('syid_asset_action', { action: 'copy_emoji', slug: 'syria-flag' });
             setEmojiStatus('copied');
             notify.copy(`تم النسخ: ${flag.emoji}`);
         } else {
@@ -79,28 +81,27 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
         window.setTimeout(() => setEmojiStatus('idle'), 2500);
     };
 
-    const handleCopyColor = async (value: string, key: string) => {
+    const handleCopyColor = async (value: string, key: string, format: 'hex' | 'rgb', slug: string) => {
         const ok = await copyText(value, { successMessage: `تم النسخ: ${value}` });
         if (!ok) return;
+        trackEvent('syid_asset_action', { action: 'copy_color', format, slug });
         setCopiedColorKey(key);
         window.setTimeout(() => setCopiedColorKey(null), 2000);
     };
 
     return (
         <MainLayout>
-            <div className="mx-auto w-full max-w-6xl space-y-12 px-4 py-6 sm:px-6 sm:py-10" dir="rtl">
-                <header className="space-y-4">
-                    <SyidBreadcrumbs currentLabel="العلم السوري" />
+            <PageHeader
+                title="علم الجمهورية العربية السورية الجديد"
+                description="تحميل علم سوريا الجديد بصيغة SVG المتّجهة وصور PNG بدقات 640 و1280 و1920 و4K، مع زر نسخ إيموجي العلم مباشرة، النسب الهندسية المعتمدة (2:3)، أكواد الألوان، والخلفيات الرسمية."
+                breadcrumbs={[
+                    { label: 'الهوية البصرية', href: '/syid' },
+                    { label: 'العلم السوري' },
+                ]}
+                divider
+            />
 
-                    <div className="space-y-2">
-                        <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-foreground">
-                            علم الجمهورية العربية السورية الجديد
-                        </h1>
-                        <p className="text-sm sm:text-base text-muted-foreground max-w-3xl leading-relaxed">
-                            تحميل علم سوريا الجديد بصيغة SVG المتّجهة وصور PNG بدقات 640 و1280 و1920 و4K، مع زر نسخ إيموجي العلم مباشرة، النسب الهندسية المعتمدة (2:3)، أكواد الألوان، والخلفيات الرسمية.
-                        </p>
-                    </div>
-                </header>
+            <PageBody className="pt-6 space-y-10">
 
                 <section aria-labelledby="flag-hero-heading" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     <Card className="lg:col-span-7 border border-border rounded-2xl overflow-hidden">
@@ -207,6 +208,13 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
                                 key={file.id}
                                 file={file}
                                 primary={index === 0 || index === 1}
+                                onDownload={() =>
+                                    trackEvent('syid_asset_action', {
+                                        action: 'download',
+                                        format: file.format.toLowerCase(),
+                                        slug: file.id,
+                                    })
+                                }
                             />
                         ))}
                     </div>
@@ -232,6 +240,13 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
                                     key={file.id}
                                     href={file.path}
                                     download={file.download_name}
+                                    onClick={() =>
+                                        trackEvent('syid_asset_action', {
+                                            action: 'download',
+                                            format: file.format.toLowerCase(),
+                                            slug: file.id,
+                                        })
+                                    }
                                     className="inline-flex items-center gap-2 rounded-lg border border-border bg-card hover:bg-muted px-4 h-10 text-xs font-medium text-foreground transition-colors"
                                 >
                                     <Download className="h-3.5 w-3.5 text-primary shrink-0" aria-hidden="true" />
@@ -271,7 +286,7 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
                                         <div dir="ltr" className="space-y-1.5 font-mono text-xs">
                                             <button
                                                 type="button"
-                                                onClick={() => handleCopyColor(color.hex, hexKey)}
+                                                onClick={() => handleCopyColor(color.hex, hexKey, 'hex', color.hex)}
                                                 aria-label={`نسخ كود اللون ${color.hex}`}
                                                 className="flex items-center justify-between w-full rounded-md border border-border bg-muted/40 hover:bg-muted px-2.5 py-1.5 text-foreground transition-colors"
                                             >
@@ -284,7 +299,7 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => handleCopyColor(color.rgb, rgbKey)}
+                                                onClick={() => handleCopyColor(color.rgb, rgbKey, 'rgb', color.hex)}
                                                 aria-label={`نسخ كود اللون ${color.rgb}`}
                                                 className="flex items-center justify-between w-full rounded-md border border-border bg-muted/40 hover:bg-muted px-2.5 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
                                             >
@@ -319,7 +334,7 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
                                                 <button
                                                     key={color.hex}
                                                     type="button"
-                                                    onClick={() => handleCopyColor(color.hex, pKey)}
+                                                    onClick={() => handleCopyColor(color.hex, pKey, 'hex', color.hex)}
                                                     aria-label={`نسخ كود اللون ${color.hex} من لوحة ${palette.name}`}
                                                     className="rounded-lg border border-border p-2.5 text-center transition-transform hover:scale-[1.02]"
                                                     style={{
@@ -386,6 +401,13 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
                                                 key={dl.id}
                                                 href={dl.path}
                                                 download={dl.download_name}
+                                                onClick={() =>
+                                                    trackEvent('syid_asset_action', {
+                                                        action: 'download',
+                                                        format: dl.format.toLowerCase(),
+                                                        slug: dl.id,
+                                                    })
+                                                }
                                                 className={
                                                     idx === 0
                                                         ? 'inline-flex items-center justify-center gap-2 flex-1 rounded-lg bg-primary px-3.5 h-10 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors'
@@ -441,6 +463,7 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
                                     href={flag.guide.pdf_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'pdf', slug: 'flag-guide' })}
                                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 h-10 text-xs sm:text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                                 >
                                     <Download className="h-4 w-4" aria-hidden="true" />
@@ -544,7 +567,7 @@ export default function SyidFlagPage({ syid }: SyidFlagPageProps) {
                         ))}
                     </ul>
                 </footer>
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

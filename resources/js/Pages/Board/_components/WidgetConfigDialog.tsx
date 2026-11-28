@@ -17,9 +17,9 @@ export function WidgetConfigDialog(props: {
 
   return (
     <Dialog open={!!def} onOpenChange={(open) => !open && props.onClose()}>
-      <DialogContent>
-        <div dir="rtl">
-          <DialogHeader className="text-right">
+      <DialogContent dir="rtl">
+        <div>
+          <DialogHeader className="text-start">
             <DialogTitle>{def ? `إعدادات ${def.name}` : 'إعدادات'}</DialogTitle>
             <DialogDescription>تُحفظ التغييرات تلقائياً</DialogDescription>
           </DialogHeader>

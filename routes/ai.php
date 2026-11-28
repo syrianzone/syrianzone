@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\RequireApiToken;
 use App\Mcp\Servers\AdminServer;
+use App\Mcp\Servers\PublicServer;
 use Laravel\Mcp\Facades\Mcp;
 
 /*
@@ -39,5 +40,10 @@ if (config('mcp.enabled')) {
             'auth:sanctum',
             RequireApiToken::class,
             'throttle:'.config('mcp.rate_limiter', 'mcp'),
+        ]);
+
+    Mcp::web('/mcp/public', PublicServer::class)
+        ->middleware([
+            'throttle:public-api',
         ]);
 }

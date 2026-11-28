@@ -53,7 +53,7 @@ describe('the site-module catalogue', () => {
         }
 
         const grouped = groupSiteLinks(SITE_LINKS.filter((l) => l.isInternal));
-        expect(grouped.map((g) => g.id)).toEqual(['daily', 'maps', 'politics', 'directories', 'community']);
+        expect(grouped.map((g) => g.id)).toEqual(['daily', 'maps', 'state', 'interactive', 'community']);
 
         const jard = siteModule('jard');
         expect(jard?.iconUrl).toBe('https://jard.chat/images/logo-light.svg');

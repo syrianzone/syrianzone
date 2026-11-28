@@ -1,4 +1,5 @@
 import { apiErrorMessage } from '@/Lib/api';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { notify } from '@/Lib/notify';
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/Components/ui/card';
@@ -102,6 +103,7 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
     setIndex(0);
     setResumeInfo(null);
     setPhase('quiz');
+    trackEvent('compass_quiz_milestone', { step: 'start', version: v });
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -132,9 +134,10 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
     else {
       setPhase('result');
       setResultToken((t) => t + 1);
+      trackEvent('compass_quiz_milestone', { step: 'complete', version });
       topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, [index, items.length]);
+  }, [index, items.length, version]);
 
   const goPrev = useCallback(() => {
     if (index > 0) setIndex((i) => i - 1);

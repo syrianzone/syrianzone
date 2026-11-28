@@ -1,58 +1,89 @@
 import { TIERS, TIER_KEYS, type TierKey } from "@/Domain/polls/tiers";
+import { resolveShareBrandTokens } from "@/Lib/theme";
 
-type ExportTierDataOptions = {
+export type ExportTierDataOptions = {
     tiers: Record<TierKey, Array<{ name: string; title?: string | null; imageUrl?: string | null }>>;
     basePath?: string;
     fileName?: string;
     width?: number;
     scale?: number;
     watermarkText?: string;
-    logoSrc?: string;
+    themeId?: string;
+    groupName?: string;
 };
 
 function loadImage(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve) => {
         const img = new Image();
-        // Only set crossOrigin for network URLs; data:/blob: don't need it and some browsers mishandle it
         if (/^https?:\/\//i.test(src)) {
             img.crossOrigin = "anonymous";
         }
-        (img as any).decoding = "sync";
+        (img as HTMLImageElement & { decoding?: string }).decoding = "sync";
         img.onload = () => resolve(img);
         img.onerror = () => resolve(img);
         img.src = src;
     });
 }
 
-export async function exportTierListFromData(options: ExportTierDataOptions): Promise<void> {
+function drawRoundedRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    r: number,
+) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+}
+
+export async function renderTierListFile(options: ExportTierDataOptions): Promise<File> {
     const {
         tiers,
-        basePath = "",
-        fileName = "tier-list.jpg",
+        fileName = "tier-list.png",
         width = 1000,
         scale = 2,
         watermarkText = "syrian.zone/tierlist",
-        logoSrc = "/assets/logo-lightmode.svg",
+        themeId = "nili",
+        groupName,
     } = options;
+
+    const tokens = resolveShareBrandTokens(themeId);
+    if (typeof document !== "undefined" && document.fonts) {
+        try {
+            await document.fonts.ready;
+        } catch {
+            /* ignore */
+        }
+    }
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-    // Object URLs of the transcoded candidate photos, revoked once drawn.
     const transcodedUrls: string[] = [];
-    const origin = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "";
+    const origin = typeof window !== "undefined" && window.location?.origin ? window.location.origin : "";
+
     function resolveUrl(u: string): string {
         if (!u) return u;
         if (u.startsWith("http://") || u.startsWith("https://")) return u;
         if (u.startsWith("/")) return `${origin}${u}`;
         return u;
     }
-    // Transcode a remote image URL into a JPEG data URL for reliable canvas rendering (iOS Safari)
-    async function transcodeToDataUrl(url: string, targetW: number, targetH: number, mode: "cover" | "contain" = "cover"): Promise<string | undefined> {
+
+    async function transcodeToDataUrl(
+        url: string,
+        targetW: number,
+        targetH: number,
+        mode: "cover" | "contain" = "cover",
+    ): Promise<string | undefined> {
         try {
             const abs = resolveUrl(url);
-            // Fetched cross-origin, not through a same-origin proxy: R2 serves these
-            // with Access-Control-Allow-Origin, so the blob keeps the canvas untainted.
-            const res = await fetch(abs, { cache: "no-store", mode: 'cors' });
+            const res = await fetch(abs, { cache: "no-store", mode: "cors" });
             if (!res.ok) return undefined;
             const blob = await res.blob();
             const objUrl = URL.createObjectURL(blob);
@@ -63,8 +94,8 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
                 img.src = objUrl;
             });
             URL.revokeObjectURL(objUrl);
-            const srcW = (img as any).naturalWidth || img.width;
-            const srcH = (img as any).naturalHeight || img.height;
+            const srcW = img.naturalWidth || img.width;
+            const srcH = img.naturalHeight || img.height;
             let canvasW = targetW;
             let canvasH = targetH;
             if (mode === "contain") {
@@ -81,8 +112,7 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
             off.height = Math.max(1, canvasH);
             const octx = off.getContext("2d");
             if (!octx) return undefined;
-            // white background to avoid transparent issues in JPEG
-            octx.fillStyle = "#ffffff";
+            octx.fillStyle = tokens.card;
             octx.fillRect(0, 0, off.width, off.height);
             if (mode === "cover") {
                 const minSide = Math.max(1, Math.min(srcW, srcH));
@@ -97,9 +127,7 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
                 const dy = Math.floor((off.height - dh) / 2);
                 octx.drawImage(img, dx, dy, dw, dh);
             }
-            // toBlob encodes off the main thread; toDataURL blocked it once
-            // per candidate and then held a base64 copy of every photo.
-            const out = await new Promise<Blob | null>((resolve) => off.toBlob(resolve, "image/jpeg", 0.95));
+            const out = await new Promise<Blob | null>((resolve) => off.toBlob(resolve, "image/jpeg", 0.94));
             if (!out) return undefined;
             const outUrl = URL.createObjectURL(out);
             transcodedUrls.push(outUrl);
@@ -113,10 +141,9 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
         return u.replace(/\.(avif|webp|png|jpg|jpeg)$/i, `.${ext}`);
     }
 
-    async function loadBestImageDataUrl(src: string, targetW: number, targetH: number, mode: "cover" | "contain" = "cover"): Promise<string | undefined> {
-        let data = await transcodeToDataUrl(src, targetW, targetH, mode);
+    async function loadBestImageDataUrl(src: string, targetW: number, targetH: number): Promise<string | undefined> {
+        let data = await transcodeToDataUrl(src, targetW, targetH, "cover");
         if (data) return data;
-        // Try common fallbacks for formats Safari may not decode
         const candidates: string[] = [];
         if (/\.(avif)$/i.test(src)) {
             candidates.push(swapExtension(src, "jpg"), swapExtension(src, "jpeg"), swapExtension(src, "png"));
@@ -124,59 +151,33 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
             candidates.push(swapExtension(src, "jpg"), swapExtension(src, "png"));
         }
         for (const c of candidates) {
-            data = await transcodeToDataUrl(c, targetW, targetH, mode);
+            data = await transcodeToDataUrl(c, targetW, targetH, "cover");
             if (data) return data;
         }
         return undefined;
     }
-    // Local safe image loader: fetch as blob and use object URL to improve cross-browser reliability (iOS Safari)
-    const objectUrls: string[] = [];
-    async function loadImageSafe(url: string): Promise<HTMLImageElement | undefined> {
-        try {
-            const res = await fetch(url, { cache: "force-cache", mode: "cors" as RequestMode });
-            if (!res.ok) return undefined;
-            const blob = await res.blob();
-            const objUrl = URL.createObjectURL(blob);
-            objectUrls.push(objUrl);
-            const img = new Image();
-            (img as any).decoding = "sync";
-            // iOS Safari sometimes needs a small defer before assigning src for blob URLs
-            await new Promise((r) => setTimeout(r, 0));
-            await new Promise((resolve) => {
-                img.onload = () => resolve(null);
-                img.onerror = () => resolve(null);
-                img.src = objUrl;
-            });
-            return img;
-        } catch {
-            return undefined;
-        }
-    }
 
-    const fontFamily = 'IBM Plex Sans Arabic, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
+    const bodyFont = '"IBM Plex Sans Arabic", system-ui, -apple-system, Segoe UI, Arial, sans-serif';
+    const displayFont = '"Beiruti", "IBM Plex Sans Arabic", system-ui, sans-serif';
+    const monoFont = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
-    // Measure footer (text + logo) to expand canvas width if needed to avoid cropping
-    const footerFont = "bold 16px " + fontFamily;
-    const measureCtx = document.createElement("canvas").getContext("2d") as CanvasRenderingContext2D;
-    measureCtx.font = footerFont;
-    const footerTextWidth = measureCtx.measureText(watermarkText).width;
-    const footerGap = 12;
-    const footerLogoW = 32;
-    const footerMinWidth = Math.ceil(footerTextWidth + footerGap + footerLogoW + 40);
-    const finalWidth = Math.max(width, footerMinWidth);
-
-    const padding = { top: 16, right: 16, bottom: 16, left: 16 };
-    const labelWidth = 90;
-    const rowGap = 8; // gap between tiers
+    const railWidth = 8;
+    const padding = { top: 20, right: 24 + railWidth, bottom: 18, left: 24 };
+    const headerH = 62;
+    const footerH = 48;
+    const labelWidth = 92;
+    const rowGap = 8;
     const itemWidth = 120;
     const itemHeight = 160;
-    const itemGap = 8; // horizontal gap between items
-    const internalRowGap = 10; // vertical gap between rows inside the same tier
+    const itemGap = 8;
+    const internalRowGap = 10;
     const tierTopPad = 10;
     const tierBottomPad = 10;
 
+    const finalWidth = Math.max(width, 640);
     const areaW = finalWidth - padding.left - padding.right - labelWidth;
     const maxPerRow = Math.max(1, Math.floor((areaW + itemGap) / (itemWidth + itemGap)));
+
     const tierHeights: Record<TierKey, number> = { S: 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
     let contentHeight = 0;
     for (const k of TIER_KEYS) {
@@ -186,38 +187,76 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
         tierHeights[k] = blockHeight;
         contentHeight += blockHeight;
     }
-    const watermarkH = 64;
-    const height = padding.top + contentHeight + rowGap * (TIER_KEYS.length - 1) + padding.bottom + watermarkH;
+
+    const height =
+        padding.top +
+        headerH +
+        14 +
+        contentHeight +
+        rowGap * (TIER_KEYS.length - 1) +
+        16 +
+        footerH +
+        padding.bottom;
+
     canvas.width = Math.floor(finalWidth * scale);
     canvas.height = Math.floor(height * scale);
     ctx.scale(scale, scale);
 
-    ctx.fillStyle = "#ffffff";
+    // Madar ground
+    ctx.fillStyle = tokens.ground;
     ctx.fillRect(0, 0, finalWidth, height);
-    try { (ctx as any).direction = "rtl"; } catch { }
-    const rtl = (s: string) => s;
-    ctx.font = "14px " + fontFamily;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
 
-    function wrapText(text: string, maxWidthPx: number, lineHeight: number): string[] {
-        const words = text.split(/\s+/);
-        const lines: string[] = [];
-        let line = "";
-        for (const w of words) {
-            const test = line ? line + " " + w : w;
-            const m = ctx.measureText(test);
-            if (m.width > maxWidthPx && line) {
-                lines.push(line);
-                line = w;
-            } else {
-                line = test;
-            }
-        }
-        if (line) lines.push(line);
-        return lines.slice(0, 2);
+    // Right-edge Madar primary rail + saffron node notch
+    ctx.fillStyle = tokens.primary;
+    ctx.fillRect(finalWidth - railWidth, 0, railWidth, height);
+    ctx.fillStyle = tokens.node;
+    ctx.fillRect(finalWidth - railWidth, padding.top + 8, railWidth, 32);
+
+    try {
+        (ctx as CanvasRenderingContext2D & { direction?: string }).direction = "rtl";
+    } catch {
+        /* ignore */
     }
 
+    // Header bar
+    const headerCenterY = padding.top + headerH / 2 - 4;
+    const rightEdge = finalWidth - padding.right;
+
+    // Saffron node indicator + Madar wordmark title
+    ctx.fillStyle = tokens.node;
+    drawRoundedRect(ctx, rightEdge - 14, headerCenterY - 7, 14, 14, 4);
+    ctx.fill();
+
+    ctx.fillStyle = tokens.ink;
+    ctx.font = `800 24px ${displayFont}`;
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText("المساحة السورية", rightEdge - 24, headerCenterY);
+
+    // Module pill on the left (RTL end)
+    const pillText = groupName ? `تقييم: ${groupName}` : "قائمة التقييم";
+    ctx.font = `700 13px ${bodyFont}`;
+    const pillTextW = ctx.measureText(pillText).width;
+    const pillW = pillTextW + 24;
+    const pillH = 28;
+    const pillX = padding.left;
+    const pillY = headerCenterY - pillH / 2;
+    ctx.fillStyle = tokens.card;
+    ctx.strokeStyle = tokens.border;
+    ctx.lineWidth = 1;
+    drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 14);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = tokens.primary;
+    ctx.textAlign = "center";
+    ctx.fillText(pillText, pillX + pillW / 2, headerCenterY);
+
+    // Header rule
+    const headerBottomY = padding.top + headerH;
+    ctx.fillStyle = tokens.border;
+    ctx.fillRect(padding.left, headerBottomY, finalWidth - padding.left - padding.right, 1);
+
+    // Load avatars
     const loaded: Map<string, HTMLImageElement> = new Map();
     const toLoad: string[] = [];
     for (const k of TIER_KEYS) {
@@ -230,51 +269,80 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
     }
     await Promise.all(
         toLoad.map(async (srcAbs) => {
-            // Transcode avatars to a square JPEG to avoid CORS/taint issues and format incompatibilities
-            const dataUrl = await loadBestImageDataUrl(srcAbs, 256, 256, "cover");
+            const dataUrl = await loadBestImageDataUrl(srcAbs, 256, 256);
             if (!dataUrl) return;
             const img = await loadImage(dataUrl);
             loaded.set(srcAbs, img);
-        })
+        }),
     );
 
-    let y = padding.top;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    function wrapText(text: string, maxWidthPx: number): string[] {
+        const words = text.split(/\s+/);
+        const lines: string[] = [];
+        let line = "";
+        for (const w of words) {
+            const test = line ? `${line} ${w}` : w;
+            if (ctx.measureText(test).width > maxWidthPx && line) {
+                lines.push(line);
+                line = w;
+            } else {
+                line = test;
+            }
+        }
+        if (line) lines.push(line);
+        return lines.slice(0, 2);
+    }
+
+    let y = headerBottomY + 14;
     for (const k of TIER_KEYS) {
         const items = tiers[k] || [];
         const blockHeight = tierHeights[k];
+
+        // Tier label block (placed on RTL start = right side)
+        const labelX = finalWidth - padding.right - labelWidth;
         ctx.fillStyle = TIERS[k].color;
-        ctx.fillRect(padding.left, y, labelWidth, blockHeight);
+        drawRoundedRect(ctx, labelX, y, labelWidth, blockHeight, 8);
+        ctx.fill();
+
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 24px " + fontFamily;
-        ctx.fillText(rtl(k), padding.left + labelWidth / 2, y + 24);
-        ctx.font = "600 16px " + fontFamily;
-        ctx.fillText(rtl(TIERS[k].arabic), padding.left + labelWidth / 2, y + 52);
-        ctx.font = "600 14px " + fontFamily;
-        const areaX = padding.left + labelWidth;
-        const areaY = y;
-        const areaWFull = finalWidth - padding.left - padding.right - labelWidth;
+        ctx.font = `bold 24px ${displayFont}`;
+        ctx.fillText(k, labelX + labelWidth / 2, y + blockHeight / 2 - 14);
+        ctx.font = `700 15px ${bodyFont}`;
+        ctx.fillText(TIERS[k].arabic, labelX + labelWidth / 2, y + blockHeight / 2 + 14);
+
+        // Tier drop area on the left of the label
+        const areaX = padding.left;
+        const areaWFull = finalWidth - padding.left - padding.right - labelWidth - 6;
         ctx.save();
+        ctx.fillStyle = tokens.isDark ? "rgba(255,255,255,0.025)" : "rgba(255,255,255,0.55)";
+        drawRoundedRect(ctx, areaX, y, areaWFull, blockHeight, 8);
+        ctx.fill();
         ctx.setLineDash([4, 4]);
-        ctx.strokeStyle = "#e5e7eb";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(areaX, areaY, areaWFull, blockHeight);
+        ctx.strokeStyle = tokens.border;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
         ctx.restore();
+
         const total = items.length;
-        const rows = Math.max(1, Math.ceil(total / maxPerRow));
         for (let idx = 0; idx < total; idx++) {
             const rowIndex = Math.floor(idx / maxPerRow);
             const colIndex = idx % maxPerRow;
             const itemsInRow = Math.min(maxPerRow, total - rowIndex * maxPerRow);
             const rowContentWidth = itemsInRow * itemWidth + (itemsInRow - 1) * itemGap;
-            const rowStartX = areaX + Math.max(0, Math.floor((areaW - rowContentWidth) / 2));
+            const rowStartX = areaX + Math.max(0, Math.floor((areaWFull - rowContentWidth) / 2));
             const cx = rowStartX + colIndex * (itemWidth + itemGap);
             const cy = y + tierTopPad + rowIndex * (itemHeight + internalRowGap);
             const it = items[idx];
-            ctx.fillStyle = "#ffffff";
-            ctx.strokeStyle = "#e5e7eb";
+
+            ctx.fillStyle = tokens.card;
+            ctx.strokeStyle = tokens.border;
             ctx.lineWidth = 1;
-            ctx.fillRect(cx, cy, itemWidth, itemHeight);
-            ctx.strokeRect(cx, cy, itemWidth, itemHeight);
+            drawRoundedRect(ctx, cx, cy, itemWidth, itemHeight, 8);
+            ctx.fill();
+            ctx.stroke();
 
             const imgSrc = it.imageUrl || "";
             const imgKey = resolveUrl(imgSrc);
@@ -285,103 +353,91 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
                 const ix = cx + Math.floor((itemWidth - iw) / 2);
                 const iy = cy + 8;
                 ctx.save();
-                ctx.beginPath();
-                const r = 6;
-                ctx.moveTo(ix + r, iy);
-                ctx.arcTo(ix + iw, iy, ix + iw, iy + ih, r);
-                ctx.arcTo(ix + iw, iy + ih, ix, iy + ih, r);
-                ctx.arcTo(ix, iy + ih, ix, iy, r);
-                ctx.arcTo(ix, iy, ix + iw, iy, r);
-                ctx.closePath();
+                drawRoundedRect(ctx, ix, iy, iw, ih, 6);
                 ctx.clip();
-                const srcW = (img as any).naturalWidth || img.width;
-                const srcH = (img as any).naturalHeight || img.height;
+                const srcW = img.naturalWidth || img.width;
+                const srcH = img.naturalHeight || img.height;
                 const minSide = Math.max(1, Math.min(srcW, srcH));
                 const sx = Math.floor((srcW - minSide) / 2);
                 const sy = Math.floor((srcH - minSide) / 2);
                 ctx.drawImage(img, sx, sy, minSide, minSide, ix, iy, iw, ih);
                 ctx.restore();
             } else {
-                ctx.fillStyle = "#f3f4f6";
-                ctx.fillRect(cx + 12, cy + 12, 96, 96);
+                ctx.fillStyle = tokens.mutedSurface;
+                drawRoundedRect(ctx, cx + 12, cy + 8, 96, 96, 6);
+                ctx.fill();
             }
 
-            ctx.fillStyle = "#111111";
-            ctx.font = "600 12px " + fontFamily;
-            const lines = wrapText(it.name ? rtl(it.name) : "", itemWidth - 12, 14);
+            ctx.fillStyle = tokens.ink;
+            ctx.font = `700 13px ${bodyFont}`;
+            const lines = wrapText(it.name || "", itemWidth - 12);
             lines.forEach((ln, i) => {
-                ctx.fillText(ln, cx + itemWidth / 2, cy + 112 + i * 14);
+                ctx.fillText(ln, cx + itemWidth / 2, cy + 114 + i * 15);
             });
             if (it.title) {
-                ctx.font = "12px " + fontFamily;
-                const tlines = wrapText(rtl(it.title), itemWidth - 12, 12);
+                ctx.fillStyle = tokens.muted;
+                ctx.font = `500 11.5px ${bodyFont}`;
+                const tlines = wrapText(it.title, itemWidth - 12);
                 tlines.forEach((ln, i) => {
-                    ctx.fillText(ln, cx + itemWidth / 2, cy + 112 + lines.length * 14 + 4 + i * 12);
+                    ctx.fillText(ln, cx + itemWidth / 2, cy + 114 + lines.length * 15 + 4 + i * 13);
                 });
             }
-
         }
 
         y += blockHeight + rowGap;
     }
 
-    ctx.fillStyle = "#111111";
-    ctx.font = "bold 16px " + fontFamily;
-    const gap = 12;
-    const textWidth = ctx.measureText(watermarkText).width;
-    let logoImg: HTMLImageElement | undefined;
+    // Footer rule & Madar attribution
+    const footerTopY = y + 8;
+    ctx.fillStyle = tokens.border;
+    ctx.fillRect(padding.left, footerTopY, finalWidth - padding.left - padding.right, 1);
+
+    const footerMidY = footerTopY + footerH / 2;
+    ctx.fillStyle = tokens.muted;
+    ctx.font = `600 13px ${bodyFont}`;
+    ctx.textAlign = "right";
+    ctx.fillText("المساحة السورية", rightEdge, footerMidY);
+
     try {
-        const src = logoSrc.startsWith("/") ? `${basePath}${logoSrc}` : logoSrc;
-        const logoDataUrl = await transcodeToDataUrl(src, 0, 32, "contain");
-        if (logoDataUrl) logoImg = await loadImage(logoDataUrl);
-    } catch { }
-    const logoH = 32;
-    let logoDrawW = 0;
-    if (logoImg) {
-        const sW = (logoImg as any).naturalWidth || logoImg.width || logoH;
-        const sH = (logoImg as any).naturalHeight || logoImg.height || logoH;
-        const ratio = sH > 0 ? (logoH / sH) : 1;
-        logoDrawW = Math.max(1, Math.round(sW * ratio));
+        (ctx as CanvasRenderingContext2D & { direction?: string }).direction = "ltr";
+    } catch {
+        /* ignore */
     }
-    const totalW = textWidth + (logoImg ? gap + logoDrawW : 0);
-    const startX = Math.max(10, Math.floor((finalWidth - totalW) / 2));
-    const footerTop = height - (padding.bottom + watermarkH);
-    const by = footerTop + Math.floor(watermarkH / 2);
-    const prevAlign = ctx.textAlign;
-    const prevDir = (ctx as any).direction;
-    try { (ctx as any).direction = "ltr"; } catch { }
+    ctx.fillStyle = tokens.primary;
+    ctx.font = `700 14px ${monoFont}`;
     ctx.textAlign = "left";
-    ctx.fillText(watermarkText, startX, by);
-    if (logoImg && logoDrawW > 0) {
-        const lx = startX + textWidth + gap;
-        const ly = by - Math.floor(logoH / 2);
-        ctx.drawImage(logoImg, lx, ly, logoDrawW, logoH);
+    ctx.fillText(watermarkText, padding.left, footerMidY);
+
+    try {
+        transcodedUrls.forEach((u) => URL.revokeObjectURL(u));
+    } catch {
+        /* ignore */
     }
-    ctx.textAlign = prevAlign;
-    try { (ctx as any).direction = prevDir; } catch { }
 
-    try { [...objectUrls, ...transcodedUrls].forEach((u) => URL.revokeObjectURL(u)); } catch { }
-
-    // JPEG for Safari compatibility, PNG if the encoder refuses. toBlob keeps
-    // the encode off the main thread and the download off a multi-MB data URL.
     const encode = (type: string, quality?: number) =>
         new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
-    let blob = await encode("image/jpeg", 0.95);
-    let ext = "jpg";
+    let blob = await encode("image/png");
+    let ext = "png";
+    let mime = "image/png";
     if (!blob) {
-        blob = await encode("image/png");
-        ext = "png";
+        blob = await encode("image/jpeg", 0.95);
+        ext = "jpg";
+        mime = "image/jpeg";
     }
     if (!blob) throw new Error("tier list image could not be encoded");
-    // The name follows the bytes, so a JPEG is never saved as ".png".
+
     const base = fileName.replace(/\.(png|jpe?g)$/i, "") || "tier-list";
-    const url = URL.createObjectURL(blob);
+    return new File([blob], `${base}.${ext}`, { type: mime });
+}
+
+export async function exportTierListFromData(options: ExportTierDataOptions): Promise<void> {
+    const file = await renderTierListFile(options);
+    const url = URL.createObjectURL(file);
     const link = document.createElement("a");
-    link.download = `${base}.${ext}`;
+    link.download = file.name;
     link.href = url;
     document.body.appendChild(link);
     link.click();
     link.remove();
-    // Revoked later: some browsers start reading the URL after click() returns.
     setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }

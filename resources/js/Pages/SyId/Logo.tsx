@@ -5,8 +5,9 @@ import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { MEDIA_BASE } from '@/Domain/govapps/media';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { SYID_FACTS, type SyidFacts } from '@/Domain/syid/facts';
-import { SyidBreadcrumbs } from './_components/SyidBreadcrumbs';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { DownloadRow } from './_components/DownloadRow';
 
 interface SyidLogoPageProps {
@@ -21,19 +22,17 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
 
     return (
         <MainLayout>
-            <div className="mx-auto w-full max-w-6xl space-y-12 px-4 py-6 sm:px-6 sm:py-10" dir="rtl">
-                <header className="space-y-4">
-                    <SyidBreadcrumbs currentLabel="الشعار" />
+            <PageHeader
+                title="شعار الجمهورية العربية السورية الجديد (العقاب الذهبي)"
+                description="تحميل الشعار الرسمي للجمهورية العربية السورية المُطلق في 3 تموز 2025 بصيغ SVG وPNG بدقة 4K و1080px وPDF للطباعة، بالنسخ الذهبية والأحادية (الأسود والأبيض)، مع دلالاته الرسمية وضوابط استخدامه الموثّقة."
+                breadcrumbs={[
+                    { label: 'الهوية البصرية', href: '/syid' },
+                    { label: 'الشعار' },
+                ]}
+                divider
+            />
 
-                    <div className="space-y-2">
-                        <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-foreground">
-                            شعار الجمهورية العربية السورية الجديد (العقاب الذهبي)
-                        </h1>
-                        <p className="text-sm sm:text-base text-muted-foreground max-w-3xl leading-relaxed">
-                            تحميل الشعار الرسمي للجمهورية العربية السورية المُطلق في 3 تموز 2025 بصيغ SVG وPNG بدقة 4K و1080px وPDF للطباعة، بالنسخ الذهبية والأحادية (الأسود والأبيض)، مع دلالاته الرسمية وضوابط استخدامه الموثّقة.
-                        </p>
-                    </div>
-                </header>
+            <PageBody className="pt-6 space-y-10">
 
                 <section aria-labelledby="emblem-hero-heading" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     <Card className="lg:col-span-5 border border-border rounded-2xl overflow-hidden">
@@ -67,6 +66,13 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
                                     key={file.id}
                                     file={file}
                                     primary={index === 0 || index === 1}
+                                    onDownload={() =>
+                                        trackEvent('syid_asset_action', {
+                                            action: 'download',
+                                            format: file.format.toLowerCase(),
+                                            slug: file.id,
+                                        })
+                                    }
                                 />
                             ))}
                         </div>
@@ -86,6 +92,7 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
                                     href={officialZipUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    onClick={() => trackEvent('syid_asset_action', { action: 'download', format: 'zip', slug: 'emblem-pack' })}
                                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 h-10 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                                 >
                                     <Download className="h-4 w-4" aria-hidden="true" />
@@ -151,6 +158,13 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
                                                 key={file.id}
                                                 href={file.path}
                                                 download={file.download_name}
+                                                onClick={() =>
+                                                    trackEvent('syid_asset_action', {
+                                                        action: 'download',
+                                                        format: file.format.toLowerCase(),
+                                                        slug: file.id,
+                                                    })
+                                                }
                                                 className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background hover:bg-muted/60 px-3 py-2 text-xs transition-colors"
                                             >
                                                 <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
@@ -301,7 +315,7 @@ export default function SyidLogoPage({ syid }: SyidLogoPageProps) {
                             ))}
                     </ul>
                 </footer>
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

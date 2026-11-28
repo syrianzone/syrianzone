@@ -37,8 +37,8 @@ function themeTokens(id: string, isDark: boolean): Record<string, string> {
   };
 }
 
-/** `105 15.2% 36.1%` -> `#556a4e`; an independent conversion of the CSS token. */
-function hslToHex(value: string): string {
+/** `105 15.2% 36.1%` -> `[r, g, b]` in `0..1`. */
+function hslToRgb(value: string): [number, number, number] {
   const match = value.match(/^([\d.]+)\s+([\d.]+)%\s+([\d.]+)%$/);
   if (!match) throw new Error(`"${value}" is not an HSL triple`);
   const hue = Number(match[1]) / 30;
@@ -48,9 +48,33 @@ function hslToHex(value: string): string {
   const channel = (n: number) => {
     const k = (n + hue) % 12;
     const scale = Math.max(-1, Math.min(k - 3, 9 - k, 1));
-    return Math.round((lightness - a * scale) * 255).toString(16).padStart(2, '0');
+    return lightness - a * scale;
   };
-  return `#${channel(0)}${channel(8)}${channel(4)}`;
+  return [channel(0), channel(8), channel(4)];
+}
+
+/** `105 15.2% 36.1%` -> `#556a4e`; an independent conversion of the CSS token. */
+function hslToHex(value: string): string {
+  const [r, g, b] = hslToRgb(value);
+  const hex = (v: number) => Math.round(v * 255).toString(16).padStart(2, '0');
+  return `#${hex(r)}${hex(g)}${hex(b)}`;
+}
+
+/** WCAG 2.1 relative luminance for an HSL triple token. */
+function relativeLuminance(hsl: string): number {
+  const [r, g, b] = hslToRgb(hsl).map((c) =>
+    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
+  );
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG 2.1 contrast ratio between two HSL triple tokens. */
+function contrastRatio(a: string, b: string): number {
+  const l1 = relativeLuminance(a);
+  const l2 = relativeLuminance(b);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 describe('the single theme record', () => {
@@ -123,6 +147,42 @@ describe('the single theme record', () => {
     const scriptAt = blade.indexOf('data-theme');
     expect(metaAt).toBeGreaterThan(-1);
     expect(scriptAt).toBeGreaterThan(metaAt);
+  });
+
+  it('meets WCAG 2.1 contrast thresholds across all 14 concrete themes', () => {
+    const concrete = THEME_REGISTRY.filter((entry) => entry.id !== SYSTEM_THEME);
+    expect(concrete).toHaveLength(14);
+
+    for (const theme of concrete) {
+      const tokens = themeTokens(theme.id, theme.isDark);
+
+      expect(
+        contrastRatio(tokens['--primary'], tokens['--primary-foreground']),
+        `${theme.id}: --primary vs --primary-foreground`,
+      ).toBeGreaterThanOrEqual(4.5);
+
+      expect(
+        contrastRatio(tokens['--foreground'], tokens['--background']),
+        `${theme.id}: --foreground vs --background`,
+      ).toBeGreaterThanOrEqual(4.5);
+
+      expect(
+        contrastRatio(tokens['--card-foreground'], tokens['--card']),
+        `${theme.id}: --card-foreground vs --card`,
+      ).toBeGreaterThanOrEqual(4.5);
+
+      for (const markToken of ['--sz-orbit', '--sz-bowl', '--sz-node'] as const) {
+        expect(
+          contrastRatio(tokens[markToken], tokens['--background']),
+          `${theme.id}: ${markToken} vs --background`,
+        ).toBeGreaterThanOrEqual(3.0);
+
+        expect(
+          contrastRatio(tokens[markToken], tokens['--card']),
+          `${theme.id}: ${markToken} vs --card`,
+        ).toBeGreaterThanOrEqual(3.0);
+      }
+    }
   });
 });
 

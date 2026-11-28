@@ -393,7 +393,7 @@ export default function GovtCvsAdminSlots({ slots = [], institutions = [] }: Pro
             </div>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent dir="rtl" className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
                     <form onSubmit={saveSlot} className="space-y-4" noValidate>
                         <DialogHeader>
                             <DialogTitle>

@@ -12,7 +12,7 @@ import {
     Shield,
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
-import { MinistriesIcon } from '@/Components/Icons/ProjectIcons';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
@@ -83,96 +83,64 @@ export default function MinistriesIndex({
 
     return (
         <MainLayout>
-            {/* Hero */}
-            <section className="relative overflow-hidden border-b border-border/50 bg-gradient-to-b from-primary/10 via-background to-background py-10 md:py-14">
-                <div className="container mx-auto max-w-6xl px-4">
-                    <div className="mx-auto max-w-3xl text-center space-y-4">
-                        <div className="flex justify-center">
-                            <a
-                                href={meta.source_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            >
-                                <span>موثّق من المراسيم الرسمية وجَرد</span>
-                                <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <PageHeader
+                title="وزارات سوريا والحكومة السورية"
+                description="دليل موثّق للتشكيل الوزاري السوري الحالي والهيئات السيادية، والخط الزمني لتعاقب الوزراء ومسارات الدمج والفصل الوزاري عبر أربع مراحل حكومية (2024–2026)، مع ربط مباشر بالسير الذاتية والحسابات والتطبيقات الرسمية."
+                divider
+                actions={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button asChild size="sm" className="h-9 gap-1.5">
+                            <a href="#government-timeline">
+                                <History className="h-4 w-4" aria-hidden="true" />
+                                <span>الخط الزمني</span>
                             </a>
-                        </div>
-
-                        <div className="flex items-center justify-center gap-3">
-                            <span
-                                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-card shadow-xs"
-                                aria-hidden="true"
-                            >
-                                <MinistriesIcon className="h-7 w-7" />
-                            </span>
-                            <h1 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl md:text-5xl">
-                                وزارات سوريا والحكومة السورية
-                            </h1>
-                        </div>
-
-                        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                            دليل موثّق للتشكيل الوزاري السوري الحالي والهيئات السيادية، والخط الزمني لتعاقب الوزراء
-                            ومسارات الدمج والفصل الوزاري عبر أربع مراحل حكومية بين عامي{' '}
-                            <span dir="ltr" className="tabular-nums font-medium text-foreground">
-                                2024–2026
-                            </span>
-                            ، مع ربط مباشر بالسير الذاتية والحسابات والتطبيقات الرسمية.
-                        </p>
-
-                        <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
-                            <Button asChild size="sm" className="min-h-10 gap-2">
-                                <a href="#government-timeline">
-                                    <History className="h-4 w-4" aria-hidden="true" />
-                                    <span>الخط الزمني للحكومة</span>
-                                </a>
-                            </Button>
-                            <Button asChild variant="outline" size="sm" className="min-h-10 gap-2">
-                                <Link href="/govtcvs">
-                                    <IdCard className="h-4 w-4" aria-hidden="true" />
-                                    <span>السير الذاتية للمسؤولين</span>
-                                </Link>
-                            </Button>
-                            <Button asChild variant="outline" size="sm" className="min-h-10 gap-2">
-                                <Link href="/syofficial">
-                                    <Landmark className="h-4 w-4" aria-hidden="true" />
-                                    <span>دليل الحسابات الرسمية</span>
-                                </Link>
-                            </Button>
-                        </div>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <Link href="/govtcvs">
+                                <IdCard className="h-4 w-4" aria-hidden="true" />
+                                <span>السير الذاتية</span>
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                            <Link href="/syofficial">
+                                <Landmark className="h-4 w-4" aria-hidden="true" />
+                                <span>الحسابات الرسمية</span>
+                            </Link>
+                        </Button>
                     </div>
+                }
+            />
 
-                    {/* Quick stats */}
-                    <dl className="mx-auto mt-8 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
-                        <div className="rounded-xl border border-border bg-card p-4 text-center">
-                            <dt className="text-xs font-medium text-muted-foreground">الوزارات الحالية</dt>
-                            <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
-                                {stats?.current_ministries ?? current_cabinet.length}
-                            </dd>
-                        </div>
-                        <div className="rounded-xl border border-border bg-card p-4 text-center">
-                            <dt className="text-xs font-medium text-muted-foreground">الهيئات السيادية</dt>
-                            <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
-                                {stats?.sovereign_bodies ?? sovereign_bodies.length}
-                            </dd>
-                        </div>
-                        <div className="rounded-xl border border-border bg-card p-4 text-center">
-                            <dt className="text-xs font-medium text-muted-foreground">وزارات مدمجة أو سابقة</dt>
-                            <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
-                                {stats?.historical_ministries ?? historical_ministries.length}
-                            </dd>
-                        </div>
-                        <div className="rounded-xl border border-border bg-card p-4 text-center">
-                            <dt className="text-xs font-medium text-muted-foreground">المراحل الحكومية</dt>
-                            <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
-                                {stats?.eras_count ?? eras.length}
-                            </dd>
-                        </div>
-                    </dl>
-                </div>
-            </section>
+            <PageBody className="pt-6 space-y-10 md:space-y-12">
 
-            <div className="container mx-auto max-w-6xl space-y-12 px-4 py-8 md:py-10">
+                {/* Quick stats */}
+                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-xl border border-border bg-card p-4 text-center">
+                        <dt className="text-xs font-medium text-muted-foreground">الوزارات الحالية</dt>
+                        <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
+                            {stats?.current_ministries ?? current_cabinet.length}
+                        </dd>
+                    </div>
+                    <div className="rounded-xl border border-border bg-card p-4 text-center">
+                        <dt className="text-xs font-medium text-muted-foreground">الهيئات السيادية</dt>
+                        <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
+                            {stats?.sovereign_bodies ?? sovereign_bodies.length}
+                        </dd>
+                    </div>
+                    <div className="rounded-xl border border-border bg-card p-4 text-center">
+                        <dt className="text-xs font-medium text-muted-foreground">وزارات مدمجة أو سابقة</dt>
+                        <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
+                            {stats?.historical_ministries ?? historical_ministries.length}
+                        </dd>
+                    </div>
+                    <div className="rounded-xl border border-border bg-card p-4 text-center">
+                        <dt className="text-xs font-medium text-muted-foreground">المراحل الحكومية</dt>
+                        <dd className="mt-1 text-2xl font-black tabular-nums text-foreground">
+                            {stats?.eras_count ?? eras.length}
+                        </dd>
+                    </div>
+                </dl>
+
                 {/* 1. Current Cabinet */}
                 <section aria-labelledby="current-cabinet-heading" className="space-y-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -237,7 +205,7 @@ export default function MinistriesIndex({
                 <section
                     id="government-timeline"
                     aria-labelledby="timeline-heading"
-                    className="scroll-mt-20 space-y-5"
+                    className="scroll-mt-20 space-y-5 [content-visibility:auto] [contain-intrinsic-size:auto_1200px]"
                 >
                     <div className="space-y-1">
                         <h2
@@ -261,7 +229,7 @@ export default function MinistriesIndex({
                 </section>
 
                 {/* 3. Mergers, Splits & Structural Changes */}
-                <section aria-labelledby="restructurings-heading" className="space-y-5">
+                <section aria-labelledby="restructurings-heading" className="space-y-5 [content-visibility:auto] [contain-intrinsic-size:auto_900px]">
                     <div className="space-y-1">
                         <h2
                             id="restructurings-heading"
@@ -476,7 +444,7 @@ export default function MinistriesIndex({
                         </p>
                     )}
                 </footer>
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

@@ -33,7 +33,7 @@ import sys
 # a page is missing, so "0 violations" covers every page.
 PUBLIC_ROUTES = [
     "/", "/about", "/privacy", "/terms", "/stats",
-    "/syofficial", "/phonebook", "/govapps", "/party", "/house",
+    "/syofficial", "/phonebook", "/govapps", "/house",
     "/justice", "/sites", "/syrian-contributors", "/syid", "/syid/logo", "/syid/flag", "/atlas",
     "/crossings", "/governorates", "/shawarma", "/roznama", "/priorities", "/alignment",
     "/compass", "/compass/stats", "/tierlist", "/tierlist/leaderboard",

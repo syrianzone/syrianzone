@@ -1,27 +1,77 @@
 import React, { Suspense, useEffect, useState } from 'react';
-import { AuthProvider } from '@/Contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/Contexts/AuthContext';
 import ConditionalLayout from '@/Components/ConditionalLayout';
-import RadioMiniPlayer from '@/Domain/quran/RadioMiniPlayer';
-import ConfirmHost from '@/Components/ConfirmHost';
 import RouteAnnouncer from '@/Components/RouteAnnouncer';
 import AnalyticsConsentBanner from '@/Components/AnalyticsConsentBanner';
 import SeoHead from '@/Components/SeoHead';
 import { Toaster } from '@/Components/ui/sonner';
-import { useUsageTracker } from '@/Domain/quran/usageStore';
-import SettingsSync from '@/Domain/settings/SettingsSyncView';
+import { useIsRadioActive, useUsageTracker } from '@/Domain/quran/usageStore';
 import { focusInlineSearch, useAppShell } from '@/Lib/appShell';
+import { onConfirmRequested } from '@/Lib/confirm';
 
-const GlobalCommandPalette = React.lazy(() => import('@/Components/GlobalCommandPalette'));
+const loadCommandPalette = () => import('@/Components/GlobalCommandPalette');
+const GlobalCommandPalette = React.lazy(loadCommandPalette);
+const ConfirmHost = React.lazy(() => import('@/Components/ConfirmHost'));
+const SettingsSync = React.lazy(() => import('@/Domain/settings/SettingsSyncView'));
+const RadioMiniPlayer = React.lazy(() => import('@/Domain/quran/RadioMiniPlayer'));
 
-/** Mount the palette a few seconds after load if nothing asked for it sooner. */
-const PALETTE_IDLE_TIMEOUT_MS = 3000;
+/** Warm the command palette chunk on hover/focus of a search trigger. */
+export function prefetchCommandPalette(): void {
+    void loadCommandPalette();
+}
+
+/** Mounts ConfirmHost only once confirmDialog() is actually invoked. */
+function DeferredConfirmHost() {
+    const [needed, setNeeded] = useState(false);
+
+    useEffect(() => {
+        if (needed) return;
+        return onConfirmRequested(() => setNeeded(true));
+    }, [needed]);
+
+    if (!needed) return null;
+
+    return (
+        <Suspense fallback={null}>
+            <ConfirmHost />
+        </Suspense>
+    );
+}
+
+/** Mounts SettingsSync only for signed-in visitors. */
+function AuthOnlySettingsSync() {
+    const { user } = useAuth();
+    if (!user?.id) return null;
+
+    return (
+        <Suspense fallback={null}>
+            <SettingsSync />
+        </Suspense>
+    );
+}
+
+/**
+ * Mounts RadioMiniPlayer lazily only once continuous Quran radio is active
+ * (whether started on /muslim/radio or via the Board widget). Because the
+ * player store lives outside React, it survives Inertia page transitions so
+ * floating controls stay mounted on every route while preserving SSR parity
+ * and idle first-load bundle splitting.
+ */
+function DeferredRadioMiniPlayer() {
+    const radioActive = useIsRadioActive();
+
+    if (!radioActive) return null;
+
+    return (
+        <Suspense fallback={null}>
+            <RadioMiniPlayer />
+        </Suspense>
+    );
+}
 
 /**
  * The palette is a large search UI that only does work once opened, so it is
- * mounted after the page is idle instead of on every page. The first open still
- * works: an open request in the store, or the Ctrl/Cmd+K shortcut before the
- * chunk arrives, mounts it immediately and the store keeps the request so the
- * palette opens as soon as it is ready.
+ * loaded strictly on demand (open trigger, Ctrl/Cmd+K, or hover prefetch).
  *
  * Nothing is rendered on the server or on the first client render, so SSR and
  * hydration stay identical.
@@ -35,19 +85,6 @@ function DeferredCommandPalette() {
     useEffect(() => {
         if (open) setMounted(true);
     }, [open]);
-
-    useEffect(() => {
-        const w = window as Window & {
-            requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
-            cancelIdleCallback?: (id: number) => void;
-        };
-        if (typeof w.requestIdleCallback === 'function') {
-            const id = w.requestIdleCallback(() => setMounted(true), { timeout: PALETTE_IDLE_TIMEOUT_MS });
-            return () => w.cancelIdleCallback?.(id);
-        }
-        const id = window.setTimeout(() => setMounted(true), PALETTE_IDLE_TIMEOUT_MS);
-        return () => window.clearTimeout(id);
-    }, []);
 
     // The one Ctrl/Cmd+K handler for the app. A page that renders an inline
     // search field (the homepage) registers its focus function in the store, so
@@ -90,12 +127,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <ConditionalLayout>
                 {children}
             </ConditionalLayout>
-            <SettingsSync />
+            <AuthOnlySettingsSync />
             <DeferredCommandPalette />
-            <RadioMiniPlayer />
+            <DeferredRadioMiniPlayer />
             {/* One feedback language for the whole app: toasts + confirmations. */}
             <Toaster />
-            <ConfirmHost />
+            <DeferredConfirmHost />
             {/* Mounted once here so every layout (incl. the full-screen transit
                 map and studio) gets the analytics consent card exactly once. */}
             <AnalyticsConsentBanner />

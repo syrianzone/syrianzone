@@ -227,10 +227,15 @@ Route::get('/justice', function () {
 // Working hours ship with the page and the open/closed status is computed in the
 // browser against Syria time, so there is nothing to query server-side here.
 Route::get('/crossings', function () {
-    return Inertia::render('Crossings/Index');
+    $data = \App\Models\Crossing::publicDataset();
+
+    return Inertia::render('Crossings/Index', [
+        'initialCrossings' => $data['crossings'],
+        'crossingsMeta' => $data['meta'],
+    ]);
 });
 Route::get('/crossings/{slug}', function (string $slug) {
-    $data = \App\Support\Facts::json('crossings');
+    $data = \App\Models\Crossing::publicDataset();
     $found = collect($data['crossings'] ?? [])->firstWhere('slug', $slug);
     abort_if($found === null, 404);
 
@@ -249,6 +254,7 @@ Route::get('/crossings/{slug}', function (string $slug) {
 
     return Inertia::render('Crossings/Show', [
         'slug' => $slug,
+        'crossing' => $found,
         'governorate' => $governorate,
     ]);
 })->where('slug', '[a-z0-9-]+');
@@ -285,7 +291,7 @@ Route::get('/syid/logo', [ExternalDataController::class, 'syidLogo']);
 Route::get('/syid/flag', [ExternalDataController::class, 'syidFlag']);
 Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors']);
 Route::get('/sites', [ExternalDataController::class, 'sites']);
-Route::get('/party', [ExternalDataController::class, 'party']);
+Route::redirect('/party', '/', 301);
 Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/house/members/{member_number}', [ExternalDataController::class, 'houseMember'])->where('member_number', '[0-9]+');
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
@@ -432,6 +438,13 @@ Route::middleware('auth:web,sanctum')->group(function () {
         Route::post('/api/v1/admin/api-tokens/revoke-all/{userId}', [ApiTokenAdminController::class, 'revokeAllForUser'])
             ->whereNumber('userId')
             ->middleware('agent_tokens');
+    });
+
+    // Civic CRUD admin API (Crossings, Syrian Sites, House Members 2026).
+    // admin-api-civic-crud.php applies auth:sanctum, FirstPartyAdminTransport,
+    // and superadmin under the v1/admin prefix.
+    Route::prefix('api')->middleware('throttle:120,1')->group(function () {
+        require __DIR__.'/admin-api-civic-crud.php';
     });
 
     // Hosted-file manager. `assets.manage` is granted to the superadmin role

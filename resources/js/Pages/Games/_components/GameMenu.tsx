@@ -3,6 +3,7 @@ import { BarChart3, Settings2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -29,9 +30,10 @@ export default function GameMenu({ stats, options }: Props) {
         <DialogTrigger asChild>
           <HeaderButton icon={BarChart3}>الإحصائيات</HeaderButton>
         </DialogTrigger>
-        <DialogContent dir="rtl" className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        <DialogContent dir="rtl" className="max-h-[85dvh] overflow-y-auto sm:max-w-md">
           <DialogHeader className="text-start sm:text-start">
             <DialogTitle>الإحصائيات</DialogTitle>
+            <DialogDescription className="sr-only">إحصائيات اللعب والنتائج</DialogDescription>
           </DialogHeader>
           {stats}
         </DialogContent>
@@ -41,9 +43,10 @@ export default function GameMenu({ stats, options }: Props) {
         <DialogTrigger asChild>
           <HeaderButton icon={Settings2}>خيارات</HeaderButton>
         </DialogTrigger>
-        <DialogContent dir="rtl" className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        <DialogContent dir="rtl" className="max-h-[85dvh] overflow-y-auto sm:max-w-md">
           <DialogHeader className="text-start sm:text-start">
             <DialogTitle>خيارات</DialogTitle>
+            <DialogDescription className="sr-only">خيارات وإعدادات اللعبة</DialogDescription>
           </DialogHeader>
           {options}
         </DialogContent>

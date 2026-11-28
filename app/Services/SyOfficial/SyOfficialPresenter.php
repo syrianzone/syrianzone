@@ -57,8 +57,7 @@ class SyOfficialPresenter
     private function publicImage(?string $image): ?string
     {
         if ($image !== null && $image !== '' && ! str_starts_with($image, 'http') && ! str_starts_with($image, '/')) {
-            $r2Url = env('R2_PUBLIC_URL')
-                ?: (config('filesystems.disks.r2.url') ?: Facts::media()['public_base']);
+            $r2Url = config('filesystems.disks.r2.url') ?: Facts::media()['public_base'];
 
             return rtrim($r2Url, '/').'/'.SyOfficialDirectoryService::IMAGE_DIR.'/'.basename($image);
         }

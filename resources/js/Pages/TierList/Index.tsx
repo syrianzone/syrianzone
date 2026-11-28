@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { AlertCircleIcon, BarChart3Icon } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { CORE_POLL_SLUG } from '@/Domain/polls/core';
 
 interface TierListPageProps {
@@ -20,44 +21,35 @@ interface TierListPageProps {
 export default function Index({ poll, candidates = [], groups = [], voteDay }: TierListPageProps) {
     return (
         <MainLayout>
-            
-            <div className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
-                <div className="max-w-screen-lg mx-auto mb-4 flex justify-end">
-                    <Button asChild variant="outline" className="gap-2">
+            <PageHeader
+                title="تير ليست الحكومة السورية الجديدة"
+                description="رتّب أداء الوزراء وشارك بطاقة تقييمك، أو استعرض النتائج الجماعية."
+                divider
+                actions={
+                    <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
                         <Link href="/tierlist/leaderboard">
                             <BarChart3Icon className="h-4 w-4" aria-hidden="true" />
-                            عرض النتائج
+                            <span>عرض النتائج</span>
                         </Link>
                     </Button>
-                </div>
+                }
+            />
 
-                <div className="max-w-screen-lg mx-auto mb-4">
-                    <Alert>
-                        <AlertCircleIcon className="h-5 w-5" />
-                        <div>
-                            <AlertTitle>تنويه</AlertTitle>
-                            <AlertDescription>
-                                هذه منصة تصويت جماهيرية ذات طابع مجتمعي، وغايتها إتاحة مساحة للتعبير والمشاركة في القضايا المطروحة. وما يُنشر من نتائج يعكس أصوات المشاركين وتوجهاتهم، ولا يمثل رأياً رسمياً، ولا يرتبط بأي جهة حكومية.
-                            </AlertDescription>
-                        </div>
-                    </Alert>
-                </div>
+            <PageBody className="pt-5 space-y-5">
 
-                <h1 className="text-3xl font-extrabold text-center mb-4 text-foreground">تير ليست الحكومة السورية الجديدة</h1>
-                <p className="text-center text-muted-foreground mb-6">
-                    يمكن حفظ صورة جاهزة لمشاركتها على السوشال ميديا بسهولة من خلال الزر الموجود في آخر الصفحة
+                <Alert>
+                    <AlertCircleIcon className="h-4 w-4" aria-hidden="true" />
+                    <div>
+                        <AlertTitle>تنويه</AlertTitle>
+                        <AlertDescription>
+                            هذه منصة تصويت جماهيرية ذات طابع مجتمعي، وغايتها إتاحة مساحة للتعبير والمشاركة في القضايا المطروحة. وما يُنشر من نتائج يعكس أصوات المشاركين وتوجهاتهم، ولا يمثل رأياً رسمياً، ولا يرتبط بأي جهة حكومية.
+                        </AlertDescription>
+                    </div>
+                </Alert>
+
+                <p className="text-xs text-muted-foreground">
+                    على الكمبيوتر: اسحب وأفلت اسم الوزير في القائمة · على الموبايل: انقر على اسم الوزير ثم انقر على الصف المطلوب.
                 </p>
-
-                <Card className="max-w-screen-lg mx-auto mb-6">
-                    <CardContent className="p-4">
-                        <p className="text-center text-muted-foreground mb-3">
-                            في نسخة الكمبيوتر: يمكنك سحب وافلات اسم الوزير في القائمة
-                        </p>
-                        <p className="text-center text-muted-foreground">
-                            في نسخة الموبايل: يمكنك النقر على اسم الوزير ثم النقر على المكان في القائمة لنقله
-                        </p>
-                    </CardContent>
-                </Card>
 
                 {poll ? (
                     <TierBoard
@@ -68,13 +60,13 @@ export default function Index({ poll, candidates = [], groups = [], voteDay }: T
                         pollSlug={CORE_POLL_SLUG}
                     />
                 ) : (
-                    <Card className="max-w-screen-lg mx-auto">
-                        <CardContent className="p-6 text-center text-gray-600 dark:text-gray-400">
+                    <Card>
+                        <CardContent className="p-6 text-center text-muted-foreground">
                             لم يتم تهيئة الاستبيان بعد. يرجى إعادة المحاولة لاحقًا.
                         </CardContent>
                     </Card>
                 )}
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

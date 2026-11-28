@@ -207,7 +207,7 @@ class PromisesAdminController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         $request->validate([
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192', 'dimensions:max_width=4800,max_height=4800'],
             'kind' => ['nullable', Rule::in(['speaker', 'source'])],
         ], $this->rules->messages());
 
@@ -215,7 +215,7 @@ class PromisesAdminController extends Controller
         $file = $request->file('image');
         $filename = Str::uuid().'.'.$file->extension();
 
-        if (config('filesystems.disks.r2.bucket')) {
+        if (config('filesystems.media_disk', 'public') === 'r2' && ! empty(config('filesystems.disks.r2.bucket'))) {
             $path = "promises/{$folder}/{$filename}";
             $disk = Storage::disk('r2');
             $disk->putFileAs("promises/{$folder}", $file, $filename, 'public');

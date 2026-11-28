@@ -55,6 +55,7 @@ interface F3aliaEvent {
 
 import { Label } from "@/Components/ui/label";
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
 import {
     accountPatchForLocation,
@@ -166,6 +167,173 @@ function parseIsoCalendarDate(iso?: string): Date | null {
     return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
+/** Leaf 1-second clock so the rest of Roznama doesn't re-render every second. */
+function LiveClockDisplay({
+    mounted,
+    prayerTimeZone,
+    apiHijri,
+    serverToday,
+    fallbackDate,
+}: {
+    mounted: boolean;
+    prayerTimeZone?: string;
+    apiHijri: string | null;
+    serverToday?: RoznamaServerToday;
+    fallbackDate: Date;
+}) {
+    const [now, setNow] = useState<Date>(() => new Date());
+
+    useEffect(() => {
+        if (!mounted) return;
+        setNow(new Date());
+        const timer = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, [mounted]);
+
+    const timeText = mounted
+        ? now.toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false,
+              timeZone: prayerTimeZone,
+          })
+        : '--:--:--';
+
+    const gregorianText = mounted
+        ? prayerTimeZone
+            ? (() => {
+                  const wall = wallDateIn(now, prayerTimeZone);
+                  return formatGregorianSyrian(new Date(wall.year, wall.month - 1, wall.day), 'latn');
+              })()
+            : formatGregorianSyrian(now, 'latn')
+        : serverToday?.gregorianAr || formatGregorianSyrian(fallbackDate, 'latn');
+
+    const hijriText = mounted
+        ? apiHijri || formatHijriDate(now, prayerTimeZone, 'latn')
+        : serverToday?.hijriAr || '\u00A0';
+
+    return (
+        <div className="text-center py-4 bg-muted/30 rounded-2xl border border-border/50">
+            <div className="text-5xl font-bold text-foreground font-mono tracking-wider mb-2 tabular-nums">
+                {timeText}
+            </div>
+            <div className="text-sm font-semibold text-foreground mt-2">
+                {gregorianText}
+            </div>
+            <div className="text-xs text-primary font-medium mt-1 min-h-[1rem]">
+                {hijriText}
+            </div>
+        </div>
+    );
+}
+
+/** Leaf 1-second prayer countdown + schedule rows so ticking stays local. */
+function LivePrayerSchedule({
+    prayerTimes,
+    prayerTimeZone,
+    loading,
+    error,
+}: {
+    prayerTimes: ReturnType<typeof usePrayerTimes>['timings'];
+    prayerTimeZone?: string;
+    loading: boolean;
+    error: string | null;
+}) {
+    const [now, setNow] = useState<Date>(() => new Date());
+
+    useEffect(() => {
+        if (!prayerTimes) return;
+        setNow(new Date());
+        const timer = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, [prayerTimes]);
+
+    const schedule = useMemo(
+        () => prayerSchedule(prayerTimes, now, { timeZone: prayerTimeZone }),
+        [prayerTimes, now, prayerTimeZone],
+    );
+
+    return (
+        <>
+            {schedule?.next ? (
+                <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-4 flex items-center justify-between min-h-[76px]">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                            <PrayerIcon prayer={schedule.next.key} className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <span className="font-bold text-primary text-base">
+                                {schedule.next.isPrayer ? `صلاة ${schedule.next.label}` : schedule.next.label}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="text-end font-mono tabular-nums">
+                        <span className="text-xs text-foreground/70 block text-start font-medium">المتبقي</span>
+                        <span className="text-xl font-bold text-primary tracking-wider">
+                            {formatDuration(schedule.next.remainingMs)}
+                        </span>
+                    </div>
+                </div>
+            ) : (
+                <div className="mb-4 min-h-[76px] rounded-xl border border-border/40 bg-muted/20" aria-hidden="true" />
+            )}
+
+            {loading || !prayerTimes ? (
+                error ? (
+                    <div className="text-center py-8 text-sm text-destructive flex flex-col items-center gap-2 min-h-[348px] justify-center">
+                        <AlertCircle className="h-8 w-8 text-destructive" aria-hidden="true" />
+                        <p role="alert">{error}</p>
+                    </div>
+                ) : (
+                    <div className="min-h-[348px]" aria-hidden="true" />
+                )
+            ) : (
+                <div className="space-y-2 min-h-[348px]">
+                    {PRAYER_EVENTS.map((ev) => {
+                        const isActive = schedule?.active?.key === ev.key;
+                        const isNext = schedule?.next?.key === ev.key;
+                        return (
+                            <div
+                                key={ev.key}
+                                className={`flex items-center justify-between p-3 rounded-xl transition-all border ${
+                                    isActive
+                                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                                        : isNext
+                                        ? 'bg-primary/5 text-foreground border-primary/30 ring-1 ring-primary/10'
+                                        : 'bg-muted/10 text-foreground border-border/50 hover:bg-muted/20'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <PrayerIcon
+                                        prayer={ev.key}
+                                        className={`h-4 w-4 ${
+                                            isActive
+                                                ? 'text-primary-foreground'
+                                                : ev.key === 'Sunrise'
+                                                ? 'text-warning'
+                                                : 'text-primary'
+                                        }`}
+                                    />
+                                    <span className="font-semibold text-sm">{ev.label}</span>
+                                    {isActive && (
+                                        <Badge className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 text-[10px] font-bold h-5 px-1.5">
+                                            الآن
+                                        </Badge>
+                                    )}
+                                </div>
+                                <span className="font-mono text-sm font-bold tabular-nums">
+                                    {prayerTimes[ev.key]}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </>
+    );
+}
+
 export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageProps) {
     // One location preference, shared with Home, /muslim and the board.
     const location = useLocationPreference();
@@ -179,7 +347,9 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
     const handleMethodChange = (next: number) => {
         setPrefs({ method: next });
     };
-    const [currentTime, setCurrentTime] = useState<Date>(new Date());
+    const [todayDate, setTodayDate] = useState<Date>(
+        () => parseIsoCalendarDate(serverToday?.iso) ?? new Date(serverYear ?? new Date().getFullYear(), 0, 1),
+    );
     const [mounted, setMounted] = useState(false);
     const { weather } = useWeather(location, { enabled: mounted });
     const {
@@ -223,13 +393,9 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
 
     useEffect(() => {
         setMounted(true);
-        setCurrentTime(new Date());
-    }, []);
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
+        setTodayDate(new Date());
+        // Refresh day boundary once per minute (midnight rollover) without 1Hz root re-renders.
+        const timer = setInterval(() => setTodayDate(new Date()), 60_000);
         return () => clearInterval(timer);
     }, []);
 
@@ -288,41 +454,26 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
         if (isLoggedIn && Object.keys(accountPatch).length > 0) saveAccountSettings(accountPatch);
     };
 
-    // The clock and dates are labelled with the place, so they read in the
-    // place's zone (Damascus for a governorate), not this device's.
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: prayerTimeZone });
-    };
-
-    const formatDateGregorian = (date: Date) => {
-        if (!prayerTimeZone) return formatGregorianSyrian(date, 'latn');
-        const wall = wallDateIn(date, prayerTimeZone);
-        return formatGregorianSyrian(new Date(wall.year, wall.month - 1, wall.day), 'latn');
-    };
-
     /** An event's `YYYY-MM-DD` is a calendar date: never parse it as UTC midnight. */
     const formatEventDate = (value: string) => {
         const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
         return m ? formatGregorianSyrian(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), 'latn') : formatGregorianSyrianShort(value, 'latn');
     };
 
-    // Active and next prayer, one implementation shared with /muslim, Home and
-    // the board widget.
-    const schedule = useMemo(
-        () => prayerSchedule(prayerTimes, currentTime, { timeZone: prayerTimeZone }),
-        [prayerTimes, currentTime, prayerTimeZone],
-    );
     const apiHijri = hijriDateLabel(hijri);
 
     // Once per year, not once per clock tick.
-    const currentYear = currentTime.getFullYear();
+    const currentYear = mounted ? todayDate.getFullYear() : (serverYear ?? todayDate.getFullYear());
     const holidays = useMemo(() => holidaysForYear(currentYear), [currentYear]);
 
     // The national calendar day, not this browser's: the same boundary the
     // prayer log and the timings API use. One value for the holiday filter, the
     // "days left" badge and the events filter, recomputed once per day.
-    const syriaDayKey = todayKey(currentTime);
-    const startOfToday = useMemo(() => todayInSyria(currentTime), [syriaDayKey]);
+    const syriaDayKey = mounted ? todayKey(todayDate) : (serverToday?.iso ?? todayKey(todayDate));
+    const startOfToday = useMemo(
+        () => (mounted ? todayInSyria(todayDate) : (parseIsoCalendarDate(serverToday?.iso) ?? new Date(currentYear, 0, 1))),
+        [mounted, syriaDayKey, serverToday?.iso, currentYear],
+    );
 
     const nextHoliday = useMemo(() => {
         const next = holidays.find(h => h.date >= startOfToday) ?? holidaysForYear(currentYear + 1)[0];
@@ -343,18 +494,6 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
     const geoActive = mounted && isDeviceLocation(location) ? location.geo : null;
     const placeLabel = mounted ? resolvePlaceLabel(location) : activeGov.nameAr;
 
-    const displayYear = serverYear ?? currentYear;
-    const ssrTodayDate = useMemo(
-        () => parseIsoCalendarDate(serverToday?.iso) ?? new Date(displayYear, 0, 1),
-        [serverToday?.iso, displayYear],
-    );
-    const ssrNextHoliday = useMemo(() => {
-        const list = holidaysForYear(displayYear);
-        const next = list.find((h) => h.date >= ssrTodayDate) ?? holidaysForYear(displayYear + 1)[0];
-        const daysLeft = Math.ceil((next.date.getTime() - ssrTodayDate.getTime()) / (1000 * 60 * 60 * 24));
-        return { ...next, daysLeft };
-    }, [displayYear, ssrTodayDate]);
-
     const ramadanStart = ramadan?.expectedStartDate ?? '2027-02-08';
     const ramadanHijriYear = ramadan?.hijriYear ?? 1448;
     const ramadanDaysLeft = ramadan
@@ -364,116 +503,35 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
 
     return (
         <MainLayout>
-            
-
             <div 
                 className="min-h-screen text-foreground transition-colors" 
                 dir="rtl"
                 style={{ fontFamily: "var(--site-font, inherit)" }}
             >
-                
-                <section className="bg-card py-10 shadow-sm border-b border-border">
-                    <div className="container mx-auto px-4 text-center max-w-4xl">
-                        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
-                            الروزنامة السورية {mounted ? currentYear : displayYear} — التقويم والعطل الرسمية
-                        </h1>
-                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                            الروزنامة (التقويم) السورية لعرض التاريخ اليوم ميلادياً وهجرياً، والأعياد والعطل الرسمية، وكم باقي على رمضان ومواقيت الصلاة بتوقيت دمشق (وتُعرف أيضاً باسم «روزناما» سوريا).
-                        </p>
-                    </div>
-                </section>
+                <PageHeader
+                    title={`الروزنامة السورية ${currentYear} — التقويم والعطل الرسمية`}
+                    description="الروزنامة (التقويم) السورية لعرض التاريخ اليوم ميلادياً وهجرياً، والأعياد والعطل الرسمية، وكم باقي على رمضان ومواقيت الصلاة بتوقيت دمشق (وتُعرف أيضاً باسم «روزناما» سوريا)."
+                    divider
+                    actions={(
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 gap-1.5"
+                            onClick={() => setRoznamaSettingsOpen(true)}
+                        >
+                            <Settings className="h-4 w-4" aria-hidden="true" />
+                            <span>إعدادات الموقع والصلاة</span>
+                        </Button>
+                    )}
+                />
 
-                {!mounted && (
-                <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card className="border-border bg-card/60 shadow-sm">
-                            <CardContent className="p-5 space-y-1.5">
-                                <p className="text-xs font-semibold text-primary">التاريخ اليوم في سوريا</p>
-                                <p className="text-lg font-bold text-foreground">
-                                    {serverToday?.gregorianAr || formatGregorianSyrian(ssrTodayDate, 'latn')}
-                                </p>
-                                {serverToday?.hijriAr && (
-                                    <p className="text-sm text-muted-foreground">{serverToday.hijriAr}</p>
-                                )}
-                            </CardContent>
-                        </Card>
-                        <Card className="border-border bg-card/60 shadow-sm">
-                            <CardContent className="p-5 space-y-1.5">
-                                <p className="text-xs font-semibold text-primary">العطلة الرسمية القادمة</p>
-                                <p className="text-lg font-bold text-foreground">{ssrNextHoliday.nameAr}</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {formatGregorianSyrian(ssrNextHoliday.date, 'latn')} —{' '}
-                                    <span className="font-semibold text-foreground">
-                                        {ssrNextHoliday.daysLeft === 0
-                                            ? 'اليوم'
-                                            : ssrNextHoliday.daysLeft === 1
-                                                ? 'متبقٍ يوم واحد'
-                                                : ssrNextHoliday.daysLeft === 2
-                                                    ? 'متبقٍ يومان'
-                                                    : `متبقٍ ${ssrNextHoliday.daysLeft} يوماً`}
-                                    </span>
-                                </p>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-primary/20 bg-primary/5 shadow-sm">
-                            <CardContent className="p-5 space-y-1.5">
-                                <p className="text-xs font-semibold text-primary">كم باقي على رمضان {ramadanHijriYear}؟</p>
-                                <p className="text-lg font-bold text-foreground">
-                                    {ramadanStatus === 'during'
-                                        ? `شهر رمضان ${ramadanHijriYear} هـ جارٍ حالياً`
-                                        : ramadanStatus === 'after'
-                                            ? `إمساكية رمضان ${ramadanHijriYear} هـ`
-                                            : `متبقٍ ${ramadanDaysLeft} يوماً`}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    الغرة الفلكية المتوقعة: {formatGregorianSyrianShort(ramadanStart, 'latn')} ·{' '}
-                                    <Link href="/muslim/ramadan" className="font-semibold text-primary hover:underline">
-                                        عرض إمساكية رمضان
-                                    </Link>
-                                </p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                    <Card className="border-border bg-card/60 shadow-sm">
-                        <CardContent className="p-6">
-                            <h2 className="font-bold text-lg text-foreground flex items-center gap-2 mb-4 border-b border-border/60 pb-3">
-                                <Calendar className="h-5 w-5 text-primary" aria-hidden="true" />
-                                <span>العطل الرسمية في سوريا ({displayYear}م)</span>
-                            </h2>
-                            <ul className="divide-y divide-border/50 text-sm">
-                                {holidaysForYear(displayYear).map((h) => (
-                                    <li key={`${h.nameEn}-${h.date.getTime()}`} className="py-2.5">
-                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <span className="font-semibold text-foreground">{h.nameAr}</span>
-                                            <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">
-                                                {h.date.getFullYear()}-{String(h.date.getMonth() + 1).padStart(2, '0')}-{String(h.date.getDate()).padStart(2, '0')}
-                                            </span>
-                                        </div>
-                                        <p className="mt-0.5 text-xs text-muted-foreground">{h.description}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-border bg-muted/20 shadow-sm p-5">
-                        <div className="flex gap-3.5 items-start text-xs text-muted-foreground leading-relaxed">
-                            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                            <div>
-                                <span className="font-bold text-foreground block mb-1">ملاحظات حول تعديلات العطل الرسمية (المرسوم 188 لعام 2025):</span>
-                                أعاد المرسوم تنظيم التقويم الوطني بإدراج أعياد جديدة (عيد الثورة السورية 18 آذار، وعيد التحرير الوطني 8 كانون الأول تخليداً لسقوط الاستبداد في 8 ديسمبر 2024). وفي المقابل، أُلغيت رسمياً عطل النظام البائد السابقة (انقلاب 8 آذار، ذكرى حرب تشرين 6 تشرين الأول، عيد الشهداء 6 أيار، وعطلة عيد المعلم كعطلة عامة للدولة) لتأسيس روزنامة وطنية جامعة بعيدة عن رموز عهد الاستبداد.
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-                )}
-
-                {mounted && (
-                <div className="container mx-auto px-4 py-8 max-w-7xl">
+                <PageBody className="pt-6">
                     <Card className="mb-6 border-primary/20 bg-primary/5 shadow-sm">
                         <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <p className="font-bold text-sm text-foreground">
-                                    كم باقي على رمضان {ramadanHijriYear} هـ؟{' '}
+                                    كم باقي على رمضان {ramadanHijriYear}؟{' '}
                                     <span className="text-primary">
                                         {ramadanStatus === 'during'
                                             ? 'شهر رمضان جارٍ حالياً'
@@ -502,7 +560,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                 <CardContent className="p-6">
                                     <div className="flex justify-between items-center mb-6">
                                         <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
-                                            <MapPin className="h-4 w-4 text-primary" />
+                                            <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
                                             <span>{placeLabel}</span>
                                             {geoActive && (
                                                 <Badge variant="secondary" className="text-[10px]">موقع تلقائي</Badge>
@@ -510,19 +568,15 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                         </div>
                                     </div>
 
-                                    <div className="text-center py-4 bg-muted/30 rounded-2xl border border-border/50">
-                                        <div className="text-5xl font-bold text-foreground font-mono tracking-wider mb-2">
-                                            {formatTime(currentTime)}
-                                        </div>
-                                        <div className="text-sm font-semibold text-foreground mt-2">
-                                            {formatDateGregorian(currentTime)}
-                                        </div>
-                                        <div className="text-xs text-primary font-medium mt-1">
-                                            {apiHijri || formatHijriDate(currentTime, prayerTimeZone, 'latn')}
-                                        </div>
-                                    </div>
+                                    <LiveClockDisplay
+                                        mounted={mounted}
+                                        prayerTimeZone={prayerTimeZone}
+                                        apiHijri={apiHijri}
+                                        serverToday={serverToday}
+                                        fallbackDate={startOfToday}
+                                    />
 
-                                    <div className="mt-4 p-4 bg-muted/20 rounded-2xl border border-border/40 flex items-center justify-between">
+                                    <div className="mt-4 p-4 bg-muted/20 rounded-2xl border border-border/40 flex items-center justify-between min-h-[70px]">
                                         <div className="flex items-center gap-3">
                                             {weather ? (
                                                 <>
@@ -554,14 +608,14 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <h2 className="text-lg font-bold text-foreground">{nextHoliday.nameAr}</h2>
                                                     {nextHoliday.isNew && (
-                                                        <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white text-[9px] h-4 px-1">
+                                                        <Badge className="bg-success hover:bg-success/90 text-success-foreground text-[9px] h-4 px-1">
                                                             جديد
                                                         </Badge>
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-muted-foreground">{nextHoliday.description}</p>
                                                 <div className="flex items-center gap-2 text-xs font-medium text-primary">
-                                                    <CalendarDays className="h-4 w-4" />
+                                                    <CalendarDays className="h-4 w-4" aria-hidden="true" />
                                                     <span>
                                                         {formatGregorianSyrian(nextHoliday.date, 'latn')}
                                                     </span>
@@ -570,7 +624,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
 
                                             <div className="bg-primary text-primary-foreground px-5 py-3 rounded-2xl text-center shadow-md self-stretch sm:self-auto flex flex-col justify-center min-w-[110px]">
                                                 <span className="text-[10px] uppercase opacity-85 block mb-1">متبقٍ عليها</span>
-                                                <span className="text-2xl font-extrabold font-mono leading-none">
+                                                <span className="text-2xl font-extrabold font-mono leading-none tabular-nums">
                                                     {nextHoliday.daysLeft}
                                                 </span>
                                                 <span className="text-[10px] mt-1 block">
@@ -583,7 +637,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                             <div className="mt-4 pt-4 border-t border-border/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs" dir="rtl">
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-1.5 text-primary font-bold">
-                                                        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                                                        <Sparkles className="h-3.5 w-3.5 animate-pulse" aria-hidden="true" />
                                                         <span>الفعالية القادمة: {nextEvent.name}</span>
                                                     </div>
                                                     <div className="text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
@@ -607,7 +661,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                                     className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-0.5 bg-primary/10 px-2.5 py-1 rounded border border-primary/20 hover:bg-primary/15 transition-colors shrink-0"
                                                 >
                                                     <span>التفاصيل</span>
-                                                    <ExternalLink className="h-3 w-3" />
+                                                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
                                                 </a>
                                             </div>
                                         )}
@@ -624,7 +678,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                     <div>
                                         <div className="flex items-center justify-between mb-4 border-b border-border/60 pb-3">
                                             <h2 className="font-bold text-lg text-foreground flex items-center gap-2 min-w-0">
-                                                <Clock className="h-5 w-5 shrink-0 text-primary" />
+                                                <Clock className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                                                 <span className="truncate">مواقيت الصلاة في {placeLabel}</span>
                                             </h2>
                                             <div className="flex shrink-0 items-center gap-1.5">
@@ -638,78 +692,17 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                                     title="إعدادات الروزنامة"
                                                     onClick={() => setRoznamaSettingsOpen(true)}
                                                 >
-                                                    <Settings className="h-4 w-4" />
+                                                    <Settings className="h-4 w-4" aria-hidden="true" />
                                                 </Button>
                                             </div>
                                         </div>
 
-                                        {schedule?.next && (
-                                            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-4 flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                                                        <PrayerIcon prayer={schedule.next.key} className="h-5 w-5" />
-                                                    </div>
-                                                    <div>
-                                                        <span className="font-bold text-primary text-base">
-                                                            {schedule.next.isPrayer ? `صلاة ${schedule.next.label}` : schedule.next.label}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="text-end font-mono">
-                                                    <span className="text-xs text-foreground/70 block text-start font-medium">المتبقي</span>
-                                                    <span className="text-xl font-bold text-primary tracking-wider">
-                                                        {formatDuration(schedule.next.remainingMs)}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {loading ? (
-                                            <div className="min-h-[348px]" aria-hidden="true" />
-                                        ) : error ? (
-                                            <div className="text-center py-8 text-sm text-destructive flex flex-col items-center gap-2">
-                                                <AlertCircle className="h-8 w-8 text-destructive" />
-                                                <p role="alert">{error}</p>
-                                            </div>
-                                        ) : prayerTimes ? (
-                                            <div className="space-y-2">
-                                                {PRAYER_EVENTS.map(ev => {
-                                                    const isActive = schedule?.active?.key === ev.key;
-                                                    const isNext = schedule?.next?.key === ev.key;
-                                                    return (
-                                                        <div
-                                                            key={ev.key}
-                                                            className={`flex items-center justify-between p-3 rounded-xl transition-all border ${
-                                                                isActive
-                                                                    ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-[1.02]'
-                                                                    : isNext
-                                                                    ? 'bg-primary/5 text-foreground border-primary/30 ring-1 ring-primary/10'
-                                                                    : 'bg-muted/10 text-foreground border-border/50 hover:bg-muted/20'
-                                                            }`}
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <PrayerIcon prayer={ev.key} className={`h-4 w-4 ${
-                                                                    isActive
-                                                                        ? 'text-primary-foreground'
-                                                                        : ev.key === 'Sunrise'
-                                                                            ? 'text-orange-600 dark:text-orange-400'
-                                                                            : 'text-primary'
-                                                                }`} />
-                                                                <span className="font-semibold text-sm">{ev.label}</span>
-                                                                {isActive && (
-                                                                    <Badge className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 text-[10px] font-bold h-5 px-1.5">
-                                                                        الآن
-                                                                    </Badge>
-                                                                )}
-                                                            </div>
-                                                            <span className="font-mono text-sm font-bold">
-                                                                {prayerTimes[ev.key]}
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        ) : null}
+                                        <LivePrayerSchedule
+                                            prayerTimes={prayerTimes}
+                                            prayerTimeZone={prayerTimeZone}
+                                            loading={loading}
+                                            error={error}
+                                        />
                                     </div>
 
                                     <div className="text-[10px] text-muted-foreground mt-4 text-center leading-relaxed space-y-1.5">
@@ -740,7 +733,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                         <div>
                                             <h2 className="font-bold text-lg text-foreground flex items-center gap-2">
                                                 <Calendar className="h-5 w-5 text-primary" />
-                                                <span>العطل الرسمية في سوريا ({currentTime.getFullYear()}م)</span>
+                                                <span>العطل الرسمية في سوريا ({currentYear}م)</span>
                                             </h2>
                                         </div>
                                         <div className="flex items-center gap-4">
@@ -778,7 +771,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                                 <span className={`font-bold text-sm truncate ${isPast ? 'text-muted-foreground' : 'text-foreground'}`}>{holiday.nameAr}</span>
                                                                 {holiday.isNew && (
-                                                                    <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white text-[9px] font-bold h-4 px-1">
+                                                                    <Badge className="bg-success hover:bg-success/90 text-success-foreground text-[9px] font-bold h-4 px-1">
                                                                         جديد
                                                                     </Badge>
                                                                 )}
@@ -786,7 +779,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                                             <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                                                                 <span className={`font-semibold ${isPast ? 'text-muted-foreground' : 'text-foreground/75'}`}>
                                                                     {formatGregorianSyrianShort(holiday.date, 'latn')}
-                                                                    {holiday.date.getFullYear() !== currentTime.getFullYear() && ` (${holiday.date.getFullYear()})`}
+                                                                    {holiday.date.getFullYear() !== currentYear && ` (${holiday.date.getFullYear()})`}
                                                                 </span>
                                                                 {holiday.description && (
                                                                     <>
@@ -912,7 +905,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                                                         <Badge 
                                                             className={`${
                                                                 event.isFree 
-                                                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 border-emerald-500/30' 
+                                                                    ? 'bg-success/10 text-success hover:bg-success/15 border-success/30' 
                                                                     : 'bg-primary/10 text-primary hover:bg-primary/15 border-primary/20'
                                                             } border text-[10px] font-bold h-5 px-1.5`}
                                                         >
@@ -966,8 +959,7 @@ export default function Index({ serverYear, serverToday, ramadan }: RoznamaPageP
                             </div>
                         </Card>
 
-                    </div>
-                )}
+                    </PageBody>
 
                 </div>
 

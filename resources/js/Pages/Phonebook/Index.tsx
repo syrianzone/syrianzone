@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
     Phone, MessageSquare, MessageSquarePlus, Copy, Check, ExternalLink, Search, Info, Settings, PencilLine
@@ -16,17 +16,22 @@ import {
 } from "@/Components/ui/table";
 import MainLayout from '@/Layouts/MainLayout';
 import { useCanAny } from '@/Lib/useCan';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { copyText } from '@/Lib/copy';
 import { matchesFilterText } from '@/Lib/smartFilterSearch';
 import type { PhonebookCategory, PhonebookEntry } from '@/Domain/phonebook/types';
 import type { SuggestionCategoryOption, SuggestionTargetOption } from '@/Domain/suggestions/types';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
-import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';
+import { DirectoryFacetFilter } from '@/Components/directory/DirectoryFacetFilter';
+import { ResponsiveTable } from '@/Components/directory/ResponsiveTable';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
-import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
+const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
+import { ProgressiveListFooter } from '@/Components/directory/ProgressiveListFooter';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
+import { useProgressiveList } from '@/Lib/useProgressiveList';
+import { PageBody, PageHeader } from '@/Components/layout';
 
 interface PhonebookProps {
     initialData: PhonebookEntry[];
@@ -56,6 +61,15 @@ const shortCodesFirst = (a: PhonebookEntry, b: PhonebookEntry) => {
     if (isShortCode(a.number) === isShortCode(b.number)) return 0;
     return isShortCode(a.number) ? -1 : 1;
 };
+
+function formatPhoneCount(count: number): string {
+    if (count === 1) return 'رقم واحد';
+    if (count === 2) return 'رقمان';
+    const mod100 = count % 100;
+    if (mod100 >= 3 && mod100 <= 10) return `${count} أرقام`;
+    if (mod100 === 0 || mod100 === 1 || mod100 === 2) return `${count} رقم`;
+    return `${count} رقماً`;
+}
 
 export default function Index({ initialData, categories: serverCategories = [] }: PhonebookProps) {
     const page = usePage();
@@ -111,9 +125,23 @@ export default function Index({ initialData, categories: serverCategories = [] }
         initialQuery,
     });
 
-    const handleCopy = async (number: string, id: string) => {
-        if (!await copyText(number)) return;
-        setCopiedId(id);
+    const progressive = useProgressiveList(directory.results, {
+        initial: 25,
+        step: 30,
+        resetKey: `${directory.query}|${JSON.stringify(directory.value.filters)}|${viewMode}`,
+    });
+
+    const trackContact = (action: 'call' | 'whatsapp' | 'copy', item: PhonebookEntry) => {
+        trackEvent('phonebook_contact_action', {
+            action,
+            category: item.category_en ? categoryKey(item) : item.category_id || undefined,
+        });
+    };
+
+    const handleCopy = async (item: PhonebookEntry) => {
+        if (!await copyText(item.number)) return;
+        trackContact('copy', item);
+        setCopiedId(item.id);
         // Restart the window on every copy so an older timer can't clear a newer tick.
         if (copiedTimerRef.current !== null) window.clearTimeout(copiedTimerRef.current);
         copiedTimerRef.current = window.setTimeout(() => setCopiedId(null), 2000);
@@ -172,98 +200,84 @@ export default function Index({ initialData, categories: serverCategories = [] }
         <MainLayout>
             
 
-            <div 
-                className="min-h-screen text-foreground transition-colors" 
+            <div
+                className="min-h-screen text-foreground transition-colors"
                 dir="rtl"
                 style={{ fontFamily: "var(--site-font, inherit)" }}
             >
-                
-                <section className="bg-card py-10 shadow-sm border-b border-border">
-                    <div className="container mx-auto px-4 text-center max-w-4xl">
-                        {canManage && (
-                            <div className="mb-6 flex justify-center">
-                                <a
-                                    href="/admin/phonebook"
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg hover:bg-primary/90 transition-all transform hover:-translate-y-0.5"
-                                >
-                                    <Settings className="w-4 h-4" />
-                                    <span>لوحة تحكم إدارة دليل الهاتف (Admin Panel)</span>
-                                </a>
-                            </div>
-                        )}
-                        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">دليل الهاتف والواتساب</h1>
-                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
-                            أرقام التواصل والشكاوى والطوارئ للجهات الرسمية والخدمية السورية.
-                        </p>
-
-                        <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+                <PageHeader
+                    title="دليل الهاتف والواتساب"
+                    description="أرقام التواصل والشكاوى والطوارئ للجهات الرسمية والخدمية السورية."
+                    actions={
+                        <>
+                            {canManage && (
+                                <Button asChild variant="ghost" size="sm" className="h-9">
+                                    <a href="/admin/phonebook">
+                                        <Settings className="h-4 w-4" aria-hidden="true" />
+                                        <span>إدارة الدليل</span>
+                                    </a>
+                                </Button>
+                            )}
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
+                                className="h-9 bg-card shadow-none"
                                 onClick={openAddSuggestion}
-                                className="h-9 rounded-full gap-2 px-4 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
                             >
                                 <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
-                                <span>إضافة / اقتراح تعديل</span>
+                                <span>اقتراح تعديل</span>
                             </Button>
-                        </div>
+                        </>
+                    }
+                />
 
-                        <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
-                            <DirectorySearch
-                                size="lg"
-                                value={directory.query}
-                                onChange={directory.setQuery}
-                                placeholder="ابحث بالجهة، القسم، أو رقم الهاتف..."
-                                ariaLabel="ابحث بالجهة، القسم، أو رقم الهاتف"
-                            />
-                        </div>
-
-                        <DirectoryFilterChips
-                            label="الفئة"
-                            className="mt-6"
-                            options={facets[0].options}
-                            value={directory.filters.category ?? []}
-                            onChange={(next) => directory.setFilters({ ...directory.filters, category: next })}
+                <PageBody>
+                    <div className="mb-4 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                        <DirectorySearch
+                            className="sm:max-w-xs"
+                            value={directory.query}
+                            onChange={directory.setQuery}
+                            placeholder="ابحث بالجهة أو القسم أو الرقم…"
+                            ariaLabel="ابحث بالجهة أو القسم أو رقم الهاتف"
                         />
-                    </div>
-                </section>
-
-                <div className="container mx-auto px-4 py-8 max-w-7xl">
-                    
-                    <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                        <DirectoryResultCount>
-                            {directory.results.length > 0 ? (
-                                `عرض ${directory.results.length} رقم تواصل رسمي`
-                            ) : (
-                                "لم يتم العثور على أرقام تطابق البحث"
-                            )}
-                        </DirectoryResultCount>
-
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">طريقة العرض:</span>
-                            <DirectoryViewToggle value={viewMode} onChange={setViewMode} />
+                        <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-1">
+                            <DirectoryFacetFilter
+                                label="الفئة"
+                                options={facets[0].options}
+                                value={directory.filters.category ?? []}
+                                onChange={(next) => directory.setFilters({ ...directory.filters, category: next })}
+                            />
+                            <div className="flex items-center gap-3 sm:ms-auto">
+                                <DirectoryResultCount className="text-xs tabular-nums">
+                                    {directory.results.length > 0
+                                        ? formatPhoneCount(directory.results.length)
+                                        : 'لا توجد نتائج'}
+                                </DirectoryResultCount>
+                                <DirectoryViewToggle value={viewMode} onChange={setViewMode} />
+                            </div>
                         </div>
                     </div>
 
                     {directory.results.length === 0 ? (
                         <DirectoryEmptyState
                             icon={Search}
-                            title="لا توجد نتائج"
-                            description="جرب تعديل كلمات البحث أو الفلاتر."
+                            title="لا توجد أرقام مطابقة"
+                            description="جرّب تعديل كلمات البحث أو خيارات التصفية."
                             directory={directory}
                         />
                     ) : viewMode === 'grid' ? (
                         
+                        <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {directory.results.map(item => (
+                            {progressive.visibleItems.map(item => (
                                 <Card key={item.id} className="overflow-hidden hover:shadow-md transition-all border border-border bg-card flex flex-col justify-between">
                                     <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
-                                                <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2 mb-1">
+                                                <h2 className="font-bold text-foreground text-sm leading-snug line-clamp-2 mb-1">
                                                     {item.name_ar}
-                                                </h3>
+                                                </h2>
                                                 {item.name_en && (
                                                     <p className="text-[11px] text-muted-foreground font-normal truncate">
                                                         {item.name_en}
@@ -277,7 +291,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                 onClick={() => openEditSuggestion(item)}
                                                 aria-label={`اقتراح تعديل — ${item.name_ar}`}
                                                 title="اقتراح تعديل"
-                                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-primary"
+                                                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary"
                                             >
                                                 <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
                                             </Button>
@@ -286,7 +300,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                         <div className="space-y-2">
                                             <button
                                                 type="button"
-                                                onClick={() => handleCopy(item.number, item.id)}
+                                                onClick={() => handleCopy(item)}
                                                 className="w-full text-center py-2 bg-muted/50 hover:bg-muted/80 rounded-xl border border-border/60 font-mono text-base font-extrabold text-foreground tracking-wide transition-colors cursor-pointer group flex items-center justify-center gap-2"
                                                 title="انقر لنسخ الرقم"
                                             >
@@ -307,7 +321,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                     className="flex-1 flex items-center justify-center gap-1.5 text-xs h-8 px-2"
                                                     title="اتصال هاتفي"
                                                 >
-                                                    <a href={getTelUrl(item.number)}>
+                                                    <a href={getTelUrl(item.number)} onClick={() => trackContact('call', item)}>
                                                         <Phone className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                                                         <span>اتصال</span>
                                                     </a>
@@ -321,7 +335,7 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                                         className="flex-1 flex items-center justify-center gap-1.5 text-xs h-8 px-2 border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600"
                                                         title="مراسلة عبر واتساب"
                                                     >
-                                                        <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
+                                                        <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer" onClick={() => trackContact('whatsapp', item)}>
                                                             <MessageSquare className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
                                                             <span>واتساب</span>
                                                         </a>
@@ -353,141 +367,253 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                 </Card>
                             ))}
                         </div>
+                        <ProgressiveListFooter
+                            hasMore={progressive.hasMore}
+                            remaining={progressive.remaining}
+                            onShowMore={progressive.showMore}
+                            sentinelRef={progressive.sentinelRef}
+                        />
+                        </>
                     ) : (
-                        
-                        <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
-                            <Table>
-                                <TableHeader className="bg-muted">
-                                    <TableRow>
-                                        <TableHead className="text-right font-bold text-foreground">الجهة / القسم</TableHead>
-                                        <TableHead className="text-right font-bold text-foreground">الرقم</TableHead>
-                                        <TableHead className="text-right font-bold text-foreground">النوع</TableHead>
-                                        <TableHead className="text-right font-bold text-foreground">المصدر</TableHead>
-                                        <TableHead className="text-right font-bold text-foreground">الإجراءات</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {directory.results.map(item => (
-                                        <TableRow key={item.id} className="hover:bg-muted/50">
-                                            <TableCell className="font-medium">
-                                                <div>
-                                                    <span className="text-foreground font-bold text-sm block">{item.name_ar}</span>
-                                                    <span className="text-[10px] text-muted-foreground font-normal">{item.category_ar}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="font-mono text-sm font-extrabold text-foreground"><bdi dir="ltr">{item.number}</bdi></TableCell>
-                                            <TableCell>
-                                                {item.is_whatsapp ? (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-semibold">
-                                                        اتصال + واتساب
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="secondary" className="font-normal text-[10px] bg-muted/80">
-                                                        اتصال فقط
-                                                    </Badge>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                {item.source_url && item.source_url.trim() ? (
-                                                    <a 
-                                                        href={item.source_url} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer" 
-                                                        className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold"
-                                                    >
-                                                        <span>عرض المصدر<span className="sr-only">: {item.name_ar} (يفتح في نافذة جديدة)</span></span>
-                                                        <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                        <>
+                        <ResponsiveTable
+                            items={progressive.visibleItems}
+                            getKey={(item) => item.id}
+                            mobileLabel="قائمة أرقام الهاتف"
+                            headerClassName="bg-muted"
+                            renderMobileItem={(item) => (
+                                <>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <span className="block text-sm font-bold text-foreground leading-snug">
+                                                {item.name_ar}
+                                            </span>
+                                            <span className="block text-[11px] text-muted-foreground mt-0.5 truncate">
+                                                {item.category_ar}
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopy(item)}
+                                            className="shrink-0 inline-flex items-center gap-1.5 rounded-md bg-muted/60 hover:bg-muted px-2 py-1 font-mono text-sm font-extrabold tabular-nums text-foreground transition-colors"
+                                            aria-label={`نسخ رقم ${item.name_ar} ${item.number}`}
+                                            title="نسخ الرقم"
+                                        >
+                                            <bdi dir="ltr">{item.number}</bdi>
+                                            {copiedId === item.id ? (
+                                                <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+                                            ) : (
+                                                <Copy className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            {item.is_whatsapp ? (
+                                                <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-semibold whitespace-nowrap">
+                                                    اتصال + واتساب
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="secondary" className="font-normal text-[10px] bg-muted/80 whitespace-nowrap">
+                                                    اتصال فقط
+                                                </Badge>
+                                            )}
+                                            {item.source_url && item.source_url.trim() && (
+                                                <a
+                                                    href={item.source_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold whitespace-nowrap"
+                                                >
+                                                    <span>المصدر<span className="sr-only">: {item.name_ar} (يفتح في نافذة جديدة)</span></span>
+                                                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-0.5 shrink-0">
+                                            <Button
+                                                aria-label={`اتصال هاتفي بـ ${item.name_ar}`}
+                                                variant="ghost"
+                                                size="icon"
+                                                asChild
+                                                className="h-8 w-8 text-primary hover:text-primary/80"
+                                                title="اتصال هاتفي"
+                                            >
+                                                <a href={getTelUrl(item.number)} onClick={() => trackContact('call', item)}>
+                                                    <Phone className="h-4 w-4" aria-hidden="true" />
+                                                </a>
+                                            </Button>
+
+                                            {item.is_whatsapp && (
+                                                <Button
+                                                    aria-label={`مراسلة ${item.name_ar} عبر واتساب (تفتح في نافذة جديدة)`}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    asChild
+                                                    className="h-8 w-8 text-emerald-500 hover:text-emerald-600"
+                                                    title="مراسلة عبر واتساب"
+                                                >
+                                                    <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer" onClick={() => trackContact('whatsapp', item)}>
+                                                        <MessageSquare className="h-4 w-4" aria-hidden="true" />
                                                     </a>
+                                                </Button>
+                                            )}
+
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => openEditSuggestion(item)}
+                                                aria-label={`اقتراح تعديل — ${item.name_ar}`}
+                                                title="اقتراح تعديل"
+                                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                            >
+                                                <PencilLine className="h-4 w-4" aria-hidden="true" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            desktopHeader={
+                                <TableRow>
+                                    <TableHead className="text-start font-bold text-foreground">الجهة أو القسم</TableHead>
+                                    <TableHead className="text-start font-bold text-foreground">الرقم</TableHead>
+                                    <TableHead className="text-start font-bold text-foreground">النوع</TableHead>
+                                    <TableHead className="text-start font-bold text-foreground">المصدر</TableHead>
+                                    <TableHead className="text-start font-bold text-foreground">الإجراءات</TableHead>
+                                </TableRow>
+                            }
+                            renderDesktopRow={(item) => (
+                                <TableRow key={item.id} className="hover:bg-muted/50">
+                                    <TableCell className="font-medium">
+                                        <div>
+                                            <span className="text-foreground font-bold text-sm block">{item.name_ar}</span>
+                                            <span className="text-[10px] text-muted-foreground font-normal">{item.category_ar}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="font-mono text-sm font-extrabold tabular-nums text-foreground"><bdi dir="ltr">{item.number}</bdi></TableCell>
+                                    <TableCell>
+                                        {item.is_whatsapp ? (
+                                            <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-semibold whitespace-nowrap">
+                                                اتصال + واتساب
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="secondary" className="font-normal text-[10px] bg-muted/80 whitespace-nowrap">
+                                                اتصال فقط
+                                            </Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {item.source_url && item.source_url.trim() ? (
+                                            <a
+                                                href={item.source_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold whitespace-nowrap"
+                                            >
+                                                <span>عرض المصدر<span className="sr-only">: {item.name_ar} (يفتح في نافذة جديدة)</span></span>
+                                                <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                                            </a>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground font-normal">-</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-1.5">
+                                            <Button aria-label={`نسخ رقم ${item.name_ar} ${item.number}`}
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleCopy(item)}
+                                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                title="نسخ الرقم"
+                                            >
+                                                {copiedId === item.id ? (
+                                                    <Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />
                                                 ) : (
-                                                    <span className="text-xs text-muted-foreground font-normal">-</span>
+                                                    <Copy className="h-4 w-4" aria-hidden="true" />
                                                 )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1.5">
-                                                    
-                                                    <Button aria-label={`نسخ رقم ${item.name_ar} ${item.number}`}
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleCopy(item.number, item.id)}
-                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                                        title="نسخ الرقم"
-                                                    >
-                                                        {copiedId === item.id ? (
-                                                            <Check className="h-4 w-4 text-emerald-500" aria-hidden="true" />
-                                                        ) : (
-                                                            <Copy className="h-4 w-4" aria-hidden="true" />
-                                                        )}
-                                                    </Button>
+                                            </Button>
 
-                                                    <Button aria-label={`اتصال هاتفي بـ ${item.name_ar}`}
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        asChild
-                                                        className="h-8 w-8 text-primary hover:text-primary/80"
-                                                        title="اتصال هاتفي"
-                                                    >
-                                                        <a href={getTelUrl(item.number)}>
-                                                            <Phone className="h-4 w-4" aria-hidden="true" />
-                                                        </a>
-                                                    </Button>
+                                            <Button aria-label={`اتصال هاتفي بـ ${item.name_ar}`}
+                                                variant="ghost"
+                                                size="icon"
+                                                asChild
+                                                className="h-8 w-8 text-primary hover:text-primary/80"
+                                                title="اتصال هاتفي"
+                                            >
+                                                <a href={getTelUrl(item.number)} onClick={() => trackContact('call', item)}>
+                                                    <Phone className="h-4 w-4" aria-hidden="true" />
+                                                </a>
+                                            </Button>
 
-                                                    {item.is_whatsapp && (
-                                                        <Button aria-label={`مراسلة ${item.name_ar} عبر واتساب (تفتح في نافذة جديدة)`}
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            asChild
-                                                            className="h-8 w-8 text-emerald-500 hover:text-emerald-600"
-                                                            title="مراسلة عبر واتساب"
-                                                        >
-                                                            <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
-                                                                <MessageSquare className="h-4 w-4" aria-hidden="true" />
-                                                            </a>
-                                                        </Button>
-                                                    )}
+                                            {item.is_whatsapp && (
+                                                <Button aria-label={`مراسلة ${item.name_ar} عبر واتساب (تفتح في نافذة جديدة)`}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    asChild
+                                                    className="h-8 w-8 text-emerald-500 hover:text-emerald-600"
+                                                    title="مراسلة عبر واتساب"
+                                                >
+                                                    <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer" onClick={() => trackContact('whatsapp', item)}>
+                                                        <MessageSquare className="h-4 w-4" aria-hidden="true" />
+                                                    </a>
+                                                </Button>
+                                            )}
 
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => openEditSuggestion(item)}
-                                                        aria-label={`اقتراح تعديل — ${item.name_ar}`}
-                                                        title="اقتراح تعديل"
-                                                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                                    >
-                                                        <PencilLine className="h-4 w-4" aria-hidden="true" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => openEditSuggestion(item)}
+                                                aria-label={`اقتراح تعديل — ${item.name_ar}`}
+                                                title="اقتراح تعديل"
+                                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                            >
+                                                <PencilLine className="h-4 w-4" aria-hidden="true" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        />
+                        <ProgressiveListFooter
+                            hasMore={progressive.hasMore}
+                            remaining={progressive.remaining}
+                            onShowMore={progressive.showMore}
+                            sentinelRef={progressive.sentinelRef}
+                        />
+                        </>
                     )}
 
-                    <Card className="border-border bg-muted/20 shadow-sm p-5 mt-8">
+                    <Card className="border-border bg-muted/20 shadow-xs p-5 mt-8">
                         <div className="flex gap-3.5 items-start text-xs text-muted-foreground leading-relaxed">
                             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                             <div>
                                 <span className="font-bold text-foreground block mb-1">ملاحظات حول أرقام الدليل الخدمي:</span>
-                                تم جمع وتدقيق هذا الدليل من القرارات والبيانات الرسمية الصادرة عن الوزارات ومجالس المحافظات السورية. يرجى الملاحظة أن بعض الأرقام مخصصة للتواصل عبر قنوات المراسلة الفورية (مثل واتساب)، بينما تعمل الأرقام المختصرة وخطوط الهاتف الأرضي للاستجابة السريعة على مستوى الشبكات المحلية.
+                                جُمع هذا الدليل ودُقّق من القرارات والبيانات الرسمية الصادرة عن الوزارات ومجالس المحافظات السورية. يرجى الملاحظة أن بعض الأرقام مخصصة للتواصل عبر قنوات المراسلة الفورية (مثل واتساب)، بينما تعمل الأرقام المختصرة وخطوط الهاتف الأرضي للاستجابة السريعة على مستوى الشبكات المحلية.
                             </div>
                         </div>
                     </Card>
 
-                </div>
+                </PageBody>
 
             </div>
 
-            <DirectorySuggestionDialog
-                module="phonebook"
-                open={suggestionOpen}
-                onOpenChange={setSuggestionOpen}
-                defaultKind={suggestionTarget ? 'edit' : 'add'}
-                fixedTarget={suggestionTarget}
-                targets={suggestionTargets}
-                categories={suggestionCategories}
-            />
+            {suggestionOpen && (
+                <React.Suspense fallback={null}>
+                    <DirectorySuggestionDialog
+                        module="phonebook"
+                        open={suggestionOpen}
+                        onOpenChange={setSuggestionOpen}
+                        defaultKind={suggestionTarget ? 'edit' : 'add'}
+                        fixedTarget={suggestionTarget}
+                        targets={suggestionTargets}
+                        categories={suggestionCategories}
+                    />
+                </React.Suspense>
+            )}
         </MainLayout>
     );
 }

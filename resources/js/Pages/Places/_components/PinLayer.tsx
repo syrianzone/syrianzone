@@ -3,6 +3,8 @@ import type maplibregl from 'maplibre-gl'
 import type { FeatureCollection } from 'geojson'
 import { useMap } from '@/Components/map/MapContext'
 import { useMapLayer } from '@/Components/map/useMapLayer'
+import { MAP_COLOR_TOKENS, useMapColors, type MapColorEntry } from '@/Components/map/mapColors'
+import { useColorScheme } from '@/Lib/theme'
 
 /**
  * A clustered point layer: a circle per cluster, its count, and a circle per
@@ -15,9 +17,11 @@ export interface PinLayerStyle {
   clusterLayerId: string
   clusterCountLayerId: string
   pinLayerId: string
-  clusterColor: string
-  pinColor: string
-  strokeColor: string
+  colors: {
+    cluster: MapColorEntry
+    pin: MapColorEntry
+    clusterText: MapColorEntry
+  }
   /** Pin radius: the clicked/selected pin, then every other pin. */
   pinRadius: { selected: number; idle: number }
 }
@@ -27,9 +31,11 @@ export const PLACE_PINS: PinLayerStyle = {
   clusterLayerId: 'clusters',
   clusterCountLayerId: 'cluster-count',
   pinLayerId: 'place-pin',
-  clusterColor: 'hsl(105, 12%, 38%)',
-  pinColor: '#7d8a5c',
-  strokeColor: '#ffffff',
+  colors: {
+    cluster: MAP_COLOR_TOKENS.primary,
+    pin: MAP_COLOR_TOKENS.primary,
+    clusterText: { variable: '--primary-foreground', fallback: '#ffffff' },
+  },
   pinRadius: { selected: 9, idle: 6 },
 }
 
@@ -38,9 +44,11 @@ export const HOTEL_PINS: PinLayerStyle = {
   clusterLayerId: 'hotel-clusters',
   clusterCountLayerId: 'hotel-cluster-count',
   pinLayerId: 'hotel-pin',
-  clusterColor: '#c05621',
-  pinColor: '#c05621',
-  strokeColor: '#ffffff',
+  colors: {
+    cluster: '#c05621',
+    pin: '#c05621',
+    clusterText: '#ffffff',
+  },
   pinRadius: { selected: 9, idle: 6 },
 }
 
@@ -48,7 +56,7 @@ export const PLACE_PIN_LAYERS = [PLACE_PINS.clusterLayerId, PLACE_PINS.clusterCo
 export const HOTEL_PIN_LAYERS = [HOTEL_PINS.clusterLayerId, HOTEL_PINS.clusterCountLayerId, HOTEL_PINS.pinLayerId]
 
 /** The pin colour shared with the map's highlight marker. */
-export const PLACE_MARKER_COLOR = PLACE_PINS.pinColor
+export const PLACE_MARKER_COLOR = MAP_COLOR_TOKENS.primary.fallback
 
 export function PinLayer(props: {
   style: PinLayerStyle
@@ -60,6 +68,9 @@ export function PinLayer(props: {
 }) {
   const map = useMap()
   const { style } = props
+  const resolvedColors = useMapColors(style.colors)
+  const scheme = useColorScheme()
+  const strokeColor = scheme === 'dark' ? '#ffffff' : '#1e293b'
   const onPinClickRef = useRef(props.onPinClick)
   onPinClickRef.current = props.onPinClick
   const onClusterClickRef = useRef(props.onClusterClick)
@@ -88,12 +99,12 @@ export function PinLayer(props: {
         source: style.sourceId,
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': style.clusterColor,
+          'circle-color': resolvedColors.cluster,
           'circle-opacity': 0.85,
           'circle-radius': ['step', ['get', 'point_count'], 10, 10, 13, 30, 16],
           'circle-stroke-width': 1.5,
-          'circle-stroke-color': style.strokeColor,
-          'circle-stroke-opacity': 0.8,
+          'circle-stroke-color': strokeColor,
+          'circle-stroke-opacity': 0.85,
         },
       })
 
@@ -103,7 +114,7 @@ export function PinLayer(props: {
         source: style.sourceId,
         filter: ['has', 'point_count'],
         layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 11, 'text-font': ['IBM Plex Sans Arabic Bold'] },
-        paint: { 'text-color': style.strokeColor },
+        paint: { 'text-color': resolvedColors.clusterText },
       })
 
       target.addLayer({
@@ -113,9 +124,9 @@ export function PinLayer(props: {
         filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-radius': ['case', ['boolean', ['feature-state', 'selected'], false], style.pinRadius.selected, style.pinRadius.idle],
-          'circle-color': style.pinColor,
+          'circle-color': resolvedColors.pin,
           'circle-stroke-width': 1.5,
-          'circle-stroke-color': style.strokeColor,
+          'circle-stroke-color': strokeColor,
           'circle-stroke-opacity': 0.9,
         },
       })
@@ -159,7 +170,7 @@ export function PinLayer(props: {
         if (target.getSource(style.sourceId)) target.removeSource(style.sourceId)
       } catch { /* map tearing down */ }
     }
-  }, [style])
+  }, [style, resolvedColors, strokeColor])
 
   useMapLayer(attach)
 

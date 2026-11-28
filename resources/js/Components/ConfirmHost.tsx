@@ -52,8 +52,10 @@ export default function ConfirmHost() {
       <AlertDialogContent dir="rtl">
         <AlertDialogHeader>
           <AlertDialogTitle>{options?.title}</AlertDialogTitle>
-          {options?.description && (
+          {options?.description ? (
             <AlertDialogDescription>{options.description}</AlertDialogDescription>
+          ) : (
+            <AlertDialogDescription className="sr-only">تأكيد الإجراء</AlertDialogDescription>
           )}
         </AlertDialogHeader>
         <AlertDialogFooter>

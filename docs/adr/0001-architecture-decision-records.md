@@ -82,4 +82,4 @@ should reject records that describe only local implementation details.
 ## More information
 
 - First applied by [ADR-0002](0002-durable-tierlist-social-outbox.md).
-- Related spec: [Tierlist X automation](../specs/tierlist-x-automation.md).
+- Related spec: [Tierlist X automation](../modules/tierlist-x-automation.md).

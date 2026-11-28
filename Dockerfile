@@ -17,7 +17,8 @@ ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN} VITE_SENTRY_RELEASE=${GIT_SHA} \
     SENTRY_ORG=${SENTRY_ORG} SENTRY_PROJECT=${SENTRY_PROJECT}
 # the upload token must never land in a layer (public image): secret mount, ci-only
 RUN --mount=type=secret,id=sentry_auth_token \
-    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" bun run build
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" bun run build \
+    && bun scripts/precompress-assets.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1b: Production node_modules for the SSR runtime
@@ -114,6 +115,7 @@ RUN chmod +x /etc/entrypoint.d/10-startup.sh
 
 # server-opts.d: location blocks injected INSIDE the server {} block
 COPY docker/server-opts.d/app-websocket.conf /etc/nginx/server-opts.d/app-websocket.conf
+COPY docker/server-opts.d/assets-compression.conf /etc/nginx/server-opts.d/assets-compression.conf
 
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/queue-worker/dependencies.d
 RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/queue-worker/type

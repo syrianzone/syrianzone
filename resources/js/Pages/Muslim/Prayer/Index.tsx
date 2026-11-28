@@ -37,7 +37,7 @@ export default function Index({
       <MuslimShell
         title={initialCityName ? `مواقيت الصلاة في ${initialCityName}` : 'مواقيت الصلاة'}
         icon={MuslimIcon}
-        width="max-w-4xl"
+        width="default"
       >
         <PrayerView
           prefs={prefs}

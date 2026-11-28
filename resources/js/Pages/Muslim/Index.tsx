@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import { Bookmark, ChevronLeft, MoonStar } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { formatDuration } from '../../Lib/format';
 import { SURAH_NAMES_AR } from '../../Domain/quran/quran';
 import { hijriDateLabel } from '../../Domain/prayer/hijri';
@@ -115,52 +116,56 @@ export default function Index() {
         dir="rtl"
         style={{ fontFamily: 'var(--site-font, inherit)' }}
       >
-        <div className="container mx-auto max-w-6xl px-4 py-6">
-          <div className="mb-5 text-center">
-            <h1 className="mb-1 text-2xl font-bold md:text-3xl">الركن الإسلامي</h1>
-            <p className="text-sm text-muted-foreground">أدواتك اليومية في مكان واحد</p>
-          </div>
+        <PageHeader
+          title="الركن الإسلامي"
+          description="أدواتك اليومية من مواقيت الصلاة والقرآن الكريم والإذاعات وإمساكية رمضان في مكان واحد."
+          divider
+        />
 
-          <NextPrayerLink timings={timings} timeZone={timeZone} hijriLabel={apiHijri} />
+        <PageBody className="pt-5 space-y-5">
 
-          <Link
-            href={toolHref('ramadan')}
-            className="mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-start no-underline transition-colors hover:border-primary/40"
-          >
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-bold text-foreground">
-                إمساكية رمضان 1448 هـ / 2027 م
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                مواعيد الإمساك والفجر والإفطار لجميع المحافظات السورية
-              </span>
-            </span>
-            <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          </Link>
+          <div className="space-y-3">
+            <NextPrayerLink timings={timings} timeZone={timeZone} hijriLabel={apiHijri} />
 
-          {lastBookmark && (
             <Link
-              href={toolHref('quran')}
-              onClick={() => setTargetAyah(`${lastBookmark.surah}:${lastBookmark.ayah}`)}
-              {...quranWarmProps}
-              className="mb-4 flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-start no-underline transition-colors hover:border-primary/40"
+              href={toolHref('ramadan')}
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 text-start no-underline transition-colors hover:border-primary/40"
             >
-              <span className="rounded-lg bg-primary/10 p-2 text-primary">
-                <Bookmark className="h-4 w-4" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[11px] text-muted-foreground">آخر علامة — تابع القراءة</span>
-                <span className="block truncate text-sm font-bold">
-                  {SURAH_NAMES_AR[lastBookmark.surah] ?? `سورة ${lastBookmark.surah}`} · آية {lastBookmark.ayah} · صفحة {lastBookmark.page}
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-bold text-foreground">
+                  إمساكية رمضان 1448 هـ / 2027 م
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  مواعيد الإمساك والفجر والإفطار لجميع المحافظات السورية
                 </span>
               </span>
-              <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             </Link>
-          )}
+
+            {lastBookmark && (
+              <Link
+                href={toolHref('quran')}
+                onClick={() => setTargetAyah(`${lastBookmark.surah}:${lastBookmark.ayah}`)}
+                {...quranWarmProps}
+                className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-start no-underline transition-colors hover:border-primary/40"
+              >
+                <span className="rounded-lg bg-primary/10 p-2 text-primary">
+                  <Bookmark className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] text-muted-foreground">آخر علامة — تابع القراءة</span>
+                  <span className="block truncate text-sm font-bold">
+                    {SURAH_NAMES_AR[lastBookmark.surah] ?? `سورة ${lastBookmark.surah}`} · آية {lastBookmark.ayah} · صفحة {lastBookmark.page}
+                  </span>
+                </span>
+                <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              </Link>
+            )}
+          </div>
 
           {/* App-grid tools: icon above, text under — the homepage's borderless
               tile shape. Each card is a real link to its own URL under /muslim. */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5 pt-2">
             {TOOLS.map((t) => (
               <Link
                 key={t.slug}
@@ -175,7 +180,7 @@ export default function Index() {
               </Link>
             ))}
           </div>
-        </div>
+        </PageBody>
       </div>
     </MainLayout>
   );

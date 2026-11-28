@@ -283,7 +283,7 @@ export function ManagePlaceDialog(props: {
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent dir="rtl" className="max-h-[85dvh] overflow-y-auto">
-        <DialogHeader className="text-right sm:text-right">
+        <DialogHeader className="text-start sm:text-start">
           <DialogTitle className="flex items-center gap-2">
             إدارة المكان
             <Badge variant={STATUS_VARIANTS[status]}>{STATUS_LABELS[status]}</Badge>
@@ -403,11 +403,11 @@ export function ManagePlaceDialog(props: {
                   <div key={photo.id} className="relative overflow-hidden rounded-md border border-border">
                     <img src={photo.thumb_url} alt={place.name} loading="lazy" className="h-24 w-full object-cover" />
                     {busyPhoto === photo.id ? (
-                      <span className="absolute bottom-1 left-1 rounded-md bg-background/80 p-1 shadow-sm">
+                      <span className="absolute bottom-1 end-1 rounded-md bg-background/80 p-1 shadow-sm">
                         <Loader2 className="h-4 w-4 animate-spin" />
                       </span>
                     ) : (
-                      <span className="absolute bottom-1 left-1 flex gap-1">
+                      <span className="absolute bottom-1 end-1 flex gap-1">
                         <button
                           type="button"
                           aria-label="تدوير الصورة"

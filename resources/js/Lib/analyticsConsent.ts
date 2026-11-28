@@ -32,6 +32,76 @@ export interface PageViewContext {
     gtag?: ((...args: unknown[]) => void) | null;
 }
 
+export type AnalyticsParamValue = string | number | boolean | null | undefined;
+
+/**
+ * Strongly-typed catalogue of zero-PII custom GA4 events.
+ * Never add free-text user input (search queries, phone numbers, emails, names).
+ */
+export interface AnalyticsEventMap {
+    share_image_action: {
+        action: 'open' | 'download' | 'copy' | 'web_share';
+        module?: string;
+        format: 'story' | 'square';
+        theme_id: string;
+    };
+    global_search_select: {
+        scope: string;
+        result_kind: string;
+        has_query: boolean;
+    };
+    nav_select: {
+        module: string;
+        surface: string;
+        is_external: boolean;
+    };
+    appearance_change: {
+        kind: 'theme' | 'font';
+        theme_id?: string;
+        font_family?: string;
+    };
+    directory_suggestion_submit: {
+        module: string;
+        kind: 'add' | 'edit';
+    };
+    poll_vote_submit: {
+        slug: string;
+        count: number;
+    };
+    compass_quiz_milestone: {
+        step: 'start' | 'complete' | 'share_link';
+        version?: string;
+    };
+    fakenews_run_milestone: {
+        step: 'start' | 'complete' | 'replay';
+        score?: number;
+    };
+    phonebook_contact_action: {
+        action: 'call' | 'whatsapp' | 'copy';
+        category?: string;
+    };
+    govapp_store_click: {
+        slug: string;
+        platform: 'android' | 'apple' | 'official';
+    };
+    syid_asset_action: {
+        action: 'download' | 'copy_color' | 'copy_emoji' | 'export_map';
+        format?: string;
+        slug?: string;
+    };
+}
+
+export type AnalyticsEventName = keyof AnalyticsEventMap;
+
+export interface EventContext {
+    consent: AnalyticsConsent | null;
+    loaded: boolean;
+    id: string | null;
+    gtag?: ((...args: unknown[]) => void) | null;
+}
+
+const MAX_EVENT_STRING_LENGTH = 80;
+
 const GTAG_SRC = 'https://www.googletagmanager.com/gtag/js';
 
 type ConsentWindow = Window & {
@@ -171,11 +241,12 @@ export function loadAnalytics(): boolean {
     if (!w || !id) return false;
     if (currentConsent() !== 'granted') return false;
 
+    // A previous withdrawal in this tab must not silence a fresh grant, even
+    // when gtag.js was already loaded earlier in this session.
+    setOptOut(id, false);
+
     if (scriptState !== 'idle') return scriptState === 'loaded';
     if (typeof document === 'undefined') return false;
-
-    // A previous withdrawal in this tab must not silence a fresh grant.
-    setOptOut(id, false);
 
     // Already queued by an earlier module instance (hot reload): reuse it.
     if (typeof w.gtag === 'function') {
@@ -291,6 +362,61 @@ export function trackPageView(url: string): boolean {
         loaded: analyticsLoaded(),
         id: getMeasurementId(),
         origin: w.location.origin,
+        gtag: w.gtag,
+    });
+}
+
+function sanitizeEventParams(
+    params?: Record<string, AnalyticsParamValue>,
+): Record<string, string | number | boolean> {
+    const clean: Record<string, string | number | boolean> = {};
+    if (!params) return clean;
+    for (const [key, value] of Object.entries(params)) {
+        if (value === null || value === undefined) continue;
+        if (typeof value === 'string') {
+            if (value.length > MAX_EVENT_STRING_LENGTH) continue;
+            clean[key] = value;
+        } else if (typeof value === 'number') {
+            if (!Number.isFinite(value)) continue;
+            clean[key] = value;
+        } else if (typeof value === 'boolean') {
+            clean[key] = value;
+        }
+    }
+    return clean;
+}
+
+/**
+ * Sends one custom GA4 event. Pure on purpose: it returns false — and sends
+ * nothing — unless consent is granted and gtag has been bootstrapped. Drops
+ * null/undefined values and strings longer than 80 characters as a runtime
+ * zero-PII safeguard.
+ */
+export function sendEvent<K extends AnalyticsEventName>(
+    name: K,
+    params: AnalyticsEventMap[K],
+    context: EventContext,
+): boolean {
+    if (context.consent !== 'granted' || !context.loaded) return false;
+    if (!context.id || typeof context.gtag !== 'function') return false;
+
+    const clean = sanitizeEventParams(params as Record<string, AnalyticsParamValue>);
+    context.gtag('event', name, clean);
+    return true;
+}
+
+/** Custom event tracking; no-ops in SSR or without explicit granted consent. */
+export function trackEvent<K extends AnalyticsEventName>(
+    name: K,
+    params: AnalyticsEventMap[K],
+): boolean {
+    const w = browserWindow();
+    if (!w) return false;
+
+    return sendEvent(name, params, {
+        consent: currentConsent(),
+        loaded: analyticsLoaded(),
+        id: getMeasurementId(),
         gtag: w.gtag,
     });
 }

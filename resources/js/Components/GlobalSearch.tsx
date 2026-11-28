@@ -42,6 +42,7 @@ import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { useIsMac } from '@/Lib/platform';
 import { siteModule } from '@/Lib/siteModules';
 import { isActive } from '@/Lib/routes';
+import { trackEvent } from '@/Lib/analyticsConsent';
 import { normalizeArabic } from '@/Lib/arabic';
 import { useAppShell } from '@/Lib/appShell';
 import { useQuranTarget } from '@/Domain/quran/targetAyah';
@@ -316,6 +317,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
         (showRemoteGovApps ? remote.govapps.length : 0);
 
     return {
+        scope,
         trimmedQuery,
         remote,
         loadingRemote,
@@ -340,7 +342,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
 const CmdkModeContext = React.createContext(true);
 
 const ROW_CLASS =
-    'w-full text-right outline-none hover:bg-accent/60 active:bg-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring';
+    'w-full text-start outline-none hover:bg-accent/60 active:bg-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring';
 
 function GroupWrapper({ heading, children }: { heading: string; children: React.ReactNode }) {
     if (React.useContext(CmdkModeContext)) {
@@ -425,7 +427,16 @@ export function SearchResultsContent({
 }) {
     const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
-    const navigateTo = (url: string, external = false) => {
+    const trackSelect = (resultKind: string) => {
+        trackEvent('global_search_select', {
+            scope: data.scope,
+            result_kind: resultKind,
+            has_query: data.trimmedQuery.length > 0,
+        });
+    };
+
+    const navigateTo = (url: string, external = false, resultKind = 'site_link') => {
+        trackSelect(resultKind);
         onClose();
         if (external) {
             window.open(url, '_blank', 'noopener,noreferrer');
@@ -435,6 +446,7 @@ export function SearchResultsContent({
     };
 
     const jumpToSurah = (surahNumber: number) => {
+        trackSelect('quran_surah');
         onClose();
         setTargetAyah(`${surahNumber}:1`);
         router.visit('/muslim/quran');
@@ -522,11 +534,14 @@ export function SearchResultsContent({
     };
 
     /** An ItemRow that opens `href`: a cmdk item navigates on select, a plain row is a real link. */
-    const linkTo = (href: string, external = false) => ({
+    const linkTo = (href: string, resultKind: string, external = false) => ({
         href,
         external,
-        onSelect: () => navigateTo(href, external),
-        onNavigate: onClose,
+        onSelect: () => navigateTo(href, external, resultKind),
+        onNavigate: () => {
+            trackSelect(resultKind);
+            onClose();
+        },
     });
 
     return (
@@ -590,7 +605,10 @@ export function SearchResultsContent({
                                             href={link.href}
                                             target="_blank"
                                             rel="noreferrer"
-                                            onClick={onClose}
+                                            onClick={() => {
+                                                trackSelect('site_link');
+                                                onClose();
+                                            }}
                                             className={tileClassName}
                                         >
                                             {siteLinkTile(link, isActive(link.href, pathname))}
@@ -598,7 +616,10 @@ export function SearchResultsContent({
                                     ) : (
                                         <Link
                                             href={link.href}
-                                            onClick={onClose}
+                                            onClick={() => {
+                                                trackSelect('site_link');
+                                                onClose();
+                                            }}
                                             className={tileClassName}
                                         >
                                             {siteLinkTile(link, isActive(link.href, pathname))}
@@ -620,6 +641,7 @@ export function SearchResultsContent({
                             value={`route-${route.id}-${route.nameAr}`}
                             {...linkTo(
                                 `/transit/city/${encodeURIComponent(route.cityId)}?route=${encodeURIComponent(route.id)}`,
+                                'transit_route',
                             )}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                         >
@@ -653,7 +675,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`city-${city.id}`}
                                 value={`city-${city.id}-${city.nameAr}`}
-                                {...linkTo(`/transit/city/${encodeURIComponent(city.id)}`)}
+                                {...linkTo(`/transit/city/${encodeURIComponent(city.id)}`, 'transit_city')}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -690,7 +712,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`muslim-${tool.slug}`}
                                 value={`muslim-${tool.slug}-${tool.title}`}
-                                {...linkTo(toolHref(tool.slug))}
+                                {...linkTo(toolHref(tool.slug), 'muslim_tool')}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -748,7 +770,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`game-${game.slug}`}
                                 value={`game-${game.slug}-${game.title}`}
-                                {...linkTo(gameEntryHref(game), game.external)}
+                                {...linkTo(gameEntryHref(game), 'game', game.external)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -777,7 +799,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`crossing-${crossing.n}`}
                                 value={`crossing-${crossing.n}-${crossing.name}`}
-                                {...linkTo(`/crossings?c=${encodeURIComponent(crossing.n)}`)}
+                                {...linkTo(`/crossings?c=${encodeURIComponent(crossing.n)}`, 'crossing')}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -816,7 +838,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`place-${place.id}`}
                             value={`place-${place.id}-${place.name}`}
-                            {...linkTo(`/mishwar?place=${encodeURIComponent(place.id)}`)}
+                            {...linkTo(`/mishwar?place=${encodeURIComponent(place.id)}`, 'mishwar_place')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -842,7 +864,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`phone-${entry.id}`}
                             value={`phone-${entry.id}-${entry.nameAr}-${entry.number}`}
-                            {...linkTo(`/phonebook?q=${encodeURIComponent(entry.nameAr)}`)}
+                            {...linkTo(`/phonebook?q=${encodeURIComponent(entry.nameAr)}`, 'phonebook')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -881,7 +903,7 @@ export function SearchResultsContent({
                             <ItemRow
                                 key={`govtcv-${person.id}`}
                                 value={`govtcv-${person.id}-${person.nameAr}-${person.roleTitleAr ?? ''}`}
-                                {...linkTo(`/govtcvs/${encodeURIComponent(person.slug)}`)}
+                                {...linkTo(`/govtcvs/${encodeURIComponent(person.slug)}`, 'govtcv')}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -923,7 +945,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`official-${official.id}`}
                             value={`official-${official.id}-${official.nameAr}`}
-                            {...linkTo(`/syofficial?q=${encodeURIComponent(official.nameAr)}`)}
+                            {...linkTo(`/syofficial?q=${encodeURIComponent(official.nameAr)}`, 'official')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -949,7 +971,7 @@ export function SearchResultsContent({
                         <ItemRow
                             key={`govapp-${app.id}`}
                             value={`govapp-${app.id}-${app.nameAr}`}
-                            {...linkTo('/govapps')}
+                            {...linkTo('/govapps', 'govapp')}
                             className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -992,47 +1014,41 @@ export function MobileMenuSearchSection({
 
     return (
         <div className="flex flex-col gap-3">
-            {/* Sticky Search Bar + Filter Pills at the top of the mobile menu */}
+            {/* Search Bar + Filter Pills at the top of the mobile menu */}
             <div className="flex flex-col gap-2.5">
-                <div className="flex flex-col gap-1.5">
-                    <label
-                        htmlFor="sz-mobile-menu-search"
-                        className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-muted-foreground"
-                    >
-                        <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span>ابحث في: الأقسام · المسؤولين · المدن وخطوط السرفيس · سور القرآن · المعابر · دليل الهاتف</span>
-                    </label>
+                <label htmlFor="sz-mobile-menu-search" className="sr-only">
+                    ابحث في المنصة
+                </label>
 
-                    <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-muted/30 px-3 py-2.5 transition-all focus-within:border-primary focus-within:bg-muted/50 focus-within:ring-2 focus-within:ring-primary/20">
-                        <Search className="h-4 w-4 text-primary shrink-0" />
-                        <input
-                            id="sz-mobile-menu-search"
-                            ref={inputRef}
-                            type="text"
-                            inputMode="search"
-                            enterKeyHint="search"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="اكتب للبحث الفوري في المنصة..."
-                            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-                        />
-                        {data.loadingRemote && (
-                            <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
-                        )}
-                        {query && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setQuery('');
-                                    inputRef.current?.focus();
-                                }}
-                                aria-label="مسح البحث"
-                                className="-m-0.5 rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
+                <div className="flex h-10 items-center gap-2 rounded-lg border border-input bg-card px-3 transition-colors focus-within:ring-1 focus-within:ring-ring">
+                    <Search className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+                    <input
+                        id="sz-mobile-menu-search"
+                        ref={inputRef}
+                        type="text"
+                        inputMode="search"
+                        enterKeyHint="search"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="ابحث في الأقسام، المسؤولين، المدن، المعابر..."
+                        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                    />
+                    {data.loadingRemote && (
+                        <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                    )}
+                    {query && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setQuery('');
+                                inputRef.current?.focus();
+                            }}
+                            aria-label="مسح البحث"
+                            className="-m-0.5 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        >
+                            <X className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Category Filter Pills — always visible */}
@@ -1104,29 +1120,13 @@ export function HomeInlineSearchSection({
     return (
         <div className="mb-12">
             {/* Search Bar + Category Filter Pills */}
-            <div className="mx-auto mb-8 max-w-2xl flex flex-col gap-2.5">
-                <div className="flex items-center justify-between px-1">
-                    <label
-                        htmlFor="sz-home-inline-search"
-                        className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground"
-                    >
-                        <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span>ابحث في: الأقسام · المسؤولين · المدن وخطوط السرفيس · سور القرآن · المعابر · دليل الهاتف</span>
-                    </label>
-                    {isSearching && (
-                        <button
-                            type="button"
-                            onClick={handleReset}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline shrink-0 ms-2"
-                        >
-                            <X className="h-3.5 w-3.5" />
-                            <span>عرض كل الأقسام</span>
-                        </button>
-                    )}
-                </div>
+            <div className="mx-auto mb-7 max-w-2xl flex flex-col gap-2.5">
+                <label htmlFor="sz-home-inline-search" className="sr-only">
+                    ابحث في المنصة
+                </label>
 
-                <div className="flex items-center gap-2.5 rounded-2xl border border-border/80 bg-card/80 px-4 py-3 shadow-2xs transition-all focus-within:border-primary focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/20">
-                    <Search className="h-5 w-5 text-primary shrink-0" />
+                <div className="flex h-11 items-center gap-2.5 rounded-lg border border-input bg-card px-3.5 transition-colors focus-within:ring-1 focus-within:ring-ring">
+                    <Search className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
                     <input
                         id="sz-home-inline-search"
                         ref={inputRef}
@@ -1143,10 +1143,19 @@ export function HomeInlineSearchSection({
                             }
                         }}
                         placeholder="ابحث عن أداة، مسؤول، مدينة، خط سرفيس، سورة، معبر، أو رقم طوارئ..."
-                        className="flex-1 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
+                        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                     />
                     {data.loadingRemote && (
                         <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                    )}
+                    {isSearching && (
+                        <button
+                            type="button"
+                            onClick={handleReset}
+                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground shrink-0"
+                        >
+                            <span>كل الأقسام</span>
+                        </button>
                     )}
                     {query ? (
                         <button

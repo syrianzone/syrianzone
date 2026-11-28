@@ -8,7 +8,7 @@ import './styles.css';
 export default function Index() {
   return (
     <MainLayout>
-      <GameShell slug="solitare" width="max-w-6xl" rules={<SolitaireRules />}>
+      <GameShell slug="solitare" width="default" rules={<SolitaireRules />}>
         <Solitaire />
       </GameShell>
     </MainLayout>

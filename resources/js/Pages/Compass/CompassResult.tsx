@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Com
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Separator } from '@/Components/ui/separator';
-import { RotateCcw, Download, Trash2, ShieldCheck, AlertTriangle, Save, LogIn, BarChart3 } from 'lucide-react';
+import { RotateCcw, Share2, Trash2, ShieldCheck, AlertTriangle, Save, LogIn, BarChart3 } from 'lucide-react';
 import type { AnswerMap, CompassResult as Result, Figure, QuizVersion, Spectrum } from '@/Domain/compass/types';
 import { AXES } from '@/Domain/compass/axes';
 import { computeScores, computeConsistency, matchFigures, matchSpectrum, versionTotals } from '@/Domain/compass/engine';
@@ -14,11 +14,11 @@ import { addResult, clearLocal, saveResultToAccount, updateLocalResult, setPendi
 import FigureAvatar from './components/FigureAvatar';
 import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
 import { COMPASS_FLAGS } from './flags';
-import { useThemeId } from '@/Lib/theme';
 import AxisBars from '@/Domain/compass/AxisBars';
 import AlignmentCard from '@/Domain/compass/AlignmentCard';
 import CompassCanvas from './components/CompassCanvas';
 import CompassShareCard from './components/CompassShareCard';
+import ShareImageDialog from '@/Components/share/ShareImageDialog';
 
 export default function CompassResult({
   answers,
@@ -50,9 +50,7 @@ export default function CompassResult({
   const [statsBusy, setStatsBusy] = useState(false);
   const [savedToAccount, setSavedToAccount] = useState(false);
   const [savedId, setSavedId] = useState<number | string | null>(null);
-  const [imageBusy, setImageBusy] = useState(false);
-  const themeKey = useThemeId();
-  const storyCardRef = useRef<HTMLDivElement>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const localResultRef = useRef<Result | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   // The result replaces the quiz (or the saved list): start focus at its heading.
@@ -180,20 +178,6 @@ export default function CompassResult({
       }
     }
     onRestart();
-  };
-
-  const handleDownloadImage = async () => {
-    if (!storyCardRef.current) return;
-    setImageBusy(true);
-    try {
-      // Imported on demand: html2canvas is heavy and only this button needs it.
-      const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
-      await exportElementAsPng(storyCardRef.current, `bousalat-syria-${Date.now()}.png`);
-    } catch {
-      notify.error('تعذّر إنشاء صورة النتيجة، حاول مرة أخرى');
-    } finally {
-      setImageBusy(false);
-    }
   };
 
   // keep a local copy on first render (never auto-saves to the account)
@@ -341,7 +325,7 @@ export default function CompassResult({
       {!readOnly && statsShared && (
         <div className="space-y-2">
           <p className="text-center text-base font-bold text-foreground leading-snug">
-            نتيجتك مشتركة مجهولة الهوية (بلا حساب ولا اسم). اضغط الإزالة لسحبها.
+            نتيجتك مشتركة مجهولة الهوية (بلا حساب ولا اسم). اختر الإزالة لسحبها.
           </p>
           <Button
             variant="destructive"
@@ -358,7 +342,7 @@ export default function CompassResult({
         <div className="space-y-2">
           <p className="text-center text-base font-bold text-foreground leading-snug">
             {savedToAccount
-              ? 'محفوظة في حسابك. اضغط الإزالة لحذفها.'
+              ? 'محفوظة في حسابك. اختر الإزالة لحذفها.'
               : 'احفظها لمتابعتها ومراجعتها لاحقاً من حسابك.'}
           </p>
           <Button
@@ -388,8 +372,8 @@ export default function CompassResult({
           <>
             <div className="space-y-2">
               <p className="text-center text-base font-bold text-foreground">مشاركة النتيجة في صورة</p>
-              <Button onClick={handleDownloadImage} disabled={imageBusy} className="w-full gap-2">
-                <Download className="w-4 h-4" /> {imageBusy ? 'يعمل…' : 'مشاركة'}
+              <Button onClick={() => setShareOpen(true)} className="w-full gap-2">
+                <Share2 className="w-4 h-4" aria-hidden="true" /> مشاركة صورة النتيجة
               </Button>
             </div>
             <Button variant="secondary" onClick={onRestart} className="w-full gap-2">
@@ -407,16 +391,27 @@ export default function CompassResult({
         )}
       </div>
 
-      {/* Off-screen story card captured by html2canvas-pro for image sharing. */}
       {!readOnly && (
-        <div aria-hidden style={{ position: 'fixed', top: 0, left: -10000, pointerEvents: 'none', zIndex: -1 }}>
-          <CompassShareCard
-            ref={storyCardRef}
-            spectrum={computed.spectrum}
-            axes={computed.axes}
-            themeKey={themeKey}
-          />
-        </div>
+        <ShareImageDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          analyticsModule="compass"
+          title="مشاركة نتيجة البوصلة"
+          description="اختر المظهر والأبعاد ثم شارك أو حمّل بطاقة نتيجتك."
+          filename={`bousalat-syria-${computed.spectrum?.id ?? 'result'}.png`}
+          shareTitle="نتيجتي في بوصلة سوريا"
+          allowFormatToggle
+          defaultFormat="story"
+          renderCard={({ themeId, format, cardRef }) => (
+            <CompassShareCard
+              ref={cardRef}
+              spectrum={computed.spectrum}
+              axes={computed.axes}
+              themeKey={themeId}
+              format={format}
+            />
+          )}
+        />
       )}
     </div>
   );

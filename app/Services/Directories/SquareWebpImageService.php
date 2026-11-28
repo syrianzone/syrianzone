@@ -4,6 +4,7 @@ namespace App\Services\Directories;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
@@ -24,8 +25,19 @@ class SquareWebpImageService
 
     public const QUALITY = 85;
 
+    public const MAX_PIXELS = 24_000_000;
+
+    /** @var list<int> */
+    private const ALLOWED_TYPES = [
+        IMAGETYPE_JPEG,
+        IMAGETYPE_PNG,
+        IMAGETYPE_WEBP,
+        IMAGETYPE_GIF,
+    ];
+
     /**
      * Store $file as a square WebP under "<directory>/<basename>_<ts>.webp".
+     * Fails closed if the upload cannot be decoded or exceeds pixel bounds.
      *
      * @param  string  $directory  Path prefix, e.g. 'syofficial/entities'.
      * @return string Public URL, suitable for storing on a model column.
@@ -34,17 +46,20 @@ class SquareWebpImageService
     {
         $contents = @file_get_contents($file->getRealPath());
 
-        if ($contents !== false) {
-            $stored = $this->storeSquareWebpFromBytes($contents, $directory, $basename);
-            if ($stored !== null) {
-                return $stored;
-            }
+        if ($contents === false || $contents === '') {
+            throw ValidationException::withMessages([
+                'image' => ['تعذر قراءة الصورة المرفوعة.'],
+            ]);
         }
 
-        $disk = $this->resolveDisk();
-        $path = $file->storeAs(trim($directory, '/'), "{$basename}_".time().'.'.$file->getClientOriginalExtension(), $disk);
+        $stored = $this->storeSquareWebpFromBytes($contents, $directory, $basename);
+        if ($stored === null) {
+            throw ValidationException::withMessages([
+                'image' => ['تعذر فك ترميز الصورة المرفوعة أو أنها تتجاوز الحد الأقصى للأبعاد.'],
+            ]);
+        }
 
-        return Storage::disk($disk)->url($path);
+        return $stored;
     }
 
     /**
@@ -80,6 +95,18 @@ class SquareWebpImageService
     protected function encodeSquareWebpBytes(string $contents): ?string
     {
         if (! function_exists('imagecreatefromstring') || ! function_exists('imagewebp')) {
+            return null;
+        }
+
+        $info = @getimagesizefromstring($contents);
+        if (
+            $info === false
+            || ! isset($info[0], $info[1], $info[2])
+            || ! in_array($info[2], self::ALLOWED_TYPES, true)
+            || $info[0] <= 0
+            || $info[1] <= 0
+            || ($info[0] * $info[1]) > self::MAX_PIXELS
+        ) {
             return null;
         }
 

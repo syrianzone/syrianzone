@@ -177,7 +177,7 @@ final class GovtOfficialEditor
     {
         $filename = $official->slug.'-'.Str::lower(Str::random(6)).'.'.$file->extension();
 
-        if (config('filesystems.disks.r2.bucket')) {
+        if (config('filesystems.media_disk', 'public') === 'r2' && ! empty(config('filesystems.disks.r2.bucket'))) {
             $path = "govtcvs/portraits/{$filename}";
             $disk = Storage::disk('r2');
             $disk->putFileAs('govtcvs/portraits', $file, $filename, 'public');

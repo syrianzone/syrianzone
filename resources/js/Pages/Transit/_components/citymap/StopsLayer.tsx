@@ -91,7 +91,7 @@ export default function StopsLayer({ data, routes }: StopsLayerProps) {
       const badgesHtml = ids.length
         ? ids.map(id => {
             const name = routeNamesRef.current.get(id)
-            return `<span class="inline-block px-2 py-1 text-xs font-semibold bg-[var(--pomegranate)] text-white rounded">${name ? escapeHtml(name) : `مسار ${escapeHtml(id)}`}</span>`
+            return `<span class="inline-block px-2 py-1 text-xs font-semibold bg-[var(--pomegranate)] text-[hsl(var(--destructive-foreground))] rounded">${name ? escapeHtml(name) : `مسار ${escapeHtml(id)}`}</span>`
           }).join('')
         : '<span class="text-xs" style="opacity: 0.65;">لا توجد مسارات</span>'
 

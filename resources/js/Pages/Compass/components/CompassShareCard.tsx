@@ -5,10 +5,7 @@ import { axisDisplay } from '@/Domain/compass/axisDisplay';
 import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
 import BrandShareFrame, {
   MADAR_DISPLAY_FONT,
-  MADAR_MONO_FONT,
 } from '@/Components/share/BrandShareFrame';
-
-const fmt = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}`;
 
 interface Props {
   spectrum: Spectrum | null;
@@ -18,14 +15,22 @@ interface Props {
 }
 
 /**
- * Madar share card for Syria Compass results (9:16 story or 1:1 square).
- * Uses explicit hex tokens via `BrandShareFrame` for crisp html2canvas-pro output.
+ * Editorial Madar share card for Syria Compass results (9:16 story or 1:1 square).
+ * Highlights the spectrum hero and the 4 strongest defining axes so the card
+ * reads cleanly in 2 seconds on WhatsApp/Instagram/X.
  */
 const CompassShareCard = forwardRef<HTMLDivElement, Props>(function CompassShareCard(
   { spectrum, axes, themeKey, format = 'story' },
   ref,
 ) {
   const isStory = format === 'story';
+
+  const topAxes = [...AXES]
+    .filter((a) => axes[a.id] != null)
+    .sort((a, b) => Math.abs((axes[b.id] as number) ?? 0) - Math.abs((axes[a.id] as number) ?? 0))
+    .slice(0, 4);
+
+  const displayAxes = topAxes.length > 0 ? topAxes : AXES.slice(0, 4);
 
   return (
     <BrandShareFrame
@@ -37,26 +42,26 @@ const CompassShareCard = forwardRef<HTMLDivElement, Props>(function CompassShare
       format={format}
     >
       {(tokens) => {
-        const trackBg = tokens.isDark ? 'rgba(238,240,255,0.12)' : 'rgba(23,26,46,0.10)';
+        const trackBg = tokens.isDark ? 'rgba(238,240,255,0.14)' : 'rgba(23,26,46,0.10)';
         const chipBg = `rgba(${tokens.primaryRgb}, ${tokens.isDark ? 0.18 : 0.10})`;
         const chipBorder = `rgba(${tokens.primaryRgb}, ${tokens.isDark ? 0.36 : 0.25})`;
 
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 12 : 14 }}>
-            {/* Hero spectrum header */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 22 : 16 }}>
+            {/* 1. Hero spectrum focal point */}
             <div style={{ textAlign: 'center' }}>
               <div
                 style={{
                   display: 'inline-flex',
-                  width: isStory ? 44 : 48,
-                  height: isStory ? 44 : 48,
+                  width: 52,
+                  height: 52,
                   borderRadius: '50%',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: tokens.primary,
                   backgroundColor: chipBg,
-                  border: `1px solid ${chipBorder}`,
-                  marginBottom: 6,
+                  border: `1.5px solid ${chipBorder}`,
+                  marginBottom: 10,
                 }}
               >
                 <SpectrumIcon name={spectrum?.icon} className="h-6 w-6" />
@@ -65,147 +70,102 @@ const CompassShareCard = forwardRef<HTMLDivElement, Props>(function CompassShare
               <div
                 style={{
                   fontFamily: MADAR_DISPLAY_FONT,
-                  fontSize: isStory ? 22 : 24,
+                  fontSize: isStory ? 30 : 28,
                   fontWeight: 900,
-                  lineHeight: 1.25,
+                  lineHeight: 1.2,
                   color: tokens.ink,
                 }}
               >
                 {spectrum?.name ?? 'نتيجتك السياسية'}
               </div>
 
-              {spectrum && (
+              {spectrum?.short && (
                 <div
                   style={{
-                    fontSize: isStory ? 10 : 11,
+                    fontSize: 13,
                     color: tokens.muted,
                     lineHeight: 1.5,
-                    marginTop: 4,
+                    marginTop: 6,
                   }}
                 >
                   {spectrum.short}
                 </div>
               )}
-
-              {spectrum && spectrum.stances.length > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 5,
-                    justifyContent: 'center',
-                    marginTop: 8,
-                  }}
-                >
-                  {spectrum.stances.slice(0, 3).map((s) => (
-                    <span
-                      key={s}
-                      style={{
-                        fontSize: isStory ? 9 : 10,
-                        fontWeight: 700,
-                        padding: '3px 9px',
-                        borderRadius: 999,
-                        color: tokens.primary,
-                        backgroundColor: chipBg,
-                        border: `1px solid ${chipBorder}`,
-                      }}
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
 
-            {/* Axes panel */}
+            {/* 2. Top 4 defining axes */}
             <div
               style={{
                 backgroundColor: tokens.card,
                 border: `1px solid ${tokens.border}`,
                 borderRadius: 14,
-                padding: isStory ? '10px 12px' : '12px 14px',
+                padding: isStory ? '16px 16px' : '14px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: isStory ? 14 : 12,
               }}
             >
-              <div
-                style={{
-                  fontSize: isStory ? 10 : 11,
-                  fontWeight: 800,
-                  color: tokens.muted,
-                  marginBottom: isStory ? 8 : 10,
-                }}
-              >
-                موقعك على المحاور
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 7 : 8 }}>
-                {AXES.map((a) => {
-                  const raw = axes[a.id];
-                  const has = raw != null;
-                  const val = has ? (raw as number) : 0;
-                  const { leftLabel, rightLabel, positiveOnLeft } = axisDisplay(a);
-                  const pct = Math.min(Math.abs(val), 1) * 50;
-                  const fillOnLeft = (val >= 0) === positiveOnLeft;
-                  return (
-                    <div key={a.id}>
+              {displayAxes.map((a) => {
+                const raw = axes[a.id];
+                const has = raw != null;
+                const val = has ? (raw as number) : 0;
+                const { leftLabel, rightLabel, positiveOnLeft } = axisDisplay(a);
+                const pct = Math.min(Math.abs(val), 1) * 50;
+                const fillOnLeft = (val >= 0) === positiveOnLeft;
+
+                return (
+                  <div key={a.id}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        marginBottom: 6,
+                        color: tokens.ink,
+                      }}
+                    >
+                      <span>{rightLabel}</span>
+                      <span>{leftLabel}</span>
+                    </div>
+                    <div
+                      style={{
+                        position: 'relative',
+                        height: 8,
+                        borderRadius: 999,
+                        backgroundColor: trackBg,
+                      }}
+                    >
                       <div
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 6,
-                          fontSize: isStory ? 8.5 : 9.5,
-                          marginBottom: 3,
+                          position: 'absolute',
+                          left: '50%',
+                          top: -2,
+                          bottom: -2,
+                          width: 2,
+                          backgroundColor: tokens.node,
                         }}
-                      >
-                        <span style={{ fontWeight: 700, color: tokens.ink }}>{rightLabel}</span>
-                        <span
-                          dir="ltr"
-                          style={{
-                            fontFamily: MADAR_MONO_FONT,
-                            fontWeight: 700,
-                            color: tokens.primary,
-                          }}
-                        >
-                          {has ? fmt(val) : '—'}
-                        </span>
-                        <span style={{ fontWeight: 700, color: tokens.ink }}>{leftLabel}</span>
-                      </div>
-                      <div
-                        style={{
-                          position: 'relative',
-                          height: 6,
-                          borderRadius: 999,
-                          backgroundColor: trackBg,
-                        }}
-                      >
+                      />
+                      {has && pct > 0 && (
                         <div
                           style={{
                             position: 'absolute',
-                            left: '50%',
-                            top: -2,
-                            bottom: -2,
-                            width: 1.5,
-                            backgroundColor: tokens.node,
+                            top: 0,
+                            bottom: 0,
+                            borderRadius: 999,
+                            backgroundColor: tokens.primary,
+                            ...(fillOnLeft
+                              ? { right: '50%', width: `${pct}%` }
+                              : { left: '50%', width: `${pct}%` }),
                           }}
                         />
-                        {has && pct > 0 && (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              bottom: 0,
-                              borderRadius: 999,
-                              backgroundColor: tokens.primary,
-                              ...(fillOnLeft
-                                ? { right: '50%', width: `${pct}%` }
-                                : { left: '50%', width: `${pct}%` }),
-                            }}
-                          />
-                        )}
-                      </div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );

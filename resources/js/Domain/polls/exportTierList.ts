@@ -369,17 +369,17 @@ export async function renderTierListFile(options: ExportTierDataOptions): Promis
             }
 
             ctx.fillStyle = tokens.ink;
-            ctx.font = `700 12px ${bodyFont}`;
+            ctx.font = `700 13px ${bodyFont}`;
             const lines = wrapText(it.name || "", itemWidth - 12);
             lines.forEach((ln, i) => {
-                ctx.fillText(ln, cx + itemWidth / 2, cy + 114 + i * 14);
+                ctx.fillText(ln, cx + itemWidth / 2, cy + 114 + i * 15);
             });
             if (it.title) {
                 ctx.fillStyle = tokens.muted;
-                ctx.font = `500 11px ${bodyFont}`;
+                ctx.font = `500 11.5px ${bodyFont}`;
                 const tlines = wrapText(it.title, itemWidth - 12);
                 tlines.forEach((ln, i) => {
-                    ctx.fillText(ln, cx + itemWidth / 2, cy + 114 + lines.length * 14 + 4 + i * 12);
+                    ctx.fillText(ln, cx + itemWidth / 2, cy + 114 + lines.length * 15 + 4 + i * 13);
                 });
             }
         }

@@ -154,12 +154,16 @@ export const STATUS_TEXT: Record<Status, string> = {
     pending: 'جارٍ التحقق',
 };
 
-/** Hex rather than tailwind tokens: the map paints circles, not DOM nodes. */
+/**
+ * Hex rather than tailwind tokens: the map paints circles, not DOM nodes.
+ * Each shade clears >= 3:1 against both the light (#fafaf8) and dark (#0e0e0e)
+ * basemaps.
+ */
 export const STATUS_COLORS: Record<Status, string> = {
-    open: '#10b981',
-    closed: '#ef4444',
-    opening: '#f59e0b',
-    pending: '#94a3b8',
+    open: '#059669',
+    closed: '#dc2626',
+    opening: '#c86a07',
+    pending: '#64748b',
 };
 
 /** 963989860267 -> +963 989 860 267 */

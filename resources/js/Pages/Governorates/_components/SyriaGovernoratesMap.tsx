@@ -15,12 +15,14 @@ interface SyriaGovernoratesMapProps {
  */
 export function SyriaGovernoratesMap({ svgMap, populationById = {} }: SyriaGovernoratesMapProps) {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
+    const [focusedId, setFocusedId] = useState<string | null>(null);
 
     if (!svgMap.shapes.length) {
         return null;
     }
 
-    const activeShape = hoveredId ? svgMap.shapes.find((s) => s.id === hoveredId) ?? null : null;
+    const activeId = focusedId ?? hoveredId;
+    const activeShape = activeId ? svgMap.shapes.find((s) => s.id === activeId) ?? null : null;
     const activePop = activeShape ? populationById[activeShape.id] : undefined;
 
     return (
@@ -64,6 +66,7 @@ export function SyriaGovernoratesMap({ svgMap, populationById = {} }: SyriaGover
                 >
                     {svgMap.shapes.map((shape) => {
                         const isHovered = hoveredId === shape.id;
+                        const isFocused = focusedId === shape.id;
                         const href = `/governorates/${shape.id}`;
                         return (
                             <a
@@ -72,23 +75,25 @@ export function SyriaGovernoratesMap({ svgMap, populationById = {} }: SyriaGover
                                 aria-label={`محافظة ${shape.name_ar}`}
                                 onMouseEnter={() => setHoveredId(shape.id)}
                                 onMouseLeave={() => setHoveredId((prev) => (prev === shape.id ? null : prev))}
-                                onFocus={() => setHoveredId(shape.id)}
-                                onBlur={() => setHoveredId((prev) => (prev === shape.id ? null : prev))}
+                                onFocus={() => setFocusedId(shape.id)}
+                                onBlur={() => setFocusedId((prev) => (prev === shape.id ? null : prev))}
                                 onClick={(e) => {
                                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
                                     e.preventDefault();
                                     router.visit(href);
                                 }}
-                                className="group cursor-pointer focus-visible:outline-none"
+                                className="group cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                             >
                                 <path
                                     d={shape.path}
                                     className={
-                                        isHovered
-                                            ? 'fill-primary/35 stroke-primary transition-colors'
-                                            : 'fill-primary/15 stroke-border transition-colors group-hover:fill-primary/35 group-hover:stroke-primary group-focus-visible:fill-primary/35 group-focus-visible:stroke-primary'
+                                        isFocused
+                                            ? 'fill-primary/40 stroke-foreground transition-colors'
+                                            : isHovered
+                                                ? 'fill-primary/35 stroke-primary transition-colors'
+                                                : 'fill-primary/15 stroke-border transition-colors group-hover:fill-primary/35 group-hover:stroke-primary group-focus-visible:fill-primary/40 group-focus-visible:stroke-foreground'
                                     }
-                                    strokeWidth={isHovered ? 2 : 1.25}
+                                    strokeWidth={isFocused ? 3 : isHovered ? 2 : 1.25}
                                     strokeLinejoin="round"
                                 />
                                 {shape.id !== 'damascus' && shape.id !== 'quneitra' && (

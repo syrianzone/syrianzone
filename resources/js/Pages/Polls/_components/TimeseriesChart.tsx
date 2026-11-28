@@ -404,22 +404,22 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                             width={680}
                         >
                             {(tokens) => (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
                                         <div
                                             style={{
                                                 fontFamily: MADAR_DISPLAY_FONT,
-                                                fontSize: 22,
-                                                fontWeight: 800,
+                                                fontSize: 24,
+                                                fontWeight: 900,
                                                 color: tokens.ink,
-                                                lineHeight: 1.3,
+                                                lineHeight: 1.25,
                                             }}
                                         >
                                             {title}
                                         </div>
                                         <span
                                             style={{
-                                                fontSize: 11,
+                                                fontSize: 12,
                                                 fontWeight: 700,
                                                 color: tokens.muted,
                                                 whiteSpace: 'nowrap',
@@ -444,7 +444,7 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
                                         {chartLines.map((line) => (
                                             <span
                                                 key={line.key}
@@ -452,20 +452,16 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                                                     display: 'inline-flex',
                                                     alignItems: 'center',
                                                     gap: 6,
-                                                    fontSize: 11,
+                                                    fontSize: 12,
                                                     fontWeight: 700,
-                                                    padding: '3px 9px',
-                                                    borderRadius: 999,
-                                                    backgroundColor: tokens.card,
-                                                    border: `1px solid ${tokens.border}`,
                                                     color: tokens.ink,
                                                 }}
                                             >
                                                 <span
                                                     aria-hidden="true"
                                                     style={{
-                                                        width: 8,
-                                                        height: 8,
+                                                        width: 9,
+                                                        height: 9,
                                                         borderRadius: '50%',
                                                         backgroundColor: line.color,
                                                         display: 'inline-block',

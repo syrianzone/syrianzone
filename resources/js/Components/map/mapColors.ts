@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { readThemeColor, useColorScheme } from '@/Lib/theme';
+import { readThemeColor, useThemeId } from '@/Lib/theme';
 
 /**
  * A MapLibre/Leaflet paint property cannot read `hsl(var(--primary))`: canvas
@@ -50,8 +50,9 @@ export function resolveMapColors<T extends Record<string, MapColorEntry>>(
 }
 
 /**
- * `resolveMapColors` for render code: recomputes when the scheme changes, so a
- * layer that depends on the returned palette repaints in the new theme.
+ * `resolveMapColors` for render code: recomputes when the active theme changes
+ * (including switches between two same-scheme themes), so a layer that depends
+ * on the returned palette repaints in the new theme immediately.
  *
  * Pass a module-level constant, not an inline object literal, or the memo is
  * worthless.
@@ -59,6 +60,6 @@ export function resolveMapColors<T extends Record<string, MapColorEntry>>(
 export function useMapColors<T extends Record<string, MapColorEntry>>(
   entries: T,
 ): ResolvedMapColors<T> {
-  const scheme = useColorScheme();
-  return useMemo(() => resolveMapColors(entries), [entries, scheme]);
+  const themeId = useThemeId();
+  return useMemo(() => resolveMapColors(entries), [entries, themeId]);
 }

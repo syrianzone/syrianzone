@@ -101,18 +101,42 @@ export default function SyriaMap({ geoJsonData, selectedGovId }: SyriaMapProps) 
     if (!geoJsonData) return <div className="h-full w-full flex items-center justify-center text-white" style={{ background: SYRIA_MAP_COLORS.background }}>جاري تحميل الخريطة...</div>;
 
     return (
-        <div className="w-full h-full relative rounded-xl overflow-hidden border-2 border-border shadow-lg">
+        <div className="syid-map w-full h-full relative rounded-xl overflow-hidden border-2 border-border shadow-lg">
             <style>{`
-                .leaflet-container,
-                .leaflet-interactive {
+                .syid-map .leaflet-container,
+                .syid-map .leaflet-interactive {
                     -webkit-tap-highlight-color: transparent;
                 }
-                .leaflet-container:focus-visible,
-                path.leaflet-interactive:focus-visible {
+                .syid-map .leaflet-container:focus-visible,
+                .syid-map path.leaflet-interactive:focus-visible {
                     outline: 2px solid hsl(var(--ring));
                     outline-offset: 2px;
                 }
-                .custom-tooltip {
+                .syid-map .leaflet-control-zoom {
+                    border: 1px solid #30363d !important;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+                    border-radius: 8px !important;
+                    overflow: hidden;
+                }
+                .syid-map .leaflet-control-zoom a {
+                    background: #161b22 !important;
+                    color: #e6edf3 !important;
+                    border-bottom-color: #30363d !important;
+                }
+                .syid-map .leaflet-control-zoom a:hover {
+                    background: #30363d !important;
+                    color: #ffffff !important;
+                }
+                .syid-map .leaflet-control-attribution {
+                    background: rgba(13, 17, 23, 0.85) !important;
+                    color: #9ca3af !important;
+                    border-top: 1px solid #30363d !important;
+                    border-inline-start: 1px solid #30363d !important;
+                }
+                .syid-map .leaflet-control-attribution a {
+                    color: #e6edf3 !important;
+                }
+                .syid-map .custom-tooltip {
                     background: rgba(0, 0, 0, 0.8) !important;
                     border: 1px solid #444 !important;
                     color: white !important;

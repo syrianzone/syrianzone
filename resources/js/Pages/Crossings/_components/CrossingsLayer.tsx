@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type maplibregl from 'maplibre-gl';
 import { useMap } from '@/Components/map/MapContext';
 import { useMapLayer } from '@/Components/map/useMapLayer';
+import { useColorScheme } from '@/Lib/theme';
 
 const SOURCE_ID = 'crossings';
 const PIN_LAYER = 'crossing-pin';
@@ -20,9 +21,13 @@ export function CrossingsLayer(props: {
     onHover: (n: number | null) => void;
 }) {
     const map = useMap();
+    const scheme = useColorScheme();
+    const strokeColor = scheme === 'dark' ? '#ffffff' : '#1e293b';
 
     const dataRef = useRef(props.data);
     dataRef.current = props.data;
+    const strokeColorRef = useRef(strokeColor);
+    strokeColorRef.current = strokeColor;
     const selectedIdRef = useRef(props.selectedId);
     selectedIdRef.current = props.selectedId;
     const onSelectRef = useRef(props.onSelect);
@@ -57,7 +62,7 @@ export function CrossingsLayer(props: {
                 'circle-radius': 7,
                 'circle-color': ['get', 'color'],
                 'circle-stroke-width': 2,
-                'circle-stroke-color': '#ffffff',
+                'circle-stroke-color': strokeColorRef.current,
                 'circle-stroke-opacity': 0.9,
             },
         });
@@ -122,6 +127,11 @@ export function CrossingsLayer(props: {
         if (!map.getLayer(SELECTED_LAYER)) return;
         map.setFilter(SELECTED_LAYER, ['==', ['get', 'n'], props.selectedId ?? -1]);
     }, [props.selectedId, map]);
+
+    useEffect(() => {
+        if (!map.getLayer(PIN_LAYER)) return;
+        map.setPaintProperty(PIN_LAYER, 'circle-stroke-color', strokeColor);
+    }, [strokeColor, map]);
 
     return null;
 }

@@ -48,7 +48,7 @@ export type BandScale = {
 
 export type DataTypeConfig = ValueScale | BandScale;
 
-const NO_DATA_COLOR = '#1e293b';
+const NO_DATA_COLOR = '#334155';
 
 /**
  * Temperature bands, cool to hot. Fixed by the data (degrees), not by the
@@ -89,7 +89,7 @@ export const DATA_TYPE_CONFIG: Record<DataType, DataTypeConfig> = {
         kind: 'value',
         label: 'العائدون من النزوح',
         labelAr: 'العائدون',
-        colors: { none: NO_DATA_COLOR, low: '#22c55e', medium: '#16a34a', high: '#4ade80' },
+        colors: { none: NO_DATA_COLOR, low: '#4ade80', medium: '#22c55e', high: '#16a34a' },
         thresholds: [50000, 100000, 200000],
     },
     [DATA_TYPES.RAINFALL]: {

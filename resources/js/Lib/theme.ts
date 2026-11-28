@@ -94,7 +94,12 @@ export interface ShareCardPalette {
  * instead of keeping a copy each.
  */
 export function shareCardPalette(themeId: string): ShareCardPalette {
-  const isLight = themeId === 'light' || themeId === 'nili' || themeId === 'qashani' || themeId === 'limestone';
+  const isLight =
+    themeId === 'light' ||
+    themeId === 'nili' ||
+    themeId === 'qashani' ||
+    themeId === 'limestone' ||
+    themeId === 'jasmine';
   return isLight
     ? {
         isLight,

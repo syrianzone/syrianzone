@@ -606,19 +606,20 @@ export default function CompassClient() {
                         width={460}
                     >
                         {(tokens) => (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
                                     <div
                                         style={{
                                             fontFamily: MADAR_DISPLAY_FONT,
-                                            fontSize: 20,
-                                            fontWeight: 800,
+                                            fontSize: 22,
+                                            fontWeight: 900,
                                             color: tokens.ink,
+                                            lineHeight: 1.25,
                                         }}
                                     >
                                         البوصلة السياسية
                                     </div>
-                                    <span style={{ fontSize: 11, fontWeight: 700, color: tokens.muted }}>
+                                    <span style={{ fontSize: 12.5, fontWeight: 700, color: tokens.muted }}>
                                         {axes.top} / {axes.bottom}
                                     </span>
                                 </div>
@@ -629,14 +630,13 @@ export default function CompassClient() {
                                         overflow: 'hidden',
                                         border: `1px solid ${tokens.border}`,
                                         backgroundColor: tokens.card,
-                                        padding: 8,
                                     }}
                                 >
                                     {compassSnapshotUrl && (
                                         <img
                                             src={compassSnapshotUrl}
                                             alt="معاينة البوصلة السياسية"
-                                            style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 8 }}
+                                            style={{ width: '100%', height: 'auto', display: 'block' }}
                                         />
                                     )}
                                 </div>

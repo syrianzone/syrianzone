@@ -297,12 +297,12 @@
       "primary": "#9e5e0a",
       "group": "heritage",
       "priorities": {
-        "gradient": "linear-gradient(135deg, #0d0c0a 0%, #523105 50%, #241402 100%)",
+        "gradient": "linear-gradient(135deg, #FCFAF3 0%, #F3E5C2 50%, #FCFAF3 100%)",
         "accentBg": "bg-amber-500/20 border-amber-500/30",
-        "accentText": "text-amber-400",
-        "badgeBg": "bg-amber-500/10 border-amber-500/20 text-amber-300",
-        "headerSubtitle": "#fde68a",
-        "urlText": "#fbbf24"
+        "accentText": "text-amber-800",
+        "badgeBg": "bg-amber-500/10 border-amber-500/20 text-amber-900",
+        "headerSubtitle": "#6b5438",
+        "urlText": "#9e5e0a"
       }
     }
   ]

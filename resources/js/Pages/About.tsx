@@ -8,7 +8,6 @@ import { Separator } from '@/Components/ui/separator';
 import { Button } from '@/Components/ui/button';
 import { MEDIA_BASE } from '@/Domain/govapps/media';
 import { PageHeader, ReaderLayout } from '@/Components/layout';
-import { Logo } from '@/Components/brand/Logo';
 
 interface Contributor {
     login: string;

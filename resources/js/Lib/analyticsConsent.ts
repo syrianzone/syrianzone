@@ -171,11 +171,12 @@ export function loadAnalytics(): boolean {
     if (!w || !id) return false;
     if (currentConsent() !== 'granted') return false;
 
+    // A previous withdrawal in this tab must not silence a fresh grant, even
+    // when gtag.js was already loaded earlier in this session.
+    setOptOut(id, false);
+
     if (scriptState !== 'idle') return scriptState === 'loaded';
     if (typeof document === 'undefined') return false;
-
-    // A previous withdrawal in this tab must not silence a fresh grant.
-    setOptOut(id, false);
 
     // Already queued by an earlier module instance (hot reload): reuse it.
     if (typeof w.gtag === 'function') {

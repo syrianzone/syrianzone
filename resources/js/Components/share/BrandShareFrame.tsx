@@ -66,11 +66,11 @@ const BrandShareFrame = forwardRef<HTMLDivElement, BrandShareFrameProps>(functio
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
-    gap: isStory ? 12 : 16,
-    paddingTop: isStory ? 30 : 22,
-    paddingBottom: isStory ? 26 : 18,
-    paddingRight: isStory ? 24 : 26, // accounts for the 6px RTL rail
-    paddingLeft: isStory ? 18 : 20,
+    gap: isStory ? 18 : 18,
+    paddingTop: isStory ? 34 : 24,
+    paddingBottom: isStory ? 28 : 20,
+    paddingRight: isStory ? 26 : 28, // accounts for the 6px RTL rail
+    paddingLeft: isStory ? 20 : 22,
     backgroundColor: tokens.ground,
     color: tokens.ink,
     fontFamily: MADAR_BODY_FONT,
@@ -142,10 +142,10 @@ const BrandShareFrame = forwardRef<HTMLDivElement, BrandShareFrameProps>(functio
         />
         <span
           style={{
-            fontSize: isStory ? 10 : 11,
+            fontSize: 12,
             fontWeight: 700,
             lineHeight: 1.3,
-            padding: isStory ? '3px 9px' : '4px 11px',
+            padding: '4px 11px',
             borderRadius: 999,
             backgroundColor: tokens.card,
             border: `1px solid ${tokens.border}`,
@@ -183,7 +183,7 @@ const BrandShareFrame = forwardRef<HTMLDivElement, BrandShareFrameProps>(functio
       >
         <span
           style={{
-            fontSize: isStory ? 10 : 11,
+            fontSize: 12,
             fontWeight: 600,
             color: tokens.muted,
           }}
@@ -193,7 +193,7 @@ const BrandShareFrame = forwardRef<HTMLDivElement, BrandShareFrameProps>(functio
         <span
           dir="ltr"
           style={{
-            fontSize: isStory ? 10.5 : 11.5,
+            fontSize: 12,
             fontWeight: 700,
             color: tokens.primary,
             fontFamily: MADAR_MONO_FONT,

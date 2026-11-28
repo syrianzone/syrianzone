@@ -56,14 +56,11 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
                                 display: 'flex',
                                 flexDirection: 'column',
                                 justifyContent: 'space-between',
-                                gap: 16,
-                                borderRadius: 14,
-                                backgroundColor: tokens.card,
-                                border: `1px solid ${tokens.border}`,
-                                padding: 20,
+                                gap: 18,
                                 color: tokens.ink,
                             }}
                         >
+                            {/* 1. Speaker + verdict badge */}
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                                     {coSpeakers.length > 0 ? (
@@ -73,20 +70,20 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
                                                     key={s.id ?? idx}
                                                     name={s.name}
                                                     image={s.image}
-                                                    size={40}
+                                                    size={42}
                                                     className={`ring-2 ring-card${idx > 0 ? ' -ms-2.5' : ''}`}
                                                 />
                                             ))}
                                         </div>
                                     ) : (
-                                        <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={44} />
+                                        <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={46} />
                                     )}
                                     <div style={{ minWidth: 0 }}>
-                                        <p style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.35, color: tokens.ink, margin: 0 }}>
+                                        <p style={{ fontSize: 14.5, fontWeight: 800, lineHeight: 1.3, color: tokens.ink, margin: 0 }}>
                                             {speakerNames}
                                         </p>
                                         {speakerTitles && (
-                                            <p style={{ fontSize: 11.5, lineHeight: 1.4, color: tokens.muted, margin: '2px 0 0' }}>
+                                            <p style={{ fontSize: 12, lineHeight: 1.4, color: tokens.muted, margin: '2px 0 0' }}>
                                                 {speakerTitles}
                                             </p>
                                         )}
@@ -95,11 +92,12 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
                                 <StateBadge state={promise.state} keptLate={promise.keptLate} />
                             </div>
 
+                            {/* 2. Hero headline */}
                             <p
                                 style={{
                                     fontFamily: MADAR_DISPLAY_FONT,
-                                    fontSize: 22,
-                                    fontWeight: 800,
+                                    fontSize: 24,
+                                    fontWeight: 900,
                                     lineHeight: 1.35,
                                     color: tokens.ink,
                                     margin: 0,
@@ -108,34 +106,44 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
                                 {promise.title}
                             </p>
 
-                            <Countdown
-                                state={promise.state}
-                                counter={promise.counter}
-                                deadlineDate={promise.deadlineDate}
-                                statementDate={promise.statementDate}
-                                size="lg"
-                            />
-
+                            {/* 3. Focal counter card */}
                             <div
                                 style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    gap: 8,
-                                    borderTop: `1px solid ${tokens.border}`,
-                                    paddingTop: 10,
-                                    fontSize: 11.5,
-                                    color: tokens.muted,
+                                    borderRadius: 14,
+                                    backgroundColor: tokens.card,
+                                    border: `1px solid ${tokens.border}`,
+                                    padding: '16px 18px 14px',
                                 }}
                             >
-                                <span>
-                                    {promise.deadlineDate
-                                        ? `الموعد ${formatDate(promise.deadlineDate)}`
-                                        : `أُطلق ${formatDate(promise.statementDate)}`}
-                                </span>
-                                <span style={{ fontWeight: 700, color: tokens.primary }}>
-                                    وعد رقم #{promise.number}
-                                </span>
+                                <Countdown
+                                    state={promise.state}
+                                    counter={promise.counter}
+                                    deadlineDate={promise.deadlineDate}
+                                    statementDate={promise.statementDate}
+                                    size="lg"
+                                />
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: 8,
+                                        borderTop: `1px solid ${tokens.border}`,
+                                        marginTop: 14,
+                                        paddingTop: 10,
+                                        fontSize: 12,
+                                        color: tokens.muted,
+                                    }}
+                                >
+                                    <span>
+                                        {promise.deadlineDate
+                                            ? `الموعد ${formatDate(promise.deadlineDate)}`
+                                            : `أُطلق ${formatDate(promise.statementDate)}`}
+                                    </span>
+                                    <span style={{ fontWeight: 700, color: tokens.primary }}>
+                                        وعد #{promise.number}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     )}

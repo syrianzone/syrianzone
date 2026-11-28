@@ -849,15 +849,15 @@ export default function PrioritiesApp() {
         renderCard={({ themeId, format, cardRef }) => {
           const isStory = format === 'story';
           const RADAR_ORDER = ['economy', 'justice', 'housing', 'security', 'politics', 'digital'];
-          const SIZE = isStory ? 76 : 84;
+          const SIZE = isStory ? 96 : 92;
           const cx = SIZE / 2;
           const cy = SIZE / 2;
-          const R = isStory ? 28 : 32;
+          const R = isStory ? 38 : 36;
           const n = RADAR_ORDER.length;
           const pointsMap: Record<string, number> = {};
           topics.forEach((t) => { pointsMap[t.id] = t.points; });
           const angle = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
-          const rings = [0.25, 0.5, 0.75, 1.0];
+          const rings = [0.33, 0.66, 1.0];
           const ringPath = (ratio: number) =>
             RADAR_ORDER.map((_, i) => {
               const a = angle(i);
@@ -872,6 +872,8 @@ export default function PrioritiesApp() {
               return `${i === 0 ? 'M' : 'L'} ${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
             }).join(' ') + ' Z';
 
+          const topPriorities = sortedTopicsForCard.slice(0, 3);
+
           return (
             <BrandShareFrame
               ref={cardRef}
@@ -882,20 +884,18 @@ export default function PrioritiesApp() {
               format={format}
             >
               {(tokens) => {
-                const gridColor = tokens.isDark ? 'rgba(238,240,255,0.16)' : 'rgba(23,26,46,0.14)';
-                const chipBg = `rgba(${tokens.primaryRgb}, ${tokens.isDark ? 0.18 : 0.10})`;
-                const chipBorder = `rgba(${tokens.primaryRgb}, ${tokens.isDark ? 0.36 : 0.24})`;
-                const trackBg = tokens.isDark ? 'rgba(238,240,255,0.12)' : 'rgba(23,26,46,0.08)';
+                const gridColor = tokens.isDark ? 'rgba(238,240,255,0.18)' : 'rgba(23,26,46,0.14)';
+                const trackBg = tokens.isDark ? 'rgba(238,240,255,0.14)' : 'rgba(23,26,46,0.09)';
 
                 return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 10 : 12 }}>
-                    {/* Radar + Persona header */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 22 : 16 }}>
+                    {/* 1. Hero: Radar + Persona title */}
                     <div
                       style={{
                         display: 'flex',
                         flexDirection: isStory ? 'column' : 'row',
                         alignItems: 'center',
-                        gap: isStory ? 6 : 12,
+                        gap: isStory ? 10 : 14,
                         textAlign: isStory ? 'center' : 'right',
                       }}
                     >
@@ -913,7 +913,7 @@ export default function PrioritiesApp() {
                               d={ringPath(ratio)}
                               fill="none"
                               stroke={gridColor}
-                              strokeWidth={ratio === 1.0 ? 0.9 : 0.5}
+                              strokeWidth={ratio === 1.0 ? 1.1 : 0.6}
                             />
                           ))}
                           {RADAR_ORDER.map((_, i) => {
@@ -926,7 +926,7 @@ export default function PrioritiesApp() {
                                 x2={cx + R * Math.cos(a)}
                                 y2={cy + R * Math.sin(a)}
                                 stroke={gridColor}
-                                strokeWidth={0.5}
+                                strokeWidth={0.6}
                               />
                             );
                           })}
@@ -935,7 +935,7 @@ export default function PrioritiesApp() {
                             fill={tokens.primary}
                             fillOpacity={0.22}
                             stroke={tokens.primary}
-                            strokeWidth={1.6}
+                            strokeWidth={2}
                             strokeLinejoin="round"
                           />
                           {RADAR_ORDER.map((id, i) => {
@@ -946,7 +946,7 @@ export default function PrioritiesApp() {
                                 key={id}
                                 cx={cx + R * ratio * Math.cos(a)}
                                 cy={cy + R * ratio * Math.sin(a)}
-                                r={2}
+                                r={2.5}
                                 fill={tokens.node}
                               />
                             );
@@ -955,29 +955,12 @@ export default function PrioritiesApp() {
                       </div>
 
                       <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-                        {persona?.tag && (
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              fontSize: 9,
-                              fontWeight: 700,
-                              padding: '2px 9px',
-                              borderRadius: 999,
-                              color: tokens.primary,
-                              backgroundColor: chipBg,
-                              border: `1px solid ${chipBorder}`,
-                            }}
-                          >
-                            {persona.tag}
-                          </span>
-                        )}
                         <div
                           style={{
                             fontFamily: MADAR_DISPLAY_FONT,
-                            fontSize: isStory ? 17 : 19,
+                            fontSize: isStory ? 26 : 24,
                             fontWeight: 900,
-                            lineHeight: 1.25,
-                            marginTop: 4,
+                            lineHeight: 1.2,
                             color: tokens.ink,
                           }}
                         >
@@ -986,9 +969,9 @@ export default function PrioritiesApp() {
                         {persona?.desc && (
                           <p
                             style={{
-                              fontSize: isStory ? 8.5 : 9.5,
-                              lineHeight: 1.45,
-                              margin: '3px 0 0',
+                              fontSize: 12.5,
+                              lineHeight: 1.5,
+                              margin: '6px 0 0',
                               color: tokens.muted,
                             }}
                           >
@@ -998,46 +981,52 @@ export default function PrioritiesApp() {
                       </div>
                     </div>
 
-                    {/* 6 Priorities distribution (no truncate on Arabic labels) */}
+                    {/* 2. Top 3 priorities */}
                     <div
                       style={{
-                        borderRadius: 12,
+                        borderRadius: 14,
                         backgroundColor: tokens.card,
                         border: `1px solid ${tokens.border}`,
-                        padding: isStory ? '10px 12px' : '11px 14px',
+                        padding: isStory ? '16px 16px' : '14px 16px',
                       }}
                     >
                       <div
                         style={{
-                          fontSize: 9.5,
-                          fontWeight: 800,
+                          fontSize: 12,
+                          fontWeight: 700,
                           color: tokens.muted,
-                          paddingBottom: 6,
-                          marginBottom: 7,
-                          borderBottom: `1px solid ${tokens.border}`,
+                          marginBottom: 12,
                         }}
                       >
-                        توزيع نقاط الاهتمام (100 نقطة)
+                        أعلى الأولويات
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 6 : 7 }}>
-                        {sortedTopicsForCard.map((topic) => (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: isStory ? 14 : 12 }}>
+                        {topPriorities.map((topic) => (
                           <div key={topic.id}>
                             <div
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                gap: 8,
-                                fontSize: isStory ? 9 : 10,
-                                fontWeight: 700,
-                                marginBottom: 3,
+                                gap: 10,
+                                marginBottom: 6,
                               }}
                             >
-                              <span style={{ color: tokens.ink, lineHeight: 1.3 }}>{topic.name}</span>
+                              <span
+                                style={{
+                                  fontSize: 13.5,
+                                  fontWeight: 800,
+                                  color: tokens.ink,
+                                  lineHeight: 1.3,
+                                }}
+                              >
+                                {topic.name}
+                              </span>
                               <span
                                 dir="ltr"
                                 style={{
                                   fontFamily: MADAR_MONO_FONT,
+                                  fontSize: 14,
                                   fontWeight: 800,
                                   color: tokens.primary,
                                   flexShrink: 0,
@@ -1049,7 +1038,7 @@ export default function PrioritiesApp() {
                             <div
                               style={{
                                 width: '100%',
-                                height: 5,
+                                height: 8,
                                 borderRadius: 999,
                                 backgroundColor: trackBg,
                                 overflow: 'hidden',
@@ -1068,51 +1057,6 @@ export default function PrioritiesApp() {
                         ))}
                       </div>
                     </div>
-
-                    {/* Selected urgent subfiles */}
-                    {selectedSubFilesData.length > 0 && (
-                      <div
-                        style={{
-                          borderRadius: 12,
-                          backgroundColor: tokens.card,
-                          border: `1px solid ${tokens.border}`,
-                          padding: '8px 11px',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 9,
-                            fontWeight: 800,
-                            color: tokens.muted,
-                            marginBottom: 5,
-                          }}
-                        >
-                          الملفات الفرعية الأكثر إلحاحاً
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                          {selectedSubFilesData.map((item) => (
-                            <span
-                              key={item.id}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                fontSize: 8.5,
-                                fontWeight: 700,
-                                padding: '2px 7px',
-                                borderRadius: 6,
-                                backgroundColor: tokens.mutedSurface,
-                                border: `1px solid ${tokens.border}`,
-                                color: tokens.ink,
-                              }}
-                            >
-                              <span style={{ color: tokens.primary }}>{item.topicName}:</span>
-                              <span>{item.name}</span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               }}

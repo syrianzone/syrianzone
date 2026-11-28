@@ -87,6 +87,14 @@ createInertiaApp({
 // queued by the module when it loads gtag.js).
 loadAnalytics();
 
+// Inertia v2 fires `navigate` on the initial visit as well; bootstrap() in
+// Lib/analyticsConsent.ts already queues the initial page view when gtag loads,
+// so skip the first navigate event to prevent double-counting on cached loads.
+let initialNavigatePending = true;
 router.on('navigate', (event) => {
+    if (initialNavigatePending) {
+        initialNavigatePending = false;
+        return;
+    }
     trackPageView(event.detail.page.url);
 });

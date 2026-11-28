@@ -9,16 +9,16 @@ type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 // Province with nothing to show: the same "no data" colour as the legend's
 // first entry, plus a hairline that reads on the atlas background.
 const NO_DATA_FILL = DATA_TYPE_CONFIG[DATA_TYPES.ENVIRONMENTAL].colors.none;
-const NO_DATA_STROKE = '#334155';
+const NO_DATA_STROKE = '#64748b';
 const HIGHLIGHT_STROKE = '#ffffff';
 
 function noDataStyle() {
     return {
         fillColor: NO_DATA_FILL,
-        weight: 1,
-        opacity: 0.5,
+        weight: 1.25,
+        opacity: 0.75,
         color: NO_DATA_STROKE,
-        fillOpacity: 0.3,
+        fillOpacity: 0.55,
         className: ''
     };
 }

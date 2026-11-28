@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
+import { Badge } from '@/Components/ui/badge';
+import { Card, CardContent } from '@/Components/ui/card';
 import { Settings2 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { useCanModule } from '@/Lib/useCan';
 import type { Poll } from '@/Domain/polls/types';
 
@@ -18,43 +21,51 @@ export default function Index({ polls = [] }: PollsPageProps) {
 
     return (
         <MainLayout>
-            <div className="min-h-screen bg-background text-foreground">
-                <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-                        <h1 className="text-3xl font-bold">الاستبيانات واستطلاعات الرأي</h1>
-                        {canManage && (
-                            <Button asChild variant="outline">
+            <div className="min-h-screen bg-background text-foreground" dir="rtl">
+                <PageBody className="space-y-6">
+                    <PageHeader
+                        title="الاستبيانات واستطلاعات الرأي"
+                        description="شارك برأيك في الاستطلاعات المفتوحة وتصفّح نتائج التصويت المجتمعي."
+                        divider
+                        actions={canManage ? (
+                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
                                 <Link href="/dashboard">
-                                    <Settings2 className="h-4 w-4 me-2" />
-                                    إدارة الاستبيانات في لوحة التحكم
+                                    <Settings2 className="h-4 w-4" aria-hidden="true" />
+                                    <span>إدارة الاستبيانات</span>
                                 </Link>
                             </Button>
-                        )}
-                    </div>
+                        ) : undefined}
+                    />
 
                     {polls.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground">لا توجد استطلاعات رأي نشطة حالياً.</div>
+                        <div className="rounded-lg border border-border bg-card py-12 text-center text-sm text-muted-foreground">
+                            لا توجد استطلاعات رأي نشطة حالياً.
+                        </div>
                     ) : (
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {polls.map((poll) => (
                                 <Link
                                     key={poll.id}
                                     href={`/polls/${poll.slug}`}
-                                    className="block bg-card overflow-hidden shadow border border-border rounded-lg hover:shadow-md transition-shadow duration-200 p-6"
+                                    className="group block no-underline"
                                 >
-                                    <h2 className="text-lg font-medium hover:text-primary mb-2 transition-colors">
-                                        {poll.title}
-                                    </h2>
-                                    <div className="flex items-center text-sm text-muted-foreground">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${poll.is_active ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
-                                            {poll.is_active ? 'نشط' : 'مغلق'}
-                                        </span>
-                                    </div>
+                                    <Card className="h-full transition-colors hover:border-primary/40">
+                                        <CardContent className="p-5 flex flex-col justify-between gap-3 h-full">
+                                            <h2 className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
+                                                {poll.title}
+                                            </h2>
+                                            <div className="flex items-center">
+                                                <Badge variant={poll.is_active ? 'success' : 'secondary'}>
+                                                    {poll.is_active ? 'نشط' : 'مغلق'}
+                                                </Badge>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
                                 </Link>
                             ))}
                         </div>
                     )}
-                </div>
+                </PageBody>
             </div>
         </MainLayout>
     );

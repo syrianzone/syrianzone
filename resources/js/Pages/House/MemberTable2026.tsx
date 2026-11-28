@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
+import { TableCell, TableHead, TableRow } from '@/Components/ui/table';
+import { ResponsiveTable } from '@/Components/directory/ResponsiveTable';
 import { Badge } from '@/Components/ui/badge';
 import { FilterChip } from '@/Components/ui/filter-chip';
 import { Facebook, Twitter } from '@/Components/ui/icons';
@@ -95,64 +96,131 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                         onChange={changeSearch}
                         placeholder="ابحث بالاسم أو اختر تصفية..." ariaLabel="ابحث في قائمة الأعضاء"
                     />
-                    <div className="overflow-x-auto rounded-md border border-border">
-                        <Table>
-                            <TableHeader><TableRow><TableHead className="text-right">الاسم</TableHead><TableHead className="text-right">المحافظة</TableHead><TableHead className="text-right">الجنس</TableHead><TableHead className="text-right">سنة الميلاد</TableHead><TableHead className="text-right">طريقة التعيين</TableHead><TableHead className="text-right">التواصل الاجتماعي</TableHead></TableRow></TableHeader>
-                            <TableBody>
-                                {filtered.map((m) => (
-                                    <TableRow key={m.member_number || m.name_ar}>
-                                        <TableCell className="font-medium">
+                    {filtered.length === 0 ? (
+                        <div className="rounded-lg border border-border py-10 text-center text-sm text-muted-foreground">
+                            لا توجد نتائج
+                        </div>
+                    ) : (
+                        <ResponsiveTable
+                            items={filtered}
+                            getKey={(m) => m.member_number || m.name_ar}
+                            mobileLabel="قائمة أعضاء مجلس الشعب"
+                            renderMobileItem={(m) => (
+                                <>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
                                             {m.member_number ? (
-                                                <Link href={`/house/members/${m.member_number}`} className="text-primary underline underline-offset-2 hover:no-underline">
+                                                <Link href={`/house/members/${m.member_number}`} className="text-sm font-bold text-primary hover:underline">
                                                     {m.name_ar}
                                                 </Link>
                                             ) : (
-                                                m.name_ar
+                                                <span className="text-sm font-bold text-foreground">{m.name_ar}</span>
                                             )}
-                                            {m.management_position ? ` — ${m.management_position}` : ''}
-                                        </TableCell>
-                                        <TableCell>{m.governorate_ar} {m.district ? `· ${m.district}` : ''}</TableCell>
-                                        <TableCell>{m.gender === 'F' ? 'أنثى' : 'ذكر'}</TableCell>
-                                        <TableCell>{m.birth_year}</TableCell>
-                                        <TableCell><Badge variant="outline">{m.selection_method || '—'}</Badge></TableCell>
-                                        <TableCell>
-                                            {(m.facebook_url && m.facebook_url.trim()) || (m.twitter_url && m.twitter_url.trim()) ? (
-                                                <div className="flex items-center gap-1">
-                                                    {m.facebook_url && m.facebook_url.trim() && (
-                                                        <a
-                                                            href={m.facebook_url.trim()}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            title={`فيسبوك — ${m.name_ar}`}
-                                                            aria-label={`صفحة فيسبوك للعضو ${m.name_ar}`}
-                                                            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition"
-                                                        >
-                                                            <Facebook className="h-4 w-4" />
-                                                        </a>
-                                                    )}
-                                                    {m.twitter_url && m.twitter_url.trim() && (
-                                                        <a
-                                                            href={m.twitter_url.trim()}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            title={`إكس (تويتر) — ${m.name_ar}`}
-                                                            aria-label={`حساب إكس (تويتر) للعضو ${m.name_ar}`}
-                                                            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition"
-                                                        >
-                                                            <Twitter className="h-4 w-4" />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <span className="text-muted-foreground">—</span>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">لا توجد نتائج</TableCell></TableRow>}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                            <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                                {m.governorate_ar}{m.district ? ` · ${m.district}` : ''}{m.management_position ? ` — ${m.management_position}` : ''}
+                                            </div>
+                                        </div>
+                                        <Badge variant="outline" className="shrink-0 text-[10px] whitespace-nowrap">
+                                            {m.selection_method || '—'}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                                        <span className="tabular-nums">
+                                            {m.gender === 'F' ? 'أنثى' : 'ذكر'}{m.birth_year ? ` · ${m.birth_year}` : ''}
+                                        </span>
+                                        {((m.facebook_url && m.facebook_url.trim()) || (m.twitter_url && m.twitter_url.trim())) && (
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                {m.facebook_url && m.facebook_url.trim() && (
+                                                    <a
+                                                        href={m.facebook_url.trim()}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        title={`فيسبوك — ${m.name_ar}`}
+                                                        aria-label={`صفحة فيسبوك للعضو ${m.name_ar}`}
+                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition"
+                                                    >
+                                                        <Facebook className="h-4 w-4" aria-hidden="true" />
+                                                    </a>
+                                                )}
+                                                {m.twitter_url && m.twitter_url.trim() && (
+                                                    <a
+                                                        href={m.twitter_url.trim()}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        title={`إكس (تويتر) — ${m.name_ar}`}
+                                                        aria-label={`حساب إكس (تويتر) للعضو ${m.name_ar}`}
+                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition"
+                                                    >
+                                                        <Twitter className="h-4 w-4" aria-hidden="true" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                            desktopHeader={
+                                <TableRow>
+                                    <TableHead className="text-start">الاسم</TableHead>
+                                    <TableHead className="text-start">المحافظة</TableHead>
+                                    <TableHead className="text-start">الجنس</TableHead>
+                                    <TableHead className="text-start">سنة الميلاد</TableHead>
+                                    <TableHead className="text-start">طريقة التعيين</TableHead>
+                                    <TableHead className="text-start">التواصل الاجتماعي</TableHead>
+                                </TableRow>
+                            }
+                            renderDesktopRow={(m) => (
+                                <TableRow key={m.member_number || m.name_ar}>
+                                    <TableCell className="font-medium">
+                                        {m.member_number ? (
+                                            <Link href={`/house/members/${m.member_number}`} className="text-primary underline underline-offset-2 hover:no-underline">
+                                                {m.name_ar}
+                                            </Link>
+                                        ) : (
+                                            m.name_ar
+                                        )}
+                                        {m.management_position ? ` — ${m.management_position}` : ''}
+                                    </TableCell>
+                                    <TableCell>{m.governorate_ar} {m.district ? `· ${m.district}` : ''}</TableCell>
+                                    <TableCell>{m.gender === 'F' ? 'أنثى' : 'ذكر'}</TableCell>
+                                    <TableCell className="tabular-nums">{m.birth_year}</TableCell>
+                                    <TableCell><Badge variant="outline">{m.selection_method || '—'}</Badge></TableCell>
+                                    <TableCell>
+                                        {(m.facebook_url && m.facebook_url.trim()) || (m.twitter_url && m.twitter_url.trim()) ? (
+                                            <div className="flex items-center gap-1">
+                                                {m.facebook_url && m.facebook_url.trim() && (
+                                                    <a
+                                                        href={m.facebook_url.trim()}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        title={`فيسبوك — ${m.name_ar}`}
+                                                        aria-label={`صفحة فيسبوك للعضو ${m.name_ar}`}
+                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition"
+                                                    >
+                                                        <Facebook className="h-4 w-4" aria-hidden="true" />
+                                                    </a>
+                                                )}
+                                                {m.twitter_url && m.twitter_url.trim() && (
+                                                    <a
+                                                        href={m.twitter_url.trim()}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        title={`إكس (تويتر) — ${m.name_ar}`}
+                                                        aria-label={`حساب إكس (تويتر) للعضو ${m.name_ar}`}
+                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition"
+                                                    >
+                                                        <Twitter className="h-4 w-4" aria-hidden="true" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <span className="text-muted-foreground">—</span>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        />
+                    )}
                 </CardContent>
             </Card>
         </div>

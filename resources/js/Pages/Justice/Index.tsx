@@ -1,10 +1,11 @@
 import React from 'react';
 
-import { Scale, User, X } from 'lucide-react';
+import { User, X } from 'lucide-react';
 import { Card, CardContent } from '@/Components/ui/card';
 import { cn } from '@/Lib/utils';
 import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody, PageHeader } from '@/Components/layout';
 import data from './_data/detainees.json';
 
 type Rank = { ar: string; count: number };
@@ -82,20 +83,19 @@ function MemberCard({ member, root = false }: { member: Member; root?: boolean }
 export default function JusticePage() {
     return (
         <MainLayout>
-            
-            <div className="container mx-auto max-w-screen-xl px-4 pt-6 pb-16" dir="rtl">
-                <header className="text-center mb-10">
-                    <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 text-primary mb-4">
-                        <Scale className="h-7 w-7" />
-                    </div>
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-foreground">العدالة الانتقالية</h1>
-                    <p className="mt-3 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-                        قائمة بأبرز مجرمي نظام الأسد الموقوفين لدى وزارة الداخلية السورية ضمن حملة &quot;المخطط يليق بك&quot;
-                    </p>
-                    <p className="mt-4 text-xs text-muted-foreground">محدّث حتى {updatedArabic}</p>
-                </header>
+            <PageBody className="space-y-10">
+                <PageHeader
+                    title="العدالة الانتقالية"
+                    description='قائمة بأبرز مجرمي نظام الأسد الموقوفين لدى وزارة الداخلية السورية ضمن حملة "المخطط يليق بك".'
+                    divider
+                    actions={
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                            محدّث حتى {updatedArabic}
+                        </span>
+                    }
+                />
 
-                <section aria-labelledby="tree-heading" className="mb-12">
+                <section aria-labelledby="tree-heading">
                     <h2 id="tree-heading" className="text-2xl md:text-3xl font-bold text-foreground text-center mb-6">القائمة السوداء</h2>
                     {anyDetained && (
                         <p className="text-xs text-muted-foreground text-center">
@@ -176,7 +176,7 @@ export default function JusticePage() {
                         ))}
                     </div>
                 </section>
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

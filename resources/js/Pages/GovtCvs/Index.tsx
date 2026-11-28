@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router, usePage, useRemember } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { FilterChip } from '@/Components/ui/filter-chip';
@@ -199,74 +200,46 @@ export default function GovtCvsIndex({
 
     return (
         <MainLayout>
-            <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-primary/10 via-background to-background py-12 md:py-16">
-                <div className="container relative z-10 mx-auto max-w-4xl px-4 text-center">
-                    <div className="mb-4 flex justify-center">
-                        <a
-                            href="https://jard.chat"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            dir="ltr"
-                            className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-2xs transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            <span>Supported by jard.chat</span>
-                            <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
-                        </a>
-                    </div>
-                    <div className="mb-4 flex items-center justify-center gap-3">
-                        <span
-                            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary md:h-12 md:w-12"
-                            aria-hidden="true"
-                        >
-                            <IdCard className="h-6 w-6 md:h-7 md:w-7" />
-                        </span>
-                        <h1 className="text-3xl font-black leading-tight tracking-tight text-foreground md:text-5xl">
-                            السير الذاتية للمسؤولين
-                        </h1>
-                    </div>
-                    <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
-                        دليل موثّق للسير الذاتية والمناصب الحكومية في سوريا منذ{' '}
-                        <span dir="ltr" className="tabular-nums font-medium text-foreground">
-                            8
-                        </span>{' '}
-                        كانون الأول{' '}
-                        <span dir="ltr" className="tabular-nums font-medium text-foreground">
-                            2024
-                        </span>
-                        ، يرصد التعيينات والتنقلات والمراسيم والمصادر الرسمية لكل مسؤول.
-                    </p>
-                    <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                        <Button
-                            type="button"
-                            className="gap-2"
-                            onClick={() => setSuggestOpen(true)}
-                        >
-                            <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
-                            إضافة / اقتراح تعديل
-                        </Button>
-                        <Button asChild variant="outline" className="gap-2">
-                            <Link href="/govtcvs/movements">
-                                <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
-                                سجل التعيينات والتنقلات
-                            </Link>
-                        </Button>
-                        <Button asChild variant="outline" className="gap-2">
-                            <Link href="/ministries">
-                                <Landmark className="h-4 w-4" aria-hidden="true" />
-                                وزارات سوريا
-                            </Link>
-                        </Button>
-                        {canAdmin && (
-                            <Button asChild variant="secondary" className="gap-2">
-                                <Link href="/admin/govtcvs">
-                                    <Settings className="h-4 w-4" aria-hidden="true" />
-                                    لوحة الإدارة
+            <PageBody className="pb-2">
+                <PageHeader
+                    title="السير الذاتية للمسؤولين"
+                    description="دليل موثّق للسير الذاتية والمناصب الحكومية في سوريا منذ 8 كانون الأول 2024، يرصد التعيينات والتنقلات والمراسيم والمصادر الرسمية لكل مسؤول."
+                    divider
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                type="button"
+                                size="sm"
+                                className="h-9 gap-1.5"
+                                onClick={() => setSuggestOpen(true)}
+                            >
+                                <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
+                                <span>إضافة / اقتراح تعديل</span>
+                            </Button>
+                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                                <Link href="/govtcvs/movements">
+                                    <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
+                                    <span>سجل التعيينات</span>
                                 </Link>
                             </Button>
-                        )}
-                    </div>
-                </div>
-            </section>
+                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                                <Link href="/ministries">
+                                    <Landmark className="h-4 w-4" aria-hidden="true" />
+                                    <span>وزارات سوريا</span>
+                                </Link>
+                            </Button>
+                            {canAdmin && (
+                                <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 text-muted-foreground">
+                                    <Link href="/admin/govtcvs">
+                                        <Settings className="h-4 w-4" aria-hidden="true" />
+                                        <span>الإدارة</span>
+                                    </Link>
+                                </Button>
+                            )}
+                        </div>
+                    }
+                />
+            </PageBody>
 
             <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8">
                 <Scoreboard

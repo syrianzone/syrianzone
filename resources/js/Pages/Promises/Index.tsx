@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import SmartFilterSearch from '@/Components/SmartFilterSearch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/Components/ui/accordion';
 import { ChartColumn, LayoutGrid, List, Plus, SearchX } from 'lucide-react';
-import { PromisesIcon } from '@/Components/Icons/ProjectIcons';
+import { PageBody, PageHeader } from '@/Components/layout';
 import { toggleFilterValue, type SmartFilterValue } from '@/Lib/smartFilterSearch';
 import { cn } from '@/Lib/utils';
 import PromiseCard, { type PromiseCardLayout } from './_components/PromiseCard';
@@ -101,25 +101,21 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
 
     return (
         <MainLayout>
-            <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-primary/10 via-background to-background py-12 md:py-16">
-                <div className="container relative z-10 mx-auto max-w-4xl px-4 text-center">
-                    <div className="mb-4 flex items-center justify-center gap-3">
-                        <PromisesIcon className="h-10 w-10 md:h-12 md:w-12" />
-                        <h1 className="text-3xl font-black leading-tight tracking-tight text-foreground md:text-5xl">عداد الوعود</h1>
-                    </div>
-                    <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
-                        سجل علني لما وعد به المسؤولون السوريون منذ 8 كانون الأول 2024، بالمصدر والتاريخ والموعد،
-                        مع عدّاد لكل وعد يبيّن ما بقي من الوقت أو ما مضى على انقضائه.
-                    </p>
-                    <div className="mt-6 flex justify-center">
-                        <Button asChild className="gap-2">
-                            <Link href="/promises/suggest"><Plus className="h-4 w-4" aria-hidden="true" />اقترح وعداً</Link>
+            <PageBody className="space-y-6">
+                <PageHeader
+                    title="عداد الوعود"
+                    description="سجل علني لما وعد به المسؤولون السوريون منذ 8 كانون الأول 2024، بالمصدر والتاريخ والموعد، مع عدّاد لكل وعد يبيّن ما بقي من الوقت أو ما مضى على انقضائه."
+                    divider
+                    actions={
+                        <Button asChild size="sm" className="h-9 gap-1.5">
+                            <Link href="/promises/suggest">
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                <span>اقترح وعداً</span>
+                            </Link>
                         </Button>
-                    </div>
-                </div>
-            </section>
+                    }
+                />
 
-            <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8">
                 <Scoreboard stats={stats} active={activeScoreboardState(value)} onSelect={showScoreboardState} />
 
                 <div ref={filtersRef} className="scroll-mt-20 rounded-xl border border-input bg-card shadow-sm transition-colors focus-within:border-foreground/25">
@@ -218,7 +214,7 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
-            </div>
+            </PageBody>
         </MainLayout>
     );
 }

@@ -1,7 +1,7 @@
 import { promisesApi } from '@/Domain/promises/api';
 import { useState } from 'react';
-import { router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { Head, router } from '@inertiajs/react';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
@@ -18,7 +18,7 @@ import { confirmDialog } from '@/Lib/confirm';
 import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { SECTOR_ICONS, SECTOR_ICON_LABELS, sectorIcon } from '@/Domain/promises/status';
-import AdminHeader from './_components/AdminHeader';
+import AdminNav from './_components/AdminNav';
 import { useCan } from '@/Lib/useCan';
 
 interface AdminSector {
@@ -115,14 +115,15 @@ export default function PromiseSectors({ sectors, queueCount }: Props) {
     };
 
     return (
-        <MainLayout>
-            <div className="container mx-auto max-w-4xl space-y-6 px-4 py-8" dir="rtl">
-                <AdminHeader
-                    title="قطاعات الوعود"
-                    current="sectors"
-                    queueCount={queueCount}
-                    actions={canManage && <Button onClick={openCreate} className="gap-2"><Plus className="h-4 w-4" aria-hidden="true" />إضافة قطاع</Button>}
-                />
+        <AdminLayout
+            title="قطاعات الوعود"
+            activeSection="promises"
+            publicHref="/promises"
+            publicLabel="عرض عداد الوعود"
+            actions={canManage ? <Button size="sm" onClick={openCreate} className="gap-2"><Plus className="h-4 w-4" aria-hidden="true" />إضافة قطاع</Button> : undefined}
+        >
+            <Head title="قطاعات الوعود" />
+            <AdminNav current="sectors" queueCount={queueCount} />
 
                 <Card>
                     <CardHeader>
@@ -186,7 +187,6 @@ export default function PromiseSectors({ sectors, queueCount }: Props) {
                         </Table>
                     </CardContent>
                 </Card>
-            </div>
 
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent dir="rtl" className="sm:max-w-md">
@@ -229,6 +229,6 @@ export default function PromiseSectors({ sectors, queueCount }: Props) {
                     </form>
                 </DialogContent>
             </Dialog>
-        </MainLayout>
+        </AdminLayout>
     );
 }

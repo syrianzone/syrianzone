@@ -20,7 +20,7 @@ interface SidebarRouteDetailProps {
 function formatPriceAr(value: unknown): string {
   if (value == null) return '—'
   const n = Number(value)
-  return Number.isFinite(n) ? n.toLocaleString('ar-SY') : '—'
+  return Number.isFinite(n) ? n.toLocaleString('ar-SY-u-nu-latn') : '—'
 }
 
 export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailProps) {

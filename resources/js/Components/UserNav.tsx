@@ -1,5 +1,5 @@
 import React from 'react';
-import { api } from '@/Lib/api';
+import { api, apiErrorMessage } from '@/Lib/api';
 import { Link } from '@inertiajs/react';
 import {
     DropdownMenu,
@@ -8,16 +8,18 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/Components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar";
-import { Button } from "@/Components/ui/button";
-import { LogOut, User as UserIcon, LayoutDashboard } from "lucide-react";
+} from '@/Components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
+import { Button } from '@/Components/ui/button';
+import { LogOut, User as UserIcon, LayoutDashboard, Shield } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
-import { apiErrorMessage } from '@/Lib/api';
+import { useCan } from '@/Lib/useCan';
+import { CAPABILITIES } from '@/Lib/capabilities';
 import { notify } from '@/Lib/notify';
 
 export default function UserNav() {
     const { user } = useAuth();
+    const can = useCan();
 
     const logout = () => {
         api.post('/logout')
@@ -32,6 +34,8 @@ export default function UserNav() {
     if (!user) {
         return null;
     }
+
+    const hasAdminAccess = user.role === 'superadmin' || CAPABILITIES.some((capability) => can(capability));
 
     return (
         <DropdownMenu>
@@ -57,19 +61,30 @@ export default function UserNav() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link href="/dashboard" className="cursor-pointer">
-                        <LayoutDashboard className="me-2 h-4 w-4" />
-                        <span>لوحة التحكم</span>
+                        <LayoutDashboard className="me-2 h-4 w-4" aria-hidden="true" />
+                        <span>حسابي</span>
                     </Link>
                 </DropdownMenuItem>
+                {hasAdminAccess && (
+                    <DropdownMenuItem asChild>
+                        <Link href="/admin" className="cursor-pointer">
+                            <Shield className="me-2 h-4 w-4" aria-hidden="true" />
+                            <span>لوحة الإدارة</span>
+                        </Link>
+                    </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
-                    <Link href="/dashboard?tab=profile" className="cursor-pointer">
-                        <UserIcon className="me-2 h-4 w-4" />
-                        <span>الملف الشخصي</span>
+                    <Link href="/dashboard?tab=account" className="cursor-pointer">
+                        <UserIcon className="me-2 h-4 w-4" aria-hidden="true" />
+                        <span>إعدادات الحساب</span>
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={logout}>
-                    <LogOut className="me-2 h-4 w-4" />
+                <DropdownMenuItem
+                    className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                    onClick={logout}
+                >
+                    <LogOut className="me-2 h-4 w-4" aria-hidden="true" />
                     <span>تسجيل الخروج</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>

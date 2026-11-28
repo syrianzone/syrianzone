@@ -53,12 +53,14 @@ SAMPLE_DETAIL_ROUTES = [
 ADMIN_ROUTES = [
     "/dashboard", "/admin/govapps", "/admin/phonebook", "/admin/syofficial",
     "/admin/guesswho", "/admin/assets", "/admin/navigation", "/admin/places",
-    "/admin/site-popup", "/admin/api-tokens", "/transit/admin",
+    "/admin/site-popup", "/admin/api-tokens", "/admin/transit", "/transit/admin",
     "/admin/compass", "/admin/compass/figures", "/admin/compass/personas",
     "/admin/promises", "/admin/promises/new", "/admin/promises/review",
     "/admin/promises/speakers", "/admin/promises/sectors",
     "/admin/govtcvs", "/admin/govtcvs/new", "/admin/govtcvs/slots",
     "/admin/suggestions",
+    "/admin", "/admin/polls", "/admin/users",
+    "/admin/crossings", "/admin/sites", "/admin/house",
 ]
 
 AXE_AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"]

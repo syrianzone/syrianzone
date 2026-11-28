@@ -8,10 +8,9 @@ use App\Models\PromiseReport;
 use App\Models\PromiseSpeaker;
 use App\Models\RouteDraft;
 use App\Models\User;
-use App\Support\Permissions\PermissionCatalogue;
 use Inertia\Testing\AssertableInertia;
 
-it('blocks guests, regular users, and non-superadmin capability holders from the superadmin suggestions overview', function () {
+it('enforces capability-scoped moderator access on the incoming suggestions overview', function () {
     $this->get('/admin/suggestions')->assertRedirect();
     $this->getJson('/api/v1/admin/suggestions/overview')->assertUnauthorized();
 
@@ -19,13 +18,34 @@ it('blocks guests, regular users, and non-superadmin capability holders from the
     $this->actingAs($plainUser)->get('/admin/suggestions')->assertForbidden();
     $this->actingAs($plainUser)->getJson('/api/v1/admin/suggestions/overview')->assertForbidden();
 
-    // Even a user holding every module capability is not a superadmin.
-    $capableUser = User::factory()->create([
+    // A user with only non-moderation capabilities cannot access the overview.
+    $nonModUser = User::factory()->create([
         'role' => 'user',
-        'permissions' => PermissionCatalogue::all(),
+        'permissions' => ['assets.manage'],
     ]);
-    $this->actingAs($capableUser)->get('/admin/suggestions')->assertForbidden();
-    $this->actingAs($capableUser)->getJson('/api/v1/admin/suggestions/overview')->assertForbidden();
+    $this->actingAs($nonModUser)->get('/admin/suggestions')->assertForbidden();
+    $this->actingAs($nonModUser)->getJson('/api/v1/admin/suggestions/overview')->assertForbidden();
+
+    // A moderator with phonebook.edit gets 200 and only sees the phonebook section.
+    $phonebookMod = User::factory()->create([
+        'role' => 'user',
+        'permissions' => ['phonebook.edit'],
+    ]);
+    $this->actingAs($phonebookMod)
+        ->get('/admin/suggestions')
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Admin/Suggestions/Index')
+            ->has('initialOverview.sections', 1)
+            ->where('initialOverview.sections.0.id', 'phonebook')
+        );
+
+    $response = $this->actingAs($phonebookMod)
+        ->getJson('/api/v1/admin/suggestions/overview')
+        ->assertOk();
+
+    expect(collect($response->json('sections'))->pluck('id')->all())
+        ->toBe(['phonebook']);
 });
 
 it('aggregates incoming pending suggestions, submissions, reports, and drafts from all sections for superadmins', function () {

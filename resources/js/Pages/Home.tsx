@@ -38,7 +38,7 @@ import { WeatherIcon } from '@/Domain/weather/WeatherIcon';
 import { getLastPage } from '@/Lib/visit';
 import { useAppShell, usePageDialog } from '@/Lib/appShell';
 import { useIsMac } from '@/Lib/platform';
-import { formatGregorianSyrian } from '@/Lib/syrian-date';
+import { formatHijriDate } from '@/Domain/prayer/hijri';
 import { confirmDialog } from '@/Lib/confirm';
 import { trackEvent } from '@/Lib/analyticsConsent';
 import { groupSiteLinks, useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
@@ -266,7 +266,7 @@ export default function Home() {
         );
     };
 
-    const todayGregorian = mounted ? formatGregorianSyrian(new Date()) : '';
+    const todayHijri = mounted ? formatHijriDate(new Date(), prayerTimeZone, 'latn') : '';
 
     return (
         <MainLayout>
@@ -309,7 +309,7 @@ export default function Home() {
                                         href="/roznama"
                                         className="whitespace-nowrap font-medium text-foreground transition-colors hover:text-primary"
                                     >
-                                        {todayGregorian}
+                                        {todayHijri}
                                     </Link>
                                     {weatherMini && (
                                         <>
@@ -420,7 +420,7 @@ export default function Home() {
                             <span className="truncate">ابحث في المساحة السورية…</span>
                         </button>
 
-                        {mounted && (weatherMini || prayerMini || todayGregorian) && (
+                        {mounted && (weatherMini || prayerMini || todayHijri) && (
                             <div className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border/60 bg-muted/25 px-2.5 text-xs text-muted-foreground">
                                 {weatherMini && (
                                     <span className="inline-flex items-center gap-1 whitespace-nowrap">
@@ -443,12 +443,12 @@ export default function Home() {
                                         <span className="font-semibold text-foreground">{prayerMini.label}</span>
                                         <span dir="ltr" className="font-mono tabular-nums">{prayerMini.time}</span>
                                     </Link>
-                                ) : !weatherMini && todayGregorian ? (
+                                ) : !weatherMini && todayHijri ? (
                                     <Link
                                         href="/roznama"
                                         className="whitespace-nowrap font-medium text-foreground"
                                     >
-                                        {todayGregorian}
+                                        {todayHijri}
                                     </Link>
                                 ) : null}
                             </div>

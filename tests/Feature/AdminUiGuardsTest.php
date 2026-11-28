@@ -98,8 +98,8 @@ it('derives no module admin gate from a role string', function () {
     }
 });
 
-it('gates the dashboard poll controls on their own capabilities', function () {
-    $source = file_get_contents(base_path('resources/js/Pages/Dashboard/Index.tsx'));
+it('gates the admin polls controls on their own capabilities', function () {
+    $source = file_get_contents(base_path('resources/js/Pages/Admin/Polls/Index.tsx'));
 
     foreach (['polls.create', 'polls.edit', 'polls.delete'] as $capability) {
         expect($source)->toContain("'{$capability}'");
@@ -181,7 +181,7 @@ it('never calls useAuth() from a page that renders MainLayout', function () {
     foreach ($pages as $file) {
         $source = file_get_contents(base_path($file));
 
-        if ($source === false || ! str_contains($source, 'MainLayout')) {
+        if ($source === false || (! str_contains($source, 'MainLayout') && ! str_contains($source, 'AdminLayout'))) {
             continue;
         }
 

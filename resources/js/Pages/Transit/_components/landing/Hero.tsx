@@ -20,14 +20,14 @@ export default function Hero({ cities: allCities }: HeroProps) {
         <div className="flex justify-center items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
             <span className="font-bold text-foreground text-lg sm:text-xl" style={{ fontFamily: 'var(--font-mono)' }}>
-              {readyCities.toLocaleString('ar-SY')}
+              {readyCities.toLocaleString('ar-SY-u-nu-latn')}
             </span>
             <span className="text-muted-foreground text-xs font-medium">مدن جاهزة</span>
           </div>
           <span className="h-4 w-px bg-border" aria-hidden="true" />
           <div className="flex items-center gap-2">
             <span className="font-bold text-foreground text-lg sm:text-xl" style={{ fontFamily: 'var(--font-mono)' }}>
-              {totalRoutes.toLocaleString('ar-SY')}
+              {totalRoutes.toLocaleString('ar-SY-u-nu-latn')}
             </span>
             <span className="text-muted-foreground text-xs font-medium">خط سيرفيس</span>
           </div>

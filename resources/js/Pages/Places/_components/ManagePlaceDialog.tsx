@@ -411,7 +411,7 @@ export function ManagePlaceDialog(props: {
                         <button
                           type="button"
                           aria-label="تدوير الصورة"
-                          title="تدوير الصورة ٩٠ درجة"
+                          title="تدوير الصورة 90 درجة"
                           onClick={() => handleRotate(photo.id)}
                           className="rounded-md bg-background/80 p-1 text-foreground shadow-sm hover:bg-background"
                         >

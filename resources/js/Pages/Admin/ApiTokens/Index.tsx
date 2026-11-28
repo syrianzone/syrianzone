@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import { apiTokensApi } from './_lib/api';
-import MainLayout from '@/Layouts/MainLayout';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -20,7 +20,7 @@ import {
 } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
 import {
-    KeyRound, Plus, Copy, Check, Trash2, ShieldAlert, AlertTriangle,
+    Plus, Copy, Check, Trash2, ShieldAlert, AlertTriangle,
 } from 'lucide-react';
 
 interface TokenRow {
@@ -227,26 +227,21 @@ export default function ApiTokensIndex(props: ApiTokensData) {
     };
 
     return (
-        <MainLayout>
-            
-            <div className="container mx-auto px-4 py-8 max-w-5xl space-y-6" dir="rtl">
-
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-2">
-                            <KeyRound className="w-6 h-6 text-primary" />
-                            رموز وكلاء الذكاء الاصطناعي
-                        </h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            رموز وصول للوكلاء على{' '}
-                            <code className="bg-muted px-1.5 py-0.5 rounded text-xs" dir="ltr">{endpoint}</code>
-                        </p>
-                    </div>
-                    <Button onClick={() => setShowForm((s) => !s)} variant={showForm ? 'outline' : 'default'}>
-                        <Plus className="w-4 h-4 me-2" />
-                        رمز جديد
-                    </Button>
-                </div>
+        <AdminLayout
+            title="رموز وكلاء الذكاء الاصطناعي"
+            subtitle={`رموز وصول للوكلاء على ${endpoint}`}
+            activeSection="api_tokens"
+            actions={
+                <Button
+                    size="sm"
+                    onClick={() => setShowForm((s) => !s)}
+                    variant={showForm ? 'outline' : 'default'}
+                >
+                    <Plus className="w-4 h-4 me-2" />
+                    رمز جديد
+                </Button>
+            }
+        >
 
                 <Card>
                     <CardHeader>
@@ -545,8 +540,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                 <p className="text-xs text-muted-foreground">
                     كل نداء للأداة يُسجَّل في <code dir="ltr">mcp_tool_calls</code> مع الرمز والمستخدم والنتيجة.
                 </p>
-            </div>
-
-        </MainLayout>
+        </AdminLayout>
     );
 }

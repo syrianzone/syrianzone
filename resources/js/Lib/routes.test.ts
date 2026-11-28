@@ -69,6 +69,7 @@ describe('isFullBleed', () => {
         expect(isFullBleed('/transit/city/damascus/route/12')).toBe(true);
         expect(isFullBleed('/transit/studio')).toBe(true);
         expect(isFullBleed('/transit/admin')).toBe(true);
+        expect(isFullBleed('/admin/transit')).toBe(true);
     });
 
     it('lets every other page scroll', () => {

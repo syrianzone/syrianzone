@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
@@ -15,7 +15,6 @@ import {
 } from '@/Components/ui/select';
 import {
     ArrowLeft,
-    ArrowRight,
     Check,
     CheckCircle2,
     ExternalLink,
@@ -38,8 +37,10 @@ import {
 } from '@/Components/Icons/ProjectIcons';
 import { apiErrorMessage } from '@/Lib/api';
 import { normalizeArabic } from '@/Lib/arabic';
+import type { Capability } from '@/Lib/capabilities';
 import { confirmDialog } from '@/Lib/confirm';
 import { notify } from '@/Lib/notify';
+import { useCan } from '@/Lib/useCan';
 import { cn } from '@/Lib/utils';
 import { api as placesApi } from '@/Domain/places/api';
 import { CATEGORY_LABELS as PLACE_CATEGORY_LABELS } from '@/Domain/places/categories';
@@ -138,7 +139,7 @@ function formatTimestamp(iso: string | null): string {
     try {
         // A fixed zone keeps the server render and the browser's hydration
         // identical, and shows moderators Syrian local time.
-        return new Date(iso).toLocaleString('ar-SY', {
+        return new Date(iso).toLocaleString('ar-SY-u-nu-latn', {
             timeZone: 'Asia/Damascus',
             year: 'numeric',
             month: 'short',
@@ -171,6 +172,7 @@ interface Props {
 }
 
 export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
+    const can = useCan();
     const [overview, setOverview] = useState<IncomingSuggestionsOverview>(initialOverview);
     const [sectionFilter, setSectionFilter] = useState<SectionFilter>('all');
     const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
@@ -365,42 +367,19 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
     };
 
     return (
-        <MainLayout>
-            <Head title="الاقتراحات الواردة" />
-            <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8" dir="rtl">
-                {/* Header */}
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-1.5">
-                        <Link
-                            href="/dashboard"
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                            العودة إلى لوحة التحكم
-                        </Link>
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            <span
-                                className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"
-                                aria-hidden="true"
-                            >
-                                <Inbox className="h-5 w-5" />
-                            </span>
-                            <h1 className="text-2xl font-extrabold text-foreground">
-                                الاقتراحات الواردة
-                            </h1>
-                            <Badge
-                                variant={overview.total_pending > 0 ? 'default' : 'secondary'}
-                                className="tabular-nums"
-                                dir="ltr"
-                            >
-                                {overview.total_pending}
-                            </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                            نظرة موحّدة على جميع الاقتراحات والإضافات والبلاغات ومسودات المسارات الواردة من مختلف أقسام المنصة بانتظار المراجعة.
-                        </p>
-                    </div>
-
+        <AdminLayout
+            title="الاقتراحات الواردة"
+            subtitle="نظرة موحّدة على جميع الاقتراحات والإضافات والبلاغات ومسودات المسارات الواردة من مختلف أقسام المنصة بانتظار المراجعة."
+            activeSection="suggestions"
+            actions={
+                <div className="flex items-center gap-2">
+                    <Badge
+                        variant={overview.total_pending > 0 ? 'default' : 'secondary'}
+                        className="tabular-nums"
+                        dir="ltr"
+                    >
+                        {overview.total_pending}
+                    </Badge>
                     <Button
                         type="button"
                         variant="outline"
@@ -413,6 +392,9 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
                         تحديث
                     </Button>
                 </div>
+            }
+        >
+            <Head title="الاقتراحات الواردة" />
 
                 {/* Section overview cards */}
                 <section aria-label="ملخص الأقسام" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -623,6 +605,28 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
                                 const isBusy = busyUid === item.uid;
                                 const isDirectory =
                                     item.item_type === 'directory_add' || item.item_type === 'directory_edit';
+                                const isPromiseItem =
+                                    item.item_type === 'promise_suggestion' ||
+                                    item.item_type === 'promise_speaker' ||
+                                    item.item_type === 'promise_report_progress' ||
+                                    item.item_type === 'promise_report_error';
+                                const isPlaceItem =
+                                    item.item_type === 'place_submission' || item.item_type === 'place_report';
+                                const isTransitItem =
+                                    item.item_type === 'transit_new_route' ||
+                                    item.item_type === 'transit_route_edit';
+                                const canActDirectory =
+                                    isDirectory && can(`${item.section}.edit` as Capability);
+                                const canActPromise = isPromiseItem && can('promises.review');
+                                const canActPlace = isPlaceItem && can('places.approve');
+                                const canApproveTransit = isTransitItem && can('transit.approve');
+                                const canRejectTransit = isTransitItem && can('transit.reject');
+                                const canActOnItem =
+                                    canActDirectory ||
+                                    canActPromise ||
+                                    canActPlace ||
+                                    canApproveTransit ||
+                                    canRejectTransit;
                                 const payloadEntries = Object.entries(item.payload ?? {}).filter(
                                     ([, val]) => val !== null && val !== undefined && val !== '',
                                 );
@@ -757,28 +761,91 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
                                             )}
 
                                             {/* Quick moderation actions */}
-                                            <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
-                                                {isDirectory ? (
-                                                    <>
-                                                        <Input
-                                                            value={notes[item.uid] ?? ''}
-                                                            onChange={(e) =>
-                                                                setNotes((prev) => ({
-                                                                    ...prev,
-                                                                    [item.uid]: e.target.value,
-                                                                }))
-                                                            }
-                                                            placeholder="ملاحظة تحريرية داخلية (اختياري)..."
-                                                            aria-label={`ملاحظة تحريرية لـ ${item.title}`}
-                                                            className="h-9 flex-1 text-xs"
-                                                            maxLength={1000}
-                                                        />
-                                                        <div className="flex items-center gap-2">
+                                            {canActOnItem && (
+                                                <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+                                                    {canActDirectory ? (
+                                                        <>
+                                                            <Input
+                                                                value={notes[item.uid] ?? ''}
+                                                                onChange={(e) =>
+                                                                    setNotes((prev) => ({
+                                                                        ...prev,
+                                                                        [item.uid]: e.target.value,
+                                                                    }))
+                                                                }
+                                                                placeholder="ملاحظة تحريرية داخلية (اختياري)..."
+                                                                aria-label={`ملاحظة تحريرية لـ ${item.title}`}
+                                                                className="h-9 flex-1 text-xs"
+                                                                maxLength={1000}
+                                                            />
+                                                            <div className="flex items-center gap-2">
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    disabled={isBusy}
+                                                                    onClick={() => handleDirectoryDecision(item, 'accept')}
+                                                                    className="gap-1.5"
+                                                                >
+                                                                    {isBusy ? (
+                                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                                                                    ) : (
+                                                                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                    )}
+                                                                    تمت المعالجة
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    disabled={isBusy}
+                                                                    onClick={() => handleDirectoryDecision(item, 'dismiss')}
+                                                                    className="gap-1.5"
+                                                                >
+                                                                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                    إهمال
+                                                                </Button>
+                                                            </div>
+                                                        </>
+                                                    ) : item.item_type === 'promise_suggestion' && canActPromise ? (
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                disabled={isBusy || Number(item.action_meta.sources_count ?? 0) === 0}
+                                                                onClick={() => void handlePromiseDecision(item, 'publish')}
+                                                                className="gap-1.5"
+                                                                title={
+                                                                    Number(item.action_meta.sources_count ?? 0) === 0
+                                                                        ? 'يحتاج مصدراً واحداً على الأقل قبل النشر'
+                                                                        : undefined
+                                                                }
+                                                            >
+                                                                {isBusy ? (
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                                                                ) : (
+                                                                    <Upload className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                )}
+                                                                نشر
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                disabled={isBusy}
+                                                                onClick={() => void handlePromiseDecision(item, 'reject')}
+                                                                className="gap-1.5 text-destructive hover:text-destructive"
+                                                            >
+                                                                <X className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                رفض
+                                                            </Button>
+                                                        </div>
+                                                    ) : item.item_type === 'promise_speaker' && canActPromise ? (
+                                                        <div className="flex flex-wrap items-center gap-2">
                                                             <Button
                                                                 type="button"
                                                                 size="sm"
                                                                 disabled={isBusy}
-                                                                onClick={() => handleDirectoryDecision(item, 'accept')}
+                                                                onClick={() => void handleSpeakerDecision(item, 'approve')}
                                                                 className="gap-1.5"
                                                             >
                                                                 {isBusy ? (
@@ -786,210 +853,154 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
                                                                 ) : (
                                                                     <Check className="h-3.5 w-3.5" aria-hidden="true" />
                                                                 )}
-                                                                تمت المعالجة
+                                                                اعتماد
                                                             </Button>
                                                             <Button
                                                                 type="button"
                                                                 size="sm"
                                                                 variant="outline"
                                                                 disabled={isBusy}
-                                                                onClick={() => handleDirectoryDecision(item, 'dismiss')}
+                                                                onClick={() => void handleSpeakerDecision(item, 'reject')}
+                                                                className="gap-1.5 text-destructive hover:text-destructive"
+                                                            >
+                                                                <X className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                رفض
+                                                            </Button>
+                                                        </div>
+                                                    ) : (item.item_type === 'promise_report_progress' ||
+                                                          item.item_type === 'promise_report_error') &&
+                                                      canActPromise ? (
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                disabled={isBusy}
+                                                                onClick={() => handlePromiseReportDecision(item, 'accept')}
+                                                                className="gap-1.5"
+                                                            >
+                                                                {isBusy ? (
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                                                                ) : (
+                                                                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                )}
+                                                                {item.item_type === 'promise_report_progress'
+                                                                    ? 'قبول وإضافة للسجل'
+                                                                    : 'تمت المعالجة'}
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                disabled={isBusy}
+                                                                onClick={() => handlePromiseReportDecision(item, 'dismiss')}
                                                                 className="gap-1.5"
                                                             >
                                                                 <X className="h-3.5 w-3.5" aria-hidden="true" />
                                                                 إهمال
                                                             </Button>
                                                         </div>
-                                                    </>
-                                                ) : item.item_type === 'promise_suggestion' ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            disabled={isBusy || Number(item.action_meta.sources_count ?? 0) === 0}
-                                                            onClick={() => void handlePromiseDecision(item, 'publish')}
-                                                            className="gap-1.5"
-                                                            title={
-                                                                Number(item.action_meta.sources_count ?? 0) === 0
-                                                                    ? 'يحتاج مصدراً واحداً على الأقل قبل النشر'
-                                                                    : undefined
-                                                            }
-                                                        >
-                                                            {isBusy ? (
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                                                            ) : (
-                                                                <Upload className="h-3.5 w-3.5" aria-hidden="true" />
+                                                    ) : item.item_type === 'place_submission' && canActPlace ? (
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                disabled={isBusy}
+                                                                onClick={() => void handlePlaceDecision(item, 'approve')}
+                                                                className="gap-1.5"
+                                                            >
+                                                                {isBusy ? (
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                                                                ) : (
+                                                                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                )}
+                                                                قبول ونشر
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                disabled={isBusy}
+                                                                onClick={() => void handlePlaceDecision(item, 'reject')}
+                                                                className="gap-1.5 text-destructive hover:text-destructive"
+                                                            >
+                                                                <X className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                رفض
+                                                            </Button>
+                                                        </div>
+                                                    ) : item.item_type === 'place_report' && canActPlace ? (
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                disabled={isBusy}
+                                                                onClick={() =>
+                                                                    void handlePlaceReportDecision(item, 'unpublish')
+                                                                }
+                                                                className="gap-1.5"
+                                                            >
+                                                                {isBusy ? (
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                                                                ) : (
+                                                                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                )}
+                                                                {item.action_meta.place_status === 'approved'
+                                                                    ? 'إخفاء المكان'
+                                                                    : 'إغلاق البلاغ'}
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                disabled={isBusy}
+                                                                onClick={() =>
+                                                                    void handlePlaceReportDecision(item, 'dismiss')
+                                                                }
+                                                                className="gap-1.5"
+                                                            >
+                                                                <X className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                رفض البلاغ
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            {canApproveTransit && (
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    disabled={isBusy}
+                                                                    onClick={() =>
+                                                                        void handleTransitDraftDecision(item, 'approve')
+                                                                    }
+                                                                    className="gap-1.5"
+                                                                >
+                                                                    {isBusy ? (
+                                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                                                                    ) : (
+                                                                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                    )}
+                                                                    موافقة ونشر
+                                                                </Button>
                                                             )}
-                                                            نشر
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            disabled={isBusy}
-                                                            onClick={() => void handlePromiseDecision(item, 'reject')}
-                                                            className="gap-1.5 text-destructive hover:text-destructive"
-                                                        >
-                                                            <X className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            رفض
-                                                        </Button>
-                                                    </div>
-                                                ) : item.item_type === 'promise_speaker' ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            disabled={isBusy}
-                                                            onClick={() => void handleSpeakerDecision(item, 'approve')}
-                                                            className="gap-1.5"
-                                                        >
-                                                            {isBusy ? (
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                                                            ) : (
-                                                                <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                                                            {canRejectTransit && (
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    disabled={isBusy}
+                                                                    onClick={() =>
+                                                                        void handleTransitDraftDecision(item, 'reject')
+                                                                    }
+                                                                    className="gap-1.5 text-destructive hover:text-destructive"
+                                                                >
+                                                                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                                                                    رفض
+                                                                </Button>
                                                             )}
-                                                            اعتماد
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            disabled={isBusy}
-                                                            onClick={() => void handleSpeakerDecision(item, 'reject')}
-                                                            className="gap-1.5 text-destructive hover:text-destructive"
-                                                        >
-                                                            <X className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            رفض
-                                                        </Button>
-                                                    </div>
-                                                ) : item.item_type === 'promise_report_progress' ||
-                                                  item.item_type === 'promise_report_error' ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            disabled={isBusy}
-                                                            onClick={() => handlePromiseReportDecision(item, 'accept')}
-                                                            className="gap-1.5"
-                                                        >
-                                                            {isBusy ? (
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                                                            ) : (
-                                                                <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            )}
-                                                            {item.item_type === 'promise_report_progress'
-                                                                ? 'قبول وإضافة للسجل'
-                                                                : 'تمت المعالجة'}
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            disabled={isBusy}
-                                                            onClick={() => handlePromiseReportDecision(item, 'dismiss')}
-                                                            className="gap-1.5"
-                                                        >
-                                                            <X className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            إهمال
-                                                        </Button>
-                                                    </div>
-                                                ) : item.item_type === 'place_submission' ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            disabled={isBusy}
-                                                            onClick={() => void handlePlaceDecision(item, 'approve')}
-                                                            className="gap-1.5"
-                                                        >
-                                                            {isBusy ? (
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                                                            ) : (
-                                                                <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            )}
-                                                            قبول ونشر
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            disabled={isBusy}
-                                                            onClick={() => void handlePlaceDecision(item, 'reject')}
-                                                            className="gap-1.5 text-destructive hover:text-destructive"
-                                                        >
-                                                            <X className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            رفض
-                                                        </Button>
-                                                    </div>
-                                                ) : item.item_type === 'place_report' ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            disabled={isBusy}
-                                                            onClick={() =>
-                                                                void handlePlaceReportDecision(item, 'unpublish')
-                                                            }
-                                                            className="gap-1.5"
-                                                        >
-                                                            {isBusy ? (
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                                                            ) : (
-                                                                <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            )}
-                                                            {item.action_meta.place_status === 'approved'
-                                                                ? 'إخفاء المكان'
-                                                                : 'إغلاق البلاغ'}
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            disabled={isBusy}
-                                                            onClick={() =>
-                                                                void handlePlaceReportDecision(item, 'dismiss')
-                                                            }
-                                                            className="gap-1.5"
-                                                        >
-                                                            <X className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            رفض البلاغ
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            disabled={isBusy}
-                                                            onClick={() =>
-                                                                void handleTransitDraftDecision(item, 'approve')
-                                                            }
-                                                            className="gap-1.5"
-                                                        >
-                                                            {isBusy ? (
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                                                            ) : (
-                                                                <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            )}
-                                                            موافقة ونشر
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            disabled={isBusy}
-                                                            onClick={() =>
-                                                                void handleTransitDraftDecision(item, 'reject')
-                                                            }
-                                                            className="gap-1.5 text-destructive hover:text-destructive"
-                                                        >
-                                                            <X className="h-3.5 w-3.5" aria-hidden="true" />
-                                                            رفض
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 );
@@ -997,7 +1008,6 @@ export default function IncomingSuggestionsIndex({ initialOverview }: Props) {
                         </div>
                     )}
                 </section>
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

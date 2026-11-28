@@ -58,7 +58,7 @@ function safeExternalUrl(url: string | null | undefined): string | null {
 }
 
 // Reviewers read times in Syrian time whatever their device zone says.
-const TIMESTAMP_FORMAT = new Intl.DateTimeFormat('ar-SY', {
+const TIMESTAMP_FORMAT = new Intl.DateTimeFormat('ar-SY-u-nu-latn', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

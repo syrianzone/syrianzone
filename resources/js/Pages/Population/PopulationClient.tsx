@@ -318,7 +318,7 @@ export default function PopulationClient() {
                     <h1 className="text-base font-bold text-foreground mb-0.5">أطلس سوريا</h1>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                         {currentDataType === DATA_TYPES.RAINFALL
-                            ? 'بيانات الهطولات المطرية السنوية (٢٠٢١–٢٠٢٥)'
+                            ? 'بيانات الهطولات المطرية السنوية (2021–2025)'
                             : currentDataType === DATA_TYPES.ENVIRONMENTAL
                                 ? 'بيانات المناخ وجودة الهواء'
                                 : 'خريطة تفاعلية للبيانات السكانية والإنسانية'}

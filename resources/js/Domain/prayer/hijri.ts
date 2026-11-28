@@ -9,10 +9,10 @@ import type { PrayerHijri } from './times';
  */
 
 /**
- * e.g. "٨ جمادى الآخرة ١٤٤٧ هـ" (or "8 جمادى الآخرة 1447 هـ" with `latn`).
+ * e.g. "8 جمادى الآخرة 1447 هـ".
  * Empty when the browser has no Islamic calendar.
  */
-export function formatHijriDate(date: Date, timeZone?: string, digits: DateDigits = 'arab'): string {
+export function formatHijriDate(date: Date, timeZone?: string, digits: DateDigits = 'latn'): string {
   const nu = digits === 'latn' ? '-nu-latn' : '';
   const formats = [`ar-SY-u-ca-islamic-umalqura${nu}`, `ar-SY-u-ca-islamic${nu}`];
   for (const locale of formats) {
@@ -22,10 +22,14 @@ export function formatHijriDate(date: Date, timeZone?: string, digits: DateDigit
         month: 'long',
         year: 'numeric',
         timeZone,
+        ...(digits === 'latn' ? { numberingSystem: 'latn' } : {}),
       });
       // An engine without the calendar silently falls back to Gregorian.
       if (!fmt.resolvedOptions().calendar.startsWith('islamic')) continue;
-      const formatted = fmt.format(date);
+      let formatted = fmt.format(date);
+      if (digits === 'latn') {
+        formatted = formatted.replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660));
+      }
       return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
     } catch {
       // try the next calendar

@@ -84,7 +84,7 @@ export function getTemperatureColor(temperature: number): string {
 /**
  * The legend for exactly the bands the map colours with. The entries and the
  * thresholds come from the same table (`valueBands` / the fixed `bands`), so
- * "أكثر من ٥٠٠ ألف" cannot appear beside a map that starts its top band at one
+ * "أكثر من 500 ألف" cannot appear beside a map that starts its top band at one
  * million.
  */
 export function buildLegend(dataType: DataType, thresholds: number[]): LegendEntry[] {

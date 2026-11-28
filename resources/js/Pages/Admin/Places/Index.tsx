@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Head } from '@inertiajs/react';
 
 import { Loader2 } from 'lucide-react';
-import MainLayout from '@/Layouts/MainLayout';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Button } from '@/Components/ui/button';
 import {
@@ -106,10 +107,13 @@ export default function Index() {
   };
 
   return (
-    <MainLayout>
-      
-      <div dir="rtl" className="container mx-auto max-w-3xl px-4 py-6">
-        <h1 className="mb-4 text-xl font-bold">إدارة أماكن مشوار</h1>
+    <AdminLayout
+      title="إدارة أماكن مشوار"
+      activeSection="places"
+      publicHref="/mishwar"
+      publicLabel="عرض مشوار"
+    >
+      <Head title="إدارة أماكن مشوار" />
 
         <div {...tabs.tabListProps} aria-label="أقسام الإدارة" className="mb-4 flex gap-1 border-b border-border">
           {TABS.map((id) => (
@@ -217,7 +221,6 @@ export default function Index() {
           }}
           onConfirm={handleRejectConfirm}
         />
-      </div>
-    </MainLayout>
+    </AdminLayout>
   );
 }

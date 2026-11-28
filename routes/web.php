@@ -417,13 +417,13 @@ Route::middleware('auth:web,sanctum')->group(function () {
         Route::get('/user', [AuthController::class, 'user']);
     });
 
-    Route::middleware(['auth:web,sanctum', 'superadmin'])->group(function () {
-        // Cross-section incoming suggestions overview for superadmins.
-        Route::get('/admin/suggestions', [IncomingSuggestionsAdminController::class, 'renderIndex'])
-            ->name('admin.suggestions.index');
-        Route::get('/api/v1/admin/suggestions/overview', [IncomingSuggestionsAdminController::class, 'index'])
-            ->name('api.v1.admin.suggestions.overview');
+    // Cross-section incoming suggestions overview (superadmins + capability-scoped moderators).
+    Route::get('/admin/suggestions', [IncomingSuggestionsAdminController::class, 'renderIndex'])
+        ->name('admin.suggestions.index');
+    Route::get('/api/v1/admin/suggestions/overview', [IncomingSuggestionsAdminController::class, 'index'])
+        ->name('api.v1.admin.suggestions.overview');
 
+    Route::middleware(['auth:web,sanctum', 'superadmin'])->group(function () {
         // Revoking every token of a user is superadmin-only: it also ends that
         // user's mobile sessions, so it is a leak response, not self-service.
         // The page, minting and single revocation are in the agent_tokens
@@ -495,13 +495,10 @@ Route::middleware('auth:web,sanctum')->group(function () {
             ->name('api.v1.admin.api-tokens.destroy');
     });
 
-    // Polls and general admin panel (core admins and superadmins). Poll
-    // management lives in the unified user dashboard (/dashboard polls tab).
-    // The legacy /admin/polls/* pages were removed to avoid a duplicate editor;
-    // keep redirects so old bookmarks/links land on the dashboard editor.
-    Route::redirect('/admin/polls', '/dashboard', 301);
-    Route::redirect('/admin/polls/create', '/dashboard?create-poll=1', 301);
-    Route::redirect('/admin/polls/{id}/edit', '/dashboard?edit-poll={id}', 301);
+    // Polls admin panel lives at /admin/polls (in routes/admin-console.php).
+    // Keep legacy create/edit bookmarks redirecting to query params on /admin/polls.
+    Route::redirect('/admin/polls/create', '/admin/polls?create-poll=1', 301);
+    Route::redirect('/admin/polls/{id}/edit', '/admin/polls?edit-poll={id}', 301);
     Route::middleware('polls_admin')->group(function () {
         // Polls, candidate groups and candidates are one editable surface. The
         // dashboard editor calls the unversioned /api/* paths, so this is the
@@ -649,6 +646,10 @@ Route::middleware('auth:web,sanctum')->group(function () {
     // The shell is tagged `any` explicitly because the guard denies an untagged
     // route rather than granting the whole module.
     Route::middleware('transit_admin')->group(function () {
+        Route::get('/admin/transit', function () {
+            return Inertia::render('Transit/admin/Index');
+        })->middleware('transit_admin:any')->name('admin.transit.index');
+
         Route::get('/transit/admin', function () {
             return Inertia::render('Transit/admin/Index');
         })->middleware('transit_admin:any');
@@ -1123,3 +1124,11 @@ Route::post('/api/user/radio-usage', [RadioUsageController::class, 'add'])
     ->middleware(['api_user', 'throttle:60,1']);
 Route::post('/api/user/radio-usage/clear', [RadioUsageController::class, 'clear'])
     ->middleware(['api_user', 'throttle:10,1']);
+
+// The Filament superadmin panel was replaced by the Inertia users console.
+Route::redirect('/superadmin', '/admin/users', 301);
+Route::redirect('/superadmin/{any}', '/admin/users', 301)->where('any', '.*');
+
+require __DIR__.'/admin-console.php';
+require __DIR__.'/admin-users.php';
+require __DIR__.'/admin-civic-pages.php';

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { Head, Link, router } from '@inertiajs/react';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -30,7 +30,7 @@ import { govtCvsApi } from '@/Domain/govtcvs/api';
 import { SlotStatusBadge, TierBadge } from '@/Domain/govtcvs/StatusBadges';
 import { SLOT_STATUS_META, TIER_META } from '@/Domain/govtcvs/constants';
 import type { GovtOfficeSlotItem, InstitutionOption } from '@/Domain/govtcvs/types';
-import AdminHeader from './_components/AdminHeader';
+import AdminNav from './_components/AdminNav';
 
 const ALL = 'all';
 const NONE = '__none';
@@ -191,20 +191,22 @@ export default function GovtCvsAdminSlots({ slots = [], institutions = [] }: Pro
     };
 
     return (
-        <MainLayout>
-            <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8" dir="rtl">
-                <AdminHeader
-                    title="إدارة المناصب والشواغر الحكومية"
-                    current="slots"
-                    actions={
-                        canManageSlots && (
-                            <Button type="button" onClick={openCreate} className="gap-2">
-                                <Plus className="h-4 w-4" aria-hidden="true" />
-                                إضافة منصب قياسي
-                            </Button>
-                        )
-                    }
-                />
+        <AdminLayout
+            title="إدارة المناصب والشواغر الحكومية"
+            activeSection="govtcvs"
+            publicHref="/govtcvs"
+            publicLabel="عرض السير الذاتية"
+            actions={
+                canManageSlots ? (
+                    <Button type="button" size="sm" onClick={openCreate} className="gap-2">
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        إضافة منصب قياسي
+                    </Button>
+                ) : undefined
+            }
+        >
+            <Head title="إدارة المناصب والشواغر الحكومية" />
+            <AdminNav current="slots" />
 
                 <Card>
                     <CardHeader>
@@ -390,7 +392,6 @@ export default function GovtCvsAdminSlots({ slots = [], institutions = [] }: Pro
                         </div>
                     </CardContent>
                 </Card>
-            </div>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent dir="rtl" className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
@@ -630,6 +631,6 @@ export default function GovtCvsAdminSlots({ slots = [], institutions = [] }: Pro
                     </form>
                 </DialogContent>
             </Dialog>
-        </MainLayout>
+        </AdminLayout>
     );
 }

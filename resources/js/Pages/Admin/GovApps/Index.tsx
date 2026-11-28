@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Plus, Edit3, Trash2, Smartphone, ArrowUpDown, Globe, Inbox } from 'lucide-react';
+import { Card } from '@/Components/ui/card';
+import { Plus, Edit3, Trash2, ArrowUpDown, Inbox } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import AppDialog from './_components/AppDialog';
@@ -86,37 +86,26 @@ export default function GovAppsAdminIndex({
     };
 
     return (
-        <MainLayout>
-            
-
-            <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6" dir="rtl">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-2xl border shadow-xs">
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                            <Smartphone className="w-7 h-7 text-primary" />
-                            <span>إدارة دليل التطبيقات الحكومية</span>
-                        </h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            تحكم كامل في التطبيقات والخدمات الإلكترونية الصادرة عن الجهات الحكومية السورية.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        {canCreate && (
-                            <Button
-                                onClick={() => {
-                                    setSelectedApp(null);
-                                    setAppDialogOpen(true);
-                                }}
-                                className="gap-2 font-bold shadow-md"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>إضافة تطبيق جديد</span>
-                            </Button>
-                        )}
-                    </div>
-                </div>
-
+        <AdminLayout
+            title="إدارة دليل التطبيقات الحكومية"
+            subtitle="تحكم كامل في التطبيقات والخدمات الإلكترونية الصادرة عن الجهات الحكومية السورية."
+            activeSection="govapps"
+            publicHref="/govapps"
+            publicLabel="عرض التطبيقات الحكومية"
+            actions={canCreate ? (
+                <Button
+                    size="sm"
+                    onClick={() => {
+                        setSelectedApp(null);
+                        setAppDialogOpen(true);
+                    }}
+                    className="gap-2"
+                >
+                    <Plus className="w-4 h-4" aria-hidden="true" />
+                    <span>إضافة تطبيق جديد</span>
+                </Button>
+            ) : undefined}
+        >
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-3 max-w-xl bg-muted/60 p-1 rounded-xl">
                         <TabsTrigger value="list" className="rounded-lg font-bold">قائمة التطبيقات</TabsTrigger>
@@ -269,7 +258,6 @@ export default function GovAppsAdminIndex({
                     onOpenChange={setAppDialogOpen}
                     app={selectedApp}
                 />
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

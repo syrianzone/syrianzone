@@ -15,7 +15,7 @@ export default function TransitSidebarLayout({ children }: { children: React.Rea
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  const hideSidebar = path.startsWith('/transit/studio') || path.startsWith('/transit/admin')
+  const hideSidebar = path.startsWith('/transit/studio') || path.startsWith('/transit/admin') || path.startsWith('/admin/transit')
   const sidebarContent = <TransitSidebar pathname={path} />
 
   return (

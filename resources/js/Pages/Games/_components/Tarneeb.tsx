@@ -240,7 +240,7 @@ export default function Tarneeb() {
   const declTricks = declTeam !== null ? round.tricks[declTeam] : 0;
   const made = declTeam !== null && declTricks >= (round.auction.highBid ?? 0);
   const swept = declTricks >= TARNEEB_HAND;
-  // Second person when the declarer is you: "أنت طلبت ٨ وأكلت ٩".
+  // Second person when the declarer is you: "أنت طلبت 8 وأكلت 9".
   const bidVerb = round.declarer === HUMAN ? 'طلبت' : 'طلب';
   const tookVerb = round.declarer === HUMAN ? 'وأكلت' : 'وأكل';
   const roundPoints = round.phase === 'complete' && !isRedeal(round) ? scoreRound(round) : null;
@@ -437,19 +437,19 @@ export function TarneebRules() {
     <>
       <ul className="list-disc space-y-1 ps-5">
         <li>أربعة لاعبين في فريقين، والشريك يجلس مقابلًا لك.</li>
-        <li>تُوزَّع الأوراق كلها، ١٣ ورقة لكل لاعب.</li>
+        <li>تُوزَّع الأوراق كلها، 13 ورقة لكل لاعب.</li>
         <li>
-          المزايدة من ٧ إلى ١٣، وكل مزايدة أعلى من التي قبلها. إن لم ترغب بالمزايدة مرّر دورك، ومن يفز
+          المزايدة من 7 إلى 13، وكل مزايدة أعلى من التي قبلها. إن لم ترغب بالمزايدة مرّر دورك، ومن يفز
           بالطلب يختار الحكم.
         </li>
         <li>يبدأ الطالب باللعب، ويجب أن تتبع اللون إن كان معك؛ وإن لم يكن معك فيجوز أن تلعب أي ورقة.</li>
         <li>الحكم يتقدّم على أي ورقة، وإن لم يُلعَب حكم يفوز أعلى ورقة من اللون المطلوب.</li>
         <li>إن أكل الطالب عدد الطرانيب الذي طلبه سجّل عددها، وإن قصّر سجّل الخصوم قيمة الطلب.</li>
         <li>
-          الكبوت: من يطلب ١٣ ويأخذها كلها سجّل ٢٦، وإن فشل خسر ١٦ وسجّل الخصوم ضعف طرنيبهم. ومن يأخذ
+          الكبوت: من يطلب 13 ويأخذها كلها سجّل 26، وإن فشل خسر 16 وسجّل الخصوم ضعف طرنيبهم. ومن يأخذ
           الطرانيب الثلاث عشرة على طلب أقل يُكافأ بثلاث نقاط زيادة.
         </li>
-        <li>أول فريق يبلغ ٤١ نقطة يفوز بالمباراة.</li>
+        <li>أول فريق يبلغ 41 نقطة يفوز بالمباراة.</li>
       </ul>
     </>
   );

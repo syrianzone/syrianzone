@@ -1,7 +1,7 @@
 import { promisesApi } from '@/Domain/promises/api';
 import { useMemo, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { Head, Link, router } from '@inertiajs/react';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
@@ -16,7 +16,7 @@ import { apiErrorMessage } from '@/Lib/api';
 import StateBadge from '@/Domain/promises/StateBadge';
 import { formatDate } from '@/Domain/promises/format';
 import { PENDING_SPEAKER_LABEL } from '@/Domain/promises/status';
-import AdminHeader from './_components/AdminHeader';
+import AdminNav from './_components/AdminNav';
 import { useCan } from '@/Lib/useCan';
 import { ORIGIN_LABEL, REVIEW_STATUS_LABEL } from '@/Domain/promises/status';
 import type { ReviewStatus } from '@/Domain/promises/types';
@@ -91,18 +91,19 @@ export default function PromisesAdminIndex({ promises, queueCount }: Props) {
     };
 
     return (
-        <MainLayout>
-            <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8" dir="rtl">
-                <AdminHeader
-                    title="إدارة عداد الوعود"
-                    current="promises"
-                    queueCount={queueCount}
-                    actions={canCreate && (
-                        <Button asChild className="gap-2">
-                            <Link href="/admin/promises/new"><Plus className="h-4 w-4" aria-hidden="true" />إضافة وعد</Link>
-                        </Button>
-                    )}
-                />
+        <AdminLayout
+            title="إدارة عداد الوعود"
+            activeSection="promises"
+            publicHref="/promises"
+            publicLabel="عرض عداد الوعود"
+            actions={canCreate ? (
+                <Button asChild size="sm" className="gap-2">
+                    <Link href="/admin/promises/new"><Plus className="h-4 w-4" aria-hidden="true" />إضافة وعد</Link>
+                </Button>
+            ) : undefined}
+        >
+            <Head title="إدارة عداد الوعود" />
+            <AdminNav current="promises" queueCount={queueCount} />
 
                 <Card>
                     <CardContent className="space-y-4 p-5">
@@ -196,7 +197,6 @@ export default function PromisesAdminIndex({ promises, queueCount }: Props) {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

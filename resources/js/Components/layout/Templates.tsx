@@ -55,7 +55,7 @@ export function FlowLayout({
     className?: string;
 }) {
     const pct = step && total ? Math.round((step / total) * 100) : undefined;
-    const ar = (n: number) => n.toLocaleString('ar-SY');
+    const ar = (n: number) => n.toLocaleString('ar-SY-u-nu-latn');
     return (
         <PageShell width="narrow" className={cn('pb-14 pt-6 md:pt-10', className)}>
             <div className="flex items-center justify-between">

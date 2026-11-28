@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import AdminLayout from '@/Components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Separator } from '@/Components/ui/separator';
 import {
-    Compass,
     Users,
     CalendarDays,
     ShieldCheck,
@@ -96,42 +95,34 @@ export default function CompassAdminIndex({
     const scopeLabel = STATS_SCOPES.find((s) => s.id === scope)?.label ?? 'الكل';
 
     return (
-        <MainLayout>
-            
-      <h1 className="sr-only">إحصاءات بوصلة سوريا</h1>
-            <div className="container mx-auto max-w-5xl space-y-6 px-4 py-8" dir="rtl">
-                <Card>
-                    <CardHeader>
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Compass className="h-6 w-6 text-primary" />
-                                    إحصاءات «بوصلة سوريا»
-                                </CardTitle>
-                                <CardDescription className="mt-1">
-                                    ملخّص مجهول الهوية للنتائج التي اختار أصحابها مشاركتها للإحصاء. لا تُحسب النتائج المحفوظة في الحسابات،
-                                    ولا التي سُحبت موافقتها، ولا يظهر هنا أي معرّف شخصي.
-                                </CardDescription>
-                            </div>
-                            {canManageFigures && (
-                                <Button asChild variant="outline" className="gap-2">
-                                    <Link href="/admin/compass/figures">
-                                        <Compass className="h-4 w-4" />
-                                        إدارة الشخصيات
-                                    </Link>
-                                </Button>
-                            )}
-                            {canManagePersonas && (
-                                <Button asChild variant="outline" className="gap-2">
-                                    <Link href="/admin/compass/personas">
-                                        <Compass className="h-4 w-4" />
-                                        إدارة الأنماط
-                                    </Link>
-                                </Button>
-                            )}
-                        </div>
-                    </CardHeader>
-                </Card>
+        <AdminLayout
+            title="إحصاءات بوصلة سوريا"
+            subtitle="ملخّص مجهول الهوية للنتائج التي اختار أصحابها مشاركتها للإحصاء. لا تُحسب النتائج المحفوظة في الحسابات، ولا التي سُحبت موافقتها، ولا يظهر هنا أي معرّف شخصي."
+            activeSection="compass"
+            publicHref="/compass"
+            publicLabel="عرض بوصلة سوريا"
+        >
+            <nav aria-label="أقسام بوصلة سوريا" className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
+                <Button asChild size="sm" variant="default">
+                    <Link href="/admin/compass" aria-current="page">
+                        نظرة عامة
+                    </Link>
+                </Button>
+                {canManageFigures && (
+                    <Button asChild size="sm" variant="outline">
+                        <Link href="/admin/compass/figures">
+                            الشخصيات
+                        </Link>
+                    </Button>
+                )}
+                {canManagePersonas && (
+                    <Button asChild size="sm" variant="outline">
+                        <Link href="/admin/compass/personas">
+                            الأنماط
+                        </Link>
+                    </Button>
+                )}
+            </nav>
 
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <StatCard icon={Users} label="إجمالي المشاركات المجهولة" value={stats.total} />
@@ -184,7 +175,7 @@ export default function CompassAdminIndex({
                                             style={{ width: `${(s.count / maxSpectrum) * 100}%` }}
                                         />
                                     </div>
-                                    <span className="w-10 shrink-0 text-left text-xs font-bold tabular-nums">
+                                    <span className="w-10 shrink-0 text-end text-xs font-bold tabular-nums">
                                         {s.count}
                                     </span>
                                 </div>
@@ -290,7 +281,7 @@ export default function CompassAdminIndex({
                             <p className="text-sm text-muted-foreground">لا توجد بيانات بعد.</p>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-right text-sm">
+                                <table className="w-full text-start text-sm">
                                     <thead>
                                         <tr className="border-b border-border text-xs text-muted-foreground">
                                             <th className="px-2 py-2 font-medium">التاريخ</th>
@@ -318,7 +309,6 @@ export default function CompassAdminIndex({
                         )}
                     </CardContent>
                 </Card>
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

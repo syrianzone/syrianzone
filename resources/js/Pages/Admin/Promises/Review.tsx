@@ -1,7 +1,7 @@
 import { promisesApi } from '@/Domain/promises/api';
 import { useState } from 'react';
-import { Link, router } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import { Head, Link, router } from '@inertiajs/react';
+import { AdminLayout } from '@/Components/admin/AdminLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '@/Components/ui/card';
@@ -12,7 +12,7 @@ import { apiErrorMessage } from '@/Lib/api';
 import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
 import { formatDate, safeHref } from '@/Domain/promises/format';
 import { PENDING_SPEAKER_LABEL } from '@/Domain/promises/status';
-import AdminHeader from './_components/AdminHeader';
+import AdminNav from './_components/AdminNav';
 import { useCan } from '@/Lib/useCan';
 import { ORIGIN_LABEL } from '@/Domain/promises/status';
 import type { AdminPromiseRow, AdminSpeaker } from './_lib/types';
@@ -61,9 +61,14 @@ export default function PromisesReview({ promises, speakers, reports, queueCount
     const empty = promises.length + speakers.length + reports.length === 0;
 
     return (
-        <MainLayout>
-            <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8" dir="rtl">
-                <AdminHeader title="مراجعة عداد الوعود" current="review" queueCount={queueCount} />
+        <AdminLayout
+            title="مراجعة عداد الوعود"
+            activeSection="promises"
+            publicHref="/promises"
+            publicLabel="عرض عداد الوعود"
+        >
+            <Head title="مراجعة عداد الوعود" />
+            <AdminNav current="review" queueCount={queueCount} />
 
                 {empty && (
                     <Card>
@@ -190,7 +195,6 @@ export default function PromisesReview({ promises, speakers, reports, queueCount
                         </CardContent>
                     </Card>
                 )}
-            </div>
-        </MainLayout>
+        </AdminLayout>
     );
 }

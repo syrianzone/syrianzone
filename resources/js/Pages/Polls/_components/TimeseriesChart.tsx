@@ -177,7 +177,7 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
         if (timeframe === "day") {
             return dailyData.map(d => ({
                 ...d,
-                displayDate: localDate(d.date).toLocaleDateString('ar-SY')
+                displayDate: localDate(d.date).toLocaleDateString('ar-SY-u-nu-latn')
             }))
         }
 

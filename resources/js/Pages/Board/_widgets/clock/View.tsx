@@ -15,7 +15,7 @@ export default function ClockView({ config }: WidgetProps<ClockConfig>) {
     return () => window.clearInterval(tick);
   }, []);
 
-  const time = now.toLocaleTimeString('ar-SY', {
+  const time = now.toLocaleTimeString('ar-SY-u-nu-latn', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: config.format === '12',

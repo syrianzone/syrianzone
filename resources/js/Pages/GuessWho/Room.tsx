@@ -605,14 +605,14 @@ export default function GameRoom({ game }: GameProps) {
                 
                 <div className="grid sm:grid-cols-2 gap-4 bg-muted/20 border border-border p-4 rounded-2xl text-right text-xs leading-relaxed mt-4">
                   <div className="flex gap-2.5">
-                    <div className="h-6 w-6 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-bold text-primary shrink-0">١</div>
+                    <div className="h-6 w-6 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-bold text-primary shrink-0">1</div>
                     <div>
                       <span className="font-extrabold text-foreground block mb-0.5">ما هي الشخصية السرية؟</span>
                       <p className="text-muted-foreground">هي الشخصية التي سيحاول خصمك تخمينها. اختر بطلاً ذكياً من البطاقات أدناه واضغط عليه لتأكيده كشخصية سرية لك.</p>
                     </div>
                   </div>
                   <div className="flex gap-2.5">
-                    <div className="h-6 w-6 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-bold text-primary shrink-0">٢</div>
+                    <div className="h-6 w-6 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center font-bold text-primary shrink-0">2</div>
                     <div>
                       <span className="font-extrabold text-foreground block mb-0.5">كيف تبدأ اللعبة؟</span>
                       <p className="text-muted-foreground">بعد اختيار شخصيتك السرية، وبمجرد أن ينتهي خصمك من اختيار شخصيته السرية أيضاً، ستبدأ المواجهة فوراً وينتقل كليكما إلى لوحة اللعب.</p>

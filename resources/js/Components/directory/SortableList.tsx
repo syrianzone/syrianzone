@@ -160,7 +160,7 @@ function SortableRow({ item, index, count, canReorder, onMove }: {
                     <GripVertical className="h-5 w-5" aria-hidden="true" />
                 </Button>
                 {item.image && (
-                    <img src={item.image} alt="" className="h-8 w-8 shrink-0 rounded-lg bg-muted object-cover" />
+                    <img src={item.image} alt="" loading="lazy" decoding="async" className="h-8 w-8 shrink-0 rounded-lg bg-muted object-cover" />
                 )}
                 <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-foreground">{item.label}</p>

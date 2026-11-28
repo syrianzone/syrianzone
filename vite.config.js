@@ -56,23 +56,13 @@ export default defineConfig(({ isSsrBuild }) => ({
                                       priority: 35,
                                   },
                                   {
-                                      name: 'vendor-radix',
-                                      test: /[\\/]node_modules[\\/](@radix-ui|cmdk|sonner|class-variance-authority|clsx|tailwind-merge)[\\/]/,
-                                      priority: 30,
-                                  },
-                                  {
-                                      name: 'vendor-icons',
-                                      test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
-                                      priority: 25,
-                                  },
-                                  {
-                                      name: 'vendor-charts',
-                                      test: /[\\/]node_modules[\\/](recharts|d3-|victory-vendor)[\\/]/,
+                                      name: 'vendor-maplibre',
+                                      test: /[\\/]node_modules[\\/]maplibre-gl[\\/]/,
                                       priority: 20,
                                   },
                                   {
-                                      name: 'vendor-maps',
-                                      test: /[\\/]node_modules[\\/](maplibre-gl|leaflet|react-leaflet)[\\/]/,
+                                      name: 'vendor-leaflet',
+                                      test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
                                       priority: 20,
                                   },
                               ],

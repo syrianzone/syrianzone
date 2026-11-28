@@ -29,6 +29,7 @@ let opener: Opener | null = null;
 /** Asked before the host mounted its dialog; shown once it does. */
 const queue: Pending[] = [];
 let showing = false;
+const requestListeners = new Set<() => void>();
 
 function pump() {
   if (!opener || showing) return;
@@ -43,6 +44,14 @@ function pump() {
   });
 }
 
+export function onConfirmRequested(fn: () => void): () => void {
+  requestListeners.add(fn);
+  if (queue.length > 0) fn();
+  return () => {
+    requestListeners.delete(fn);
+  };
+}
+
 export function registerConfirmOpener(fn: Opener | null) {
   opener = fn;
   pump();
@@ -51,6 +60,7 @@ export function registerConfirmOpener(fn: Opener | null) {
 export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
     queue.push({ options, resolve });
+    requestListeners.forEach((fn) => fn());
     pump();
   });
 }

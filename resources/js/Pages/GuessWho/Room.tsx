@@ -123,7 +123,7 @@ function CharacterCard({
           }`}
         >
           <div className="w-full aspect-square bg-muted rounded-lg overflow-hidden flex-shrink-0">
-            <img src={`/storage/${char.image_path}`} alt={char.name_ar} className="w-full h-full object-cover" />
+            <img src={`/storage/${char.image_path}`} alt={char.name_ar} loading="lazy" decoding="async" className="w-full h-full object-cover" />
           </div>
 
           <div className="flex flex-col gap-1 sm:gap-2 mt-1.5 sm:mt-2">

@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     Settings, Globe, Plus, Edit, X,
-    Info, BarChart3, Shield, FileText,
     History
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
-import { Card, CardContent } from "@/Components/ui/card";
 import MainLayout from '@/Layouts/MainLayout';
 import { applyTheme as persistTheme, getThemePreference } from '@/Lib/theme';
 import { applyFont, getFontPreference } from '@/Lib/font';
@@ -180,11 +178,11 @@ export default function Home() {
       <h1 className="sr-only">المساحة السورية</h1>
             <div className="text-foreground transition-colors" dir="rtl">
                 <header className="hidden lg:block sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-                    <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
+                    <div className="mx-auto flex h-16 max-w-[76rem] items-center justify-between gap-4 px-4 md:px-8">
                         <div className="flex items-center gap-5">
-                        <a href="/" className="flex items-center shrink-0">
+                        <Link href="/" className="flex items-center shrink-0">
                             <Logo className="h-9 w-auto" title="المساحة السورية" />
-                        </a>
+                        </Link>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             {prayerMini && (
                                 <span className="flex items-center gap-1.5 whitespace-nowrap">
@@ -265,7 +263,7 @@ export default function Home() {
                         )}
                     </div>
 
-                    {showEvents && (
+                    {showEvents && mounted && (
                         <div className="mb-8">
                             <F3aliaEvents governorate={eventsGovernorate} />
                         </div>
@@ -273,47 +271,62 @@ export default function Home() {
 
                     <HomeInlineSearchSection>
                         {(() => {
-                            const internalLinks = homeLinks.filter((l) => l.isInternal);
-                            const externalLinks = homeLinks.filter((l) => !l.isInternal);
-                            const internalGroups = groupSiteLinks(internalLinks, groups);
-                            const byId = new Map(internalGroups.map((g) => [g.id, g]));
+                            const grouped = groupSiteLinks(homeLinks, groups);
+                            const byId = new Map(grouped.map((g) => [g.id, g]));
                             const daily = byId.get('daily');
                             const maps = byId.get('maps');
-                            const politics = byId.get('politics');
-                            const directories = byId.get('directories');
+                            const state = byId.get('state');
+                            const interactive = byId.get('interactive');
                             const community = byId.get('community');
-                            const externalGroupMeta = groups.find((g) => g.id === 'external');
-                            const knownIds = new Set(['daily', 'maps', 'politics', 'directories', 'community']);
-                            const others = internalGroups.filter((g) => !knownIds.has(g.id));
+                            const external = byId.get('external');
+                            const knownIds = new Set(['daily', 'maps', 'state', 'interactive', 'community', 'external']);
+                            const others = grouped.filter((g) => !knownIds.has(g.id));
 
                             const renderTile = (link: SiteLink) => {
                                 const Icon = link.icon;
-                                return (
-                                    <a
-                                        key={link.id || link.href}
-                                        href={link.href}
-                                        target={link.external ? '_blank' : undefined}
-                                        rel={link.external ? 'noopener noreferrer' : undefined}
-                                        className="group relative flex h-full flex-col items-center justify-between gap-2 rounded-lg px-1 py-2 text-center transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                        {Icon && <Icon className="w-10 h-10 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />}
+                                const tileClass = "group relative flex h-full flex-col items-center justify-between gap-2 rounded-lg px-1 py-2 text-center transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+                                const body = (
+                                    <>
+                                        {Icon && <Icon className="w-10 h-10 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" aria-hidden="true" />}
                                         {lastPage === link.href && (
                                             <span title="آخر صفحة تمت زيارتها" className="absolute -top-1 -end-1 rounded-full border border-border bg-background p-0.5 text-primary shadow-sm">
-                                                <History className="w-3.5 h-3.5" />
+                                                <History className="w-3.5 h-3.5" aria-hidden="true" />
                                             </span>
                                         )}
                                         {link.image && link.imageDark ? (
                                             <>
-                                                <img src={link.image} alt="" loading="lazy" decoding="async" className="w-10 h-10 shrink-0 object-contain transition-transform group-hover:scale-110 dark:hidden" />
-                                                <img src={link.imageDark} alt="" loading="lazy" decoding="async" className="hidden w-10 h-10 shrink-0 object-contain transition-transform group-hover:scale-110 dark:block" />
+                                                <img src={link.image} alt="" width={40} height={40} loading="lazy" decoding="async" className="w-10 h-10 shrink-0 object-contain transition-transform group-hover:scale-110 dark:hidden" />
+                                                <img src={link.imageDark} alt="" width={40} height={40} loading="lazy" decoding="async" className="hidden w-10 h-10 shrink-0 object-contain transition-transform group-hover:scale-110 dark:block" />
                                             </>
                                         ) : link.image ? (
-                                            <img src={link.image} alt="" loading="lazy" decoding="async" className="w-10 h-10 shrink-0 object-contain transition-transform group-hover:scale-110" />
+                                            <img src={link.image} alt="" width={40} height={40} loading="lazy" decoding="async" className="w-10 h-10 shrink-0 object-contain transition-transform group-hover:scale-110" />
                                         ) : null}
                                         <span className="text-xs font-medium text-foreground transition-colors group-hover:text-primary line-clamp-2">
                                             {link.text}
                                         </span>
-                                    </a>
+                                    </>
+                                );
+                                if (link.external) {
+                                    return (
+                                        <a
+                                            key={link.id || link.href}
+                                            href={link.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={tileClass}
+                                        >
+                                            {body}
+                                        </a>
+                                    );
+                                }
+                                return (
+                                    <Link
+                                        key={link.id || link.href}
+                                        href={link.href}
+                                        className={tileClass}
+                                    >
+                                        {body}
+                                    </Link>
                                 );
                             };
 
@@ -327,18 +340,18 @@ export default function Home() {
 
                             return (
                                 <div className="mb-10 grid grid-cols-1 lg:grid-cols-12 gap-4">
-                                    {/* Row 1 (5 + 7 = 12): Daily tools (2x2) + Maps & Syria (3x2) */}
+                                    {/* Row 1 (7 + 5 = 12): Daily & Utilities (7) + Syria & Maps (5) */}
                                     {daily && (
-                                        <section aria-labelledby="home-group-daily" className={`lg:col-span-5 ${bentoCard}`}>
+                                        <section aria-labelledby="home-group-daily" className={`lg:col-span-7 ${bentoCard}`}>
                                             {renderHeading('home-group-daily', daily.title)}
-                                            <div className="grid grid-cols-2 gap-x-2 gap-y-4">
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-4">
                                                 {daily.links.map(renderTile)}
                                             </div>
                                         </section>
                                     )}
 
                                     {maps && (
-                                        <section aria-labelledby="home-group-maps" className={`lg:col-span-7 ${bentoCard}`}>
+                                        <section aria-labelledby="home-group-maps" className={`lg:col-span-5 ${bentoCard}`}>
                                             {renderHeading('home-group-maps', maps.title)}
                                             <div className="grid grid-cols-3 gap-x-2 gap-y-4">
                                                 {maps.links.map(renderTile)}
@@ -346,40 +359,40 @@ export default function Home() {
                                         </section>
                                     )}
 
-                                    {/* Row 2 (7 + 5 = 12): State & Civic (4x2) + Directories & Identity (3x2) */}
-                                    {politics && (
-                                        <section aria-labelledby="home-group-politics" className={`lg:col-span-7 ${bentoCard}`}>
-                                            {renderHeading('home-group-politics', politics.title)}
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-4">
-                                                {politics.links.map(renderTile)}
-                                            </div>
-                                        </section>
-                                    )}
-
-                                    {directories && (
-                                        <section aria-labelledby="home-group-directories" className={`lg:col-span-5 ${bentoCard}`}>
-                                            {renderHeading('home-group-directories', directories.title)}
+                                    {/* Row 2 (6 + 6 = 12): State & Civic (6) + Interactive & Games (6) */}
+                                    {state && (
+                                        <section aria-labelledby="home-group-state" className={`lg:col-span-6 ${bentoCard}`}>
+                                            {renderHeading('home-group-state', state.title)}
                                             <div className="grid grid-cols-3 gap-x-2 gap-y-4">
-                                                {directories.links.map(renderTile)}
+                                                {state.links.map(renderTile)}
                                             </div>
                                         </section>
                                     )}
 
-                                    {/* Row 3 (7 + 5 = 12): Community & Culture (6x1) + Sister projects (4x1) */}
+                                    {interactive && (
+                                        <section aria-labelledby="home-group-interactive" className={`lg:col-span-6 ${bentoCard}`}>
+                                            {renderHeading('home-group-interactive', interactive.title)}
+                                            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+                                                {interactive.links.map(renderTile)}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {/* Row 3 (8 + 4 = 12): Identity & Community (7) + Partners & Sources (3) */}
                                     {community && (
-                                        <section aria-labelledby="home-group-community" className={`lg:col-span-7 ${bentoCard}`}>
+                                        <section aria-labelledby="home-group-community" className={`lg:col-span-8 ${bentoCard}`}>
                                             {renderHeading('home-group-community', community.title)}
-                                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-2 gap-y-4">
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-x-2 gap-y-4">
                                                 {community.links.map(renderTile)}
                                             </div>
                                         </section>
                                     )}
 
-                                    {externalLinks.length > 0 && (
-                                        <section aria-labelledby="home-group-external" className={`lg:col-span-5 ${bentoCard}`}>
-                                            {renderHeading('home-group-external', externalGroupMeta?.title ?? 'مشاريع شقيقة')}
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-4">
-                                                {externalLinks.map(renderTile)}
+                                    {external && (
+                                        <section aria-labelledby="home-group-external" className={`lg:col-span-4 ${bentoCard}`}>
+                                            {renderHeading('home-group-external', external.title)}
+                                            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+                                                {external.links.map(renderTile)}
                                             </div>
                                         </section>
                                     )}

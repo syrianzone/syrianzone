@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router, usePage, useRemember } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -12,7 +12,7 @@ import { PageBody, PageHeader } from '@/Components/layout';
 import { toggleFilterValue, type SmartFilterValue } from '@/Lib/smartFilterSearch';
 import { cn } from '@/Lib/utils';
 import PromiseCard, { type PromiseCardLayout } from './_components/PromiseCard';
-import PromiseCharts from './_components/PromiseCharts';
+const PromiseCharts = React.lazy(() => import('./_components/PromiseCharts'));
 import Scoreboard from './_components/Scoreboard';
 import { activeScoreboardState, filterPromises, matchesState, narrowFromChart, promiseFilterFacets, promiseListUrl, readPromiseFilters, selectScoreboardState, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
 import type { PromiseCardData, PromiseStats } from '@/Domain/promises/types';
@@ -180,9 +180,11 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
 
                 {visible.length > 0 ? (
                     layout === 'charts' ? (
-                        <PromiseCharts promises={visible} returnUrl={listUrl}
-                            canFilter={(key, id) => narrowFromChart(value, key, id) !== null}
-                            onFilter={(key, id) => changeFilters(narrowFromChart(value, key, id) ?? value)} />
+                        <Suspense fallback={<div className="py-12 text-center text-sm text-muted-foreground">جاري تحميل الرسوم البيانية...</div>}>
+                            <PromiseCharts promises={visible} returnUrl={listUrl}
+                                canFilter={(key, id) => narrowFromChart(value, key, id) !== null}
+                                onFilter={(key, id) => changeFilters(narrowFromChart(value, key, id) ?? value)} />
+                        </Suspense>
                     ) : (
                         <div className={layout === 'list' ? 'flex flex-col gap-2 sm:gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
                             {visible.map((p) => <PromiseCard key={p.id} promise={p} returnUrl={listUrl} layout={layout} />)}

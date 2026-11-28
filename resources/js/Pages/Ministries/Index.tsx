@@ -102,11 +102,11 @@ export default function MinistriesIndex({
                                     <span>السير الذاتية</span>
                                 </Link>
                             </Button>
-                            <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 text-muted-foreground">
-                                <a href={meta.source_url} target="_blank" rel="noopener noreferrer">
-                                    <span>مصدر جَرد</span>
-                                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                                </a>
+                            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5">
+                                <Link href="/syofficial">
+                                    <Landmark className="h-4 w-4" aria-hidden="true" />
+                                    <span>الحسابات الرسمية</span>
+                                </Link>
                             </Button>
                         </div>
                     }

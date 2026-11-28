@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody } from '@/Components/layout';
 import Hero2026 from './Hero2026';
 import ParliamentChart2026, { type Dim } from './ParliamentChart2026';
 import MemberTable2026 from './MemberTable2026';
@@ -92,10 +93,9 @@ export default function HousePage({ members2026 }: Props) {
 
     return (
         <MainLayout>
-            
-            <div className="min-h-screen bg-background pb-16">
-                <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
-                    <Hero2026 total={counts.total} female={counts.female} male={counts.male} onOpenArchive={() => setArchiveOpen(true)} />
+            <div className="min-h-screen bg-background">
+                <Hero2026 total={counts.total} female={counts.female} male={counts.male} onOpenArchive={() => setArchiveOpen(true)} />
+                <PageBody className="space-y-6">
                     <ParliamentChart2026
                         members={members}
                         dim={dim}
@@ -168,15 +168,7 @@ export default function HousePage({ members2026 }: Props) {
                             </AccordionItem>
                         </Accordion>
                     </div>
-                </div>
-
-                <footer className="py-8 bg-card text-center text-sm text-muted-foreground border-t border-border mt-12">
-                    <p>&copy; 2025 syrian.zone — المصدر: مركز عمران للدراسات الاستراتيجية</p>
-                    <div className="flex justify-center gap-4 mt-2">
-                        <a href="https://hadealahmad.com" target="_blank" className="hover:text-primary transition">الموقع الشخصي</a>
-                        <a href="https://x.com/hadealahmad" target="_blank" className="hover:text-primary transition">Twitter</a>
-                    </div>
-                </footer>
+                </PageBody>
             </div>
         </MainLayout>
     );

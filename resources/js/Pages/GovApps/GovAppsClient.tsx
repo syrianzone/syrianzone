@@ -254,7 +254,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                     href={app.links.android}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-[#3DDC84] shadow-2xs"
+                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-success shadow-2xs"
                                                     title="تحميل لأندرويد"
                                                     aria-label={`تحميل ${app.name} لأندرويد`}
                                                 >

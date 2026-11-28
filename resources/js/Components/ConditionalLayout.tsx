@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { usePage } from '@inertiajs/react'
 import Navbar from './Navbar'
 import SiteFooter from './SiteFooter'
 import UnblockSyriaNotification from './UnblockSyriaNotification'
-import { DevRoleSwitcher } from './DevRoleSwitcher'
 import { FocusModeProvider } from '@/Contexts/FocusModeContext'
 import { recordVisit } from '@/Lib/visit'
 import { isFullBleed, isNavbarSticky, pathnameOf, routeFamily } from '@/Lib/routes'
+
+const DevRoleSwitcher = import.meta.env.DEV
+  ? React.lazy(() => import('./DevRoleSwitcher').then((m) => ({ default: m.DevRoleSwitcher })))
+  : null
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const { url } = usePage()
@@ -47,7 +50,11 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
         {!focus && !fullBleed && <SiteFooter />}
         {/* The popup is suppressed for the whole transit section. */}
         {routeFamily(path) !== 'transit' && <UnblockSyriaNotification />}
-        <DevRoleSwitcher />
+        {DevRoleSwitcher && (
+          <Suspense fallback={null}>
+            <DevRoleSwitcher />
+          </Suspense>
+        )}
       </div>
     </FocusModeProvider>
   )

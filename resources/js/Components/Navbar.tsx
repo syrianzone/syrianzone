@@ -241,12 +241,12 @@ function MorePanel({
   const grouped = groupSiteLinks(links, groups);
   const byId = new Map(grouped.map((g) => [g.id, g]));
   const bentoSlots: Array<{ id: string; span: string; cols: string }> = [
-    { id: 'daily', span: 'lg:col-span-5', cols: 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-2' },
-    { id: 'maps', span: 'lg:col-span-7', cols: 'grid-cols-3' },
-    { id: 'politics', span: 'lg:col-span-7', cols: 'grid-cols-2 sm:grid-cols-4' },
-    { id: 'directories', span: 'lg:col-span-5', cols: 'grid-cols-3' },
-    { id: 'community', span: 'lg:col-span-7', cols: 'grid-cols-3 sm:grid-cols-6' },
-    { id: 'external', span: 'lg:col-span-5', cols: 'grid-cols-2 sm:grid-cols-4' },
+    { id: 'daily', span: 'lg:col-span-7', cols: 'grid-cols-3 sm:grid-cols-4' },
+    { id: 'maps', span: 'lg:col-span-5', cols: 'grid-cols-3' },
+    { id: 'state', span: 'lg:col-span-6', cols: 'grid-cols-3' },
+    { id: 'interactive', span: 'lg:col-span-6', cols: 'grid-cols-3' },
+    { id: 'community', span: 'lg:col-span-8', cols: 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-7' },
+    { id: 'external', span: 'lg:col-span-4', cols: 'grid-cols-3' },
   ];
   const knownIds = new Set(bentoSlots.map((s) => s.id));
   const others = grouped.filter((g) => !knownIds.has(g.id));
@@ -547,11 +547,13 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
   const { user } = useAuth();
   const { navbarLinks, groups } = useSiteNavigation();
 
-  // Group all navbar links by the 6 canonical domains so standard pages show
-  // 5 focused internal domain dropdowns + a compact "شقيقة / المزيد" dropdown.
+  // Option A: 4 focused top-level domain dropdowns (daily, maps, state,
+  // interactive) + a single "المزيد" dropdown holding community & external.
   const allGrouped = React.useMemo(() => groupSiteLinks(navbarLinks, groups), [navbarLinks, groups]);
-  const domainGroups = React.useMemo(() => allGrouped.filter((g) => g.id !== 'external'), [allGrouped]);
-  const externalGroup = React.useMemo(() => allGrouped.find((g) => g.id === 'external'), [allGrouped]);
+  const primaryGroupIds = React.useMemo(() => new Set(['daily', 'maps', 'state', 'interactive']), []);
+  const domainGroups = React.useMemo(() => allGrouped.filter((g) => primaryGroupIds.has(g.id)), [allGrouped, primaryGroupIds]);
+  const moreGroups = React.useMemo(() => allGrouped.filter((g) => !primaryGroupIds.has(g.id)), [allGrouped, primaryGroupIds]);
+  const moreLinks = React.useMemo(() => moreGroups.flatMap((g) => g.links), [moreGroups]);
 
   const groupIsActive = React.useCallback(
     (links: SiteLink[]) =>
@@ -650,7 +652,7 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
     <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
       {/* This row plus the border of the header is `--sz-navbar-h`
           (resources/css/app.css), which the full-viewport pages subtract. */}
-      <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 lg:px-6 xl:px-8 justify-between lg:justify-normal" dir="rtl">
+      <div className="container relative flex h-16 max-w-[76rem] mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">
         {/* Mobile Menu / Settings */}
         <div className="flex items-center lg:hidden">
           {isHomepage ? (
@@ -869,6 +871,7 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                 label="المزيد"
                 controlsId="sz-nav-panel-more"
                 open={openMenuId === 'more'}
+                active={groupIsActive(moreLinks)}
                 onToggle={() => toggleMenu('more')}
               />
             </>
@@ -913,8 +916,8 @@ const Navbar = React.memo(function Navbar({ sticky = true }: { sticky?: boolean 
                 <div className="sz-menu-pop">
                   <DomainPanel
                     id="more"
-                    title={externalGroup?.title ?? 'مشاريع شقيقة'}
-                    links={externalGroup?.links ?? []}
+                    title="الهوية والمجتمع والشركاء"
+                    links={moreLinks}
                     pathname={pathname}
                     onNavigate={() => setOpenMenuId(null)}
                     footer={

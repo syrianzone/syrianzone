@@ -5,27 +5,27 @@
  "groups": [
   {
    "id": "daily",
-   "title": "أدوات يومية"
+   "title": "اليوم والخدمات"
   },
   {
    "id": "maps",
-   "title": "الخرائط والبلاد"
+   "title": "سوريا والخرائط"
   },
   {
-   "id": "politics",
-   "title": "الدولة والشأن العام"
+   "id": "state",
+   "title": "الدولة والمرصد"
   },
   {
-   "id": "directories",
-   "title": "الأدلة والهوية"
+   "id": "interactive",
+   "title": "تفاعل وترفيه"
   },
   {
    "id": "community",
-   "title": "المجتمع والترفيه"
+   "title": "الهوية والمجتمع"
   },
   {
    "id": "external",
-   "title": "مشاريع شقيقة"
+   "title": "شركاء ومصادر"
   }
  ],
  "modules": [
@@ -175,8 +175,8 @@
    ],
    "description": "ألعاب ورق وذكاء جماعية وفردية: تركس، طرنيب، مين، سوليتير، 2048",
    "navbarSticky": false,
-   "group": "community",
-   "groupOrder": 0
+   "group": "interactive",
+   "groupOrder": 3
   },
   {
    "id": "transit",
@@ -251,8 +251,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "اختبار البوصلة السياسية السورية وتحديد توجهاتك",
-   "group": "politics",
-   "groupOrder": 6
+   "group": "interactive",
+   "groupOrder": 1
   },
   {
    "id": "fakenews",
@@ -266,8 +266,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "اختبار الأخبار الكاذبة والشائعات في سوريا: اسحب يميناً أو يساراً للحكم على 12 ادّعاءً موثّقاً بالمصادر",
-   "group": "community",
-   "groupOrder": 1
+   "group": "interactive",
+   "groupOrder": 4
   },
   {
    "id": "tierlist",
@@ -292,8 +292,8 @@
     }
    ],
    "description": "تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب",
-   "group": "politics",
-   "groupOrder": 5
+   "group": "interactive",
+   "groupOrder": 0
   },
   {
    "id": "promises",
@@ -307,7 +307,7 @@
    "isInternal": true,
    "subCategories": [],
    "description": "وعود المسؤولين العلنية ومواعيدها وما تحقق منها",
-   "group": "politics",
+   "group": "state",
    "groupOrder": 2
   },
   {
@@ -333,7 +333,7 @@
     }
    ],
    "description": "السير الذاتية للوزراء والمحافظين والمسؤولين الحكوميين وسجل التعيينات والتنقلات منذ 8 كانون الأول 2024",
-   "group": "politics",
+   "group": "state",
    "groupOrder": 1
   },
   {
@@ -348,8 +348,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا",
-   "group": "politics",
-   "groupOrder": 7
+   "group": "interactive",
+   "groupOrder": 2
   },
   {
    "id": "crossings",
@@ -363,8 +363,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "حالة المعابر البرية والمطارات والمرافئ السورية لحظة بلحظة",
-   "group": "maps",
-   "groupOrder": 2
+   "group": "daily",
+   "groupOrder": 6
   },
   {
    "id": "recipes",
@@ -379,7 +379,7 @@
    "subCategories": [],
    "description": "موسوعة وصفات المطبخ السوري التقليدي الأصيل",
    "group": "community",
-   "groupOrder": 2
+   "groupOrder": 3
   },
   {
    "id": "answers",
@@ -394,7 +394,7 @@
    "subCategories": [],
    "description": "منصة الأسئلة والأجوبة المجتمعية حول سوريا",
    "group": "community",
-   "groupOrder": 3
+   "groupOrder": 4
   },
   {
    "id": "syofficial",
@@ -408,8 +408,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "دليل الحسابات والصفحات الرسمية للوزارات والمؤسسات السورية",
-   "group": "directories",
-   "groupOrder": 1
+   "group": "state",
+   "groupOrder": 5
   },
   {
    "id": "phonebook",
@@ -423,8 +423,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "أرقام الطوارئ والاستعلامات والخدمات العامة في المحافظات",
-   "group": "directories",
-   "groupOrder": 0
+   "group": "daily",
+   "groupOrder": 4
   },
   {
    "id": "sites",
@@ -438,8 +438,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "دليل المواقع والمنصات والمبادرات الرقمية السورية",
-   "group": "directories",
-   "groupOrder": 3
+   "group": "community",
+   "groupOrder": 2
   },
   {
    "id": "contributors",
@@ -454,7 +454,7 @@
    "subCategories": [],
    "description": "لوحة المساهمين والمطورين في المشاريع السورية مفتوحة المصدر",
    "group": "community",
-   "groupOrder": 5
+   "groupOrder": 6
   },
   {
    "id": "govapps",
@@ -468,8 +468,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "دليل التطبيقات الحكومية والخدمية الرسمية في سوريا",
-   "group": "directories",
-   "groupOrder": 2
+   "group": "daily",
+   "groupOrder": 5
   },
   {
    "id": "house",
@@ -483,7 +483,7 @@
    "isInternal": true,
    "subCategories": [],
    "description": "مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء",
-   "group": "politics",
+   "group": "state",
    "groupOrder": 3
   },
   {
@@ -498,7 +498,7 @@
    "isInternal": true,
    "subCategories": [],
    "description": "العدالة الانتقالية والتوثيق والمحاسبة",
-   "group": "politics",
+   "group": "state",
    "groupOrder": 4
   },
   {
@@ -513,8 +513,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات",
-   "group": "directories",
-   "groupOrder": 4
+   "group": "community",
+   "groupOrder": 0
   },
   {
    "id": "atlas",
@@ -529,7 +529,7 @@
    "subCategories": [],
    "description": "أطلس السكان والخرائط الديمغرافية والتقسيمات الإدارية",
    "group": "maps",
-   "groupOrder": 4
+   "groupOrder": 3
   },
   {
    "id": "codex",
@@ -544,7 +544,7 @@
    "subCategories": [],
    "description": "مجتمع المبرمجين والمصممين السوريين على ديسكورد",
    "group": "community",
-   "groupOrder": 4
+   "groupOrder": 5
   },
   {
    "id": "flag_replacer",
@@ -558,8 +558,8 @@
    "isInternal": true,
    "subCategories": [],
    "description": "إضافة متصفح لاستبدال العلم القديم بالعلم السوري",
-   "group": "directories",
-   "groupOrder": 5
+   "group": "community",
+   "groupOrder": 1
   },
   {
    "id": "joory",
@@ -574,7 +574,7 @@
    "subCategories": [],
    "description": "مساعد ذكي باللغة العربية",
    "group": "external",
-   "groupOrder": 0
+   "groupOrder": 2
   },
   {
    "id": "jard",
@@ -605,7 +605,7 @@
    "subCategories": [],
    "description": "متابعة آخر أخبار سوريا من المصادر الموثوقة",
    "group": "external",
-   "groupOrder": 2
+   "groupOrder": 0
   },
   {
    "id": "president",
@@ -619,8 +619,8 @@
    "isInternal": false,
    "subCategories": [],
    "description": "محاكي رئيس الجمهورية — لعبة سياسية تفاعلية",
-   "group": "external",
-   "groupOrder": 3
+   "group": "interactive",
+   "groupOrder": 5
   },
   {
    "id": "currency",
@@ -650,7 +650,7 @@
    "subCategories": [],
    "description": "دليل محافظات سوريا الأربع عشرة: السكان، المحافظون، مواقيت الصلاة، المواصلات، المعابر، الأماكن وأرقام الطوارئ",
    "group": "maps",
-   "groupOrder": 3
+   "groupOrder": 2
   },
   {
    "id": "wild",
@@ -665,7 +665,7 @@
    "subCategories": [],
    "description": "دليل موثّق المصادر لحيوانات سوريا وطيورها وزواحفها ووضعها في البلاد",
    "group": "maps",
-   "groupOrder": 5
+   "groupOrder": 4
   },
   {
    "id": "ministries",
@@ -679,7 +679,7 @@
    "isInternal": true,
    "subCategories": [],
    "description": "دليل وزارات سوريا والهيئات السيادية والخط الزمني لتعاقب الوزراء والمراسيم والحسابات الرسمية (2024–2026)",
-   "group": "politics",
+   "group": "state",
    "groupOrder": 0
   }
  ],

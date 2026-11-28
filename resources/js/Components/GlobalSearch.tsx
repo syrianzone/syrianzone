@@ -340,7 +340,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
 const CmdkModeContext = React.createContext(true);
 
 const ROW_CLASS =
-    'w-full text-right outline-none hover:bg-accent/60 active:bg-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring';
+    'w-full text-start outline-none hover:bg-accent/60 active:bg-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring';
 
 function GroupWrapper({ heading, children }: { heading: string; children: React.ReactNode }) {
     if (React.useContext(CmdkModeContext)) {

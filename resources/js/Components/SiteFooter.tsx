@@ -1,32 +1,36 @@
+import React from 'react';
 import { Link } from '@inertiajs/react';
 import { Logo } from '@/Components/brand/Logo';
 
 const FOOTER_COLUMNS = [
     {
-        title: 'أدوات يومية',
+        title: 'اليوم والخدمات',
         links: [
-            { href: '/roznama', label: 'الروزنامة السورية' },
-            { href: '/currency', label: 'تحويل الليرة' },
+            { href: '/roznama', label: 'الروزنامة' },
             { href: '/muslim', label: 'الركن الإسلامي' },
-            { href: '/board', label: 'لوحتي' },
+            { href: '/currency', label: 'محوّل الليرة' },
+            { href: '/phonebook', label: 'دليل الهاتف' },
+            { href: '/crossings', label: 'المنافذ الحدودية' },
         ],
     },
     {
-        title: 'الدولة والشأن العام',
+        title: 'سوريا والخرائط',
         links: [
-            { href: '/promises', label: 'عداد الوعود' },
+            { href: '/transit', label: 'ترانزيت' },
+            { href: '/mishwar', label: 'مشوار' },
+            { href: '/governorates', label: 'محافظات سوريا' },
+            { href: '/atlas', label: 'أطلس السكان' },
+            { href: '/wild', label: 'الحياة البرية' },
+        ],
+    },
+    {
+        title: 'الدولة والمرصد',
+        links: [
             { href: '/ministries', label: 'وزارات سوريا' },
             { href: '/govtcvs', label: 'السير الذاتية' },
+            { href: '/promises', label: 'عداد الوعود' },
             { href: '/house', label: 'مجلس الشعب 2026' },
-        ],
-    },
-    {
-        title: 'الأدلة والهوية',
-        links: [
-            { href: '/phonebook', label: 'دليل الهاتف والواتساب' },
             { href: '/syofficial', label: 'الحسابات الرسمية' },
-            { href: '/govapps', label: 'تطبيقات حكومية' },
-            { href: '/syid', label: 'الهوية البصرية' },
         ],
     },
     {
@@ -34,13 +38,14 @@ const FOOTER_COLUMNS = [
         links: [
             { href: '/about', label: 'عن المنصة' },
             { href: '/stats', label: 'الإحصائيات' },
+            { href: '/syid', label: 'الهوية البصرية' },
             { href: '/privacy', label: 'سياسة الخصوصية' },
             { href: '/terms', label: 'الشروط والأحكام' },
         ],
     },
 ] as const;
 
-export default function SiteFooter() {
+const SiteFooter = React.memo(function SiteFooter() {
     return (
         <footer
             className="border-t border-border bg-background text-foreground"
@@ -89,4 +94,6 @@ export default function SiteFooter() {
             </div>
         </footer>
     );
-}
+});
+
+export default SiteFooter;

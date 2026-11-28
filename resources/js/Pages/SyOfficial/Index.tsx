@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from '@inertiajs/react';
 import { ChevronLeft, Globe, Landmark, MessageSquarePlus, Pencil, PencilLine, Send, Settings } from 'lucide-react';
 import { Twitter } from '@/Components/ui/icons';
@@ -17,7 +17,7 @@ import { DirectoryFacetFilter } from '@/Components/directory/DirectoryFacetFilte
 import { ResponsiveTable } from '@/Components/directory/ResponsiveTable';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
-import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
+const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 import DirectoryViewToggle, { type DirectoryView } from '@/Components/directory/DirectoryViewToggle';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import { PageBody, PageHeader } from '@/Components/layout';
@@ -616,15 +616,19 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                 )}
             </PageBody>
 
-            <DirectorySuggestionDialog
-                module="syofficial"
-                open={suggestionOpen}
-                onOpenChange={setSuggestionOpen}
-                defaultKind={suggestionTarget ? 'edit' : 'add'}
-                fixedTarget={suggestionTarget}
-                targets={suggestionTargets}
-                categories={suggestionCategories}
-            />
+            {suggestionOpen && (
+                <React.Suspense fallback={null}>
+                    <DirectorySuggestionDialog
+                        module="syofficial"
+                        open={suggestionOpen}
+                        onOpenChange={setSuggestionOpen}
+                        defaultKind={suggestionTarget ? 'edit' : 'add'}
+                        fixedTarget={suggestionTarget}
+                        targets={suggestionTargets}
+                        categories={suggestionCategories}
+                    />
+                </React.Suspense>
+            )}
         </MainLayout>
     );
 }

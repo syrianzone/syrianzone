@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
     Phone, MessageSquare, MessageSquarePlus, Copy, Check, ExternalLink, Search, Info, Settings, PencilLine
@@ -25,7 +25,7 @@ import { DirectoryFacetFilter } from '@/Components/directory/DirectoryFacetFilte
 import { ResponsiveTable } from '@/Components/directory/ResponsiveTable';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
-import DirectorySuggestionDialog from '@/Domain/suggestions/DirectorySuggestionDialog';
+const DirectorySuggestionDialog = React.lazy(() => import('@/Domain/suggestions/DirectorySuggestionDialog'));
 import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import { PageBody, PageHeader } from '@/Components/layout';
@@ -248,9 +248,9 @@ export default function Index({ initialData, categories: serverCategories = [] }
                                     <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
-                                                <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2 mb-1">
+                                                <h2 className="font-bold text-foreground text-sm leading-snug line-clamp-2 mb-1">
                                                     {item.name_ar}
-                                                </h3>
+                                                </h2>
                                                 {item.name_en && (
                                                     <p className="text-[11px] text-muted-foreground font-normal truncate">
                                                         {item.name_en}
@@ -560,15 +560,19 @@ export default function Index({ initialData, categories: serverCategories = [] }
 
             </div>
 
-            <DirectorySuggestionDialog
-                module="phonebook"
-                open={suggestionOpen}
-                onOpenChange={setSuggestionOpen}
-                defaultKind={suggestionTarget ? 'edit' : 'add'}
-                fixedTarget={suggestionTarget}
-                targets={suggestionTargets}
-                categories={suggestionCategories}
-            />
+            {suggestionOpen && (
+                <React.Suspense fallback={null}>
+                    <DirectorySuggestionDialog
+                        module="phonebook"
+                        open={suggestionOpen}
+                        onOpenChange={setSuggestionOpen}
+                        defaultKind={suggestionTarget ? 'edit' : 'add'}
+                        fixedTarget={suggestionTarget}
+                        targets={suggestionTargets}
+                        categories={suggestionCategories}
+                    />
+                </React.Suspense>
+            )}
         </MainLayout>
     );
 }

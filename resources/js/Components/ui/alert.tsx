@@ -37,12 +37,12 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert
     );
 });
 
-export const AlertTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(function AlertTitle(
+export const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(function AlertTitle(
     { className, ...props },
     ref
 ) {
     return (
-        <h5
+        <p
             ref={ref}
             className={cn("font-semibold leading-none tracking-tight", className)}
             {...props}

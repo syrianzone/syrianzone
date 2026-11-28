@@ -168,7 +168,7 @@ export default function CrossingsPage() {
                                     <Signpost className="h-5 w-5" />
                                 </span>
                                 <div>
-                                    <h1 className="text-sm font-bold leading-tight text-foreground">المنافذ الحدودية</h1>
+                                    <h1 className="font-display text-lg font-bold leading-tight text-foreground">المنافذ الحدودية</h1>
                                     <p className="text-[11px] leading-tight text-muted-foreground">الحالة الفنية لكل منفذ ومرفأ</p>
                                 </div>
                             </div>

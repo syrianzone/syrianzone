@@ -3,22 +3,21 @@ import { Globe } from 'lucide-react';
 
 import PrioritiesApp from './PrioritiesApp';
 import MainLayout from '@/Layouts/MainLayout';
+import { PageBody, PageHeader } from '@/Components/layout';
 
 export default function PrioritiesPage() {
     return (
         <MainLayout>
-            
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors">
-                <section className="bg-card py-12 shadow-sm border-b border-border relative z-0">
-                    <div className="container mx-auto px-4 text-center">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">أولويات سوريا المستقبل</h1>
-                        <p className="text-xl text-muted-foreground">اصنع بطاقة تخبر الناس فيها عن أولوياتك لسوريا الحرة</p>
-                    </div>
-                </section>
+                <PageBody className="flex-1 space-y-6">
+                    <PageHeader
+                        title="أولويات سوريا المستقبل"
+                        description="اصنع بطاقة تخبر الناس فيها عن أولوياتك لسوريا الحرة."
+                        divider
+                    />
 
-                <div className="flex-1 container mx-auto px-4 py-8 relative z-10 max-w-7xl">
                     <PrioritiesApp />
-                </div>
+                </PageBody>
 
                 <footer className="footer py-8 border-t border-border bg-card mt-auto">
                     <div className="container mx-auto px-4 text-center">

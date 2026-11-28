@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from '@inertiajs/react';
 import { ChevronLeft, Compass, ExternalLink, MapPin, Users } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
-import { GovernoratesIcon } from '@/Components/Icons/ProjectIcons';
+import { PageHeader } from '@/Components/layout';
 import { Card, CardContent } from '@/Components/ui/card';
 import { SyriaGovernoratesMap } from './_components/SyriaGovernoratesMap';
 import type { GovernoratesHubProps } from './_types';
@@ -25,40 +25,12 @@ export default function GovernoratesIndex({
     return (
         <MainLayout>
             <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
-                {/* Breadcrumb */}
-                <nav aria-label="مسار التنقل" className="text-xs text-muted-foreground">
-                    <ol className="flex flex-wrap items-center gap-1.5">
-                        <li className="flex items-center gap-1.5">
-                            <Link href="/" className="transition-colors hover:text-foreground">
-                                الرئيسية
-                            </Link>
-                            <ChevronLeft className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        </li>
-                        <li>
-                            <span aria-current="page" className="font-medium text-foreground">
-                                محافظات سوريا
-                            </span>
-                        </li>
-                    </ol>
-                </nav>
-
-                {/* Header */}
-                <header className="space-y-4">
-                    <div className="flex items-start gap-3">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border bg-card shadow-xs">
-                            <GovernoratesIcon className="h-7 w-7" />
-                        </span>
-                        <div className="space-y-1.5">
-                            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                                محافظات سوريا الأربع عشرة
-                            </h1>
-                            <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                                دليل موحّد لمحافظات الجمهورية العربية السورية الـ 14 يجمع البيانات السكانية،
-                                المراكز الإدارية، المحافظين الحاليين، مواقيت الصلاة اليومية وإمساكية رمضان،
-                                خطوط المواصلات العامة، المعابر الحدودية، الأماكن والأرقام الخدمية لكل محافظة.
-                            </p>
-                        </div>
-                    </div>
+                <div className="space-y-4">
+                    <PageHeader
+                        title="محافظات سوريا الأربع عشرة"
+                        description="دليل موحّد لمحافظات الجمهورية العربية السورية الـ 14 يجمع البيانات السكانية، المراكز الإدارية، المحافظين الحاليين، مواقيت الصلاة اليومية وإمساكية رمضان، خطوط المواصلات العامة، المعابر الحدودية، الأماكن والأرقام الخدمية لكل محافظة."
+                        divider
+                    />
 
                     {populationMeta && (
                         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -90,7 +62,7 @@ export default function GovernoratesIndex({
                             </Link>
                         </div>
                     )}
-                </header>
+                </div>
 
                 {/* Interactive SSR Syria Map */}
                 <SyriaGovernoratesMap svgMap={svgMap} populationById={populationById} />
